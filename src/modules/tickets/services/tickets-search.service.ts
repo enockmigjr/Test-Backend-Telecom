@@ -28,7 +28,7 @@ export class TicketsSearchService {
   constructor(private readonly drizzle: DrizzleProvider) {}
 
   async search(filters: TicketSearchFilters) {
-    const { page = 1, limit = 20, sort = 'createdAt', order = 'desc' } = filters;
+    const { page = 1, limit = 20, order = 'desc' } = filters;
     const offset = PaginationHelper.getOffset(page, limit);
 
     const conditions = [isNull(tickets.deletedAt)];

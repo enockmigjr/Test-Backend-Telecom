@@ -16,7 +16,7 @@ export class UsersService {
   constructor(private readonly drizzle: DrizzleProvider) {}
 
   async findAll(dto: PaginationDto) {
-    const { page = 1, limit = 20, sort = 'createdAt', order = 'desc' } = dto;
+    const { page = 1, limit = 20, order = 'desc' } = dto;
     const offset = PaginationHelper.getOffset(page, limit);
 
     const where = isNull(users.deletedAt);
