@@ -1,0 +1,120 @@
+version: '3.8'
+
+services:
+  # ============================================
+  # PostgreSQL
+  # ============================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: telecom-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: telecom
+      POSTGRES_PASSWORD: telecom_secret
+      POSTGRES_DB: telecom_tickets
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U telecom -d telecom_tickets']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - telecom-network
+
+  # ============================================
+  # Redis
+  # ============================================
+  redis:
+    image: redis:7-alpine
+    container_name: telecom-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - telecom-network
+
+  # ============================================
+  # API NestJS (dev)
+  # ============================================
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: telecom-api
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    environment:
+      NODE_ENV: development
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_USER: telecom
+      DATABASE_PASSWORD: telecom_secret
+      DATABASE_NAME: telecom_tickets
+      DATABASE_URL: postgresql://telecom:telecom_secret@postgres:5432/telecom_tickets
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_URL: redis://redis:6379
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: npm run start:dev
+    networks:
+      - telecom-network
+
+  # ============================================
+  # Nginx Reverse Proxy
+  # ============================================
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: telecom-nginx
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+    depends_on:
+      - api
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - telecom-network
+
+  # ============================================
+  # Mailpit (SMTP de test)
+  # ============================================
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: telecom-mailpit
+    restart: unless-stopped
+    ports:
+      - '1025:1025'
+      - '8025:8025'
+    networks:
+      - telecom-network
+
+volumes:
+  postgres-data:
+  redis-data:
+
+networks:
+  telecom-network:
+    driver: bridge

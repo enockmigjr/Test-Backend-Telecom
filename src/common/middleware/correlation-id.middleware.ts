@@ -1,0 +1,34 @@
+import { Injectable, NestMiddleware } from '@nestjs/common';
+import { Request, Response, NextFunction } from 'express';
+import { v4 as uuidv4 } from 'uuid';
+import { AsyncLocalStorage } from 'async_hooks';
+
+/**
+ * Stockage local asynchrone pour propager le correlationId
+ * dans tout le contexte d'une requête sans le passer en paramètre.
+ */
+export const asyncLocalStorage = new AsyncLocalStorage<{ correlationId: string }>();
+
+/**
+ * Middleware qui génère ou propage le Correlation ID.
+ * - Si le header X-Correlation-Id est présent, il est réutilisé (traçage inter-systèmes).
+ * - Sinon, un nouvel UUID est généré.
+ * - Le correlationId est ajouté aux headers de réponse et stocké dans AsyncLocalStorage.
+ */
+@Injectable()
+export class CorrelationIdMiddleware implements NestMiddleware {
+  use(req: Request, res: Response, next: NextFunction): void {
+    const correlationId = (req.headers['x-correlation-id'] as string) || uuidv4();
+
+    // Attacher à la requête
+    req['correlationId'] = correlationId;
+
+    // Ajouter aux headers de réponse
+    res.setHeader('X-Correlation-Id', correlationId);
+
+    // Stocker dans AsyncLocalStorage pour accès global
+    asyncLocalStorage.run({ correlationId }, () => {
+      next();
+    });
+  }
+}
