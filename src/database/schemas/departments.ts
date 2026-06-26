@@ -15,6 +15,7 @@ export const departments = pgTable('departments', {
     .notNull()
     .defaultNow()
     .$onUpdate(() => new Date()),
+  deletedAt: timestamp('deleted_at', { withTimezone: true }),
 });
 
 export const departmentsRelations = relations(departments, ({ many }) => ({

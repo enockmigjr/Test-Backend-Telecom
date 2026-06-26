@@ -88,8 +88,8 @@ export class DepartmentsService {
       throw new ConflictException('Impossible de supprimer : des tickets sont liés à ce département.');
     }
 
-    // Suppression physique (les départements n'ont pas de soft delete)
-    await this.drizzle.db.delete(departments).where(eq(departments.id, id));
-    this.logger.log(`Département supprimé: ${id}`);
+    // Soft delete — aucune suppression physique
+    await this.drizzle.db.update(departments).set({ deletedAt: new Date() }).where(eq(departments.id, id));
+    this.logger.log(`Département désactivé (soft delete): ${id}`);
   }
 }

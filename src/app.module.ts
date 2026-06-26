@@ -27,6 +27,8 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { AuditLogsModule } from './modules/audit-logs/audit-logs.module';
 import { WebSocketModule } from './websocket/websocket.module';
 import { QueuesModule } from './queues/queues.module';
+import { AppInfoModule } from './modules/app/app.module';
+import { HealthModule } from './common/health/health.module';
 
 @Module({
   imports: [
@@ -90,6 +92,8 @@ import { QueuesModule } from './queues/queues.module';
     CommonModule,
 
     // Modules métier
+    AppInfoModule,
+    HealthModule,
     AuthModule,
     DepartmentsModule,
     UsersModule,
