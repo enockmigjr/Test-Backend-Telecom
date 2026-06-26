@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { ThrottlerStorageRedisService } from './common/providers/throttler-storage-redis.provider';
 import { LoggerModule } from 'nestjs-pino';
 import { ScheduleModule } from '@nestjs/schedule';
 import { EventEmitterModule } from '@nestjs/event-emitter';
@@ -52,17 +53,24 @@ import { QueuesModule } from './queues/queues.module';
       }),
     }),
 
-    // Rate Limiting avec Redis
+    // Rate Limiting avec stockage Redis (distribué)
     ThrottlerModule.forRootAsync({
       imports: [AppConfigModule],
       inject: [AppConfigService],
       useFactory: (config: AppConfigService) => ({
         throttlers: [
           {
+            name: 'default',
             ttl: config.throttleTtl,
             limit: config.throttleLimit,
           },
+          {
+            name: 'auth',
+            ttl: config.throttleAuthTtl,
+            limit: config.throttleAuthLimit,
+          },
         ],
+        storage: new ThrottlerStorageRedisService(),
       }),
     }),
 

@@ -35,9 +35,11 @@ async function bootstrap(): Promise<void> {
   // Compression
   app.use(compression());
 
-  // Middlewares globaux
-  app.use(new CorrelationIdMiddleware().use);
-  app.use(new RequestLoggerMiddleware().use);
+  // Middlewares globaux (bind this pour éviter la perte de contexte)
+  const correlationId = new CorrelationIdMiddleware();
+  const requestLogger = new RequestLoggerMiddleware();
+  app.use(correlationId.use.bind(correlationId));
+  app.use(requestLogger.use.bind(requestLogger));
 
   // Validation globale
   app.useGlobalPipes(
