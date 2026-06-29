@@ -25,6 +25,7 @@ export class DepartmentsController {
 
   @Get(':id')
   @ApiOperation({ summary: "Détails d'un département" })
+  @ApiResponse({ status: 200, description: 'Département trouvé.' })
   @ApiResponse({ status: 404, description: 'Département non trouvé.' })
   async findOne(@Param('id') id: string) {
     return this.departmentsService.findOne(id);
