@@ -10,6 +10,7 @@ import {
   HttpCode,
   HttpStatus,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 
@@ -21,9 +22,11 @@ import { AssignTicketDto } from './dto/assign-ticket.dto';
 import { EscalateTicketDto } from './dto/escalate-ticket.dto';
 import { UpdateTicketDto } from './dto/update-ticket.dto';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { Idempotent } from '../../common/decorators/idempotent.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { FieldProjectionInterceptor } from '../../common/interceptors/field-projection.interceptor';
 
 @ApiTags('tickets')
 @ApiBearerAuth()
@@ -36,6 +39,7 @@ export class TicketsController {
   ) {}
 
   @Post()
+  @Idempotent()
   @Roles(
     'ADMINISTRATOR',
     'SUPERVISOR',
@@ -46,14 +50,15 @@ export class TicketsController {
     'FIELD_TECHNICIAN',
   )
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: "Créer un ticket d'incident" })
+  @ApiOperation({ summary: "Créer un ticket d'incident — idempotent (header Idempotency-Key)" })
   @ApiResponse({ status: 201, description: 'Ticket créé.' })
   async create(@Body() dto: CreateTicketDto, @CurrentUser() user: JwtPayload) {
     return this.ticketsService.create(dto, user.sub);
   }
 
   @Get()
-  @ApiOperation({ summary: 'Rechercher des tickets avec filtres' })
+  @UseInterceptors(FieldProjectionInterceptor)
+  @ApiOperation({ summary: 'Rechercher des tickets avec filtres (param ?detail=summary|full)' })
   async search(@Query() filters: SearchTicketsDto) {
     return this.searchService.search(filters);
   }
@@ -73,15 +78,17 @@ export class TicketsController {
   }
 
   @Post(':id/assign')
+  @Idempotent()
   @Roles('ADMINISTRATOR', 'SUPERVISOR')
-  @ApiOperation({ summary: 'Assigner un ticket à un agent' })
+  @ApiOperation({ summary: 'Assigner un ticket à un agent — idempotent (header Idempotency-Key)' })
   async assign(@Param('id') id: string, @Body() dto: AssignTicketDto, @CurrentUser() user: JwtPayload) {
     return this.ticketsService.assign(id, dto.userId, user.sub, dto.reason);
   }
 
   @Post(':id/escalate')
+  @Idempotent()
   @Roles('ADMINISTRATOR', 'SUPERVISOR')
-  @ApiOperation({ summary: 'Escalader un ticket' })
+  @ApiOperation({ summary: 'Escalader un ticket — idempotent (header Idempotency-Key)' })
   async escalate(@Param('id') id: string, @Body() dto: EscalateTicketDto, @CurrentUser() user: JwtPayload) {
     return this.ticketsService.escalate(id, dto.userId, dto.departmentId, user.sub, dto.reason);
   }

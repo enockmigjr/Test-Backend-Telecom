@@ -1,28 +1,33 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 import type { Transporter } from 'nodemailer';
+import * as Handlebars from 'handlebars';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 
 /**
- * Service d'envoi d'emails.
+ * Service d'envoi d'emails avec compilation Handlebars.
  *
  * Dev: utilise Mailpit (SMTP localhost:1025, pas d'auth)
  * Prod: utilise le SMTP configuré via variables d'environnement
  *
- * L'envoi est asynchrone et ne bloque jamais la réponse HTTP.
+ * Templates disponibles dans src/modules/email/templates/*.hbs
  */
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
   private transporter: Transporter;
   private readonly from: string;
+  private readonly templateDir: string;
+  private compiledTemplates = new Map<string, HandlebarsTemplateDelegate>();
 
   constructor() {
     this.from = process.env['SMTP_FROM'] || 'noreply@telecom-tickets.local';
+    this.templateDir = join(__dirname, 'templates');
 
     const isDev = (process.env['NODE_ENV'] || 'development') === 'development';
 
     if (isDev) {
-      // Mailpit — pas d'auth, pas de TLS
       this.transporter = nodemailer.createTransport({
         host: process.env['SMTP_HOST'] || 'localhost',
         port: parseInt(process.env['SMTP_PORT'] || '1025', 10),
@@ -31,42 +36,51 @@ export class EmailService {
       });
       this.logger.log('Email configuré pour développement (Mailpit)');
     } else {
-      // Production — SMTP réel avec auth
       this.transporter = nodemailer.createTransport({
         host: process.env['SMTP_HOST'] || 'localhost',
         port: parseInt(process.env['SMTP_PORT'] || '587', 10),
         secure: process.env['SMTP_SECURE'] === 'true',
-        auth: {
-          user: process.env['SMTP_USER'] || '',
-          pass: process.env['SMTP_PASSWORD'] || '',
-        },
+        auth: { user: process.env['SMTP_USER'] || '', pass: process.env['SMTP_PASSWORD'] || '' },
       });
       this.logger.log('Email configuré pour production (SMTP)');
     }
   }
 
   /**
-   * Envoie un email de manière asynchrone.
-   * Retourne immédiatement — les erreurs sont loguées.
+   * Compile un template Handlebars à partir du système de fichiers.
    */
-  async send(to: string, subject: string, html: string): Promise<void> {
-    try {
-      const info = await this.transporter.sendMail({
-        from: this.from,
-        to,
-        subject,
-        html,
-      });
-      this.logger.log(`Email envoyé à ${to}: ${info.messageId}`);
-    } catch (error) {
-      this.logger.error(`Échec envoi email à ${to}: ${(error as Error).message}`);
-      throw error; // Relancer pour que BullMQ puisse retry
+  private compileTemplate(name: string): HandlebarsTemplateDelegate {
+    if (!this.compiledTemplates.has(name)) {
+      const filePath = join(this.templateDir, `${name}.hbs`);
+      const source = readFileSync(filePath, 'utf-8');
+      this.compiledTemplates.set(name, Handlebars.compile(source));
     }
+    return this.compiledTemplates.get(name)!;
   }
 
   /**
-   * Templates d'emails intégrés.
+   * Envoie un email en utilisant un template Handlebars.
    */
+  async sendTemplate(to: string, subject: string, templateName: string, data: Record<string, unknown>): Promise<void> {
+    const template = this.compileTemplate(templateName);
+    const html = template({ ...data, year: new Date().getFullYear() });
+    await this.send(to, subject, html);
+  }
+
+  /**
+   * Envoie un email avec HTML brut.
+   */
+  async send(to: string, subject: string, html: string): Promise<void> {
+    try {
+      const info = await this.transporter.sendMail({ from: this.from, to, subject, html });
+      this.logger.log(`Email envoyé à ${to}: ${info.messageId}`);
+    } catch (error) {
+      this.logger.error(`Échec envoi email à ${to}: ${(error as Error).message}`);
+      throw error;
+    }
+  }
+
+  /** Templates inline (fallback si Handlebars pas trouvé) */
   templates = {
     ticketCreated: (data: { ticketNumber: string; title: string; priority: string }) => `
       <h2>Ticket créé — ${data.ticketNumber}</h2>
