@@ -1,179 +1,153 @@
-# Système de Gestion des Tickets d'Incidents Télécom
+# 📡 Telecom Ticket Management — Backend API
 
-Backend NestJS pour la gestion des tickets d'incidents d'une entreprise de télécommunications.
+![NestJS](https://img.shields.io/badge/NestJS-10.4-E0234E?logo=nestjs)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.6-3178C6?logo=typescript)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql)
+![Redis](https://img.shields.io/badge/Redis-7-DC382D?logo=redis)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker)
+![Tests](https://img.shields.io/badge/Tests-105%20passed-success)
+![License](https://img.shields.io/badge/License-UNLICENSED-lightgrey)
 
-## Stack Technique
+Backend **NestJS** pour la plateforme de gestion des tickets d'incidents télécoms.
+Utilisé par le Service Client, NOC, Facturation, Support Technique et Opérations Terrain.
 
-| Couche | Technologie |
-|--------|------------|
-| Framework | NestJS (Node.js) |
-| Base de données | PostgreSQL 16 |
-| ORM | Drizzle ORM |
-| Cache | Redis 7 |
-| Queue | BullMQ |
-| Auth | JWT (access + refresh rotation) · Argon2id |
-| Validation | class-validator · class-transformer |
-| Temps réel | Socket.io |
-| Logging | Pino |
-| Docs API | Swagger/OpenAPI |
-| Containerisation | Docker Compose |
+---
 
-## Démarrage Rapide
+## 🚀 Démarrage Rapide
 
 ```bash
-# 1. Installer les dépendances
+# Installer
 pnpm install
 
-# 2. Lancer les services (PostgreSQL, Redis, Mailpit)
+# Lancer PostgreSQL + Redis + Mailpit
 docker compose up -d postgres redis mailpit
 
-# 3. Copier les variables d'environnement
-cp .env.example .env
+# Pousser le schéma + seed
+pnpm run db:push && pnpm run db:seed
 
-# 4. Pousser le schéma de base de données
-pnpm run db:push
-
-# 5. Lancer les seeds
-pnpm run db:seed
-
-# 6. Démarrer l'API en développement
+# Démarrer l'API
 pnpm run start:dev
 ```
 
-L'API est disponible sur `http://localhost:3000/api/v1`
-La documentation Swagger sur `http://localhost:3000/api/docs`
+| URL | Description |
+|-----|-------------|
+| `http://localhost:3000/api/v1` | API REST |
+| `http://localhost:3000/api/docs` | Swagger / OpenAPI |
+| `http://localhost:3000/api/v1/health/ready` | Health check (DB + Redis) |
+| `http://localhost:3000/api/v1/metrics` | Métriques Prometheus |
+| `http://localhost:8025` | Mailpit (emails dev) |
+| `http://localhost:3001` | Grafana (admin/admin) |
+| `http://localhost:9090` | Prometheus |
+| `http://localhost:3002` | Uptime Kuma |
 
-## Comptes de Test (Seed)
+## 📊 Comptes de Test
 
 | Email | Rôle | Mot de passe |
 |-------|------|-------------|
-| admin@telecom.local | ADMINISTRATOR | Admin@1234 |
-| supervisor@telecom.local | SUPERVISOR | Super@1234 |
-| agent-cc@telecom.local | CUSTOMER_SERVICE_AGENT | Agent@1234 |
-| noc@telecom.local | NOC_ENGINEER | Agent@1234 |
-| billing@telecom.local | BILLING_AGENT | Agent@1234 |
-| tech@telecom.local | TECHNICAL_SUPPORT_ENGINEER | Agent@1234 |
-| field@telecom.local | FIELD_TECHNICIAN | Agent@1234 |
+| `admin@telecom.local` | ADMINISTRATOR | `Admin@1234` |
+| `supervisor@telecom.local` | SUPERVISOR | `Super@1234` |
+| `agent-cc@telecom.local` | CUSTOMER_SERVICE_AGENT | `Agent@1234` |
+| `noc@telecom.local` | NOC_ENGINEER | `Agent@1234` |
 
-## Structure du Projet
+## 🏗️ Architecture
 
 ```
-src/
-├── main.ts                    # Point d'entrée
-├── app.module.ts              # Module racine
-├── config/                    # Configuration (env vars, DB, JWT, Redis)
-├── common/                    # Code partagé (filtres, intercepteurs, middleware, DTOs)
-├── database/
-│   ├── schemas/               # 12 tables Drizzle ORM + 6 ENUMs PostgreSQL
-│   ├── migrations/            # Migrations Drizzle
-│   └── seed/                  # Données initiales
-├── modules/
-│   ├── auth/                  # Authentification JWT
-│   ├── users/                 # Gestion des utilisateurs
-│   ├── departments/           # Gestion des départements
-│   ├── tickets/               # Gestion des tickets (cœur métier)
-│   ├── comments/              # Commentaires publics
-│   ├── internal-notes/        # Notes internes
-│   ├── attachments/           # Pièces jointes
-│   ├── notifications/         # Notifications
-│   ├── sla/                   # Politiques SLA et moteur
-│   ├── dashboard/             # Tableaux de bord
-│   └── audit-logs/            # Journaux d'audit
-├── queues/                    # BullMQ queues
-└── websocket/                 # Socket.io gateway
+16 modules NestJS · 12 tables PostgreSQL · 45+ routes REST · 5 workers BullMQ
 ```
 
-## RBAC — Matrice des Permissions
+| Module | Responsabilité |
+|--------|---------------|
+| `auth` | JWT (access 15min + refresh 7j rotation), Argon2id, Redis JTI blacklist |
+| `users` | CRUD 7 rôles, activation/désactivation, mot de passe temporaire |
+| `departments` | 6 départements, soft delete |
+| `tickets` | State machine 9 statuts, INC-AAAA-NNNNNN, recherche multi-filtres, historique |
+| `comments` | Commentaires publics (auteur/supervisor/admin) |
+| `internal-notes` | Notes internes (restriction FIELD_TECHNICIAN) |
+| `attachments` | Upload/download streaming, interface abstraite IStorageService |
+| `notifications` | Inbox pattern, WebSocket temps réel |
+| `sla` | Politiques SLA, cron engine */5 min, breach/warning detection |
+| `dashboard` | 7 endpoints: overview, status, priority, departments, SLA, workload, resolution |
+| `audit-logs` | Immutable write-only, recherche multi-filtres |
+| `email` | Nodemailer dev/prod, 7 templates Handlebars |
+| `reports` | Génération PDF (PDFKit), rapports asynchrones via BullMQ |
 
-| Action | Agent | NOC | Billing | Support | Field | Supervisor | Admin |
-|--------|:----:|:---:|:-------:|:-------:|:-----:|:----------:|:-----:|
-| Créer ticket | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Modifier ticket | Assigné | Assigné | Assigné | Assigné | Assigné | ✅ | ✅ |
-| Assigner/Escalader | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
-| Résoudre ticket | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Clôturer/Réouvrir | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
-| Notes internes | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ |
-| Audit Logs | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
-| Gestion utilisateurs | ❌ | ❌ | ❌ | ❌ | ❌ | Partiel | ✅ |
-
-## Cycle de Vie d'un Ticket
+## 🔄 Flux Asynchrone (BullMQ)
 
 ```
-NEW → ASSIGNED → IN_PROGRESS → RESOLVED → CLOSED
-                      ↓               ↓
-              PENDING_CUSTOMER    REOPENED
-              PENDING_THIRD_PARTY
+Ticket créé → TicketNotificationListener (@OnEvent)
+  ├── EMAIL_QUEUE    → EmailWorker       → SMTP (confirmation, assignation, alerte)
+  ├── NOTIFICATION_QUEUE → NotificationWorker → DB + WebSocket emit
+  ├── AUDIT_QUEUE    → AuditWorker       → INSERT audit_logs
+  └── SLA_QUEUE      → SlaWorker         → Vérification breach
+
+ReportsController → REPORT_QUEUE → ReportWorker → PDF generation
+
+SlaEngineService (@Cron */5 min) → Détection directe breaches/warnings
 ```
 
-## Endpoints Principaux
+## 🛡️ Sécurité
 
-### Auth
-- `POST /api/v1/auth/login` — Connexion
-- `POST /api/v1/auth/refresh` — Rafraîchir les tokens
-- `POST /api/v1/auth/logout` — Déconnexion
+- **Auth**: JWT access + refresh rotation SHA-256, Argon2id (memory 64MB, time 3, parallelism 4)
+- **RBAC**: 7 rôles, `JwtAuthGuard` + `RolesGuard` + `@Roles()`
+- **Rate Limiting**: Redis distribué (100 req/15min, 10 login/heure/IP)
+- **Idempotence**: `@Idempotent()` + header `Idempotency-Key` (cache Redis 24h)
+- **Soft Delete**: users, tickets, departments — aucune suppression physique
 
-### Tickets
-- `POST /api/v1/tickets` — Créer un ticket
-- `GET /api/v1/tickets` — Rechercher des tickets
-- `GET /api/v1/tickets/:id` — Détails d'un ticket
-- `POST /api/v1/tickets/:id/assign` — Assigner
-- `POST /api/v1/tickets/:id/escalate` — Escalader
-- `POST /api/v1/tickets/:id/resolve` — Résoudre
-- `POST /api/v1/tickets/:id/close` — Clôturer
-- `GET /api/v1/tickets/:id/history` — Historique
+## 📈 Observabilité
 
-### Dashboard (Supervisor/Admin)
-- `GET /api/v1/dashboard/overview` — KPIs globaux
-- `GET /api/v1/dashboard/departments` — Performance par département
-- `GET /api/v1/dashboard/workload` — Charge des agents
+```
+NestJS (Pino JSON)
+  ├── Logs  → Promtail → Loki → Grafana
+  ├── /metrics → Prometheus → Grafana → Alerting (Slack/Email)
+  └── Traces → OpenTelemetry → Tempo → Grafana
+```
 
-## Scripts NPM
+**Métriques exposées**: HTTP requests, duration P95, tickets created, active, SLA breaches, DB pool, WebSocket connections, heap memory.
+
+**6 règles d'alerte**: API down, erreurs 5xx, latence P95 > 2s, SLA breaches, DB connections > 15, heap > 90%.
+
+## 🐳 Docker Compose (13 services)
+
+```bash
+make up-full   # Tout démarrer
+make down      # Tout arrêter
+```
+
+| Service | Port |
+|---------|------|
+| API NestJS | 3000 |
+| PostgreSQL 16 | 5432 |
+| Redis 7 | 6379 |
+| Nginx | 80, 443 |
+| Mailpit | 1025, 8025 |
+| Prometheus | 9090 |
+| Grafana | 3001 |
+| Loki | 3100 |
+| Tempo | 3200 |
+| Promtail | 9080 |
+| Uptime Kuma | 3002 |
+
+## 📋 Scripts
 
 | Commande | Description |
 |----------|-------------|
-| `pnpm run start:dev` | Développement avec hot-reload |
-| `pnpm run build` | Build production |
-| `pnpm run test` | Tests unitaires |
-| `pnpm run test:e2e` | Tests end-to-end |
-| `pnpm run db:push` | Pousser le schéma vers PostgreSQL |
-| `pnpm run db:generate` | Générer les migrations |
-| `pnpm run db:seed` | Insérer les données de test |
-| `pnpm run lint` | Linter TypeScript |
+| `pnpm run start:dev` | Développement hot-reload |
+| `pnpm run build` | Compilation TypeScript |
+| `pnpm run test` | Tests (105 tests, 9 suites) |
+| `pnpm run test:cov` | Tests avec couverture |
+| `pnpm run db:push` | Pousser schéma Drizzle |
+| `pnpm run db:seed` | Données de test |
+| `pnpm run db:reset` | db:push + db:seed |
+| `make up-full` | Tous les services Docker |
+| `make help` | Aide Makefile |
 
-## Services Docker
+## 📚 Documentation
 
-```bash
-docker compose up -d    # Tous les services
-docker compose ps       # Vérifier l'état
-docker compose logs api # Logs de l'API
-```
-
-Services disponibles :
-- API NestJS : `http://localhost:3000`
-- Swagger : `http://localhost:3000/api/docs`
-- Mailpit (emails) : `http://localhost:8025`
-- PostgreSQL : `localhost:5432`
-- Redis : `localhost:6379`
-
-## Pour lancer le projet
-
-```bash
-# 1. Installer (deja fait)
-pnpm install
-
-# 2. Approuver les build scripts (une fois)
-pnpm approve-builds
-
-# 3. Lancer PostgreSQL + Redis
-docker compose up -d postgres redis mailpit
-
-# 4. Pousser le schema DB
-pnpm run db:push
-
-# 5. Inserer les seeds
-pnpm run db:seed
-
-# 6. Demarrer l'API
-pnpm run start:dev
-```
-#Fin
+| Fichier | Contenu |
+|---------|---------|
+| `docs/routes.md` | Catalogue complet des 45+ routes |
+| `docs/architecture-flows.md` | 9 diagrammes Mermaid |
+| `docs/deployment.md` | Guide de déploiement production |
+| `docs/jobs-and-workers.md` | Architecture BullMQ et workers |
+| `docs/implementation-status.md` | État production-readiness |
+| `sql/schema-complet.sql` | Schéma PostgreSQL complet |

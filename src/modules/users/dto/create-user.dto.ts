@@ -12,7 +12,7 @@ const VALID_ROLES = [
 ] as const;
 
 export class CreateUserDto {
-  @ApiProperty({ description: 'Adresse email', example: 'agent@telecom.local' })
+  @ApiProperty({ description: 'Adresse email professionnelle', example: 'agent@telecom.local', format: 'email' })
   @IsEmail({}, { message: "L'adresse email fournie n'est pas valide." })
   email: string;
 

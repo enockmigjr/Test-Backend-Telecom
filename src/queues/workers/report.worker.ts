@@ -1,12 +1,11 @@
 import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { Worker, Job } from 'bullmq';
 import { redisConfig } from '../../common/providers/redis.config';
+import { REPORT_QUEUE } from '../queues.module';
 import { EmailService } from '../../modules/email/email.service';
 import { DrizzleProvider } from '../../database/drizzle.provider';
 import { tickets } from '../../database/schemas';
 import { eq, isNull, and, gte, lte, count, sql } from 'drizzle-orm';
-
-export const REPORT_QUEUE = 'report-queue';
 
 /**
  * Worker pour la génération asynchrone de rapports lourds.
