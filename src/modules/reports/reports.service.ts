@@ -2,6 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { DrizzleProvider } from '../../database/drizzle.provider';
 import { tickets, departments } from '../../database/schemas';
 import { eq, and, gte, lte, isNull, count, sql } from 'drizzle-orm';
+import * as PDFDocument from 'pdfkit';
+import { Writable } from 'stream';
 
 @Injectable()
 export class ReportsService {
@@ -83,5 +85,36 @@ export class ReportsService {
       },
       byPriority,
     };
+  }
+
+  /** Génère un PDF avec PDFKit */
+  async generatePdf(reportData: { title: string; headers: string[]; rows: string[][] }): Promise<Buffer> {
+    return new Promise((resolve, reject) => {
+      const chunks: Buffer[] = [];
+      const writable = new Writable({
+        write(chunk: Buffer, _encoding, callback) {
+          chunks.push(chunk);
+          callback();
+        },
+      });
+      const doc = new PDFDocument({ size: 'A4', margin: 50 });
+      doc.pipe(writable);
+      doc.fontSize(18).font('Helvetica-Bold').text(reportData.title, { align: 'center' });
+      doc.moveDown();
+      doc.fontSize(10).text(`Généré le ${new Date().toLocaleDateString('fr-FR')}`, { align: 'right' });
+      doc.moveDown(2);
+      const colWidth = (doc.page.width - 100) / reportData.headers.length;
+      doc.font('Helvetica-Bold').fontSize(9);
+      reportData.headers.forEach((h, i) => doc.text(h, 50 + i * colWidth, doc.y, { width: colWidth, continued: true }));
+      doc.moveDown(1.5);
+      doc.font('Helvetica').fontSize(8);
+      reportData.rows.forEach((row) => {
+        row.forEach((c, i) => doc.text(c, 50 + i * colWidth, doc.y, { width: colWidth, continued: true }));
+        doc.moveDown(0.5);
+      });
+      doc.end();
+      writable.on('finish', () => resolve(Buffer.concat(chunks)));
+      writable.on('error', reject);
+    });
   }
 }
