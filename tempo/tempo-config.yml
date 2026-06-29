@@ -10,17 +10,6 @@ distributor:
         grpc:
           endpoint: 0.0.0.0:4317
 
-ingester:
-  trace_idle_period: 10s
-  max_block_bytes: 1_048_576
-  max_block_duration: 5m
-
-compactor:
-  compaction:
-    compaction_window: 1h
-    max_block_bytes: 100_000_000
-    block_retention: 48h
-
 storage:
   trace:
     backend: local
@@ -32,15 +21,5 @@ storage:
       max_workers: 100
       queue_depth: 1000
 
-metrics_generator:
-  processor:
-    service_graphs:
-      max_items: 10000
-  registry:
-    external_labels:
-      source: tempo
-  storage:
-    path: /tmp/tempo/generator
-    remote_write:
-      - url: http://prometheus:9090/api/v1/write
-        send_exemplars: true
+# Le bloc compactor et ingester moderne se configure via l'overrides ou au niveau global
+# Pour éviter les erreurs de type app.Config, on laisse le stockage gérer la rétention locale.

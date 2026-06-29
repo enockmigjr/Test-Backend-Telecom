@@ -14,7 +14,6 @@ ingester:
   max_chunk_age: 2h
   chunk_target_size: 1536000
   chunk_retain_period: 30s
-  max_transfer_retries: 0
   wal:
     dir: /tmp/loki/wal
 
@@ -43,4 +42,3 @@ limits_config:
 
 compactor:
   working_directory: /tmp/loki/compactor
-  shared_store: filesystem
