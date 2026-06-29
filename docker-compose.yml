@@ -75,7 +75,7 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    command: npm run start:dev
+    command: pnpm run start:dev
     networks:
       - telecom-network
 
@@ -107,7 +107,7 @@ services:
     restart: unless-stopped
     ports:
       - '1025:1025'
-      - '8025:8025'
+      - '9025:8025'
     networks:
       - telecom-network
 

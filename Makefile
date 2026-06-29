@@ -90,5 +90,5 @@ up-full: ## Démarre TOUS les services (API + monitoring)
 # ─── Nettoyage ────────────────────────────────────────────
 
 clean: ## Nettoie les artefacts de build
-	rm -rf dist coverage
+	Remove-Item -Path "dist", "coverage" -Recurse -Force -ErrorAction SilentlyContinue
 	@echo "✅ Nettoyé"

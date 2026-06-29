@@ -92,7 +92,6 @@ async function bootstrap(): Promise<void> {
     .addTag('health', 'Health checks')
     .addTag('root', 'API Info')
     .addTag('metrics', 'Prometheus Metrics')
-    .addTag('email', 'Notifications email')
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);

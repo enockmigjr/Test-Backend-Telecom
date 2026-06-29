@@ -1,5 +1,5 @@
 import { Controller, Get } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Public } from '../../common/decorators/public.decorator';
 
 /**
@@ -12,6 +12,7 @@ export class AppController {
   @Public()
   @Get()
   @ApiOperation({ summary: "Informations sur l'API" })
+  @ApiResponse({ status: 200, description: 'API opérationnelle.' })
   getApiInfo() {
     return {
       name: 'Telecom Ticket Management API',
@@ -26,6 +27,7 @@ export class AppController {
   @Public()
   @Get('health')
   @ApiOperation({ summary: 'Health check — liveness' })
+  @ApiResponse({ status: 200, description: 'Service en vie.' })
   health() {
     return {
       status: 'ok',
@@ -33,5 +35,13 @@ export class AppController {
       uptime: process.uptime(),
       memory: process.memoryUsage(),
     };
+  }
+
+  @Public()
+  @Get('test-swagger')
+  @ApiOperation({ summary: 'Route de test — vérifie que Swagger détecte les nouvelles routes' })
+  @ApiResponse({ status: 200, description: 'Route test fonctionnelle.' })
+  testSwagger() {
+    return { message: 'Si tu vois cette route dans Swagger, le problème reports est spécifique à ce module.' };
   }
 }
