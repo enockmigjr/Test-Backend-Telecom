@@ -1,0 +1,60 @@
+groups:
+  - name: telecom-alerts
+    rules:
+      # ─── API ──────────────────────────────────────────────
+      - alert: ApiDown
+        expr: up{job="telecom-api"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "API Télécom indisponible"
+          description: "L'API NestJS ne répond plus depuis 2 minutes."
+
+      - alert: HighErrorRate
+        expr: rate(telecom_http_requests_total{status_code=~"5.."}[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Taux d'erreur 5xx élevé"
+          description: "Plus de 5% de requêtes retournent une erreur 5xx."
+
+      - alert: HighLatency
+        expr: histogram_quantile(0.95, rate(telecom_http_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Latence P95 élevée"
+          description: "La latence P95 dépasse 2 secondes."
+
+      # ─── SLA ──────────────────────────────────────────────
+      - alert: SlaBreachRate
+        expr: rate(telecom_sla_breaches_total[15m]) > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Violations SLA détectées"
+          description: "{{ $value }} violations SLA dans les 15 dernières minutes."
+
+      # ─── Base de Données ──────────────────────────────────
+      - alert: HighDbConnections
+        expr: telecom_db_pool_connections > 15
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Connexions DB élevées"
+          description: "{{ $value }} connexions actives au pool PostgreSQL."
+
+      # ─── Système ──────────────────────────────────────────
+      - alert: HighMemoryUsage
+        expr: telecom_nodejs_heap_bytes_used_bytes / telecom_nodejs_heap_bytes_total_bytes > 0.9
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Mémoire heap élevée"
+          description: "Plus de 90% de la heap mémoire utilisée."

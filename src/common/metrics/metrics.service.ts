@@ -25,6 +25,10 @@ export class MetricsService implements OnModuleInit {
   readonly ticketsActive: Gauge;
   readonly slaBreachesTotal: Counter;
 
+  // ─── Métriques utilisateurs ─────────────────────────────
+  readonly activeUsers: Gauge;
+  readonly wsConnections: Gauge;
+
   // ─── Métriques système ──────────────────────────────────
   readonly dbPoolConnections: Gauge;
 
@@ -66,6 +70,18 @@ export class MetricsService implements OnModuleInit {
       name: 'telecom_sla_breaches_total',
       help: 'Nombre total de violations SLA',
       labelNames: ['priority'],
+      registers: [this.registry],
+    });
+
+    this.activeUsers = new Gauge({
+      name: 'telecom_active_users',
+      help: 'Nombre d\'utilisateurs connectés (WebSocket)',
+      registers: [this.registry],
+    });
+
+    this.wsConnections = new Gauge({
+      name: 'telecom_ws_connections',
+      help: 'Nombre de connexions WebSocket actives',
       registers: [this.registry],
     });
 

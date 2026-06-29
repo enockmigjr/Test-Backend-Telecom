@@ -30,6 +30,7 @@ import { QueuesModule } from './queues/queues.module';
 import { AppInfoModule } from './modules/app/app.module';
 import { HealthModule } from './common/health/health.module';
 import { MetricsModule } from './common/metrics/metrics.module';
+import { ObservabilityModule } from './common/observability/observability.module';
 import { EmailModule } from './modules/email/email.module';
 
 @Module({
@@ -97,6 +98,7 @@ import { EmailModule } from './modules/email/email.module';
     AppInfoModule,
     HealthModule,
     MetricsModule,
+    ObservabilityModule,
     EmailModule,
     AuthModule,
     DepartmentsModule,

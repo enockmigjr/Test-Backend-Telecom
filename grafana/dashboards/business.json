@@ -1,0 +1,26 @@
+{
+  "title": "Telecom — Business Dashboard",
+  "uid": "telecom-business",
+  "panels": [
+    {
+      "title": "Tickets by Status",
+      "type": "piechart",
+      "targets": [{ "expr": "sum by (status) (telecom_http_requests_total{route=~'/api/v1/tickets.*'})", "legendFormat": "{{status}}" }]
+    },
+    {
+      "title": "Tickets by Priority",
+      "type": "barchart",
+      "targets": [{ "expr": "rate(telecom_tickets_created_total[1h])", "legendFormat": "{{priority}} ({{category}})" }]
+    },
+    {
+      "title": "SLA Compliance Rate",
+      "type": "gauge",
+      "targets": [{ "expr": "100 - (rate(telecom_sla_breaches_total[1h]) / rate(telecom_tickets_created_total[1h]) * 100)" }]
+    },
+    {
+      "title": "Error Rate",
+      "type": "stat",
+      "targets": [{ "expr": "sum(rate(telecom_http_requests_total{status_code=~'5..'}[5m])) / sum(rate(telecom_http_requests_total[5m])) * 100" }]
+    }
+  ]
+}

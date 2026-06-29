@@ -1,3 +1,9 @@
+// OpenTelemetry — doit être initialisé AVANT tout import NestJS
+import { initOpenTelemetry } from './common/observability/otel';
+if (process.env['OTEL_ENABLED'] !== 'false') {
+  initOpenTelemetry();
+}
+
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';

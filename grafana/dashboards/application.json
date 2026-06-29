@@ -1,0 +1,41 @@
+{
+  "title": "Telecom API — Application Metrics",
+  "uid": "telecom-application",
+  "panels": [
+    {
+      "title": "HTTP Requests Rate",
+      "type": "graph",
+      "targets": [{ "expr": "rate(telecom_http_requests_total[1m])", "legendFormat": "{{method}} {{route}} ({{status_code}})" }]
+    },
+    {
+      "title": "P95 Latency",
+      "type": "graph",
+      "targets": [{ "expr": "histogram_quantile(0.95, rate(telecom_http_request_duration_seconds_bucket[5m]))", "legendFormat": "{{method}} {{route}}" }]
+    },
+    {
+      "title": "Tickets Created / min",
+      "type": "graph",
+      "targets": [{ "expr": "rate(telecom_tickets_created_total[1m])", "legendFormat": "{{priority}}" }]
+    },
+    {
+      "title": "Active Tickets",
+      "type": "stat",
+      "targets": [{ "expr": "telecom_tickets_active" }]
+    },
+    {
+      "title": "SLA Breaches",
+      "type": "stat",
+      "targets": [{ "expr": "rate(telecom_sla_breaches_total[5m])" }]
+    },
+    {
+      "title": "DB Pool Connections",
+      "type": "graph",
+      "targets": [{ "expr": "telecom_db_pool_connections" }]
+    },
+    {
+      "title": "Heap Memory Usage %",
+      "type": "gauge",
+      "targets": [{ "expr": "telecom_nodejs_heap_bytes_used_bytes / telecom_nodejs_heap_bytes_total_bytes * 100" }]
+    }
+  ]
+}
