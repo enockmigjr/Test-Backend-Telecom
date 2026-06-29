@@ -14,6 +14,8 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
 import { Response } from 'express';
+import { createReadStream } from 'fs';
+import { join } from 'path';
 import { AttachmentsService } from './attachments.service';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
@@ -39,13 +41,16 @@ export class AttachmentsController {
   }
 
   @Get(':id/download')
-  @ApiOperation({ summary: 'Télécharger une pièce jointe' })
+  @ApiOperation({ summary: 'Télécharger une pièce jointe (streaming)' })
   async download(@Param('id') id: string, @Res() res: Response) {
     const att = await this.attachmentsService.findOne(id);
-    const buffer = await this.attachmentsService.download(id);
+    const filePath = join(process.env['STORAGE_LOCAL_PATH'] || './uploads', att.objectKey);
     res.setHeader('Content-Type', att.mimeType);
     res.setHeader('Content-Disposition', `attachment; filename="${att.originalFilename}"`);
-    res.send(buffer);
+    res.setHeader('Content-Length', att.fileSize);
+    // Streaming — ne charge pas le fichier entier en RAM
+    const stream = createReadStream(filePath);
+    stream.pipe(res);
   }
 
   @Delete(':id')

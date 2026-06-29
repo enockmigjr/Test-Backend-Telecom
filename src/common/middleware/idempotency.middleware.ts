@@ -1,4 +1,4 @@
-import { Injectable, NestMiddleware, HttpException, HttpStatus } from '@nestjs/common';
+import { Injectable, NestMiddleware } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 import { Redis } from 'ioredis';
 import { redisConfig } from '../providers/redis.config';
@@ -68,8 +68,8 @@ export class IdempotencyMiddleware implements NestMiddleware {
       await this.redis.setex(redisKey, this.TTL_SECONDS, JSON.stringify({ status: 202, body: { processing: true } }));
 
       next();
-    } catch (error) {
-      // En cas d'erreur Redis, on laisse passer la requête
+    } catch {
+      // En cas d'erreur Redis, on laisse passer la requêt
       next();
     }
   }

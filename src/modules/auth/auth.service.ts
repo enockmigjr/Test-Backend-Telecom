@@ -4,37 +4,24 @@ import * as argon2 from 'argon2';
 import { generateUuid } from '../../common/helpers/uuidv7.helper';
 import { createHash, randomBytes } from 'crypto';
 import { eq, and, isNull } from 'drizzle-orm';
-import { Redis } from 'ioredis';
 
 import { DrizzleProvider } from '../../database/drizzle.provider';
+import { RedisProvider } from '../../common/providers/redis.provider';
 import { users, refreshTokens } from '../../database/schemas';
 import { JwtConfigService } from '../../config/jwt.config';
-import { redisConfig } from '../../common/providers/redis.config';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 import { LoginResponse, TokenPair } from './interfaces/auth-response.interface';
 
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
-  private redis!: Redis;
 
   constructor(
     private readonly drizzle: DrizzleProvider,
     private readonly jwtService: JwtService,
     private readonly jwtConfig: JwtConfigService,
+    private readonly redisProvider: RedisProvider,
   ) {}
-
-  private async getRedis(): Promise<Redis> {
-    if (!this.redis) {
-      this.redis = new Redis({
-        host: redisConfig.host,
-        port: redisConfig.port,
-        password: redisConfig.password || undefined,
-        maxRetriesPerRequest: 3,
-      });
-    }
-    return this.redis;
-  }
 
   /**
    * Authentifie un utilisateur et génère les tokens.

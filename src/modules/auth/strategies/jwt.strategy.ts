@@ -4,18 +4,16 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { JwtConfigService } from '../../../config/jwt.config';
 import { JwtPayload } from '../interfaces/jwt-payload.interface';
 import { DrizzleProvider } from '../../../database/drizzle.provider';
+import { RedisProvider } from '../../../common/providers/redis.provider';
 import { users } from '../../../database/schemas';
 import { eq, and, isNull } from 'drizzle-orm';
-import { Redis } from 'ioredis';
-import { redisConfig } from '../../../common/providers/redis.config';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
-  private redis: Redis;
-
   constructor(
     private readonly jwtConfig: JwtConfigService,
     private readonly drizzle: DrizzleProvider,
+    private readonly redisProvider: RedisProvider,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -24,21 +22,9 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     });
   }
 
-  private async getRedis(): Promise<Redis> {
-    if (!this.redis) {
-      this.redis = new Redis({
-        host: redisConfig.host,
-        port: redisConfig.port,
-        password: redisConfig.password || undefined,
-        maxRetriesPerRequest: 3,
-      });
-    }
-    return this.redis;
-  }
-
   async validate(payload: JwtPayload) {
-    // Vérifier si le token est dans la blacklist Redis
-    const redis = await this.getRedis();
+    // Vérifier si le token est dans la blacklist Redis (connexion mutualisée)
+    const redis = this.redisProvider.getClient();
     const isRevoked = await redis.sismember('jwt_blacklist', payload.jti);
     if (isRevoked) {
       throw new UnauthorizedException('Token révoqué.');

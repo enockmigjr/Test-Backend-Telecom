@@ -28,7 +28,9 @@
     "db:push": "drizzle-kit push",
     "db:migrate": "ts-node src/database/run-migrations.ts",
     "db:seed": "ts-node src/database/seed/run-seed.ts",
-    "db:studio": "drizzle-kit studio"
+    "db:reset": "pnpm run db:push && pnpm run db:seed",
+    "db:studio": "drizzle-kit studio",
+    "prepare": "husky"
   },
   "dependencies": {
     "@faker-js/faker": "^10.5.0",
@@ -120,10 +122,16 @@
       "^.+\\.(t|j)s$": "ts-jest"
     },
     "collectCoverageFrom": [
-      "**/*.(t|j)s"
+      "**/*.(t|j)s",
+      "!**/*.spec.ts",
+      "!**/*.test.ts"
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node",
+    "coveragePathIgnorePatterns": [
+      "/node_modules/",
+      "/dist/"
+    ],
     "moduleNameMapper": {
       "^@common/(.*)$": "<rootDir>/common/$1",
       "^@config/(.*)$": "<rootDir>/config/$1",

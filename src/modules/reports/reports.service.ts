@@ -15,11 +15,19 @@ export class ReportsService {
   async ticketReport(ticketId: string) {
     const [ticket] = await this.drizzle.db
       .select({
-        id: tickets.id, ticketNumber: tickets.ticketNumber, title: tickets.title,
-        description: tickets.description, status: tickets.status, priority: tickets.priority,
-        severity: tickets.severity, category: tickets.category, createdAt: tickets.createdAt,
-        resolvedAt: tickets.resolvedAt, closedAt: tickets.closedAt,
-        customerName: tickets.customerName, resolutionSummary: tickets.resolutionSummary,
+        id: tickets.id,
+        ticketNumber: tickets.ticketNumber,
+        title: tickets.title,
+        description: tickets.description,
+        status: tickets.status,
+        priority: tickets.priority,
+        severity: tickets.severity,
+        category: tickets.category,
+        createdAt: tickets.createdAt,
+        resolvedAt: tickets.resolvedAt,
+        closedAt: tickets.closedAt,
+        customerName: tickets.customerName,
+        resolutionSummary: tickets.resolutionSummary,
         departmentName: departments.name,
       })
       .from(tickets)
@@ -51,17 +59,28 @@ export class ReportsService {
         breached: sql<number>`COUNT(*) FILTER (WHERE ${tickets.slaBreached} = true)`,
         avgResolutionMinutes: sql<number>`COALESCE(AVG(EXTRACT(EPOCH FROM (${tickets.resolvedAt} - ${tickets.createdAt})) / 60) FILTER (WHERE ${tickets.resolvedAt} IS NOT NULL), 0)`,
       })
-      .from(tickets).where(where);
+      .from(tickets)
+      .where(where);
 
     const byPriority = await this.drizzle.db
-      .select({ priority: tickets.priority, count: count(), breached: sql<number>`COUNT(*) FILTER (WHERE ${tickets.slaBreached} = true)` })
-      .from(tickets).where(where).groupBy(tickets.priority);
+      .select({
+        priority: tickets.priority,
+        count: count(),
+        breached: sql<number>`COUNT(*) FILTER (WHERE ${tickets.slaBreached} = true)`,
+      })
+      .from(tickets)
+      .where(where)
+      .groupBy(tickets.priority);
 
     return {
       generatedAt: new Date().toISOString(),
       type: 'sla-report',
       period: { from: fromDate.toISOString(), to: toDate.toISOString() },
-      summary: { total: Number(stats?.total || 0), breached: Number(stats?.breached || 0), avgResolutionMinutes: Math.round(Number(stats?.avgResolutionMinutes || 0)) },
+      summary: {
+        total: Number(stats?.total || 0),
+        breached: Number(stats?.breached || 0),
+        avgResolutionMinutes: Math.round(Number(stats?.avgResolutionMinutes || 0)),
+      },
       byPriority,
     };
   }
