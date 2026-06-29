@@ -1,18 +1,12 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
-# Vérifier le format du message de commit (conventional commits)
 commit_regex='^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\(.+\))?: .{1,100}$'
 
 if ! grep -qE "$commit_regex" "$1"; then
   echo "❌ Message de commit invalide."
-  echo ""
-  echo "Format attendu: <type>(<scope>): <description>"
+  echo "Format: <type>(<scope>): <description>"
   echo "Types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert"
-  echo ""
-  echo "Exemples:"
-  echo "  feat(tickets): ajouter la création de ticket"
-  echo "  fix(auth): corriger le refresh token rotation"
-  echo "  docs: mettre à jour le README"
+  echo "Ex: feat(tickets): ajouter la création de ticket"
   exit 1
 fi

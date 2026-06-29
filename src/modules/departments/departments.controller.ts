@@ -18,6 +18,7 @@ export class DepartmentsController {
   @Public()
   @Get()
   @ApiOperation({ summary: 'Liste des départements disponibles (public)' })
+  @ApiResponse({ status: 200, description: 'Liste des départements.' })
   async findAll() {
     return this.departmentsService.findAll();
   }
