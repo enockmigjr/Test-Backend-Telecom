@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
-import { v4 as uuidv4 } from 'uuid';
+import { generateUuid } from '../../../common/helpers/uuidv7.helper';
 import { DrizzleProvider } from '../../../database/drizzle.provider';
 import { ticketHistory } from '../../../database/schemas';
 
@@ -22,7 +22,7 @@ export class TicketHistoryService {
     metadata?: unknown,
   ): Promise<void> {
     await this.drizzle.db.insert(ticketHistory).values({
-      id: uuidv4(),
+      id: generateUuid(),
       ticketId,
       userId,
       action,

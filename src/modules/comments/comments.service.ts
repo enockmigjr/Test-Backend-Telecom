@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
 import { eq, sql } from 'drizzle-orm';
-import { v4 as uuidv4 } from 'uuid';
+import { generateUuid } from '../../common/helpers/uuidv7.helper';
 import { DrizzleProvider } from '../../database/drizzle.provider';
 import { ticketComments } from '../../database/schemas';
 import { PaginationHelper } from '../../common/helpers/pagination.helper';
@@ -32,7 +32,7 @@ export class CommentsService {
   }
 
   async create(ticketId: string, authorId: string, content: string) {
-    const id = uuidv4();
+    const id = generateUuid();
     await this.drizzle.db.insert(ticketComments).values({ id, ticketId, authorId, content });
     const [created] = await this.drizzle.db.select().from(ticketComments).where(eq(ticketComments.id, id)).limit(1);
     return { message: 'Commentaire ajouté avec succès.', data: created };

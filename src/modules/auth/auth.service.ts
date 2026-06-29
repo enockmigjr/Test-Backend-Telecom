@@ -1,7 +1,7 @@
 import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
-import { v4 as uuidv4 } from 'uuid';
+import { generateUuid } from '../../common/helpers/uuidv7.helper';
 import { createHash, randomBytes } from 'crypto';
 import { eq, and, isNull } from 'drizzle-orm';
 import { Redis } from 'ioredis';
@@ -183,7 +183,7 @@ export class AuthService {
     ipAddress: string,
     userAgent: string,
   ): Promise<TokenPair> {
-    const jti = uuidv4();
+    const jti = generateUuid();
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
@@ -205,7 +205,7 @@ export class AuthService {
     expiresAt.setDate(expiresAt.getDate() + 7); // 7 jours
 
     await this.drizzle.db.insert(refreshTokens).values({
-      id: uuidv4(),
+      id: generateUuid(),
       userId: user.id,
       tokenHash,
       userAgent,

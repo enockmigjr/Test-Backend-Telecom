@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ConflictException, BadRequestException, Logger } from '@nestjs/common';
 import { eq, and, isNull, sql } from 'drizzle-orm';
-import { v4 as uuidv4 } from 'uuid';
+import { generateUuid } from '../../common/helpers/uuidv7.helper';
 import * as argon2 from 'argon2';
 import { randomBytes } from 'crypto';
 
@@ -107,7 +107,7 @@ export class UsersService {
       parallelism: 4,
     });
 
-    const id = uuidv4();
+    const id = generateUuid();
     await this.drizzle.db.insert(users).values({
       id,
       email: dto.email.toLowerCase().trim(),

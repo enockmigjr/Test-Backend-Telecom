@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { eq, and, isNull, sql } from 'drizzle-orm';
-import { v4 as uuidv4 } from 'uuid';
+import { generateUuid } from '../../../common/helpers/uuidv7.helper';
 
 import { DrizzleProvider } from '../../../database/drizzle.provider';
 import { tickets, ticketAssignments, slaPolicies, users, departments } from '../../../database/schemas';
@@ -68,7 +68,7 @@ export class TicketsService {
     }
 
     const ticketNumber = await this.ticketNumber.generate();
-    const id = uuidv4();
+    const id = generateUuid();
     const now = new Date();
     const firstResponseDueAt = new Date(now.getTime() + policy.firstResponseMinutes * 60 * 1000);
     const resolutionDueAt = new Date(now.getTime() + policy.resolutionMinutes * 60 * 1000);
@@ -198,7 +198,7 @@ export class TicketsService {
 
     // Créer l'entrée d'assignation
     await this.drizzle.db.insert(ticketAssignments).values({
-      id: uuidv4(),
+      id: generateUuid(),
       ticketId: id,
       fromUserId: ticket.assignedTo || null,
       toUserId,
@@ -238,7 +238,7 @@ export class TicketsService {
     const ticket = await this.findTicketById(id);
 
     await this.drizzle.db.insert(ticketAssignments).values({
-      id: uuidv4(),
+      id: generateUuid(),
       ticketId: id,
       fromUserId: ticket.assignedTo || null,
       toUserId,

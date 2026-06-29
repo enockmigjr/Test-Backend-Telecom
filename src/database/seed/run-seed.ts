@@ -1,7 +1,7 @@
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import * as argon2 from 'argon2';
-import { v4 as uuidv4 } from 'uuid';
+import { generateUuid } from '../../common/helpers/uuidv7.helper';
 import * as schema from '../schemas';
 
 const DATABASE_URL =
@@ -25,7 +25,7 @@ async function seed() {
 
   const deptIds: Record<string, string> = {};
   for (const d of deptData) {
-    const id = uuidv4();
+    const id = generateUuid();
     deptIds[d.name] = id;
     await db.insert(schema.departments).values({ id, name: d.name, description: d.description }).onConflictDoNothing();
   }
@@ -51,7 +51,7 @@ async function seed() {
     await db
       .insert(schema.slaPolicies)
       .values({
-        id: uuidv4(),
+        id: generateUuid(),
         category: sla.category as typeof schema.slaPolicies.$inferSelect.category,
         priority: sla.priority as typeof schema.slaPolicies.$inferSelect.priority,
         firstResponseMinutes: sla.firstResponseMinutes,
@@ -144,7 +144,7 @@ async function seed() {
     await db
       .insert(schema.users)
       .values({
-        id: uuidv4(),
+        id: generateUuid(),
         email: u.email,
         passwordHash: u.hash,
         firstName: u.firstName,

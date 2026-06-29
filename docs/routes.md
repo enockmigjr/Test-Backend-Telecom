@@ -122,13 +122,17 @@
 
 ---
 
-## Dashboard (`/dashboard`)
+## Dashboard (`/dashboard`) — 7 endpoints
 
 | Méthode | Route | Auth | Rôles | Description |
 |---------|-------|------|-------|-------------|
 | `GET` | `/dashboard/overview` | Bearer | SUPERVISOR, ADMIN | KPIs globaux (params: from, to) |
+| `GET` | `/dashboard/tickets-by-status` | Bearer | SUPERVISOR, ADMIN | Tickets par statut + âge moyen (params: from, to, departmentId) |
+| `GET` | `/dashboard/tickets-by-priority` | Bearer | SUPERVISOR, ADMIN | Tickets par priorité + breaches SLA (params: from, to, status) |
 | `GET` | `/dashboard/departments` | Bearer | SUPERVISOR, ADMIN | Performance par département (params: from, to) |
-| `GET` | `/dashboard/workload` | Bearer | SUPERVISOR, ADMIN | Charge des agents + tickets non assignés |
+| `GET` | `/dashboard/sla-compliance` | Bearer | SUPERVISOR, ADMIN | Conformité SLA + tendance (params: from, to, departmentId, priority, category) |
+| `GET` | `/dashboard/workload` | Bearer | SUPERVISOR, ADMIN | Charge des agents + tickets non assignés (params: departmentId) |
+| `GET` | `/dashboard/resolution-time` | Bearer | SUPERVISOR, ADMIN | Temps de résolution moyen/médian/p90 (params: from, to, groupBy, departmentId, priority) |
 
 ---
 
@@ -144,13 +148,17 @@
 
 ---
 
-## Santé (`/health`) — à venir
+## Racine & Santé
 
 | Méthode | Route | Auth | Description |
 |---------|-------|------|-------------|
-| `GET` | `/health` | Public | Liveness check |
-| `GET` | `/health/ready` | Public | Readiness check (PostgreSQL + Redis) |
+| `GET` | `/` | Public | Informations sur l'API (nom, version, docs, health, metrics) |
+| `GET` | `/health` | Public | Liveness check (uptime, mémoire) |
+| `GET` | `/health/ready` | Public | Readiness check (PostgreSQL + Redis ping) |
+| `GET` | `/metrics` | Public | Métriques Prometheus au format OpenMetrics |
 
 ---
 
-**Total: 40+ routes REST sur 11 contrôleurs**
+**Total: 45+ routes REST sur 12 contrôleurs**
+
+---

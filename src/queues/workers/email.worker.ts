@@ -1,56 +1,44 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { Worker, Job } from 'bullmq';
 import { redisConfig } from '../../common/providers/redis.config';
 import { EMAIL_QUEUE } from '../queues.module';
+import { EmailService } from '../../modules/email/email.service';
 
 /**
  * Worker BullMQ pour le traitement des emails.
  * Consomme les jobs de la file email-queue et envoie les emails via SMTP.
  */
 @Injectable()
-export class EmailWorker implements OnModuleInit {
+export class EmailWorker implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(EmailWorker.name);
   private worker: Worker;
+
+  constructor(private readonly emailService: EmailService) {}
 
   onModuleInit(): void {
     this.worker = new Worker(
       EMAIL_QUEUE,
       async (job: Job) => {
-        await this.processEmail(job);
+        const { to, subject, template, data } = job.data;
+        const html =
+          this.emailService.templates[template as keyof typeof this.emailService.templates]?.(data) ||
+          `<p>${JSON.stringify(data)}</p>`;
+        await this.emailService.send(to, subject, html);
       },
       {
-        connection: {
-          host: redisConfig.host,
-          port: redisConfig.port,
-          password: redisConfig.password || undefined,
-        },
+        connection: { host: redisConfig.host, port: redisConfig.port, password: redisConfig.password || undefined },
         concurrency: 5,
-        removeOnComplete: { age: 3600 }, // Garder 1h après complétion
-        removeOnFail: { age: 86400 }, // Garder 24h après échec
+        removeOnComplete: { age: 3600 },
+        removeOnFail: { age: 86400 },
       },
     );
 
-    this.worker.on('completed', (job) => {
-      this.logger.log(`Email envoyé: job ${job.id} — ${job.data.subject}`);
-    });
-
-    this.worker.on('failed', (job, error) => {
-      this.logger.error(`Échec email: job ${job?.id} — ${error.message}`);
-    });
-
-    this.logger.log('Email Worker démarré');
+    this.worker.on('completed', (job) => this.logger.log(`Email envoyé: job ${job.id} — ${job.data.subject}`));
+    this.worker.on('failed', (job, error) => this.logger.error(`Échec email: job ${job?.id} — ${error.message}`));
+    this.logger.log('Email Worker démarré (concurrency=5, retry=3)');
   }
 
-  private async processEmail(job: Job): Promise<void> {
-    const { to, subject, template, data } = job.data;
-
-    // En production: utiliser Nodemailer avec le transport SMTP configuré
-    // Pour le développement: logger l'email (Mailpit l'intercepte)
-
-    this.logger.log(`[EMAIL] À: ${to} | Sujet: ${subject} | Template: ${template}`);
-    this.logger.debug(`[EMAIL] Données: ${JSON.stringify(data)}`);
-
-    // Simulation de latence SMTP
-    await new Promise((resolve) => setTimeout(resolve, 50));
+  async onModuleDestroy(): Promise<void> {
+    await this.worker?.close();
   }
 }

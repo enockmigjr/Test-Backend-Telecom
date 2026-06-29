@@ -1,6 +1,6 @@
 import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { Request, Response } from 'express';
-import { v4 as uuidv4 } from 'uuid';
+import { generateUuid } from '../../common/helpers/uuidv7.helper';
 import { ERROR_CODES } from '../constants/error-codes.constant';
 
 /**
@@ -16,7 +16,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
 
-    const correlationId = (request.headers['x-correlation-id'] as string) || uuidv4();
+    const correlationId = (request.headers['x-correlation-id'] as string) || generateUuid();
 
     let status: number;
     let code: string;

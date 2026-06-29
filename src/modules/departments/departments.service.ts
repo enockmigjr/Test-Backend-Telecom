@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ConflictException, Logger } from '@nestjs/common';
 import { eq, sql } from 'drizzle-orm';
-import { v4 as uuidv4 } from 'uuid';
+import { generateUuid } from '../../common/helpers/uuidv7.helper';
 
 import { DrizzleProvider } from '../../database/drizzle.provider';
 import { departments, users, tickets } from '../../database/schemas';
@@ -37,7 +37,7 @@ export class DepartmentsService {
       throw new ConflictException('Un département avec ce nom existe déjà.');
     }
 
-    const id = uuidv4();
+    const id = generateUuid();
     await this.drizzle.db.insert(departments).values({
       id,
       name: dto.name,

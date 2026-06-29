@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { eq, and, sql } from 'drizzle-orm';
-import { v4 as uuidv4 } from 'uuid';
+import { generateUuid } from '../../common/helpers/uuidv7.helper';
 import { DrizzleProvider } from '../../database/drizzle.provider';
 import { notifications } from '../../database/schemas';
 import { PaginationHelper } from '../../common/helpers/pagination.helper';
@@ -47,7 +47,7 @@ export class NotificationsService {
     referenceType?: string,
     referenceId?: string,
   ) {
-    const id = uuidv4();
+    const id = generateUuid();
     await this.drizzle.db.insert(notifications).values({
       id,
       userId,

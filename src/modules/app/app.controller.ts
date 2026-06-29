@@ -19,7 +19,7 @@ export class AppController {
       status: 'operational',
       docs: '/api/docs',
       health: '/api/v1/health',
-      metrics: '/api/v1/metrics',
+      metrics: '/api/v1/metrics (Prometheus OpenMetrics)',
     };
   }
 
@@ -33,13 +33,5 @@ export class AppController {
       uptime: process.uptime(),
       memory: process.memoryUsage(),
     };
-  }
-
-  @Public()
-  @Get('metrics')
-  @ApiOperation({ summary: 'Métriques Prometheus' })
-  metrics() {
-    // Stub — sera remplacé par prom-client register.metrics()
-    return { status: 'metrics endpoint — prometheus integration pending' };
   }
 }

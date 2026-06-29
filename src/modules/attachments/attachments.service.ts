@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
-import { v4 as uuidv4 } from 'uuid';
+import { generateUuid } from '../../common/helpers/uuidv7.helper';
 import { DrizzleProvider } from '../../database/drizzle.provider';
 import { attachments } from '../../database/schemas';
 import { LocalStorageService } from './storage/local-storage.service';
@@ -23,11 +23,11 @@ export class AttachmentsService {
   ) {
     const year = new Date().getFullYear();
     const month = String(new Date().getMonth() + 1).padStart(2, '0');
-    const objectKey = `tickets/${year}/${month}/${uuidv4()}-${file.originalname}`;
+    const objectKey = `tickets/${year}/${month}/${generateUuid()}-${file.originalname}`;
 
     await this.storage.upload(file, objectKey);
 
-    const id = uuidv4();
+    const id = generateUuid();
     await this.drizzle.db.insert(attachments).values({
       id,
       ticketId: ticketId || null,

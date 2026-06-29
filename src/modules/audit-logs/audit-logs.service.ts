@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { eq, gte, lte, sql, and, SQL } from 'drizzle-orm';
-import { v4 as uuidv4 } from 'uuid';
+import { generateUuid } from '../../common/helpers/uuidv7.helper';
 import { DrizzleProvider } from '../../database/drizzle.provider';
 import { auditLogs } from '../../database/schemas';
 import { PaginationHelper } from '../../common/helpers/pagination.helper';
@@ -25,7 +25,7 @@ export class AuditLogsService {
     userAgent?: string,
   ) {
     await this.drizzle.db.insert(auditLogs).values({
-      id: uuidv4(),
+      id: generateUuid(),
       userId,
       action,
       entityType,

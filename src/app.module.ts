@@ -29,6 +29,8 @@ import { WebSocketModule } from './websocket/websocket.module';
 import { QueuesModule } from './queues/queues.module';
 import { AppInfoModule } from './modules/app/app.module';
 import { HealthModule } from './common/health/health.module';
+import { MetricsModule } from './common/metrics/metrics.module';
+import { EmailModule } from './modules/email/email.module';
 
 @Module({
   imports: [
@@ -94,6 +96,8 @@ import { HealthModule } from './common/health/health.module';
     // Modules métier
     AppInfoModule,
     HealthModule,
+    MetricsModule,
+    EmailModule,
     AuthModule,
     DepartmentsModule,
     UsersModule,
