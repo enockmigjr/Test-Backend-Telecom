@@ -1,21 +1,17 @@
 import { Module, Global, OnModuleInit, Logger } from '@nestjs/common';
 import { Queue } from 'bullmq';
 import { redisConfig } from '../common/providers/redis.config';
-
-/**
- * Définition des files BullMQ pour le traitement asynchrone.
- *
- * Architecture des files:
- * - email-queue: envoi d'emails (confirmation, notification, alerte)
- * - notification-queue: création de notifications en base + WebSocket emit
- * - sla-queue: vérification et mise à jour des statuts SLA
- * - audit-queue: écriture asynchrone des logs d'audit
- */
+import { EmailWorker } from './workers/email.worker';
+import { NotificationWorker } from './workers/notification.worker';
+import { SlaWorker } from './workers/sla.worker';
+import { AuditWorker } from './workers/audit.worker';
+import { ReportWorker } from './workers/report.worker';
 
 export const EMAIL_QUEUE = 'email-queue';
 export const NOTIFICATION_QUEUE = 'notification-queue';
 export const SLA_QUEUE = 'sla-queue';
 export const AUDIT_QUEUE = 'audit-queue';
+export const REPORT_QUEUE = 'report-queue';
 
 @Global()
 @Module({
@@ -28,15 +24,20 @@ export const AUDIT_QUEUE = 'audit-queue';
           port: redisConfig.port,
           password: redisConfig.password || undefined,
         };
-
         return {
           email: new Queue(EMAIL_QUEUE, { connection }),
           notification: new Queue(NOTIFICATION_QUEUE, { connection }),
           sla: new Queue(SLA_QUEUE, { connection }),
           audit: new Queue(AUDIT_QUEUE, { connection }),
+          report: new Queue(REPORT_QUEUE, { connection }),
         };
       },
     },
+    EmailWorker,
+    NotificationWorker,
+    SlaWorker,
+    AuditWorker,
+    ReportWorker,
   ],
   exports: ['BullMQ_Queues'],
 })
@@ -44,6 +45,6 @@ export class QueuesModule implements OnModuleInit {
   private readonly logger = new Logger(QueuesModule.name);
 
   onModuleInit(): void {
-    this.logger.log('Files BullMQ initialisées: email, notification, sla, audit');
+    this.logger.log('Files BullMQ + 5 Workers initialisés: email, notification, sla, audit, report');
   }
 }

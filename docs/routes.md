@@ -148,6 +148,15 @@
 
 ---
 
+## Rapports (`/reports`)
+
+| Méthode | Route | Auth | Rôles | Description |
+|---------|-------|------|-------|-------------|
+| `POST` | `/reports/ticket/:id` | Bearer | SUPERVISOR, ADMIN | Générer un rapport détaillé pour un ticket |
+| `GET` | `/reports/sla` | Bearer | SUPERVISOR, ADMIN | Rapport SLA sur une période (params: from, to) |
+
+---
+
 ## Racine & Santé
 
 | Méthode | Route | Auth | Description |
