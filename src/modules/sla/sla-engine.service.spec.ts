@@ -61,6 +61,7 @@ describe('SlaEngineService', () => {
 
     const drizzle = { db: mockDb } as unknown as DrizzleProvider;
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         {
@@ -80,7 +81,7 @@ describe('SlaEngineService', () => {
     jest.clearAllMocks();
   });
 
-  describe('calculateDueDate() — Calcul de la date d\'echeance SLA', () => {
+  describe("calculateDueDate() — Calcul de la date d'echeance SLA", () => {
     it('doit retourner createdAt + resolutionMinutes pour un calcul simple', () => {
       const createdAt = new Date('2026-06-26T10:00:00Z');
       const resolutionMinutes = 120; // 2 heures
@@ -117,7 +118,7 @@ describe('SlaEngineService', () => {
   });
 
   describe('checkSla() — Verification periodique des SLA', () => {
-    it('ne doit pas planter quand aucun ticket n\'est en breach ni en warning', async () => {
+    it("ne doit pas planter quand aucun ticket n'est en breach ni en warning", async () => {
       await expect(service.checkSla()).resolves.toBeUndefined();
     });
 
@@ -126,8 +127,8 @@ describe('SlaEngineService', () => {
 
       // Premier appel .limit() = requete des tickets en breach
       mockSelectQuery.limit
-        .mockResolvedValueOnce([breachedTicket])  // breached tickets
-        .mockResolvedValueOnce([]);               // warning tickets
+        .mockResolvedValueOnce([breachedTicket]) // breached tickets
+        .mockResolvedValueOnce([]); // warning tickets
 
       await service.checkSla();
 
@@ -143,8 +144,8 @@ describe('SlaEngineService', () => {
       ];
 
       mockSelectQuery.limit
-        .mockResolvedValueOnce(breachedTickets)  // breached tickets
-        .mockResolvedValueOnce([]);               // warning tickets
+        .mockResolvedValueOnce(breachedTickets) // breached tickets
+        .mockResolvedValueOnce([]); // warning tickets
 
       await service.checkSla();
 
@@ -154,7 +155,7 @@ describe('SlaEngineService', () => {
 
     it('doit fonctionner sans breach ni warning', async () => {
       mockSelectQuery.limit
-        .mockResolvedValueOnce([])  // aucun breach
+        .mockResolvedValueOnce([]) // aucun breach
         .mockResolvedValueOnce([]); // aucun warning
 
       await expect(service.checkSla()).resolves.toBeUndefined();

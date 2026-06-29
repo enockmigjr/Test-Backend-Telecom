@@ -3,7 +3,7 @@ import { IsEmail, IsString, MinLength } from 'class-validator';
 
 export class LoginDto {
   @ApiProperty({
-    description: 'Adresse email de l\'utilisateur',
+    description: "Adresse email de l'utilisateur",
     example: 'admin@telecom.local',
     format: 'email',
     minLength: 5,

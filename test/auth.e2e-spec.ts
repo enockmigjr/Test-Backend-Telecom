@@ -101,10 +101,7 @@ describe('Auth — Flux E2E', () => {
 
   describe('POST /api/v1/auth/refresh', () => {
     it('doit retourner 200 avec de nouveaux tokens pour un refresh token valide', async () => {
-      const res = await request(app.getHttpServer())
-        .post('/api/v1/auth/refresh')
-        .send({ refreshToken })
-        .expect(200);
+      const res = await request(app.getHttpServer()).post('/api/v1/auth/refresh').send({ refreshToken }).expect(200);
 
       expect(res.body.success).toBe(true);
       expect(res.body.data.accessToken).toBeDefined();
@@ -137,9 +134,7 @@ describe('Auth — Flux E2E', () => {
     });
 
     it('doit retourner 401 sans token', async () => {
-      const res = await request(app.getHttpServer())
-        .get('/api/v1/auth/me')
-        .expect(401);
+      const res = await request(app.getHttpServer()).get('/api/v1/auth/me').expect(401);
 
       expect(res.body.success).toBe(false);
     });

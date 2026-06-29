@@ -3,10 +3,13 @@ import { OnEvent } from '@nestjs/event-emitter';
 import { Queue } from 'bullmq';
 import { redisConfig } from '../../../common/providers/redis.config';
 import { EMAIL_QUEUE, NOTIFICATION_QUEUE } from '../../../queues/queues.module';
-import { TicketCreatedEvent, TicketAssignedEvent, TicketEscalatedEvent, TicketResolvedEvent } from '../domain/ticket.events';
+import {
+  TicketCreatedEvent,
+  TicketAssignedEvent,
+  TicketEscalatedEvent,
+  TicketResolvedEvent,
+} from '../domain/ticket.events';
 import { DrizzleProvider } from '../../../database/drizzle.provider';
-import { users, departments } from '../../../database/schemas';
-import { eq } from 'drizzle-orm';
 
 @Injectable()
 export class TicketNotificationListener {
@@ -28,7 +31,11 @@ export class TicketNotificationListener {
       to: 'creator@telecom.local',
       subject: `Ticket créé — ${event.ticket['ticketNumber'] || ''}`,
       template: 'ticketCreated',
-      data: { ticketNumber: event.ticket['ticketNumber'] || '', title: event.ticket['title'] || '', priority: event.ticket['priority'] || '' },
+      data: {
+        ticketNumber: event.ticket['ticketNumber'] || '',
+        title: event.ticket['title'] || '',
+        priority: event.ticket['priority'] || '',
+      },
     });
   }
 

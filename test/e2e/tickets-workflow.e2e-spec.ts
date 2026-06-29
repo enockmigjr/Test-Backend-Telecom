@@ -65,7 +65,7 @@ describe('Tickets — Workflow E2E', () => {
     await app.close();
   });
 
-  describe('POST /api/v1/tickets — Creation d\'un ticket', () => {
+  describe("POST /api/v1/tickets — Creation d'un ticket", () => {
     it('doit retourner 201 avec les details du ticket cree', async () => {
       const res = await request(app.getHttpServer())
         .post('/api/v1/tickets')
@@ -138,7 +138,7 @@ describe('Tickets — Workflow E2E', () => {
       expect(res.body.success).toBe(false);
     });
 
-    it('doit retourner 401 sans token d\'authentification', async () => {
+    it("doit retourner 401 sans token d'authentification", async () => {
       await request(app.getHttpServer())
         .post('/api/v1/tickets')
         .send({
@@ -218,7 +218,7 @@ describe('Tickets — Workflow E2E', () => {
   });
 
   describe('GET /api/v1/tickets/:id/history — Historique', () => {
-    it('doit retourner 200 avec l\'historique du ticket', async () => {
+    it("doit retourner 200 avec l'historique du ticket", async () => {
       const res = await request(app.getHttpServer())
         .get(`/api/v1/tickets/${createdTicketId}/history`)
         .set('Authorization', `Bearer ${adminToken}`)
@@ -234,9 +234,7 @@ describe('Tickets — Workflow E2E', () => {
     });
 
     it('doit retourner 401 sans authentification', async () => {
-      await request(app.getHttpServer())
-        .get(`/api/v1/tickets/${createdTicketId}/history`)
-        .expect(401);
+      await request(app.getHttpServer()).get(`/api/v1/tickets/${createdTicketId}/history`).expect(401);
     });
   });
 

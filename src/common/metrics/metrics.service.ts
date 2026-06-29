@@ -75,7 +75,7 @@ export class MetricsService implements OnModuleInit {
 
     this.activeUsers = new Gauge({
       name: 'telecom_active_users',
-      help: 'Nombre d\'utilisateurs connectés (WebSocket)',
+      help: "Nombre d'utilisateurs connectés (WebSocket)",
       registers: [this.registry],
     });
 

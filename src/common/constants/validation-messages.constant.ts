@@ -27,7 +27,7 @@ export const VALIDATION_MESSAGES = {
   ENUM_INVALID: '{field} doit être une des valeurs suivantes : {allowedValues}.',
 
   // UUID
-  UUID_INVALID: "{field} doit être un UUID valide.",
+  UUID_INVALID: '{field} doit être un UUID valide.',
 
   // Tickets
   TICKET_TITLE_REQUIRED: 'Le titre du ticket est requis.',
