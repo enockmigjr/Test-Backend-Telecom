@@ -32,6 +32,7 @@ import { HealthModule } from './common/health/health.module';
 import { MetricsModule } from './common/metrics/metrics.module';
 import { ObservabilityModule } from './common/observability/observability.module';
 import { EmailModule } from './modules/email/email.module';
+import { ReportsModule } from './modules/reports/reports.module';
 
 @Module({
   imports: [
@@ -100,6 +101,7 @@ import { EmailModule } from './modules/email/email.module';
     MetricsModule,
     ObservabilityModule,
     EmailModule,
+    ReportsModule,
     AuthModule,
     DepartmentsModule,
     UsersModule,

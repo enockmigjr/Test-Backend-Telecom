@@ -1,0 +1,8 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔍 Linting..."
+pnpm run lint --max-warnings=0
+
+echo "🧪 Running tests..."
+pnpm run test --passWithNoTests
