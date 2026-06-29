@@ -1,14 +1,16 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards, UseInterceptors } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { DashboardService } from './dashboard.service';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { DateRangeDto } from '../../common/dto/date-range.dto';
+import { FieldProjectionInterceptor } from '../../common/interceptors/field-projection.interceptor';
 
 @ApiTags('dashboard')
 @ApiBearerAuth()
 @Controller('dashboard')
 @UseGuards(RolesGuard)
+@UseInterceptors(FieldProjectionInterceptor)
 export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) {}
 

@@ -1,4 +1,16 @@
-import { Controller, Get, Post, Patch, Body, Param, Query, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Body,
+  Param,
+  Query,
+  HttpCode,
+  HttpStatus,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 
 import { UsersService } from './users.service';
@@ -9,6 +21,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
+import { FieldProjectionInterceptor } from '../../common/interceptors/field-projection.interceptor';
 
 @ApiTags('users')
 @ApiBearerAuth()
@@ -18,8 +31,9 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
+  @UseInterceptors(FieldProjectionInterceptor)
   @Roles('ADMINISTRATOR', 'SUPERVISOR')
-  @ApiOperation({ summary: 'Liste des utilisateurs (Admin, Supervisor)' })
+  @ApiOperation({ summary: 'Liste des utilisateurs (Admin, Supervisor) — param ?detail=summary|full' })
   async findAll(@Query() pagination: PaginationDto) {
     return this.usersService.findAll(pagination);
   }

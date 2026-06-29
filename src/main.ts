@@ -17,6 +17,7 @@ import { TransformInterceptor } from './common/interceptors/transform.intercepto
 import { CorrelationIdMiddleware } from './common/middleware/correlation-id.middleware';
 import { RequestLoggerMiddleware } from './common/middleware/request-logger.middleware';
 import { AppConfigService } from './config/app.config';
+import { RedisIoAdapter } from './websocket/redis-io.adapter';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule, {
@@ -24,6 +25,11 @@ async function bootstrap(): Promise<void> {
   });
 
   const config = app.get(AppConfigService);
+
+  // Adapter Redis pour WebSocket (scaling horizontal)
+  const redisAdapter = new RedisIoAdapter(app);
+  await redisAdapter.connectToRedis();
+  app.useWebSocketAdapter(redisAdapter);
 
   // Logger Pino
   app.useLogger(app.get(Logger));

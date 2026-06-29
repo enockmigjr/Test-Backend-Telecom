@@ -1,34 +1,37 @@
-import { Injectable, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, OnModuleDestroy, Optional } from '@nestjs/common';
 import { ThrottlerStorage } from '@nestjs/throttler';
 import { Redis } from 'ioredis';
 import { redisConfig } from './redis.config';
 
 /**
  * Stockage Redis pour le rate limiter.
- * Permet un rate limiting distribué fonctionnel avec plusieurs instances API.
+ * Supporte le scaling horizontal avec Redis partagé.
  *
- * Architecture:
- * - Chaque compteur est stocké avec une clé: `throttle:{key}:{ttl_block}`
- * - Le TTL Redis correspond au ttl du throttler
- * - Atomicité via INCR + EXPIRE en pipeline
+ * Si un client Redis est fourni via le constructeur, il est réutilisé
+ * (connexion mutualisée). Sinon, une connexion dédiée est créée.
  */
 @Injectable()
 export class ThrottlerStorageRedisService implements ThrottlerStorage, OnModuleDestroy {
   private redis: Redis;
   private readonly prefix = 'throttle';
+  private ownsConnection = false;
 
-  constructor() {
-    this.redis = new Redis({
-      host: redisConfig.host,
-      port: redisConfig.port,
-      password: redisConfig.password || undefined,
-      enableOfflineQueue: false,
-      maxRetriesPerRequest: 3,
-      retryStrategy(times) {
-        if (times > 3) return null;
-        return Math.min(times * 200, 2000);
-      },
-    });
+  constructor(@Optional() existingRedis?: Redis) {
+    if (existingRedis) {
+      this.redis = existingRedis;
+    } else {
+      this.redis = new Redis({
+        host: redisConfig.host,
+        port: redisConfig.port,
+        password: redisConfig.password || undefined,
+        enableOfflineQueue: false,
+        maxRetriesPerRequest: 3,
+        retryStrategy(times) {
+          return times > 3 ? null : Math.min(times * 200, 2000);
+        },
+      });
+      this.ownsConnection = true;
+    }
   }
 
   /**
@@ -83,6 +86,6 @@ export class ThrottlerStorageRedisService implements ThrottlerStorage, OnModuleD
   }
 
   async onModuleDestroy(): Promise<void> {
-    await this.redis.quit();
+    if (this.ownsConnection) await this.redis.quit();
   }
 }
