@@ -34,6 +34,9 @@ export class UsersController {
   @UseInterceptors(FieldProjectionInterceptor)
   @Roles('ADMINISTRATOR', 'SUPERVISOR')
   @ApiOperation({ summary: 'Liste des utilisateurs (Admin, Supervisor) — param ?detail=summary|full' })
+  @ApiResponse({ status: 200, description: 'Liste paginée des utilisateurs.' })
+  @ApiResponse({ status: 401, description: 'Non authentifié.' })
+  @ApiResponse({ status: 403, description: 'Rôle insuffisant.' })
   async findAll(@Query() pagination: PaginationDto) {
     return this.usersService.findAll(pagination);
   }
