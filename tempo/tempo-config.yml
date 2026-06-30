@@ -17,9 +17,3 @@ storage:
       path: /tmp/tempo/traces
     wal:
       path: /tmp/tempo/wal
-    pool:
-      max_workers: 100
-      queue_depth: 1000
-
-# Le bloc compactor et ingester moderne se configure via l'overrides ou au niveau global
-# Pour éviter les erreurs de type app.Config, on laisse le stockage gérer la rétention locale.

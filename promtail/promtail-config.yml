@@ -32,6 +32,8 @@ scrape_configs:
             level: level
             msg: msg
             correlationId: correlationId
+            trace_id: trace_id
+            span_id: span_id
             context: context
             time: time
             durationMs: durationMs
@@ -67,16 +69,19 @@ scrape_configs:
                 source: json_body
                 expressions:
                   correlationId: correlationId
+                  trace_id: trace_id
+                  span_id: span_id
                   context: context
                   msg: msg
                   method: method
                   url: url
                   statusCode: statusCode
                   durationMs: durationMs
-            # Étape 4 : définir les labels
+            # Étape 4 : définir les labels (correlationId/trace_id/span_id
+            # sont gardés comme métadonnées structurées, pas comme labels,
+            # pour éviter l'explosion de cardinalité)
             - labels:
                 level: parsed_level
-                correlationId:
                 context:
             - static_labels:
                 service_name: telecom-api

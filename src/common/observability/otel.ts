@@ -15,6 +15,10 @@ import { asyncLocalStorage } from '../middleware/correlation-id.middleware';
  * SpanProcessor personnalisé qui injecte le correlationId
  * comme attribut sur chaque span pour le traçage de bout en bout.
  *
+ * ⚠️  ReadableSpan.attributes est un GETTER qui retourne une COPIE
+ *     (Object.assign({}, this._attributes)) → on doit utiliser
+ *     setAttribute() du Span sous-jacent, pas l'indexeur [ ].
+ *
  * Le correlationId est lu depuis l'AsyncLocalStorage, où il a été
  * stocké par le CorrelationIdMiddleware au début de la requête HTTP.
  */
@@ -26,8 +30,13 @@ class CorrelationIdSpanProcessor implements SpanProcessor {
 
   onEnd(span: ReadableSpan): void {
     const store = asyncLocalStorage.getStore();
-    if (store?.correlationId) {
-      span.attributes['correlation.id'] = store.correlationId;
+    if (!store?.correlationId) return;
+
+    // Le span sous-jacent implémente setAttribute() mais
+    // l'interface ReadableSpan ne l'expose pas.
+    const s = span as unknown as Record<string, unknown>;
+    if (typeof s['setAttribute'] === 'function') {
+      (s['setAttribute'] as (k: string, v: string) => void)('correlation.id', store.correlationId);
     }
   }
 
