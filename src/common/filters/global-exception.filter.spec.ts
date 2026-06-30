@@ -27,7 +27,8 @@ describe('GlobalExceptionFilter', () => {
     mockStatus = jest.fn().mockReturnValue({ json: mockJson });
     mockGetResponse = jest.fn().mockReturnValue({ status: mockStatus });
     mockGetRequest = jest.fn().mockReturnValue({
-      headers: { 'x-correlation-id': 'test-correlation-id' },
+      correlationId: 'test-correlation-id',
+      headers: {},
     });
     mockHttpArgumentsHost = jest.fn().mockReturnValue({
       getResponse: mockGetResponse,
@@ -193,7 +194,7 @@ describe('GlobalExceptionFilter', () => {
   });
 
   describe('CorrelationId — Tracing distribue', () => {
-    it("doit utiliser le correlationId de l'entete x-correlation-id s'il existe", () => {
+    it("doit utiliser le correlationId stocké sur la requête s'il existe", () => {
       const exception = new HttpException('Test', HttpStatus.BAD_REQUEST);
 
       filter.catch(exception, mockArgumentsHost);

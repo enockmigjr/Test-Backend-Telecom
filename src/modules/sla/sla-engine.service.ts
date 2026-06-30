@@ -3,6 +3,7 @@ import { Cron } from '@nestjs/schedule';
 import { and, lt, gte, eq, notInArray } from 'drizzle-orm';
 import { DrizzleProvider } from '../../database/drizzle.provider';
 import { tickets } from '../../database/schemas';
+import { MetricsService } from '../../common/metrics/metrics.service';
 
 /**
  * Moteur de vérification des SLA.
@@ -20,7 +21,10 @@ export class SlaEngineService {
     'CANCELLED',
   ];
 
-  constructor(private readonly drizzle: DrizzleProvider) {}
+  constructor(
+    private readonly drizzle: DrizzleProvider,
+    private readonly metricsService: MetricsService,
+  ) {}
 
   /**
    * Cron toutes les 5 minutes — vérifie les SLA.
@@ -51,6 +55,8 @@ export class SlaEngineService {
       this.logger.warn(`SLA Breach détecté: ${ticket.ticketNumber}`);
       // Marquer comme breached
       await this.drizzle.db.update(tickets).set({ slaBreached: true }).where(eq(tickets.id, ticket.id));
+      // Métrique Prometheus
+      this.metricsService.slaBreachesTotal.inc({ priority: 'unknown' });
     }
 
     // Tickets en warning (échéance dans moins de 30 minutes)

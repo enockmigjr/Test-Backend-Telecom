@@ -16,7 +16,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
 
-    const correlationId = (request.headers['x-correlation-id'] as string) || generateUuid();
+    const correlationId = (request['correlationId'] as string) || generateUuid();
 
     let status: number;
     let code: string;

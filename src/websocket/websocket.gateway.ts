@@ -8,6 +8,7 @@ import {
 import { Server, Socket } from 'socket.io';
 import { Logger } from '@nestjs/common';
 import * as jwt from 'jsonwebtoken';
+import { MetricsService } from '../common/metrics/metrics.service';
 
 @WebSocketGateway({
   cors: { origin: '*', credentials: true },
@@ -19,6 +20,8 @@ export class TelecomWebSocketGateway implements OnGatewayConnection, OnGatewayDi
 
   private readonly logger = new Logger(TelecomWebSocketGateway.name);
   private readonly connectedClients = new Map<string, Set<string>>();
+
+  constructor(private readonly metricsService: MetricsService) {}
 
   async handleConnection(client: Socket): Promise<void> {
     try {
@@ -46,6 +49,10 @@ export class TelecomWebSocketGateway implements OnGatewayConnection, OnGatewayDi
       }
       this.connectedClients.get(payload.sub)?.add(client.id);
 
+      // Métriques Prometheus
+      this.metricsService.wsConnections.inc();
+      this.metricsService.activeUsers.set(this.connectedClients.size);
+
       this.logger.log(`WebSocket connecté: ${payload.email} (${client.id})`);
     } catch {
       client.disconnect();
@@ -61,6 +68,10 @@ export class TelecomWebSocketGateway implements OnGatewayConnection, OnGatewayDi
         this.connectedClients.delete(userId);
       }
     }
+
+    // Métriques Prometheus
+    this.metricsService.wsConnections.dec();
+    this.metricsService.activeUsers.set(this.connectedClients.size);
   }
 
   /**

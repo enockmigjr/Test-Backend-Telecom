@@ -74,7 +74,10 @@ describe('SlaEngineService', () => {
     // Utiliser evaluate() pour instancier SlaEngineService manuellement
     // car le mock de @nestjs/schedule @Cron peut causer des erreurs d'heritage
     const { SlaEngineService } = jest.requireActual('./sla-engine.service');
-    service = new SlaEngineService(drizzle);
+    const mockMetricsService = {
+      slaBreachesTotal: { inc: jest.fn() },
+    };
+    service = new SlaEngineService(drizzle, mockMetricsService);
   });
 
   afterEach(() => {

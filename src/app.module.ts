@@ -55,6 +55,9 @@ import { ReportsModule } from './modules/reports/reports.module';
             : undefined,
           quietReqLogger: true,
           autoLogging: false,
+          formatters: {
+            level: (label: string) => ({ level: label }),
+          },
         },
       }),
     }),

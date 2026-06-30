@@ -7,26 +7,198 @@ positions:
 
 clients:
   - url: http://loki:3100/loki/api/v1/push
+    batchwait: 1s
+    batchsize: 1048576
 
 scrape_configs:
-  - job_name: docker
+  - job_name: telecom-containers
     docker_sd_configs:
       - host: unix:///var/run/docker.sock
         refresh_interval: 15s
     relabel_configs:
       - source_labels: ['__meta_docker_container_name']
-        regex: '/(.*)'
+        regex: '/(telecom-.*)'
         target_label: 'container'
       - source_labels: ['__meta_docker_container_label_com_docker_compose_service']
         target_label: 'service'
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(telecom-.*)'
+        action: keep
+
     pipeline_stages:
+      # ── Tenter un parse JSON (réussit sur Pino, échoue silencieusement sur texte) ──
       - json:
           expressions:
             level: level
             msg: msg
             correlationId: correlationId
             context: context
-      - labels:
-          level:
-          correlationId:
-          context:
+            time: time
+            durationMs: durationMs
+            statusCode: statusCode
+            method: method
+            url: url
+            ip: ip
+            userAgent: userAgent
+
+      # ── Utiliser le timestamp JSON Pino si trouvé ──
+      - timestamp:
+          source: time
+          format: RFC3339
+
+      # ──────────────────────────────────────────────────
+      # API NestJS → logs Pino JSON
+      # ──────────────────────────────────────────────────
+      - match:
+          selector: '{service="api"}'
+          stages:
+            - labels:
+                level:
+                correlationId:
+                context:
+            - static_labels:
+                service_name: telecom-api
+                log_type: application
+
+      # ──────────────────────────────────────────────────
+      # PostgreSQL → logs texte
+      # Format: "2026-06-30 10:02:03.650 UTC [27] LOG:  message..."
+      # ──────────────────────────────────────────────────
+      - match:
+          selector: '{service="postgres"}'
+          stages:
+            - regex:
+                expression: '^(?P<pg_ts>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3} UTC) \[(?P<pg_pid>\d+)\] (?P<pg_level>[A-Z]+):\s+(?P<pg_msg>.*)$'
+            - timestamp:
+                source: pg_ts
+                format: '2006-01-02 15:04:05.000 MST'
+            - template:
+                source: pg_level
+                template: '{{ ToLower .Value }}'
+            - labels:
+                level: pg_level
+            - static_labels:
+                service_name: postgresql
+                log_type: database
+
+      # ──────────────────────────────────────────────────
+      # Redis → logs texte
+      # Format: "1:M 30 Jun 2026 09:58:26.434 * message..."
+      # . = debug, # = info (verbose), * = notice, - = verbose
+      # ──────────────────────────────────────────────────
+      - match:
+          selector: '{service="redis"}'
+          stages:
+            - regex:
+                expression: '^(?P<redis_pid>\d+):(?P<redis_role>[A-Z]) (?P<redis_ts>\d{2} \w{3} \d{4} \d{2}:\d{2}:\d{2}\.\d{3}) (?P<redis_sym>[.*#\-]) (?P<redis_msg>.*)$'
+            - timestamp:
+                source: redis_ts
+                format: '02 Jan 2006 15:04:05.000'
+            - template:
+                source: redis_sym
+                template: '{{ if eq .Value "." }}debug{{ else if eq .Value "#" }}info{{ else if eq .Value "*" }}notice{{ else if eq .Value "-" }}verbose{{ else }}info{{ end }}'
+            - labels:
+                level: redis_sym
+            - static_labels:
+                service_name: redis
+                log_type: cache
+
+      # ──────────────────────────────────────────────────
+      # Nginx → logs HTTP combined format
+      # ──────────────────────────────────────────────────
+      - match:
+          selector: '{service="nginx"}'
+          stages:
+            - regex:
+                expression: '^(?P<remote_addr>\S+) - (?P<remote_user>\S+) \[(?P<nginx_ts>[^\]]+)\] "(?P<http_method>\S+) (?P<http_url>\S+) (?P<http_proto>[^"]+)" (?P<http_status>\d+) (?P<body_bytes>\d+) "(?P<referrer>[^"]*)" "(?P<user_agent>[^"]*)"'
+            - timestamp:
+                source: nginx_ts
+                format: '02/Jan/2006:15:04:05 -0700'
+            - labels:
+                http_status:
+                http_method:
+            - static_labels:
+                service_name: nginx
+                log_type: proxy
+
+      # ──────────────────────────────────────────────────
+      # Prometheus → logs structurés (level=INFO/ERROR/DEBUG)
+      # ──────────────────────────────────────────────────
+      - match:
+          selector: '{service="prometheus"}'
+          stages:
+            - labels:
+                level:
+            - static_labels:
+                service_name: prometheus
+                log_type: infrastructure
+
+      # ──────────────────────────────────────────────────
+      # Loki → logs structurés
+      # ──────────────────────────────────────────────────
+      - match:
+          selector: '{service="loki"}'
+          stages:
+            - labels:
+                level:
+            - static_labels:
+                service_name: loki
+                log_type: infrastructure
+
+      # ──────────────────────────────────────────────────
+      # Tempo → logs structurés
+      # ──────────────────────────────────────────────────
+      - match:
+          selector: '{service="tempo"}'
+          stages:
+            - labels:
+                level:
+            - static_labels:
+                service_name: tempo
+                log_type: infrastructure
+
+      # ──────────────────────────────────────────────────
+      # Grafana → logs structurés
+      # ──────────────────────────────────────────────────
+      - match:
+          selector: '{service="grafana"}'
+          stages:
+            - labels:
+                level:
+            - static_labels:
+                service_name: grafana
+                log_type: infrastructure
+
+      # ──────────────────────────────────────────────────
+      # Promtail → logs structurés
+      # ──────────────────────────────────────────────────
+      - match:
+          selector: '{service="promtail"}'
+          stages:
+            - labels:
+                level:
+            - static_labels:
+                service_name: promtail
+                log_type: infrastructure
+
+      # ──────────────────────────────────────────────────
+      # Alertmanager → logs structurés
+      # ──────────────────────────────────────────────────
+      - match:
+          selector: '{service="alertmanager"}'
+          stages:
+            - labels:
+                level:
+            - static_labels:
+                service_name: alertmanager
+                log_type: infrastructure
+
+      # ──────────────────────────────────────────────────
+      # Fallback — conteneurs non identifiés
+      # ──────────────────────────────────────────────────
+      - match:
+          selector: '{service!~"api|postgres|redis|nginx|prometheus|loki|tempo|grafana|promtail|alertmanager"}'
+          stages:
+            - static_labels:
+                service_name: unknown
+                log_type: infrastructure

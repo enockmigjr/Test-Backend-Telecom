@@ -14,6 +14,8 @@ import compression from 'compression';
 import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
+import { MetricsInterceptor } from './common/interceptors/metrics.interceptor';
+import { MetricsService } from './common/metrics/metrics.service';
 import { CorrelationIdMiddleware } from './common/middleware/correlation-id.middleware';
 import { RequestLoggerMiddleware } from './common/middleware/request-logger.middleware';
 import { AppConfigService } from './config/app.config';
@@ -70,6 +72,10 @@ async function bootstrap(): Promise<void> {
 
   // Intercepteur de transformation
   app.useGlobalInterceptors(new TransformInterceptor());
+
+  // Intercepteur de métriques HTTP (après transformation pour obtenir le bon statusCode)
+  const metricsService = app.get(MetricsService);
+  app.useGlobalInterceptors(new MetricsInterceptor(metricsService));
 
   // Swagger / OpenAPI
   const swaggerConfig = new DocumentBuilder()

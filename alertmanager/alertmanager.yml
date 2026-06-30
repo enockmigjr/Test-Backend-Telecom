@@ -1,0 +1,82 @@
+global:
+  resolve_timeout: 5m
+  smtp_smarthost: 'mailpit:1025'
+  smtp_from: 'alertmanager@telecom-tickets.local'
+  smtp_require_tls: false
+  smtp_hello: 'telecom-tickets.local'
+
+# Templates pour les notifications
+templates:
+  - '/etc/alertmanager/templates/telecom.tmpl'
+
+# Routage des alertes
+route:
+  receiver: 'default'
+  group_by: ['alertname', 'severity']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+
+  routes:
+    # Alertes critiques → email + WhatsApp
+    - match:
+        severity: critical
+      receiver: 'critical-alerts'
+      group_wait: 10s
+      group_interval: 2m
+      repeat_interval: 1h
+
+    # Alertes warning → email seulement
+    - match:
+        severity: warning
+      receiver: 'warning-alerts'
+      group_interval: 10m
+      repeat_interval: 8h
+
+    # Alertes info → pas de notification (log only)
+    - match:
+        severity: info
+      receiver: 'null'
+
+# Inhibitions : une alerte ApiDown supprime les autres alertes
+inhibit_rules:
+  - source_match:
+      alertname: 'ApiDown'
+    target_match_re:
+      alertname: 'HighErrorRate|HighLatency|SlaBreachRate'
+    equal: ['service']
+
+receivers:
+  # ─── Receiver par défaut (log interne) ──────────────────────
+  - name: 'default'
+    email_configs:
+      - to: 'ops@telecom-tickets.local'
+        headers:
+          Subject: '[Telecom] {{ .GroupLabels.alertname }} ({{ .GroupLabels.severity }})'
+        html: '{{ template "telecom.email.html" . }}'
+
+  # ─── Alertes critiques : Email + WhatsApp ───────────────────
+  - name: 'critical-alerts'
+    email_configs:
+      - to: 'oncall@telecom-tickets.local'
+        headers:
+          Subject: '[CRITICAL] {{ .GroupLabels.alertname }} — Action requise'
+        html: '{{ template "telecom.email.html" . }}'
+    # WhatsApp via Webhook (configurable)
+    webhook_configs:
+      - url: '${WHATSAPP_WEBHOOK_URL}'
+        send_resolved: false
+        http_config:
+          follow_redirects: true
+        max_alerts: 5
+
+  # ─── Alertes warning : Email seulement ──────────────────────
+  - name: 'warning-alerts'
+    email_configs:
+      - to: 'ops@telecom-tickets.local'
+        headers:
+          Subject: '[WARNING] {{ .GroupLabels.alertname }}'
+        html: '{{ template "telecom.email.html" . }}'
+
+  # ─── Receiver vide (supprime les alertes) ───────────────────
+  - name: 'null'

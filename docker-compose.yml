@@ -67,9 +67,11 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_URL: redis://redis:6379
+      OTEL_ENABLED: 'true'
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4318/v1/traces
     volumes:
       - .:/app
-      - /app/node_modules
+      - api-node-modules:/app/node_modules
     depends_on:
       postgres:
         condition: service_healthy
@@ -129,6 +131,30 @@ services:
       - '--storage.tsdb.path=/prometheus'
       - '--web.console.libraries=/usr/share/prometheus/console_libraries'
       - '--web.console.templates=/usr/share/prometheus/consoles'
+    networks:
+      - telecom-network
+
+  # ============================================
+  # Observabilité — Alertmanager (alertes)
+  # ============================================
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: telecom-alertmanager
+    restart: unless-stopped
+    ports:
+      - '9093:9093'
+    environment:
+      # WhatsApp webhook URL — à configurer pour la production
+      # Utiliser un service comme CallMeBot, Twilio, ou un webhook personnalisé
+      WHATSAPP_WEBHOOK_URL: 'https://webhook.example.com/whatsapp'
+    volumes:
+      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - ./alertmanager/templates:/etc/alertmanager/templates:ro
+      - alertmanager-data:/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+      - '--web.external-url=http://localhost:9093'
     networks:
       - telecom-network
 
@@ -220,7 +246,9 @@ services:
 volumes:
   postgres-data:
   redis-data:
+  api-node-modules:
   prometheus-data:
+  alertmanager-data:
   loki-data:
   tempo-data:
   grafana-data:

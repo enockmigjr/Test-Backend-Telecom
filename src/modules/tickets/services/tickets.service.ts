@@ -9,6 +9,7 @@ import { TicketStateMachine, TicketStatus } from '../domain/ticket-status-transi
 import { TicketNumberService } from './ticket-number.service';
 import { TicketHistoryService } from './ticket-history.service';
 import { TicketNotFoundException } from '../domain/exceptions/ticket-not-found.exception';
+import { MetricsService } from '../../../common/metrics/metrics.service';
 import {
   TicketCreatedEvent,
   TicketStatusChangedEvent,
@@ -30,6 +31,7 @@ export class TicketsService {
     private readonly ticketNumber: TicketNumberService,
     private readonly ticketHistory: TicketHistoryService,
     private readonly eventEmitter: EventEmitter2,
+    private readonly metricsService: MetricsService,
   ) {}
 
   /**
@@ -101,6 +103,10 @@ export class TicketsService {
 
     // Émettre l'événement de domaine
     this.eventEmitter.emit('ticket.created', new TicketCreatedEvent(created, createdBy));
+
+    // Métriques Prometheus
+    this.metricsService.ticketsCreatedTotal.inc({ priority: dto.priority, category: dto.category });
+    this.metricsService.ticketsActive.inc();
 
     this.logger.log(`Ticket créé: ${ticketNumber} (${id}) par ${createdBy}`);
 
@@ -185,6 +191,15 @@ export class TicketsService {
 
     // Émettre des événements spécifiques
     this.emitStatusEvent(newStatus, id, userId);
+
+    // Métriques Prometheus — décrémenter les tickets actifs si terminé
+    if (['RESOLVED', 'CLOSED', 'CANCELLED'].includes(newStatus)) {
+      this.metricsService.ticketsActive.dec();
+    }
+    // Incrémenter si réouvert
+    if (newStatus === 'REOPENED') {
+      this.metricsService.ticketsActive.inc();
+    }
 
     const updated = await this.findTicketById(id);
     return { message: `Statut changé : ${oldStatus} → ${newStatus}`, data: updated };

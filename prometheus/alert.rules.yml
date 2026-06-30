@@ -7,27 +7,39 @@ groups:
         for: 2m
         labels:
           severity: critical
+          service: telecom-api
+          team: oncall
         annotations:
           summary: "API Télécom indisponible"
-          description: "L'API NestJS ne répond plus depuis 2 minutes."
+          description: "L'API NestJS ({{ $labels.instance }}) ne répond plus depuis 2 minutes. Vérifier les logs avec: docker logs telecom-api"
+          runbook_url: "http://localhost:3001/d/telecom-application"
+          action: "1. Vérifier `docker logs telecom-api`\n2. Vérifier `docker compose ps api`\n3. Redémarrer avec `docker compose restart api` si nécessaire"
 
       - alert: HighErrorRate
         expr: rate(telecom_http_requests_total{status_code=~"5.."}[5m]) > 0.05
         for: 5m
         labels:
           severity: critical
+          service: telecom-api
+          team: backend
         annotations:
           summary: "Taux d'erreur 5xx élevé"
-          description: "Plus de 5% de requêtes retournent une erreur 5xx."
+          description: "Plus de 5% de requêtes retournent une erreur 5xx ({{ $value | humanizePercentage }}) sur {{ $labels.route }}."
+          runbook_url: "http://localhost:3001/d/telecom-application"
+          action: "1. Vérifier les logs d'erreur dans Grafana → Loki\n2. Filtrer par correlationId affecté\n3. Vérifier PostgreSQL: `docker logs telecom-postgres`"
 
       - alert: HighLatency
         expr: histogram_quantile(0.95, rate(telecom_http_request_duration_seconds_bucket[5m])) > 2
         for: 5m
         labels:
           severity: warning
+          service: telecom-api
+          team: backend
         annotations:
           summary: "Latence P95 élevée"
-          description: "La latence P95 dépasse 2 secondes."
+          description: "La latence P95 dépasse 2s ({{ $value }}s) sur {{ $labels.route }}."
+          runbook_url: "http://localhost:3001/d/telecom-application"
+          action: "1. Vérifier les requêtes lentes dans Tempo (Grafana → Explore → Tempo)\n2. Vérifier les connexions DB: `telecom_db_pool_connections`\n3. Vérifier Redis: `docker logs telecom-redis`"
 
       # ─── SLA ──────────────────────────────────────────────
       - alert: SlaBreachRate
@@ -35,9 +47,13 @@ groups:
         for: 5m
         labels:
           severity: warning
+          service: telecom-api
+          team: support
         annotations:
           summary: "Violations SLA détectées"
-          description: "{{ $value }} violations SLA dans les 15 dernières minutes."
+          description: "{{ $value }} violations SLA dans les 15 dernières minutes. Priorité: {{ $labels.priority }}."
+          runbook_url: "http://localhost:3001/d/telecom-business"
+          action: "1. Vérifier le dashboard business pour les tickets en souffrance\n2. Réaffecter les tickets non traités\n3. Escalader si nécessaire"
 
       # ─── Base de Données ──────────────────────────────────
       - alert: HighDbConnections
@@ -45,9 +61,13 @@ groups:
         for: 5m
         labels:
           severity: warning
+          service: postgresql
+          team: backend
         annotations:
           summary: "Connexions DB élevées"
           description: "{{ $value }} connexions actives au pool PostgreSQL."
+          runbook_url: "http://localhost:3001/d/telecom-application"
+          action: "1. Vérifier les sessions actives: `SELECT count(*) FROM pg_stat_activity;`\n2. Identifier les connexions idle: `SELECT * FROM pg_stat_activity WHERE state = 'idle';`"
 
       # ─── Système ──────────────────────────────────────────
       - alert: HighMemoryUsage
@@ -55,6 +75,10 @@ groups:
         for: 10m
         labels:
           severity: warning
+          service: telecom-api
+          team: backend
         annotations:
           summary: "Mémoire heap élevée"
-          description: "Plus de 90% de la heap mémoire utilisée."
+          description: "{{ $value | humanizePercentage }} de la heap mémoire utilisée ({{ printf \"%.0f\" telecom_nodejs_heap_bytes_used_bytes / 1024 / 1024 }} MB / {{ printf \"%.0f\" telecom_nodejs_heap_bytes_total_bytes / 1024 / 1024 }} MB)."
+          runbook_url: "http://localhost:3001/d/telecom-application"
+          action: "1. Vérifier les fuites mémoire via le dashboard\n2. Redémarrer l'API si nécessaire: `docker compose restart api`"

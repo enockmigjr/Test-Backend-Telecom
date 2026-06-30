@@ -9,7 +9,7 @@ export class RequestLoggerMiddleware implements NestMiddleware {
   private readonly logger = new Logger('RequestLogger');
 
   use(req: Request, _res: Response, next: NextFunction): void {
-    const correlationId = (req.headers['x-correlation-id'] as string) || 'N/A';
+    const correlationId = (req['correlationId'] as string) || 'N/A';
 
     this.logger.log({
       message: 'Requête entrante',
