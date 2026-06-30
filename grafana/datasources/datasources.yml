@@ -35,10 +35,7 @@ datasources:
     url: http://tempo:3200
     editable: false
     jsonData:
-      # Service Graph — visualisation des dépendances entre services
-      serviceMap:
-        datasourceUid: prometheus
-      # Recherche via traceID
+      # Trace-to-logs : lien automatique vers Loki via traceID
       tracesToLogsV2:
         datasourceUid: loki
         spanStartTimeShift: '-5m'
@@ -50,15 +47,9 @@ datasources:
             value: telecom-api
           - key: 'correlation.id'
             value: ''
-      # Graph de dépendances entre services
+      # Node Graph : visualisation des relations entre spans
       nodeGraph:
         enabled: true
-      # Permettre la recherche Loki depuis une trace Tempo
+      # Recherche Loki depuis une trace Tempo
       lokiSearch:
         datasourceUid: loki
-      # Recherche de traces par attribut
-      search:
-        defaultQuery: '{ span.correlation.id ~ ".*" }'
-      # Span-to-metrics (génère RED metrics depuis les traces)
-      spanMetrics:
-        datasourceUid: prometheus

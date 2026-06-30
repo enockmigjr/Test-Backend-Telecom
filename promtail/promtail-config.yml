@@ -47,13 +47,35 @@ scrape_configs:
           format: RFC3339
 
       # ──────────────────────────────────────────────────
-      # API NestJS → logs Pino JSON
+      # API NestJS → logs pino-pretty
+      # Format: "[HH:MM:SS.mmm] LEVEL (pid): { JSON }"
+      # pino-pretty extrait le niveau du JSON et le place
+      # dans le préfixe → on utilise un regex pour le récupérer
       # ──────────────────────────────────────────────────
       - match:
           selector: '{service="api"}'
           stages:
+            # Étape 1 : extraire le niveau et le corps JSON du format pretty
+            - regex:
+                expression: '^\[\d{2}:\d{2}:\d{2}\.\d{3}\]\s+(?P<parsed_level>\w+)\s+\(\d+\):\s+(?P<json_body>\{.*\})$'
+            # Étape 2 : normaliser le niveau en minuscules (INFO → info)
+            - template:
+                source: parsed_level
+                template: '{{ ToLower .Value }}'
+            # Étape 3 : parser le corps JSON pour extraire les champs
+            - json:
+                source: json_body
+                expressions:
+                  correlationId: correlationId
+                  context: context
+                  msg: msg
+                  method: method
+                  url: url
+                  statusCode: statusCode
+                  durationMs: durationMs
+            # Étape 4 : définir les labels
             - labels:
-                level:
+                level: parsed_level
                 correlationId:
                 context:
             - static_labels:
