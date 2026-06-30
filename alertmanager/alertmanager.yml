@@ -55,20 +55,24 @@ receivers:
           Subject: '[Telecom] {{ .GroupLabels.alertname }} ({{ .GroupLabels.severity }})'
         html: '{{ template "telecom.email.html" . }}'
 
-  # ─── Alertes critiques : Email + WhatsApp ───────────────────
+  # ─── Alertes critiques : Email + Webhook ──────────────────────
   - name: 'critical-alerts'
     email_configs:
       - to: 'oncall@telecom-tickets.local'
         headers:
           Subject: '[CRITICAL] {{ .GroupLabels.alertname }} — Action requise'
         html: '{{ template "telecom.email.html" . }}'
-    # WhatsApp via Webhook (configurable)
+    # WhatsApp via CallMeBot (décommenter après avoir obtenu la clé API) :
+    # 1. Ajouter +34 644 51 95 23 dans vos contacts WhatsApp
+    # 2. Envoyer "I allow callmebot to send me messages" à ce contact
+    # 3. Vous recevrez votre API key — remplacer PHONE et APIKEY ci-dessous
+    # 4. Décommenter le bloc webhook_configs ci-dessous
     webhook_configs:
-      - url: '${WHATSAPP_WEBHOOK_URL}'
-        send_resolved: false
+      - url: 'https://api.callmebot.com/whatsapp.php?phone=22967391224&text=This+is+a+test&apikey=7499427'
+        send_resolved: true
         http_config:
           follow_redirects: true
-        max_alerts: 5
+          max_alerts: 5
 
   # ─── Alertes warning : Email seulement ──────────────────────
   - name: 'warning-alerts'

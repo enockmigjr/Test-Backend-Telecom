@@ -62,14 +62,40 @@ curl http://localhost:9093/api/v2/alerts
 docker compose stop api && sleep 120 && docker compose start api
 
 # Vérifier les emails dans Mailpit
-open http://localhost:9025
+# http://localhost:9025
 ```
 
-### Configuration WhatsApp
-Pour activer les notifications WhatsApp, configurer la variable `WHATSAPP_WEBHOOK_URL` dans le service alertmanager (docker-compose.yml). Options :
-- **CallMeBot** : `https://api.callmebot.com/whatsapp.php?phone=[NUMERO]&apikey=[API_KEY]&text=[MESSAGE]`
-- **Twilio** : Utiliser un webhook intermédiaire
-- **Webhook personnalisé** : Endpoint qui reçoit le JSON Alertmanager et le forward vers l'API WhatsApp Business
+### Configuration WhatsApp (CallMeBot gratuit)
+
+**CallMeBot** permet d'envoyer des alertes WhatsApp gratuitement via une API HTTP.
+
+#### Étape 1 : Obtenir la clé API
+1. Ajouter le numéro **+34 644 51 95 23** dans vos contacts WhatsApp
+2. Envoyer le message exact suivant à ce contact :
+   ```
+   I allow callmebot to send me messages
+   ```
+3. Vous recevrez un message de confirmation avec votre **clé API** (ex: `XXXXXX`)
+
+#### Étape 2 : Configurer Alertmanager
+Dans `alertmanager/alertmanager.yml`, décommenter le bloc `webhook_configs` du receiver `critical-alerts` et remplacer :
+```yaml
+webhook_configs:
+  - url: 'https://api.callmebot.com/whatsapp.php?phone=33612345678&apikey=XXXXXX&text={{ template "telecom.webhook.body" . }}'
+    send_resolved: true
+    http_config:
+      follow_redirects: true
+    max_alerts: 5
+```
+- `phone` : votre numéro au format international (336... pour la France, sans le +)
+- `apikey` : la clé reçue par WhatsApp
+
+#### Étape 3 : Redémarrer Alertmanager
+```bash
+docker compose restart alertmanager
+```
+
+> **Note** : CallMeBot a une limite de ~80 messages par jour en version gratuite. Pour un usage production, utiliser Twilio ou l'API WhatsApp Business.
 
 ## Logs avec Pino + Loki
 

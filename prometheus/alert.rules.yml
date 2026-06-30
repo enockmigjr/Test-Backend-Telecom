@@ -79,6 +79,6 @@ groups:
           team: backend
         annotations:
           summary: "Mémoire heap élevée"
-          description: "{{ $value | humanizePercentage }} de la heap mémoire utilisée ({{ printf \"%.0f\" telecom_nodejs_heap_bytes_used_bytes / 1024 / 1024 }} MB / {{ printf \"%.0f\" telecom_nodejs_heap_bytes_total_bytes / 1024 / 1024 }} MB)."
+          description: "{{ $value | humanizePercentage }} de la heap mémoire utilisée."
           runbook_url: "http://localhost:3001/d/telecom-application"
           action: "1. Vérifier les fuites mémoire via le dashboard\n2. Redémarrer l'API si nécessaire: `docker compose restart api`"

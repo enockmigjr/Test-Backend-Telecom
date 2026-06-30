@@ -194,10 +194,32 @@ scrape_configs:
                 log_type: infrastructure
 
       # ──────────────────────────────────────────────────
+      # Uptime Kuma → logs structurés
+      # ──────────────────────────────────────────────────
+      - match:
+          selector: '{service="uptime-kuma"}'
+          stages:
+            - labels:
+                level:
+            - static_labels:
+                service_name: uptime-kuma
+                log_type: infrastructure
+
+      # ──────────────────────────────────────────────────
+      # Mailpit → logs divers
+      # ──────────────────────────────────────────────────
+      - match:
+          selector: '{service="mailpit"}'
+          stages:
+            - static_labels:
+                service_name: mailpit
+                log_type: infrastructure
+
+      # ──────────────────────────────────────────────────
       # Fallback — conteneurs non identifiés
       # ──────────────────────────────────────────────────
       - match:
-          selector: '{service!~"api|postgres|redis|nginx|prometheus|loki|tempo|grafana|promtail|alertmanager"}'
+          selector: '{service!~"api|postgres|redis|nginx|prometheus|loki|tempo|grafana|promtail|alertmanager|uptime-kuma|mailpit"}'
           stages:
             - static_labels:
                 service_name: unknown
