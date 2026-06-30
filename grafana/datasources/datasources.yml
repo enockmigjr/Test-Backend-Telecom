@@ -22,7 +22,7 @@ datasources:
       derivedFields:
         - matcherRegex: '"correlationId":"([a-zA-Z0-9-]+)"'
           name: correlationId
-          url: '$${__value.raw}'
+          url: '${__value.raw}' # <--- CORRIGÉ : Un seul symbole $ pour éviter le "unexpected $end"
 
   - name: Tempo
     type: tempo

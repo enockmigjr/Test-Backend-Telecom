@@ -35,7 +35,7 @@ pnpm run start:dev
 | `http://localhost:3000/api/docs` | Swagger / OpenAPI |
 | `http://localhost:3000/api/v1/health/ready` | Health check (DB + Redis) |
 | `http://localhost:3000/api/v1/metrics` | Métriques Prometheus |
-| `http://localhost:8025` | Mailpit (emails dev) |
+| `http://localhost:9025` | Mailpit (emails dev) |
 | `http://localhost:3001` | Grafana (admin/admin) |
 | `http://localhost:9090` | Prometheus |
 | `http://localhost:3002` | Uptime Kuma |
