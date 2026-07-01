@@ -68,6 +68,7 @@ export class SlaEngineService {
       .select({
         id: tickets.id,
         ticketNumber: tickets.ticketNumber,
+        title: tickets.title,
         priority: tickets.priority,
         assignedTo: tickets.assignedTo,
         resolutionDueAt: tickets.resolutionDueAt,
@@ -127,9 +128,9 @@ export class SlaEngineService {
             template: 'slaBreach',
             data: {
               ticketNumber: ticket.ticketNumber,
-              title: ticket.ticketNumber,
+              title: ticket.title,
+              priority: ticket.priority,
               dueDate: ticket.resolutionDueAt?.toISOString() ?? 'N/A',
-              assigneeName: ticket.assigneeFirstName ?? 'Agent',
             },
           });
         }

@@ -11,7 +11,7 @@ import {
   TicketStatusChangedEvent,
 } from '../domain/ticket.events';
 import { DrizzleProvider } from '../../../database/drizzle.provider';
-import { users } from '../../../database/schemas';
+import { users, tickets } from '../../../database/schemas';
 import { TelecomWebSocketGateway } from '../../../websocket/websocket.gateway';
 
 interface BullMqQueues {
@@ -59,6 +59,24 @@ export class TicketNotificationListener {
         .where(and(eq(users.id, userId), isNull(users.deletedAt)))
         .limit(1);
       return user?.email ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  /** Récupère le numéro et le titre d'un ticket */
+  private async getTicketSummary(ticketId: string): Promise<{ ticketNumber: string; title: string } | null> {
+    try {
+      const [ticket] = await this.drizzle.db
+        .select({ ticketNumber: tickets.ticketNumber, title: tickets.title })
+        .from(tickets)
+        .where(and(eq(tickets.id, ticketId), isNull(tickets.deletedAt)))
+        .limit(1);
+      if (!ticket) return null;
+      return {
+        ticketNumber: ticket.ticketNumber as string,
+        title: ticket.title as string,
+      };
     } catch {
       return null;
     }
@@ -144,11 +162,16 @@ export class TicketNotificationListener {
     // Email à l'assigné
     const assigneeEmail = await this.getUserEmail(event.assignedTo);
     if (assigneeEmail) {
+      const ticket = await this.getTicketSummary(event.ticketId);
       await this.sendEmail({
         to: assigneeEmail,
-        subject: `📋 Ticket assigné — ID: ${event.ticketId}`,
+        subject: `📋 Ticket assigné — ${ticket?.ticketNumber ?? event.ticketId}`,
         template: 'ticketAssigned',
-        data: { ticketId: event.ticketId, assignedBy: event.assignedBy },
+        data: {
+          ticketNumber: ticket?.ticketNumber ?? event.ticketId,
+          title: ticket?.title ?? 'Sans titre',
+          assignedBy: event.assignedBy,
+        },
       });
     }
   }
@@ -183,11 +206,16 @@ export class TicketNotificationListener {
     // Email
     const escalatedToEmail = await this.getUserEmail(event.escalatedTo);
     if (escalatedToEmail) {
+      const ticket = await this.getTicketSummary(event.ticketId);
       await this.sendEmail({
         to: escalatedToEmail,
-        subject: `⚠️ Ticket escaladé — ID: ${event.ticketId}`,
+        subject: `⚠️ Ticket escaladé — ${ticket?.ticketNumber ?? event.ticketId}`,
         template: 'ticketAssigned',
-        data: { ticketId: event.ticketId, assignedBy: event.escalatedBy },
+        data: {
+          ticketNumber: ticket?.ticketNumber ?? event.ticketId,
+          title: ticket?.title ?? 'Sans titre',
+          assignedBy: event.escalatedBy,
+        },
       });
     }
   }
