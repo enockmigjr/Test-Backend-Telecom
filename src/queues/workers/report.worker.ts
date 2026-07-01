@@ -1,16 +1,25 @@
-import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
-import { Worker, Job } from 'bullmq';
+import { Injectable, Logger, OnModuleInit, OnModuleDestroy, Inject } from '@nestjs/common';
+import { Worker, Job, Queue } from 'bullmq';
+import { eq, and, isNull, gte, lte, count, sql } from 'drizzle-orm';
 import { redisConfig } from '../../common/providers/redis.config';
 import { REPORT_QUEUE } from '../queues.module';
-import { EmailService } from '../../modules/email/email.service';
 import { DrizzleProvider } from '../../database/drizzle.provider';
-import { tickets } from '../../database/schemas';
-import { eq, isNull, and, gte, lte, count, sql } from 'drizzle-orm';
+import { tickets, users } from '../../database/schemas';
+
+interface BullMqQueues {
+  email: Queue;
+  notification: Queue;
+  [key: string]: Queue;
+}
 
 /**
- * Worker pour la génération asynchrone de rapports lourds.
- * Les rapports (PDF, exports CSV, rapports hebdomadaires) sont générés
- * en arrière-plan pour ne pas bloquer les requêtes HTTP.
+ * Worker pour la génération asynchrone de rapports (PDF, exports CSV).
+ *
+ * Flux complet :
+ * 1. Le contrôleur enqueue un job dans REPORT_QUEUE → réponse HTTP 202
+ * 2. Ce worker consomme le job, génère les données du rapport
+ * 3. Une notification in-app est créée pour informer l'utilisateur
+ * 4. Un email est envoyé au demandeur avec le résumé
  */
 @Injectable()
 export class ReportWorker implements OnModuleInit, OnModuleDestroy {
@@ -18,12 +27,16 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
   private worker: Worker;
 
   constructor(
-    private readonly emailService: EmailService,
     private readonly drizzle: DrizzleProvider,
+    @Inject('BullMQ_Queues') private readonly queues: BullMqQueues,
   ) {}
 
   onModuleInit(): void {
-    const connection = { host: redisConfig.host, port: redisConfig.port, password: redisConfig.password || undefined };
+    const connection = {
+      host: redisConfig.host,
+      port: redisConfig.port,
+      password: redisConfig.password || undefined,
+    };
 
     this.worker = new Worker(
       REPORT_QUEUE,
@@ -57,7 +70,59 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
     this.logger.log('Report Worker démarré (concurrency=3)');
   }
 
-  private async generateTicketReport(ticketId: string, _requestedBy: string): Promise<void> {
+  async onModuleDestroy(): Promise<void> {
+    await this.worker?.close();
+  }
+
+  // ─── Helpers ──────────────────────────────────────────────────────────────
+
+  private async getUserEmail(userId: string): Promise<string | null> {
+    try {
+      const [user] = await this.drizzle.db
+        .select({ email: users.email })
+        .from(users)
+        .where(and(eq(users.id, userId), isNull(users.deletedAt)))
+        .limit(1);
+      return user?.email ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  /** Envoie une notification in-app au demandeur (non-bloquant) */
+  private async notifyUser(
+    userId: string,
+    type: string,
+    title: string,
+    message: string,
+    referenceId?: string,
+  ): Promise<void> {
+    try {
+      await this.queues.notification.add('create-notification', {
+        userId,
+        type,
+        title,
+        message,
+        referenceType: 'report',
+        referenceId: referenceId || null,
+      });
+    } catch (err) {
+      this.logger.warn(`Notification queue indisponible: ${String(err)}`);
+    }
+  }
+
+  /** Envoie un email au demandeur (non-bloquant) */
+  private async sendEmail(to: string, subject: string, template: string, data: Record<string, unknown>): Promise<void> {
+    try {
+      await this.queues.email.add('send-email', { to, subject, template, data });
+    } catch (err) {
+      this.logger.warn(`Email queue indisponible: ${String(err)}`);
+    }
+  }
+
+  // ─── Génération des rapports ──────────────────────────────────────────────
+
+  private async generateTicketReport(ticketId: string, requestedBy: string): Promise<void> {
     const [ticket] = await this.drizzle.db
       .select({
         id: tickets.id,
@@ -66,9 +131,13 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
         description: tickets.description,
         status: tickets.status,
         priority: tickets.priority,
+        severity: tickets.severity,
+        category: tickets.category,
         createdAt: tickets.createdAt,
         resolvedAt: tickets.resolvedAt,
         closedAt: tickets.closedAt,
+        customerName: tickets.customerName,
+        resolutionSummary: tickets.resolutionSummary,
       })
       .from(tickets)
       .where(and(eq(tickets.id, ticketId), isNull(tickets.deletedAt)))
@@ -79,27 +148,89 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
       return;
     }
 
-    this.logger.log(`Rapport ticket généré: ${ticket.ticketNumber}`);
+    const ticketNumber = ticket.ticketNumber as string;
+
+    // Notifier le demandeur
+    await this.notifyUser(
+      requestedBy,
+      'REPORT_READY',
+      '📄 Rapport ticket prêt',
+      `Le rapport pour le ticket ${ticketNumber} (« ${ticket.title} ») a été généré.`,
+      ticketId,
+    );
+
+    // Envoyer l'email
+    const email = await this.getUserEmail(requestedBy);
+    if (email) {
+      await this.sendEmail(email, `📄 Rapport ticket — ${ticketNumber}`, 'ticketCreated', {
+        ticketNumber,
+        title: ticket.title,
+        priority: ticket.priority,
+      });
+    }
+
+    this.logger.log(`Rapport ticket généré et notifié: ${ticketNumber} → ${requestedBy}`);
   }
 
-  private async generateSlaReport(from: string, to: string, _requestedBy: string): Promise<void> {
+  private async generateSlaReport(from: string, to: string, requestedBy: string): Promise<void> {
     const fromDate = new Date(from);
     const toDate = new Date(to);
     const where = and(gte(tickets.createdAt, fromDate), lte(tickets.createdAt, toDate), isNull(tickets.deletedAt));
 
     const [stats] = await this.drizzle.db
-      .select({ total: count(), breached: sql<number>`COUNT(*) FILTER (WHERE ${tickets.slaBreached} = true)` })
+      .select({
+        total: count(),
+        breached: sql<number>`COUNT(*) FILTER (WHERE ${tickets.slaBreached} = true)`,
+        avgResolutionMinutes: sql<number>`COALESCE(AVG(EXTRACT(EPOCH FROM (${tickets.resolvedAt} - ${tickets.createdAt})) / 60) FILTER (WHERE ${tickets.resolvedAt} IS NOT NULL), 0)`,
+      })
       .from(tickets)
       .where(where);
 
-    this.logger.log(`Rapport SLA généré: ${stats?.total || 0} tickets, ${stats?.breached || 0} breaches`);
+    const total = Number(stats?.total || 0);
+    const breached = Number(stats?.breached || 0);
+    const avgMin = Math.round(Number(stats?.avgResolutionMinutes || 0));
+
+    // Notifier le demandeur
+    await this.notifyUser(
+      requestedBy,
+      'REPORT_READY',
+      '📊 Rapport SLA prêt',
+      `Rapport SLA généré: ${total} tickets, ${breached} violations, ${avgMin} min moy.`,
+    );
+
+    // Envoyer l'email
+    const email = await this.getUserEmail(requestedBy);
+    if (email) {
+      await this.sendEmail(email, '📊 Rapport SLA', 'slaBreach', {
+        ticketNumber: `SLA-${from || 'debut'}-${to || 'fin'}`,
+        title: `Rapport SLA: ${total} tickets, ${breached} violations`,
+        dueDate: new Date().toISOString(),
+      });
+    }
+
+    this.logger.log(`Rapport SLA généré et notifié: ${total} tickets, ${breached} breaches → ${requestedBy}`);
   }
 
   private async generateWeeklyReport(requestedBy: string): Promise<void> {
-    this.logger.log(`Rapport hebdomadaire généré pour ${requestedBy}`);
-  }
+    const now = new Date();
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-  async onModuleDestroy(): Promise<void> {
-    await this.worker?.close();
+    await this.notifyUser(
+      requestedBy,
+      'REPORT_READY',
+      '📈 Rapport hebdomadaire prêt',
+      `Le rapport hebdomadaire (${weekAgo.toLocaleDateString('fr-FR')} → ${now.toLocaleDateString('fr-FR')}) a été généré.`,
+    );
+
+    const email = await this.getUserEmail(requestedBy);
+    if (email) {
+      await this.sendEmail(email, '📈 Rapport hebdomadaire Telecom', 'ticketCreated', {
+        ticketNumber: `HEBDO-${weekAgo.toISOString().slice(0, 10)}`,
+        title: 'Rapport hebdomadaire automatique',
+        priority: 'MEDIUM',
+      });
+    }
+
+    this.logger.log(`Rapport hebdomadaire généré et notifié → ${requestedBy}`);
   }
 }
