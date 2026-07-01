@@ -1,46 +1,60 @@
 /**
- * Colonnes d'audit standard pour les entités.
- * Pattern cohérent pour toutes les tables qui nécessitent une traçabilité.
+ * Utilitaires d'audit pour les entités.
  *
- * Règles:
- * - createdBy: toujours rempli à la création (userId)
- * - updatedBy: mis à jour à chaque modification (userId)
- * - deletedBy: rempli lors d'un soft delete (userId), null sinon
- * - createdAt/updatedAt: gérés automatiquement par PostgreSQL/Drizzle
- * - deletedAt: null par défaut, défini lors du soft delete
+ * NOTE ARCHITECTURALE :
+ * La traçabilité fine des modifications (qui a modifié quoi et quand)
+ * est gérée par la table `audit_logs` via AuditWorker + BullMQ.
+ * Ces helpers préparent des objets partiels utilisés lors des insertions/updates
+ * dans les services métier pour renseigner le champ `created_by` des tables
+ * qui l'exposent (ex: tickets.createdBy).
+ *
+ * Règles :
+ * - createdBy : rempli à la création (userId de l'auteur)
+ * - Les actions UPDATE et DELETE sont tracées dans audit_logs, pas dans les tables métier
  */
-export interface AuditFields {
-  createdBy: string | null;
-  updatedBy: string | null;
-  deletedBy: string | null;
+
+/**
+ * Prépare le champ d'audit pour la création d'une entité.
+ * Utilisé pour renseigner `createdBy` lors d'une insertion.
+ */
+export function createAuditFields(userId: string): { createdBy: string } {
+  return { createdBy: userId };
 }
 
 /**
- * Prépare les champs d'audit pour la création d'une entité.
+ * Prépare un payload d'audit pour la mise à jour (à envoyer dans audit_logs).
+ * Retourne un objet structuré prêt à être ajouté dans la queue AUDIT_QUEUE.
  */
-export function createAuditFields(userId?: string): AuditFields {
-  return {
-    createdBy: userId || null,
-    updatedBy: null,
-    deletedBy: null,
-  };
+export function buildUpdateAuditPayload(
+  userId: string,
+  entityType: string,
+  entityId: string,
+  oldValue: Record<string, unknown>,
+  newValue: Record<string, unknown>,
+): AuditPayload {
+  return { userId, action: 'UPDATED', entityType, entityId, oldValue, newValue };
 }
 
 /**
- * Prépare les champs d'audit pour la mise à jour d'une entité.
+ * Prépare un payload d'audit pour la suppression logique (soft delete).
  */
-export function updateAuditFields(userId?: string): Pick<AuditFields, 'updatedBy'> {
+export function buildDeleteAuditPayload(userId: string, entityType: string, entityId: string): AuditPayload {
   return {
-    updatedBy: userId || null,
+    userId,
+    action: 'DELETED',
+    entityType,
+    entityId,
+    oldValue: null,
+    newValue: { deletedAt: new Date().toISOString() },
   };
 }
 
-/**
- * Prépare les champs d'audit pour la suppression logique d'une entité.
- */
-export function deleteAuditFields(userId?: string): { deletedAt: Date; deletedBy: string | null } {
-  return {
-    deletedAt: new Date(),
-    deletedBy: userId || null,
-  };
+/** Type du payload à envoyer dans la queue audit */
+export interface AuditPayload {
+  userId: string;
+  action: string;
+  entityType: string;
+  entityId: string;
+  oldValue: Record<string, unknown> | null;
+  newValue: Record<string, unknown> | null;
 }

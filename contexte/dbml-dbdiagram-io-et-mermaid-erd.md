@@ -1,215 +1,217 @@
 ---
 # yaml-language-server: $schema=schemas\page.schema.json
 Object type:
-    - Page
-Creation date: "2026-06-22T09:40:37Z"
+  - Page
+Creation date: '2026-06-22T09:40:37Z'
 Created by:
-    - Enock Junior
+  - Enock Junior
 id: bafyreighdmzh53atn7mphuobvdajxmz2a5lbykn5wflxfzyhvdpemnqkde
 ---
-# DBML (dbdiagram.io) et Mermaid ERD   
-# DBML (dbdiagram.io)   
-   
-Enum role\_enum {
+
+# DBML (dbdiagram.io) et Mermaid ERD
+
+# DBML (dbdiagram.io)
+
+Enum role_enum {
 ADMINISTRATOR
 SUPERVISOR
-CUSTOMER\_SERVICE\_AGENT
-NOC\_ENGINEER
-BILLING\_AGENT
-TECHNICAL\_SUPPORT\_ENGINEER
-FIELD\_TECHNICIAN
-}   
-Enum ticket\_status\_enum {
+CUSTOMER_SERVICE_AGENT
+NOC_ENGINEER
+BILLING_AGENT
+TECHNICAL_SUPPORT_ENGINEER
+FIELD_TECHNICIAN
+}  
+Enum ticket_status_enum {
 NEW
 ASSIGNED
-IN\_PROGRESS
-PENDING\_CUSTOMER
-PENDING\_THIRD\_PARTY
+IN_PROGRESS
+PENDING_CUSTOMER
+PENDING_THIRD_PARTY
 RESOLVED
 CLOSED
 REOPENED
 CANCELLED
-}   
-Enum ticket\_priority\_enum {
+}  
+Enum ticket_priority_enum {
 LOW
 MEDIUM
 HIGH
 CRITICAL
-}   
-Enum ticket\_severity\_enum {
+}  
+Enum ticket_severity_enum {
 S1
 S2
 S3
 S4
-}   
-Enum ticket\_category\_enum {
+}  
+Enum ticket_category_enum {
 NETWORK
 BILLING
 TECHNICAL
 HARDWARE
 SOFTWARE
 OTHER
-}   
-Enum notification\_type\_enum {
-TICKET\_ASSIGNED
-TICKET\_ESCALATED
-TICKET\_RESOLVED
-COMMENT\_ADDED
-SLA\_WARNING
-SLA\_BREACHED
-}   
-   
+}  
+Enum notification_type_enum {
+TICKET_ASSIGNED
+TICKET_ESCALATED
+TICKET_RESOLVED
+COMMENT_ADDED
+SLA_WARNING
+SLA_BREACHED
+}
+
 Table departments {
 id uuid [pk]
 name varchar(100) [unique, not null]
 description text
-created\_at timestamp
-updated\_at timestamp
-}   
+created_at timestamp
+updated_at timestamp
+}  
 Table users {
-id uuid [pk]   
-department\_id uuid [not null, ref: > departments.id]   
+id uuid [pk]  
+department_id uuid [not null, ref: > departments.id]  
 email varchar(255) [unique, not null]
-password\_hash text [not null]   
-first\_name varchar(100) [not null]
-last\_name varchar(100) [not null]   
-role role\_enum   
-is\_active boolean [default: true]
-must\_change\_password boolean [default: false]   
-last\_login\_at timestamp   
-created\_at timestamp
-updated\_at timestamp
-deleted\_at timestamp
-}   
+password_hash text [not null]  
+first_name varchar(100) [not null]
+last_name varchar(100) [not null]  
+role role_enum  
+is_active boolean [default: true]
+must_change_password boolean [default: false]  
+last_login_at timestamp  
+created_at timestamp
+updated_at timestamp
+deleted_at timestamp
+}  
 Table tickets {
-id uuid [pk]   
-ticket\_number varchar(30) [unique, not null]   
+id uuid [pk]  
+ticket_number varchar(30) [unique, not null]  
 title varchar(255) [not null]
-description text [not null]   
-status ticket\_status\_enum
-priority ticket\_priority\_enum
-severity ticket\_severity\_enum
-category ticket\_category\_enum   
-sla\_policy\_id uuid [not null, ref: > sla\_policies.id]   
-customer\_account\_number varchar(100)
-customer\_name varchar(255)
-customer\_contact varchar(255)   
-department\_id uuid [not null, ref: > departments.id]   
-assigned\_team\_id uuid [not null, ref: > departments.id]   
-created\_by uuid [not null, ref: > users.id]   
-assigned\_to uuid [ref: > users.id]   
-resolution\_summary text   
-first\_response\_at timestamp
-resolved\_at timestamp   
-first\_response\_due\_at timestamp
-resolution\_due\_at timestamp
-closed\_at timestamp   
-tags text   
-metadata json   
-created\_at timestamp
-updated\_at timestamp
-deleted\_at timestamp
-}   
-Table ticket\_assignments {
-id uuid [pk]   
-ticket\_id uuid [not null, ref: > tickets.id]   
-from\_user\_id uuid [ref: > users.id]
-to\_user\_id uuid [not null, ref: > users.id]   
-from\_department\_id uuid [ref: > departments.id]
-to\_department\_id uuid [not null, ref: > departments.id]   
-assigned\_by uuid [not null, ref: > users.id]   
-reason text   
-created\_at timestamp
-}   
-Table ticket\_comments {
-id uuid [pk]   
-ticket\_id uuid [not null, ref: > tickets.id]   
-author\_id uuid [not null, ref: > users.id]   
-content text [not null]   
-created\_at timestamp
-updated\_at timestamp
-}   
-Table ticket\_internal\_notes {
-id uuid [pk]   
-ticket\_id uuid [not null, ref: > tickets.id]   
-author\_id uuid [not null, ref: > users.id]   
-content text [not null]   
-created\_at timestamp
-updated\_at timestamp
-}   
+description text [not null]  
+status ticket_status_enum
+priority ticket_priority_enum
+severity ticket_severity_enum
+category ticket_category_enum  
+sla_policy_id uuid [not null, ref: > sla\_policies.id]  
+customer_account_number varchar(100)
+customer_name varchar(255)
+customer_contact varchar(255)  
+department_id uuid [not null, ref: > departments.id]  
+assigned_team_id uuid [not null, ref: > departments.id]  
+created_by uuid [not null, ref: > users.id]  
+assigned_to uuid [ref: > users.id]  
+resolution_summary text  
+first_response_at timestamp
+resolved_at timestamp  
+first_response_due_at timestamp
+resolution_due_at timestamp
+closed_at timestamp  
+tags text  
+metadata json  
+created_at timestamp
+updated_at timestamp
+deleted_at timestamp
+}  
+Table ticket_assignments {
+id uuid [pk]  
+ticket_id uuid [not null, ref: > tickets.id]  
+from_user_id uuid [ref: > users.id]
+to_user_id uuid [not null, ref: > users.id]  
+from_department_id uuid [ref: > departments.id]
+to_department_id uuid [not null, ref: > departments.id]  
+assigned_by uuid [not null, ref: > users.id]  
+reason text  
+created_at timestamp
+}  
+Table ticket_comments {
+id uuid [pk]  
+ticket_id uuid [not null, ref: > tickets.id]  
+author_id uuid [not null, ref: > users.id]  
+content text [not null]  
+created_at timestamp
+updated_at timestamp
+}  
+Table ticket_internal_notes {
+id uuid [pk]  
+ticket_id uuid [not null, ref: > tickets.id]  
+author_id uuid [not null, ref: > users.id]  
+content text [not null]  
+created_at timestamp
+updated_at timestamp
+}  
 Table attachments {
-id uuid [pk]   
-ticket\_id uuid [ref: > tickets.id]   
-comment\_id uuid [ref: > ticket\_comments.id]   
-internal\_note\_id uuid [ref: > ticket\_internal\_notes.id]   
-uploaded\_by uuid [not null, ref: > users.id]   
-object\_key text [not null]   
-bucket\_name varchar(100)   
-original\_filename varchar(255)   
-mime\_type varchar(100)   
-file\_size bigint   
-created\_at timestamp
-}   
-Table ticket\_history {
-id uuid [pk]   
-ticket\_id uuid [not null, ref: > tickets.id]   
-user\_id uuid [not null, ref: > users.id]   
-action varchar(100) [not null]   
-old\_value json
-new\_value json   
-metadata json   
-created\_at timestamp
-}   
-Table refresh\_tokens {
-id uuid [pk]   
-user\_id uuid [not null, ref: > users.id]   
-token\_hash text [not null]   
-user\_agent text   
-ip\_address varchar(45)   
-expires\_at timestamp [not null]   
-revoked\_at timestamp   
-created\_at timestamp
-}   
+id uuid [pk]  
+ticket_id uuid [ref: > tickets.id]  
+comment_id uuid [ref: > ticket\_comments.id]  
+internal_note_id uuid [ref: > ticket\_internal\_notes.id]  
+uploaded_by uuid [not null, ref: > users.id]  
+object_key text [not null]  
+bucket_name varchar(100)  
+original_filename varchar(255)  
+mime_type varchar(100)  
+file_size bigint  
+created_at timestamp
+}  
+Table ticket_history {
+id uuid [pk]  
+ticket_id uuid [not null, ref: > tickets.id]  
+user_id uuid [not null, ref: > users.id]  
+action varchar(100) [not null]  
+old_value json
+new_value json  
+metadata json  
+created_at timestamp
+}  
+Table refresh_tokens {
+id uuid [pk]  
+user_id uuid [not null, ref: > users.id]  
+token_hash text [not null]  
+user_agent text  
+ip_address varchar(45)  
+expires_at timestamp [not null]  
+revoked_at timestamp  
+created_at timestamp
+}  
 Table notifications {
-id uuid [pk]   
-user\_id uuid [not null, ref: > users.id]   
-type notification\_type\_enum   
-title varchar(255) [not null]   
-message text [not null]   
-reference\_type varchar(50)   
-reference\_id uuid   
-is\_read boolean [default: false]   
-read\_at timestamp   
-created\_at timestamp
-}   
-Table sla\_policies {   
-id uuid [pk]   
-category ticket\_category\_enum   
-priority ticket\_priority\_enum   
-first\_response\_minutes int [not null]   
-resolution\_minutes int [not null]   
-created\_at timestamp
-updated\_at timestamp
-}   
-Table audit\_logs {
-id uuid [pk]   
-user\_id uuid [not null, ref: > users.id]   
-action varchar(100) [not null]   
-entity\_type varchar(50) [not null]   
-entity\_id uuid [not null]   
-old\_value json   
-new\_value json   
-ip\_address varchar(45)   
-user\_agent text   
-created\_at timestamp
-}   
-   
-   
-   
-# Mermaid ERD   
-Version pour README et documentation.   
-   
-erDiagram   
+id uuid [pk]  
+user_id uuid [not null, ref: > users.id]  
+type notification_type_enum  
+title varchar(255) [not null]  
+message text [not null]  
+reference_type varchar(50)  
+reference_id uuid  
+is_read boolean [default: false]  
+read_at timestamp  
+created_at timestamp
+}  
+Table sla_policies {  
+id uuid [pk]  
+category ticket_category_enum  
+priority ticket_priority_enum  
+first_response_minutes int [not null]  
+resolution_minutes int [not null]  
+created_at timestamp
+updated_at timestamp
+}  
+Table audit_logs {
+id uuid [pk]  
+user_id uuid [not null, ref: > users.id]  
+action varchar(100) [not null]  
+entity_type varchar(50) [not null]  
+entity_id uuid [not null]  
+old_value json  
+new_value json  
+ip_address varchar(45)  
+user_agent text  
+created_at timestamp
+}
+
+# Mermaid ERD
+
+Version pour README et documentation.
+
+erDiagram
+
 ```
 DEPARTMENTS ||--o{ USERS : contains
 
@@ -250,11 +252,13 @@ TICKET_COMMENTS ||--o{ ATTACHMENTS : contains
 TICKET_INTERNAL_NOTES ||--o{ ATTACHMENTS : contains
 
 ```
-   
-# Mermaid ERD   
-Version simplifiée pour README et documentation.   
-   
-flowchart LR   
+
+# Mermaid ERD
+
+Version simplifiée pour README et documentation.
+
+flowchart LR
+
 ```
 D[Departments]
 
@@ -305,8 +309,11 @@ U --> AL
 SLA --> T
 
 ```
-## Diagramme de Sécurité   
-flowchart LR   
+
+## Diagramme de Sécurité
+
+flowchart LR
+
 ```
 Client
 
@@ -331,8 +338,11 @@ Guards --> Validation
 Validation --> Controllers
 
 ```
-## Diagramme de Déploiement   
-flowchart TB   
+
+## Diagramme de Déploiement
+
+flowchart TB
+
 ```
 Internet
 
@@ -365,8 +375,11 @@ Grafana --> PostgreSQL
 Grafana --> Redis
 
 ```
-## Diagramme d'Observabilité   
-flowchart LR   
+
+## Diagramme d'Observabilité
+
+flowchart LR
+
 ```
 NestJS
 
@@ -399,40 +412,49 @@ Grafana --> Tempo
 Grafana --> Prometheus
 
 ```
-## Diagramme Upload de Fichier   
-sequenceDiagram   
-participant User   
-participant API   
-participant Storage   
-participant DB   
-User->>API: Upload File   
-API->>API: Validate MIME   
-API->>API: Antivirus Scan   
-API->>Storage: Store File   
-API->>DB: Save Metadata   
-API⟶>User: Success   
-## Diagramme Refresh Token Rotation   
-sequenceDiagram   
-participant User   
-participant API   
-participant DB   
-User->>API: Refresh Token   
-API->>DB: Verify Token   
-API->>DB: Revoke Old Token   
-API->>DB: Store New Token   
-API⟶>User: New Tokens   
-## Diagramme Authentification   
-sequenceDiagram   
-participant User   
-participant API   
-participant DB   
-User->>API: Login   
-API->>DB: Verify User   
-API->>DB: Verify Argon2id   
-API->>DB: Store Refresh Token   
-API⟶>User: Access + Refresh   
-## Diagramme Notifications   
-flowchart LR   
+
+## Diagramme Upload de Fichier
+
+sequenceDiagram  
+participant User  
+participant API  
+participant Storage  
+participant DB  
+User->>API: Upload File  
+API->>API: Validate MIME  
+API->>API: Antivirus Scan  
+API->>Storage: Store File  
+API->>DB: Save Metadata  
+API⟶>User: Success
+
+## Diagramme Refresh Token Rotation
+
+sequenceDiagram  
+participant User  
+participant API  
+participant DB  
+User->>API: Refresh Token  
+API->>DB: Verify Token  
+API->>DB: Revoke Old Token  
+API->>DB: Store New Token  
+API⟶>User: New Tokens
+
+## Diagramme Authentification
+
+sequenceDiagram  
+participant User  
+participant API  
+participant DB  
+User->>API: Login  
+API->>DB: Verify User  
+API->>DB: Verify Argon2id  
+API->>DB: Store Refresh Token  
+API⟶>User: Access + Refresh
+
+## Diagramme Notifications
+
+flowchart LR
+
 ```
 Event[Business Event]
 
@@ -451,8 +473,11 @@ DB --> User
 WS --> User
 
 ```
-## Diagramme SLA   
-flowchart LR   
+
+## Diagramme SLA
+
+flowchart LR
+
 ```
 Ticket
 
@@ -469,49 +494,58 @@ SLA --> Queue
 Queue --> Notification
 
 ```
-## Diagramme de Résolution d'un Ticket   
-sequenceDiagram   
-participant Engineer   
-participant API   
-participant DB   
-participant Queue   
-Engineer->>API: Resolve Ticket   
-API->>DB: Update status   
-API->>DB: Insert History   
-API->>DB: Insert Audit   
-API->>Queue: Notification   
-API⟶>Engineer: Success   
-## Diagramme d'Affectation d'un Ticket   
-sequenceDiagram   
-participant Supervisor   
-participant API   
-participant DB   
-participant Queue   
-participant AssignedUser   
-Supervisor->>API: Assign Ticket   
-API->>DB: Update assigned\_to   
-API->>DB: Insert ticket\_assignment   
-API->>DB: Insert ticket\_history   
-API->>DB: Insert audit\_log   
-API->>Queue: Notification Job   
-Queue⟶>AssignedUser: New Assignment   
-## Diagramme de Création d'un Ticket   
-sequenceDiagram   
-participant User   
-participant API   
-participant PostgreSQL   
-participant BullMQ   
-participant WS   
-User->>API: POST /tickets   
-API->>PostgreSQL: Create Ticket   
-API->>PostgreSQL: Create Ticket History   
-API->>PostgreSQL: Create Audit Log   
-API->>BullMQ: Notification Job   
-API->>BullMQ: SLA Job   
-API->>WS: ticket.created   
-API⟶>User: 201 Created   
-## Architecture Applicative Interne   
-flowchart TB   
+
+## Diagramme de Résolution d'un Ticket
+
+sequenceDiagram  
+participant Engineer  
+participant API  
+participant DB  
+participant Queue  
+Engineer->>API: Resolve Ticket  
+API->>DB: Update status  
+API->>DB: Insert History  
+API->>DB: Insert Audit  
+API->>Queue: Notification  
+API⟶>Engineer: Success
+
+## Diagramme d'Affectation d'un Ticket
+
+sequenceDiagram  
+participant Supervisor  
+participant API  
+participant DB  
+participant Queue  
+participant AssignedUser  
+Supervisor->>API: Assign Ticket  
+API->>DB: Update assigned_to  
+API->>DB: Insert ticket_assignment  
+API->>DB: Insert ticket_history  
+API->>DB: Insert audit_log  
+API->>Queue: Notification Job  
+Queue⟶>AssignedUser: New Assignment
+
+## Diagramme de Création d'un Ticket
+
+sequenceDiagram  
+participant User  
+participant API  
+participant PostgreSQL  
+participant BullMQ  
+participant WS  
+User->>API: POST /tickets  
+API->>PostgreSQL: Create Ticket  
+API->>PostgreSQL: Create Ticket History  
+API->>PostgreSQL: Create Audit Log  
+API->>BullMQ: Notification Job  
+API->>BullMQ: SLA Job  
+API->>WS: ticket.created  
+API⟶>User: 201 Created
+
+## Architecture Applicative Interne
+
+flowchart TB
+
 ```
 Controller
 
@@ -536,8 +570,11 @@ Service --> BullMQ
 Service --> WebSocket
 
 ```
-## Vue d'ensemble de l'architecture (C4 - Level 1)   
-flowchart LR   
+
+## Vue d'ensemble de l'architecture (C4 - Level 1)
+
+flowchart LR
+
 ```
 Employee[Employé Telecom]
 
@@ -550,8 +587,11 @@ Employee --> System
 System --> Mail
 
 ```
-## Architecture Conteneurs (C4 - Level 2)   
-flowchart LR   
+
+## Architecture Conteneurs (C4 - Level 2)
+
+flowchart LR
+
 ```
 User[Web Frontend]
 

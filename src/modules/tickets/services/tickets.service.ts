@@ -1,10 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { eq, and, isNull, sql } from 'drizzle-orm';
+import { eq, and, isNull, sql, count } from 'drizzle-orm';
 import { generateUuid } from '../../../common/helpers/uuidv7.helper';
 
 import { DrizzleProvider } from '../../../database/drizzle.provider';
-import { tickets, ticketAssignments, slaPolicies, users, departments } from '../../../database/schemas';
+import { tickets, ticketAssignments, slaPolicies, users, departments, ticketComments } from '../../../database/schemas';
 import { TicketStateMachine, TicketStatus } from '../domain/ticket-status-transitions';
 import { TicketNumberService } from './ticket-number.service';
 import { TicketHistoryService } from './ticket-history.service';
@@ -114,11 +114,48 @@ export class TicketsService {
   }
 
   /**
-   * Récupère un ticket par son ID avec toutes les relations.
+   * Récupère un ticket par son ID avec toutes les relations (basique).
    */
   async findById(id: string) {
     const ticket = await this.findTicketById(id);
     return { data: ticket };
+  }
+
+  /**
+   * Récupère un ticket avec toutes les relations enrichies (créateur, assigné, département, SLA, commentaires).
+   */
+  async findByIdDetailed(id: string) {
+    const ticket = await this.findTicketById(id);
+
+    const [commentCount] = await this.drizzle.db
+      .select({ count: count() })
+      .from(ticketComments)
+      .where(eq(ticketComments.ticketId, id));
+
+    // Historique des assignations
+    const assignments = await this.drizzle.db
+      .select({
+        id: ticketAssignments.id,
+        toUserId: ticketAssignments.toUserId,
+        fromUserId: ticketAssignments.fromUserId,
+        reason: ticketAssignments.reason,
+        createdAt: ticketAssignments.createdAt,
+      })
+      .from(ticketAssignments)
+      .where(eq(ticketAssignments.ticketId, id))
+      .orderBy(sql`${ticketAssignments.createdAt} asc`)
+      .limit(20);
+
+    return {
+      data: {
+        ...ticket,
+        _meta: {
+          commentCount: Number(commentCount?.count ?? 0),
+          assignmentCount: assignments.length,
+        },
+        assignmentHistory: assignments,
+      },
+    };
   }
 
   /**

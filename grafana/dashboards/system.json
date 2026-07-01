@@ -27,9 +27,7 @@
       "type": "gauge",
       "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
       "datasource": "Prometheus",
-      "targets": [
-        { "expr": "rate(telecom_process_cpu_user_seconds_total[1m]) * 100", "legendFormat": "User CPU %" }
-      ],
+      "targets": [{ "expr": "rate(telecom_process_cpu_user_seconds_total[1m]) * 100", "legendFormat": "User CPU %" }],
       "fieldConfig": {
         "defaults": {
           "unit": "percent",
@@ -52,9 +50,7 @@
       "type": "stat",
       "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
       "datasource": "Prometheus",
-      "targets": [
-        { "expr": "telecom_process_resident_memory_bytes", "legendFormat": "RSS" }
-      ],
+      "targets": [{ "expr": "telecom_process_resident_memory_bytes", "legendFormat": "RSS" }],
       "fieldConfig": {
         "defaults": {
           "unit": "bytes",
@@ -75,7 +71,10 @@
       "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
       "datasource": "Prometheus",
       "targets": [
-        { "expr": "histogram_quantile(0.95, rate(telecom_nodejs_eventloop_lag_seconds_bucket[5m])) * 1000", "legendFormat": "Lag" }
+        {
+          "expr": "histogram_quantile(0.95, rate(telecom_nodejs_eventloop_lag_seconds_bucket[5m])) * 1000",
+          "legendFormat": "Lag"
+        }
       ],
       "fieldConfig": {
         "defaults": {
@@ -99,9 +98,7 @@
       "type": "stat",
       "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
       "datasource": "Prometheus",
-      "targets": [
-        { "expr": "telecom_nodejs_active_handles_total", "legendFormat": "Handles" }
-      ],
+      "targets": [{ "expr": "telecom_nodejs_active_handles_total", "legendFormat": "Handles" }],
       "fieldConfig": {
         "defaults": {
           "unit": "short",
@@ -155,7 +152,10 @@
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 5 },
       "datasource": "Prometheus",
       "targets": [
-        { "expr": "histogram_quantile(0.95, rate(telecom_nodejs_eventloop_lag_seconds_bucket[5m])) * 1000", "legendFormat": "Event Loop Lag P95 (ms)" },
+        {
+          "expr": "histogram_quantile(0.95, rate(telecom_nodejs_eventloop_lag_seconds_bucket[5m])) * 1000",
+          "legendFormat": "Event Loop Lag P95 (ms)"
+        },
         { "expr": "telecom_nodejs_active_requests_total", "legendFormat": "Active Requests" },
         { "expr": "telecom_nodejs_active_handles_total", "legendFormat": "Active Handles" }
       ],
@@ -186,9 +186,7 @@
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 14 },
       "datasource": "Prometheus",
-      "targets": [
-        { "expr": "telecom_db_pool_connections", "legendFormat": "Active Connections" }
-      ],
+      "targets": [{ "expr": "telecom_db_pool_connections", "legendFormat": "Active Connections" }],
       "fieldConfig": {
         "defaults": {
           "unit": "short",

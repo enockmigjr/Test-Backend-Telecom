@@ -19,6 +19,9 @@ import { TransformInterceptor } from '../src/common/interceptors/transform.inter
 export async function createTestApp(): Promise<INestApplication> {
   // Reduire le niveau de log pour les tests
   process.env.LOG_LEVEL = 'error';
+  // Augmenter les limites du throttler pour éviter les erreurs 429 en E2E
+  process.env.THROTTLE_LIMIT = '10000';
+  process.env.THROTTLE_AUTH_LIMIT = '10000';
 
   const moduleFixture: TestingModule = await Test.createTestingModule({
     imports: [AppModule],

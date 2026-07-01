@@ -1,62 +1,82 @@
 ---
 # yaml-language-server: $schema=schemas\page.schema.json
 Object type:
-    - Page
-Creation date: "2026-06-22T09:14:05Z"
+  - Page
+Creation date: '2026-06-22T09:14:05Z'
 Created by:
-    - Enock Junior
+  - Enock Junior
 id: bafyreie3fnspg2n26xozggzfnfubxyr3cf24hf4tckxyjwq6hrow23tjiq
 ---
-# Phase 2 – Database Design   
-# 1. Introduction   
-## Objectif   
-Cette phase présente la conception de la base de données du système de gestion d'incidents télécoms.   
-L'objectif du modèle de données est de garantir :   
-- l'intégrité des données ;   
-- la traçabilité complète des opérations ;   
-- la conservation des historiques ;   
-- de bonnes performances de lecture et d'écriture ;   
-- l'évolutivité du système.   
-   
-La solution retenue repose sur PostgreSQL en raison de sa robustesse, de son support avancé des contraintes relationnelles, de ses types de données modernes (JSONB, ARRAY, ENUM) et de ses excellentes performances.   
- --- 
-# 2. Principes de conception   
-## Intégrité référentielle   
-Toutes les relations importantes sont protégées par des clés étrangères afin d'éviter les incohérences.   
-Exemples :   
-- Un ticket doit appartenir à un département.   
-- Un commentaire doit appartenir à un ticket existant.   
-- Une notification doit appartenir à un utilisateur existant.   
- --- 
-   
-## Auditabilité   
-Le système doit permettre de reconstruire l'historique complet d'un incident.   
-Pour cette raison :   
-- les affectations sont historisées ;   
-- les changements importants sont journalisés ;   
-- les suppressions sont logiques (Soft Delete).   
- --- 
-   
-## Évolutivité   
-Le modèle a été conçu pour permettre :   
-- l'ajout futur de nouveaux départements ;   
-- l'ajout de nouveaux types de notifications ;   
-- l'intégration de nouveaux systèmes de stockage ;   
-- l'évolution vers une architecture distribuée.   
- --- 
-   
-## Performance   
-Les index sont définis en fonction des cas d'usage réels :   
-- recherche de tickets ;   
-- tableaux de bord ;   
-- affectations ;   
-- calcul des SLA ;   
-- reporting.   
- --- 
-   
-# 3. Types ENUM PostgreSQL   
-Afin de garantir la cohérence des données, plusieurs ENUM PostgreSQL sont utilisés.   
-## role\_enum   
+
+# Phase 2 – Database Design
+
+# 1. Introduction
+
+## Objectif
+
+Cette phase présente la conception de la base de données du système de gestion d'incidents télécoms.  
+L'objectif du modèle de données est de garantir :
+
+- l'intégrité des données ;
+- la traçabilité complète des opérations ;
+- la conservation des historiques ;
+- de bonnes performances de lecture et d'écriture ;
+- l'évolutivité du système.  
+
+
+La solution retenue repose sur PostgreSQL en raison de sa robustesse, de son support avancé des contraintes relationnelles, de ses types de données modernes (JSONB, ARRAY, ENUM) et de ses excellentes performances.
+
+---
+
+# 2. Principes de conception
+
+## Intégrité référentielle
+
+Toutes les relations importantes sont protégées par des clés étrangères afin d'éviter les incohérences.  
+Exemples :
+
+- Un ticket doit appartenir à un département.
+- Un commentaire doit appartenir à un ticket existant.
+- Une notification doit appartenir à un utilisateur existant.
+  ***
+
+## Auditabilité
+
+Le système doit permettre de reconstruire l'historique complet d'un incident.  
+Pour cette raison :
+
+- les affectations sont historisées ;
+- les changements importants sont journalisés ;
+- les suppressions sont logiques (Soft Delete).
+  ***
+
+## Évolutivité
+
+Le modèle a été conçu pour permettre :
+
+- l'ajout futur de nouveaux départements ;
+- l'ajout de nouveaux types de notifications ;
+- l'intégration de nouveaux systèmes de stockage ;
+- l'évolution vers une architecture distribuée.
+  ***
+
+## Performance
+
+Les index sont définis en fonction des cas d'usage réels :
+
+- recherche de tickets ;
+- tableaux de bord ;
+- affectations ;
+- calcul des SLA ;
+- reporting.
+  ***
+
+# 3. Types ENUM PostgreSQL
+
+Afin de garantir la cohérence des données, plusieurs ENUM PostgreSQL sont utilisés.
+
+## role_enum
+
 ```
 ADMINISTRATOR
 
@@ -74,8 +94,11 @@ FIELD_TECHNICIAN
 
 
 ```
- --- 
-## ticket\_status\_enum   
+
+---
+
+## ticket_status_enum
+
 ```
 NEW
 
@@ -97,8 +120,11 @@ CANCELLED
 
 
 ```
- --- 
-## ticket\_priority\_enum   
+
+---
+
+## ticket_priority_enum
+
 ```
 LOW
 
@@ -110,8 +136,11 @@ CRITICAL
 
 
 ```
- --- 
-## ticket\_severity\_enum   
+
+---
+
+## ticket_severity_enum
+
 ```
 S1
 
@@ -123,8 +152,11 @@ S4
 
 
 ```
- --- 
-## ticket\_category\_enum   
+
+---
+
+## ticket_category_enum
+
 ```
 NETWORK
 
@@ -140,8 +172,11 @@ OTHER
 
 
 ```
- --- 
-## notification\_type\_enum   
+
+---
+
+## notification_type_enum
+
 ```
 TICKET_ASSIGNED
 
@@ -157,27 +192,37 @@ SLA_BREACHED
 
 
 ```
- --- 
-# 4. Tables de référence   
-Toutes les tables métier héritent d'un `BaseEntity` qui porte `id` (UUID v7), `created\_at`, `updated\_at`, `deleted\_at` (nullable, soft delete), `created\_by` et `updated\_by` (FK vers users) pour tout les table qui le nécessite. L'UUID est préféré à l'auto-increment pour éviter l'énumération des ressources et faciliter la réplication future.   
-## departments   
-Représente les départements de l'organisation.   
-### Colonnes   
-|     Colonne   <br> |         Type   <br> |
-|:-------------------|:--------------------|
-|          id   <br> |       UUIDv7   <br> |
-|        name   <br> | VARCHAR(100)   <br> |
-| description   <br> |         TEXT   <br> |
-| created\_at   <br> |    TIMESTAMP   <br> |
-| updated\_at   <br> |    TIMESTAMP   <br> |
 
-### Contraintes   
+---
+
+# 4. Tables de référence
+
+Toutes les tables métier héritent d'un `BaseEntity` qui porte `id` (UUID v7), `created\_at`, `updated\_at`, `deleted\_at` (nullable, soft delete), `created\_by` et `updated\_by` (FK vers users) pour tout les table qui le nécessite. L'UUID est préféré à l'auto-increment pour éviter l'énumération des ressources et faciliter la réplication future.
+
+## departments
+
+Représente les départements de l'organisation.
+
+### Colonnes
+
+| Colonne <br>     | Type <br>         |
+| :--------------- | :---------------- |
+| id <br>          | UUIDv7 <br>       |
+| name <br>        | VARCHAR(100) <br> |
+| description <br> | TEXT <br>         |
+| created_at <br>  | TIMESTAMP <br>    |
+| updated_at <br>  | TIMESTAMP <br>    |
+
+### Contraintes
+
 ```
 UNIQUE(name)
 
 
 ```
-### Valeurs initiales   
+
+### Valeurs initiales
+
 ```
 ADMINISTRATION
 
@@ -193,34 +238,43 @@ FIELD_OPERATIONS
 
 
 ```
- --- 
-# 5. Gestion des utilisateurs   
-## users   
-Représente les employés utilisant la plateforme.   
-### Colonnes   
-|                Colonne   <br> |           Type   <br> |
-|:------------------------------|:----------------------|
-|                     id   <br> |         UUIDv7   <br> |
-|         department\_id   <br> |           UUID   <br> |
-|                  email   <br> |   VARCHAR(255)   <br> |
-|         password\_hash   <br> |           TEXT   <br> |
-|            first\_name   <br> |   VARCHAR(100)   <br> |
-|             last\_name   <br> |   VARCHAR(100)   <br> |
-|                   role   <br> |     role\_enum   <br> |
-|             is\_active   <br> |        BOOLEAN   <br> |
-| must\_change\_password   <br> |        BOOLEAN   <br> |
-|        last\_login\_at   <br> | TIMESTAMP NULL   <br> |
-|            created\_at   <br> |      TIMESTAMP   <br> |
-|            updated\_at   <br> |      TIMESTAMP   <br> |
-|            deleted\_at   <br> | TIMESTAMP NULL   <br> |
 
-### Contraintes   
+---
+
+# 5. Gestion des utilisateurs
+
+## users
+
+Représente les employés utilisant la plateforme.
+
+### Colonnes
+
+| Colonne <br>              | Type <br>           |
+| :------------------------ | :------------------ |
+| id <br>                   | UUIDv7 <br>         |
+| department_id <br>        | UUID <br>           |
+| email <br>                | VARCHAR(255) <br>   |
+| password_hash <br>        | TEXT <br>           |
+| first_name <br>           | VARCHAR(100) <br>   |
+| last_name <br>            | VARCHAR(100) <br>   |
+| role <br>                 | role_enum <br>      |
+| is_active <br>            | BOOLEAN <br>        |
+| must_change_password <br> | BOOLEAN <br>        |
+| last_login_at <br>        | TIMESTAMP NULL <br> |
+| created_at <br>           | TIMESTAMP <br>      |
+| updated_at <br>           | TIMESTAMP <br>      |
+| deleted_at <br>           | TIMESTAMP NULL <br> |
+
+### Contraintes
+
 ```
 UNIQUE(email)
 
 
 ```
-### Index   
+
+### Index
+
 ```
 idx_users_email
 
@@ -230,60 +284,75 @@ idx_users_role
 
 
 ```
- --- 
-# 6. Gestion des incidents   
-## tickets   
-Table principale du système.   
-Chaque enregistrement représente un incident.   
-### Colonnes   
-|                   Colonne   <br> |                   Type   <br> |
-|:---------------------------------|:------------------------------|
-|                        id   <br> |                 UUIDv7   <br> |
-|            ticket\_number   <br> |            VARCHAR(20)   <br> |
-|                     title   <br> |           VARCHAR(255)   <br> |
-|               description   <br> |                   TEXT   <br> |
-|                    status   <br> |   ticket\_status\_enum   <br> |
-|                  priority   <br> | ticket\_priority\_enum   <br> |
-|                  severity   <br> | ticket\_severity\_enum   <br> |
-|                  category   <br> | ticket\_category\_enum   <br> |
-|           sla\_policy\_id   <br> |          UUID NOT NULL   <br> |
-| customer\_account\_number   <br> |           VARCHAR(100)   <br> |
-|            customer\_name   <br> |           VARCHAR(255)   <br> |
-|         customer\_contact   <br> |           VARCHAR(255)   <br> |
-|            department\_id   <br> |                   UUID   <br> |
-|        assigned\_team\_id   <br> |                   UUID   <br> |
-|               created\_by   <br> |                   UUID   <br> |
-|              assigned\_to   <br> |              UUID NULL   <br> |
-|       resolution\_summary   <br> |              TEXT NULL   <br> |
-|       first\_response\_at   <br> |         TIMESTAMP NULL   <br> |
-| first\_response\_due\_at    <br> |              TIMESTAMP   <br> |
-|      resolution\_due\_at    <br> |              TIMESTAMP   <br> |
-|              resolved\_at   <br> |         TIMESTAMP NULL   <br> |
-|                closed\_at   <br> |         TIMESTAMP NULL   <br> |
-|                      tags   <br> |                   TEXT   <br> |
-|                  metadata   <br> |                  JSONB   <br> |
-|               created\_at   <br> |              TIMESTAMP   <br> |
-|               updated\_at   <br> |              TIMESTAMP   <br> |
-|               deleted\_at   <br> |         TIMESTAMP NULL   <br> |
-|                                  |                               |
 
-## Numérotation des incidents   
-Format :   
+---
+
+# 6. Gestion des incidents
+
+## tickets
+
+Table principale du système.  
+Chaque enregistrement représente un incident.
+
+### Colonnes
+
+| Colonne <br>                 | Type <br>                 |
+| :--------------------------- | :------------------------ |
+| id <br>                      | UUIDv7 <br>               |
+| ticket_number <br>           | VARCHAR(20) <br>          |
+| title <br>                   | VARCHAR(255) <br>         |
+| description <br>             | TEXT <br>                 |
+| status <br>                  | ticket_status_enum <br>   |
+| priority <br>                | ticket_priority_enum <br> |
+| severity <br>                | ticket_severity_enum <br> |
+| category <br>                | ticket_category_enum <br> |
+| sla_policy_id <br>           | UUID NOT NULL <br>        |
+| customer_account_number <br> | VARCHAR(100) <br>         |
+| customer_name <br>           | VARCHAR(255) <br>         |
+| customer_contact <br>        | VARCHAR(255) <br>         |
+| department_id <br>           | UUID <br>                 |
+| assigned_team_id <br>        | UUID <br>                 |
+| created_by <br>              | UUID <br>                 |
+| assigned_to <br>             | UUID NULL <br>            |
+| resolution_summary <br>      | TEXT NULL <br>            |
+| first_response_at <br>       | TIMESTAMP NULL <br>       |
+| first_response_due_at <br>   | TIMESTAMP <br>            |
+| resolution_due_at <br>       | TIMESTAMP <br>            |
+| resolved_at <br>             | TIMESTAMP NULL <br>       |
+| closed_at <br>               | TIMESTAMP NULL <br>       |
+| tags <br>                    | TEXT <br>                 |
+| metadata <br>                | JSONB <br>                |
+| created_at <br>              | TIMESTAMP <br>            |
+| updated_at <br>              | TIMESTAMP <br>            |
+| deleted_at <br>              | TIMESTAMP NULL <br>       |
+|                              |                           |
+
+## Numérotation des incidents
+
+Format :
+
 ```
 INC-2026-000001
 
 
 ```
-La partie numérique est générée à l'aide d'une séquence PostgreSQL afin d'éviter les problèmes de concurrence.   
- --- 
-## Contraintes   
+
+La partie numérique est générée à l'aide d'une séquence PostgreSQL afin d'éviter les problèmes de concurrence.
+
+---
+
+## Contraintes
+
 ```
 UNIQUE(ticket_number)
 
 
 ```
- --- 
-## Index   
+
+---
+
+## Index
+
 ```
 idx_tickets_status
 
@@ -303,8 +372,11 @@ idx_tickets_created_at
 
 
 ```
- --- 
-## Index spécialisés   
+
+---
+
+## Index spécialisés
+
 ```
 GIN(tags)
 
@@ -312,101 +384,132 @@ GIN(metadata)
 
 
 ```
- --- 
-# 7. Historique des affectations   
-## ticket\_assignments   
-Historise toutes les affectations.   
-Un ticket ne possède qu'un seul assigné actif à un instant donné mais conserve l'historique complet de ses changements.   
-### Colonnes   
-|              Colonne   <br> |      Type   <br> |
-|:----------------------------|:-----------------|
-|                   id   <br> |    UUIDv7   <br> |
-|           ticket\_id   <br> |      UUID   <br> |
-|       from\_user\_id   <br> | UUID NULL   <br> |
-|         to\_user\_id   <br> |      UUID   <br> |
-| from\_department\_id   <br> | UUID NULL   <br> |
-|   to\_department\_id   <br> |      UUID   <br> |
-|         assigned\_by   <br> |      UUID   <br> |
-|               reason   <br> | TEXT NULL   <br> |
-|          created\_at   <br> | TIMESTAMP   <br> |
 
-# 8. Commentaires publics   
-## ticket\_comments   
-Commentaires visibles dans le suivi standard du ticket.   
-### Colonnes   
-|     Colonne   <br> |      Type   <br> |
-|:-------------------|:-----------------|
-|          id   <br> |    UUIDv7   <br> |
-|  ticket\_id   <br> |      UUID   <br> |
-|  author\_id   <br> |      UUID   <br> |
-|     content   <br> |      TEXT   <br> |
-| created\_at   <br> | TIMESTAMP   <br> |
-| updated\_at   <br> | TIMESTAMP   <br> |
+---
 
-# 9. Notes internes   
-## ticket\_internal\_notes   
-Informations réservées aux équipes internes.   
-Ces notes ne sont jamais exposées aux utilisateurs externes.   
-### Colonnes   
-|     Colonne   <br> |      Type   <br> |
-|:-------------------|:-----------------|
-|          id   <br> |    UUIDv7   <br> |
-|  ticket\_id   <br> |      UUID   <br> |
-|  author\_id   <br> |      UUID   <br> |
-|     content   <br> |      TEXT   <br> |
-| created\_at   <br> | TIMESTAMP   <br> |
-| updated\_at   <br> | TIMESTAMP   <br> |
+# 7. Historique des affectations
 
-# 10. Gestion des pièces jointes   
-## attachments   
-Cette table stocke uniquement les métadonnées des fichiers.   
-Le stockage réel est délégué à un service de stockage abstrait.   
-### Colonnes   
-|            Colonne   <br> |         Type   <br> |
-|:--------------------------|:--------------------|
-|                 id   <br> |       UUIDv7   <br> |
-|         ticket\_id   <br> |    UUID NULL   <br> |
-|        comment\_id   <br> |    UUID NULL   <br> |
-| internal\_note\_id   <br> |    UUID NULL   <br> |
-|       uploaded\_by   <br> |         UUID   <br> |
-|        object\_key   <br> |         TEXT   <br> |
-|       bucket\_name   <br> | VARCHAR(100)   <br> |
-| original\_filename   <br> | VARCHAR(255)   <br> |
-|         mime\_type   <br> | VARCHAR(100)   <br> |
-|         file\_size   <br> |       BIGINT   <br> |
-|        created\_at   <br> |    TIMESTAMP   <br> |
+## ticket_assignments
 
-## Exemple d'object\_key   
+Historise toutes les affectations.  
+Un ticket ne possède qu'un seul assigné actif à un instant donné mais conserve l'historique complet de ses changements.
+
+### Colonnes
+
+| Colonne <br>            | Type <br>      |
+| :---------------------- | :------------- |
+| id <br>                 | UUIDv7 <br>    |
+| ticket_id <br>          | UUID <br>      |
+| from_user_id <br>       | UUID NULL <br> |
+| to_user_id <br>         | UUID <br>      |
+| from_department_id <br> | UUID NULL <br> |
+| to_department_id <br>   | UUID <br>      |
+| assigned_by <br>        | UUID <br>      |
+| reason <br>             | TEXT NULL <br> |
+| created_at <br>         | TIMESTAMP <br> |
+
+# 8. Commentaires publics
+
+## ticket_comments
+
+Commentaires visibles dans le suivi standard du ticket.
+
+### Colonnes
+
+| Colonne <br>    | Type <br>      |
+| :-------------- | :------------- |
+| id <br>         | UUIDv7 <br>    |
+| ticket_id <br>  | UUID <br>      |
+| author_id <br>  | UUID <br>      |
+| content <br>    | TEXT <br>      |
+| created_at <br> | TIMESTAMP <br> |
+| updated_at <br> | TIMESTAMP <br> |
+
+# 9. Notes internes
+
+## ticket_internal_notes
+
+Informations réservées aux équipes internes.  
+Ces notes ne sont jamais exposées aux utilisateurs externes.
+
+### Colonnes
+
+| Colonne <br>    | Type <br>      |
+| :-------------- | :------------- |
+| id <br>         | UUIDv7 <br>    |
+| ticket_id <br>  | UUID <br>      |
+| author_id <br>  | UUID <br>      |
+| content <br>    | TEXT <br>      |
+| created_at <br> | TIMESTAMP <br> |
+| updated_at <br> | TIMESTAMP <br> |
+
+# 10. Gestion des pièces jointes
+
+## attachments
+
+Cette table stocke uniquement les métadonnées des fichiers.  
+Le stockage réel est délégué à un service de stockage abstrait.
+
+### Colonnes
+
+| Colonne <br>           | Type <br>         |
+| :--------------------- | :---------------- |
+| id <br>                | UUIDv7 <br>       |
+| ticket_id <br>         | UUID NULL <br>    |
+| comment_id <br>        | UUID NULL <br>    |
+| internal_note_id <br>  | UUID NULL <br>    |
+| uploaded_by <br>       | UUID <br>         |
+| object_key <br>        | TEXT <br>         |
+| bucket_name <br>       | VARCHAR(100) <br> |
+| original_filename <br> | VARCHAR(255) <br> |
+| mime_type <br>         | VARCHAR(100) <br> |
+| file_size <br>         | BIGINT <br>       |
+| created_at <br>        | TIMESTAMP <br>    |
+
+## Exemple d'object_key
+
 ```
 tickets/2026/06/uuidv7-report.pdf
 
 
 ```
- --- 
-## Avantages   
-Le système peut migrer vers :   
-- MinIO   
-- Amazon S3   
-- Azure Blob Storage   
-   
-sans modification du schéma de base de données.   
- --- 
-# 11. Journal d'activité   
-## ticket\_history   
-Historique complet des événements métier.   
-### Colonnes   
-|     Colonne   <br> |         Type   <br> |
-|:-------------------|:--------------------|
-|          id   <br> |       UUIDv7   <br> |
-|  ticket\_id   <br> |         UUID   <br> |
-|    user\_id   <br> |         UUID   <br> |
-|      action   <br> | VARCHAR(100)   <br> |
-|  old\_value   <br> |   JSONB NULL   <br> |
-|  new\_value   <br> |   JSONB NULL   <br> |
-|    metadata   <br> |   JSONB NULL   <br> |
-| created\_at   <br> |    TIMESTAMP   <br> |
 
-### Exemples d'actions   
+---
+
+## Avantages
+
+Le système peut migrer vers :
+
+- MinIO
+- Amazon S3
+- Azure Blob Storage  
+
+
+sans modification du schéma de base de données.
+
+---
+
+# 11. Journal d'activité
+
+## ticket_history
+
+Historique complet des événements métier.
+
+### Colonnes
+
+| Colonne <br>    | Type <br>         |
+| :-------------- | :---------------- |
+| id <br>         | UUIDv7 <br>       |
+| ticket_id <br>  | UUID <br>         |
+| user_id <br>    | UUID <br>         |
+| action <br>     | VARCHAR(100) <br> |
+| old_value <br>  | JSONB NULL <br>   |
+| new_value <br>  | JSONB NULL <br>   |
+| metadata <br>   | JSONB NULL <br>   |
+| created_at <br> | TIMESTAMP <br>    |
+
+### Exemples d'actions
+
 ```
 TICKET_CREATED
 
@@ -426,43 +529,53 @@ REOPENED
 
 
 ```
- --- 
-# 12. Gestion des sessions   
-## refresh\_tokens   
-Stocke les refresh tokens actifs.   
-Les tokens sont hachés avant stockage.   
-### Colonnes   
-|     Colonne   <br> |           Type   <br> |
-|:-------------------|:----------------------|
-|          id   <br> |         UUIDv7   <br> |
-|    user\_id   <br> |           UUID   <br> |
-| token\_hash   <br> |           TEXT   <br> |
-| user\_agent   <br> |           TEXT   <br> |
-| ip\_address   <br> |           INET   <br> |
-| expires\_at   <br> |      TIMESTAMP   <br> |
-| revoked\_at   <br> | TIMESTAMP NULL   <br> |
-| created\_at   <br> |      TIMESTAMP   <br> |
 
-# 13. Notifications   
-## notifications   
-Permet la persistance des notifications.   
-Cette table constitue la source de vérité du système de notification.   
-Les WebSockets servent uniquement à la diffusion temps réel.   
-### Colonnes   
-|         Colonne   <br> |                     Type   <br> |
-|:-----------------------|:--------------------------------|
-|              id   <br> |                   UUIDv7   <br> |
-|        user\_id   <br> |                     UUID   <br> |
-|            type   <br> | notification\_type\_enum   <br> |
-|           title   <br> |             VARCHAR(255)   <br> |
-|         message   <br> |                     TEXT   <br> |
-| reference\_type   <br> |              VARCHAR(50)   <br> |
-|   reference\_id   <br> |                     UUID   <br> |
-|        is\_read   <br> |                  BOOLEAN   <br> |
-|        read\_at   <br> |           TIMESTAMP NULL   <br> |
-|     created\_at   <br> |                TIMESTAMP   <br> |
+---
 
-**Architecture retenue**   
+# 12. Gestion des sessions
+
+## refresh_tokens
+
+Stocke les refresh tokens actifs.  
+Les tokens sont hachés avant stockage.
+
+### Colonnes
+
+| Colonne <br>    | Type <br>           |
+| :-------------- | :------------------ |
+| id <br>         | UUIDv7 <br>         |
+| user_id <br>    | UUID <br>           |
+| token_hash <br> | TEXT <br>           |
+| user_agent <br> | TEXT <br>           |
+| ip_address <br> | INET <br>           |
+| expires_at <br> | TIMESTAMP <br>      |
+| revoked_at <br> | TIMESTAMP NULL <br> |
+| created_at <br> | TIMESTAMP <br>      |
+
+# 13. Notifications
+
+## notifications
+
+Permet la persistance des notifications.  
+Cette table constitue la source de vérité du système de notification.  
+Les WebSockets servent uniquement à la diffusion temps réel.
+
+### Colonnes
+
+| Colonne <br>        | Type <br>                   |
+| :------------------ | :-------------------------- |
+| id <br>             | UUIDv7 <br>                 |
+| user_id <br>        | UUID <br>                   |
+| type <br>           | notification_type_enum <br> |
+| title <br>          | VARCHAR(255) <br>           |
+| message <br>        | TEXT <br>                   |
+| reference_type <br> | VARCHAR(50) <br>            |
+| reference_id <br>   | UUID <br>                   |
+| is_read <br>        | BOOLEAN <br>                |
+| read_at <br>        | TIMESTAMP NULL <br>         |
+| created_at <br>     | TIMESTAMP <br>              |
+
+**Architecture retenue**  
 Ticket Event
 │
 ▼
@@ -473,55 +586,66 @@ BullMQ
 └──────── WebSocket Emit
 │
 ┌───────────┴───────────┐
-│                             │
-▼                           ▼
-Utilisateur connecté    Utilisateur absent
-│                                            │
-▼                                          ▼
-Temps réel            Notification en attente   
-# 14. Gestion des SLA   
-## sla\_policies   
-Définit les objectifs de service.   
-Le SLA dépend à la fois de la catégorie et de la priorité.   
-### Colonnes   
-|                  Colonne   <br> |                   Type   <br> |
-|:--------------------------------|:------------------------------|
-|                       id   <br> |                 UUIDv7   <br> |
-|                 category   <br> | ticket\_category\_enum   <br> |
-|                 priority   <br> | ticket\_priority\_enum   <br> |
-| first\_response\_minutes   <br> |                INTEGER   <br> |
-|      resolution\_minutes   <br> |                INTEGER   <br> |
-|              created\_at   <br> |              TIMESTAMP   <br> |
-|              updated\_at   <br> |              TIMESTAMP   <br> |
+│ │
+▼ ▼
+Utilisateur connecté Utilisateur absent
+│ │
+▼ ▼
+Temps réel Notification en attente
 
-### Exemple   
-| Category   <br> | Priority   <br> | First Response   <br> | Resolution   <br> |
-|:----------------|:----------------|:----------------------|:------------------|
-|  NETWORK   <br> | CRITICAL   <br> |         15 min   <br> |    120 min   <br> |
-|  NETWORK   <br> |     HIGH   <br> |         30 min   <br> |    240 min   <br> |
-|  BILLING   <br> | CRITICAL   <br> |         60 min   <br> |    480 min   <br> |
+# 14. Gestion des SLA
 
-# 15. Gestion des audits   
-## audit\_logs   
-Journal centralisé des actions administratives et métier importantes.   
-Contrairement à `ticket\_history`, cette table couvre l'ensemble du système.   
- --- 
-### Colonnes   
-|      Colonne   <br> |         Type   <br> |
-|:--------------------|:--------------------|
-|           id   <br> |       UUIDv7   <br> |
-|     user\_id   <br> |         UUID   <br> |
-|       action   <br> | VARCHAR(100)   <br> |
-| entity\_type   <br> |  VARCHAR(50)   <br> |
-|   entity\_id   <br> |         UUID   <br> |
-|   old\_value   <br> |   JSONB NULL   <br> |
-|   new\_value   <br> |   JSONB NULL   <br> |
-|  ip\_address   <br> |         INET   <br> |
-|  user\_agent   <br> |         TEXT   <br> |
-|  created\_at   <br> |    TIMESTAMP   <br> |
+## sla_policies
 
-   
-### Exemples d'actions   
+Définit les objectifs de service.  
+Le SLA dépend à la fois de la catégorie et de la priorité.
+
+### Colonnes
+
+| Colonne <br>                | Type <br>                 |
+| :-------------------------- | :------------------------ |
+| id <br>                     | UUIDv7 <br>               |
+| category <br>               | ticket_category_enum <br> |
+| priority <br>               | ticket_priority_enum <br> |
+| first_response_minutes <br> | INTEGER <br>              |
+| resolution_minutes <br>     | INTEGER <br>              |
+| created_at <br>             | TIMESTAMP <br>            |
+| updated_at <br>             | TIMESTAMP <br>            |
+
+### Exemple
+
+| Category <br> | Priority <br> | First Response <br> | Resolution <br> |
+| :------------ | :------------ | :------------------ | :-------------- |
+| NETWORK <br>  | CRITICAL <br> | 15 min <br>         | 120 min <br>    |
+| NETWORK <br>  | HIGH <br>     | 30 min <br>         | 240 min <br>    |
+| BILLING <br>  | CRITICAL <br> | 60 min <br>         | 480 min <br>    |
+
+# 15. Gestion des audits
+
+## audit_logs
+
+Journal centralisé des actions administratives et métier importantes.  
+Contrairement à `ticket\_history`, cette table couvre l'ensemble du système.
+
+---
+
+### Colonnes
+
+| Colonne <br>     | Type <br>         |
+| :--------------- | :---------------- |
+| id <br>          | UUIDv7 <br>       |
+| user_id <br>     | UUID <br>         |
+| action <br>      | VARCHAR(100) <br> |
+| entity_type <br> | VARCHAR(50) <br>  |
+| entity_id <br>   | UUID <br>         |
+| old_value <br>   | JSONB NULL <br>   |
+| new_value <br>   | JSONB NULL <br>   |
+| ip_address <br>  | INET <br>         |
+| user_agent <br>  | TEXT <br>         |
+| created_at <br>  | TIMESTAMP <br>    |
+
+### Exemples d'actions
+
 ```
 
 USER_CREATED
@@ -551,8 +675,11 @@ TICKET_REOPENED
 SYSTEM_CONFIGURATION_CHANGED
 
 ```
- --- 
-### Index   
+
+---
+
+### Index
+
 ```
 
 CREATE INDEX idx_audit_logs_user
@@ -568,12 +695,18 @@ CREATE INDEX idx_audit_logs_created_at
 ON audit_logs(created_at);
 
 ```
-# 16. Relations et cardinalités   
-Le modèle de données repose sur des relations clairement définies afin de garantir la cohérence métier et la traçabilité des opérations.   
- --- 
-## Departments ↔ Users   
-Un département peut contenir plusieurs utilisateurs.   
-Un utilisateur appartient obligatoirement à un seul département.   
+
+# 16. Relations et cardinalités
+
+Le modèle de données repose sur des relations clairement définies afin de garantir la cohérence métier et la traçabilité des opérations.
+
+---
+
+## Departments ↔ Users
+
+Un département peut contenir plusieurs utilisateurs.  
+Un utilisateur appartient obligatoirement à un seul département.
+
 ```
 Department (1)
       │
@@ -581,10 +714,14 @@ Department (1)
 
 
 ```
- --- 
-## Departments ↔ Tickets   
-Un département peut être propriétaire de plusieurs tickets.   
-Chaque ticket possède un département propriétaire.   
+
+---
+
+## Departments ↔ Tickets
+
+Un département peut être propriétaire de plusieurs tickets.  
+Chaque ticket possède un département propriétaire.
+
 ```
 Department (1)
       │
@@ -592,10 +729,14 @@ Department (1)
 
 
 ```
- --- 
-## Departments ↔ Assigned Teams   
-Un département peut être responsable du traitement de plusieurs tickets.   
-Chaque ticket possède une équipe actuellement responsable.   
+
+---
+
+## Departments ↔ Assigned Teams
+
+Un département peut être responsable du traitement de plusieurs tickets.  
+Chaque ticket possède une équipe actuellement responsable.
+
 ```
 Department (1)
       │
@@ -603,10 +744,14 @@ Department (1)
 
 
 ```
- --- 
-## Users ↔ Tickets (Création)   
-Un utilisateur peut créer plusieurs tickets.   
-Chaque ticket possède un seul créateur.   
+
+---
+
+## Users ↔ Tickets (Création)
+
+Un utilisateur peut créer plusieurs tickets.  
+Chaque ticket possède un seul créateur.
+
 ```
 User (1)
     │
@@ -614,10 +759,14 @@ User (1)
 
 
 ```
- --- 
-## Users ↔ Tickets (Assignation active)   
-Un utilisateur peut être assigné à plusieurs tickets.   
-Un ticket ne possède qu'un seul assigné actif.   
+
+---
+
+## Users ↔ Tickets (Assignation active)
+
+Un utilisateur peut être assigné à plusieurs tickets.  
+Un ticket ne possède qu'un seul assigné actif.
+
 ```
 User (1)
     │
@@ -625,9 +774,13 @@ User (1)
 
 
 ```
- --- 
-## Tickets ↔ Assignments   
-Un ticket possède plusieurs événements d'affectation.   
+
+---
+
+## Tickets ↔ Assignments
+
+Un ticket possède plusieurs événements d'affectation.
+
 ```
 Ticket (1)
       │
@@ -635,8 +788,11 @@ Ticket (1)
 
 
 ```
- --- 
-## Tickets ↔ Comments   
+
+---
+
+## Tickets ↔ Comments
+
 ```
 Ticket (1)
       │
@@ -644,8 +800,11 @@ Ticket (1)
 
 
 ```
- --- 
-## Tickets ↔ Internal Notes   
+
+---
+
+## Tickets ↔ Internal Notes
+
 ```
 Ticket (1)
       │
@@ -653,8 +812,11 @@ Ticket (1)
 
 
 ```
- --- 
-## Tickets ↔ Attachments   
+
+---
+
+## Tickets ↔ Attachments
+
 ```
 Ticket (1)
       │
@@ -662,8 +824,11 @@ Ticket (1)
 
 
 ```
- --- 
-## Tickets ↔ History   
+
+---
+
+## Tickets ↔ History
+
 ```
 Ticket (1)
       │
@@ -671,8 +836,11 @@ Ticket (1)
 
 
 ```
- --- 
-## Users ↔ Notifications   
+
+---
+
+## Users ↔ Notifications
+
 ```
 User (1)
     │
@@ -680,8 +848,11 @@ User (1)
 
 
 ```
- --- 
-## Users ↔ Refresh Tokens   
+
+---
+
+## Users ↔ Refresh Tokens
+
 ```
 User (1)
     │
@@ -689,10 +860,13 @@ User (1)
 
 
 ```
- --- 
-## Users ↔ Logs   
-   
-Un utilisateur est associé à plusieurs logs . Et un log est toujours associée à un user   
+
+---
+
+## Users ↔ Logs
+
+Un utilisateur est associé à plusieurs logs . Et un log est toujours associée à un user
+
 ```
 
 Users (1)
@@ -700,55 +874,80 @@ Users (1)
     └───────< AuditLogs(N)
 
 ```
-   
- --- 
-# 17. Contraintes d'intégrité   
-Afin de préserver la qualité des données, plusieurs contraintes sont appliquées.   
- --- 
-## Unicité des utilisateurs   
-Chaque adresse email doit être unique.   
+
+---
+
+# 17. Contraintes d'intégrité
+
+Afin de préserver la qualité des données, plusieurs contraintes sont appliquées.
+
+---
+
+## Unicité des utilisateurs
+
+Chaque adresse email doit être unique.
+
 ```
 UNIQUE(email)
 
 
 ```
- --- 
-## Unicité des tickets   
-Chaque incident possède un identifiant métier unique.   
+
+---
+
+## Unicité des tickets
+
+Chaque incident possède un identifiant métier unique.
+
 ```
 UNIQUE(ticket_number)
 
 
 ```
-Exemple :   
+
+Exemple :
+
 ```
 INC-2026-000001
 
 
 ```
- --- 
-## Départements obligatoires   
-Chaque utilisateur doit appartenir à un département.   
+
+---
+
+## Départements obligatoires
+
+Chaque utilisateur doit appartenir à un département.
+
 ```
 department_id NOT NULL
 
 
 ```
- --- 
-## Rôles obligatoires   
-Chaque utilisateur doit posséder exactement un rôle.   
+
+---
+
+## Rôles obligatoires
+
+Chaque utilisateur doit posséder exactement un rôle.
+
 ```
 role NOT NULL
 
 
 ```
- --- 
-## Intégrité des assignations   
-Chaque événement d'affectation doit référencer :   
-- un ticket ;   
-- un utilisateur cible ;   
-- un département cible.   
-   
+
+---
+
+## Intégrité des assignations
+
+Chaque événement d'affectation doit référencer :
+
+- un ticket ;
+- un utilisateur cible ;
+- un département cible.  
+
+
 ```
 ticket_id NOT NULL
 
@@ -758,24 +957,39 @@ to_department_id NOT NULL
 
 
 ```
- --- 
-## Intégrité des notifications   
-Une notification appartient toujours à un utilisateur.   
+
+---
+
+## Intégrité des notifications
+
+Une notification appartient toujours à un utilisateur.
+
 ```
 user_id NOT NULL
 
 ```
-## Intégrité des SLA   
-contrainte `UNIQUE(category, priority)` pour éviter les doublons   
- --- 
-## Intégrité des Attachment    
-**contrainte CHECK** pour garantir qu'au moins un des trois est non-null ( `ticket\_id`, `comment\_id`, et `internal\_note\_id` ).   
-# 18. Règles métier importantes   
-Certaines contraintes ne peuvent pas être exprimées uniquement par SQL.   
-Elles seront appliquées dans les services NestJS.   
- --- 
-## Règle 1 : Un seul assigné actif   
-Un ticket ne peut posséder qu'un seul assigné actif.   
+
+## Intégrité des SLA
+
+contrainte `UNIQUE(category, priority)` pour éviter les doublons
+
+---
+
+## Intégrité des Attachment
+
+**contrainte CHECK** pour garantir qu'au moins un des trois est non-null ( `ticket\_id`, `comment\_id`, et `internal\_note\_id` ).
+
+# 18. Règles métier importantes
+
+Certaines contraintes ne peuvent pas être exprimées uniquement par SQL.  
+Elles seront appliquées dans les services NestJS.
+
+---
+
+## Règle 1 : Un seul assigné actif
+
+Un ticket ne peut posséder qu'un seul assigné actif.
+
 ```
 ✔ Autorisé
 
@@ -791,9 +1005,13 @@ Ticket
 
 
 ```
- --- 
-## Règle 2 : Fermeture après résolution   
-Un ticket doit être résolu avant d'être clôturé.   
+
+---
+
+## Règle 2 : Fermeture après résolution
+
+Un ticket doit être résolu avant d'être clôturé.
+
 ```
 NEW
  ↓
@@ -807,10 +1025,14 @@ CLOSED
 
 
 ```
- --- 
-## Règle 3 : Réouverture limitée   
-Seuls certains rôles peuvent rouvrir un ticket.   
-Exemple :   
+
+---
+
+## Règle 3 : Réouverture limitée
+
+Seuls certains rôles peuvent rouvrir un ticket.  
+Exemple :
+
 ```
 ADMINISTRATOR
 
@@ -818,22 +1040,35 @@ SUPERVISOR
 
 
 ```
- --- 
-## Règle 4 : Notes internes protégées   
-Les notes internes ne doivent jamais être visibles hors du personnel autorisé.   
- --- 
-## Règle 5 : Historisation obligatoire   
-Toute action importante doit produire une entrée dans :   
+
+---
+
+## Règle 4 : Notes internes protégées
+
+Les notes internes ne doivent jamais être visibles hors du personnel autorisé.
+
+---
+
+## Règle 5 : Historisation obligatoire
+
+Toute action importante doit produire une entrée dans :
+
 ```
 ticket_history
 
 
 ```
- --- 
-# 19. Stratégie d'indexation   
-L'indexation est essentielle pour maintenir de bonnes performances lorsque le volume de tickets augmente.   
- --- 
-## Index Users   
+
+---
+
+# 19. Stratégie d'indexation
+
+L'indexation est essentielle pour maintenir de bonnes performances lorsque le volume de tickets augmente.
+
+---
+
+## Index Users
+
 ```
 CREATE UNIQUE INDEX idx_users_email
 ON users(email);
@@ -846,8 +1081,11 @@ ON users(role);
 
 
 ```
- --- 
-## Index Tickets   
+
+---
+
+## Index Tickets
+
 ```
 CREATE INDEX idx_tickets_status
 ON tickets(status);
@@ -872,9 +1110,13 @@ ON tickets(created_at);
 
 
 ```
- --- 
-## Recherche avancée sur Tags   
-PostgreSQL permet d'indexer les tableaux.   
+
+---
+
+## Recherche avancée sur Tags
+
+PostgreSQL permet d'indexer les tableaux.
+
 ```
 CREATE INDEX idx_tickets_tags
 ON tickets
@@ -882,8 +1124,11 @@ USING GIN(tags);
 
 
 ```
- --- 
-## Recherche avancée sur Metadata   
+
+---
+
+## Recherche avancée sur Metadata
+
 ```
 CREATE INDEX idx_tickets_metadata
 ON tickets
@@ -891,18 +1136,26 @@ USING GIN(metadata);
 
 
 ```
- --- 
-## Notifications non lues   
-Très utilisé par le système de notification.   
+
+---
+
+## Notifications non lues
+
+Très utilisé par le système de notification.
+
 ```
 CREATE INDEX idx_notifications_unread
 ON notifications(user_id, is_read);
 
 
 ```
- --- 
-## SLA   
-Les calculs de dépassement de SLA utilisent fréquemment :   
+
+---
+
+## SLA
+
+Les calculs de dépassement de SLA utilisent fréquemment :
+
 ```
 status
 
@@ -912,33 +1165,46 @@ category
 
 
 ```
-Un index composite pourra être ajouté :   
+
+Un index composite pourra être ajouté :
+
 ```
 CREATE INDEX idx_sla_processing
 ON tickets(status, priority);
 
 
 ```
- --- 
-# 20. Soft Delete   
-Le système utilise des suppressions logiques plutôt que des suppressions physiques.   
- --- 
-## Pourquoi ?   
-Un système de gestion d'incidents doit conserver :   
-- les historiques ;   
-- les statistiques ;   
-- les audits ;   
-- les traces d'activité.   
- --- 
-   
-## Implémentation   
+
+---
+
+# 20. Soft Delete
+
+Le système utilise des suppressions logiques plutôt que des suppressions physiques.
+
+---
+
+## Pourquoi ?
+
+Un système de gestion d'incidents doit conserver :
+
+- les historiques ;
+- les statistiques ;
+- les audits ;
+- les traces d'activité.
+  ***
+
+## Implémentation
+
 ```
 deleted_at TIMESTAMP NULL
 
 
 ```
- --- 
-## Tables concernées   
+
+---
+
+## Tables concernées
+
 ```
 users
 
@@ -946,44 +1212,68 @@ tickets
 
 
 ```
- --- 
-## Avantages   
-### Audit   
-Aucune donnée importante n'est perdue.   
-### Restauration   
-Une suppression accidentelle peut être annulée.   
-### Reporting   
-Les statistiques historiques restent cohérentes.   
- --- 
-# 21. Préparation à la montée en charge   
-Même si le projet est conçu comme un Modular Monolith, certaines décisions préparent l'avenir.   
- --- 
-## UUIDv7   
-Toutes les entités utilisent UUIDv7.   
-Avantages :   
-- tri chronologique naturel ;   
-- meilleures performances des index B-Tree ;   
-- génération distribuée.   
- --- 
-   
-## JSONB   
-Le champ :   
+
+---
+
+## Avantages
+
+### Audit
+
+Aucune donnée importante n'est perdue.
+
+### Restauration
+
+Une suppression accidentelle peut être annulée.
+
+### Reporting
+
+Les statistiques historiques restent cohérentes.
+
+---
+
+# 21. Préparation à la montée en charge
+
+Même si le projet est conçu comme un Modular Monolith, certaines décisions préparent l'avenir.
+
+---
+
+## UUIDv7
+
+Toutes les entités utilisent UUIDv7.  
+Avantages :
+
+- tri chronologique naturel ;
+- meilleures performances des index B-Tree ;
+- génération distribuée.
+  ***
+
+## JSONB
+
+Le champ :
+
 ```
 metadata JSONB
 
 
 ```
-permet l'ajout de nouveaux attributs métier sans migration systématique.   
- --- 
-## Storage Service Abstrait   
-La table attachments ne dépend d'aucun fournisseur de stockage.   
-Aujourd'hui :   
+
+permet l'ajout de nouveaux attributs métier sans migration systématique.
+
+---
+
+## Storage Service Abstrait
+
+La table attachments ne dépend d'aucun fournisseur de stockage.  
+Aujourd'hui :
+
 ```
 Disque local
 
 
 ```
-Demain :   
+
+Demain :
+
 ```
 MinIO
 
@@ -993,10 +1283,15 @@ Azure Blob Storage
 
 
 ```
-sans modification du schéma.   
- --- 
-## Découpage futur en microservices   
-Les modules :   
+
+sans modification du schéma.
+
+---
+
+## Découpage futur en microservices
+
+Les modules :
+
 ```
 Auth
 
@@ -1008,17 +1303,24 @@ SLA
 
 
 ```
-possèdent déjà des frontières métier claires.   
-Une migration vers des microservices serait donc possible sans refonte complète.   
- --- 
-# 22. Diagramme ERD (Source officielle)   
-Le diagramme ERD principal sera maintenu dans :   
+
+possèdent déjà des frontières métier claires.  
+Une migration vers des microservices serait donc possible sans refonte complète.
+
+---
+
+# 22. Diagramme ERD (Source officielle)
+
+Le diagramme ERD principal sera maintenu dans :
+
 ```
 dbdiagram.io
 
 
 ```
-Le dépôt GitHub contiendra database.dbml  :   
+
+Le dépôt GitHub contiendra database.dbml :
+
 ```
 Enum role_enum {
 ADMINISTRATOR
@@ -1217,15 +1519,21 @@ created_at timestamp
 
 
 ```
-comme source de vérité du schéma.   
- --- 
-# 23. Diagramme Mermaid   
-Une version simplifiée sera également fournie dans la documentation technique afin de faciliter la lecture rapide de l'architecture.   
-   
-### Mermaid ERD   
-Version pour README et documentation.   
-   
-erDiagram   
+
+comme source de vérité du schéma.
+
+---
+
+# 23. Diagramme Mermaid
+
+Une version simplifiée sera également fournie dans la documentation technique afin de faciliter la lecture rapide de l'architecture.
+
+### Mermaid ERD
+
+Version pour README et documentation.
+
+erDiagram
+
 ```
 DEPARTMENTS ||--o{ USERS : contains
 
@@ -1266,11 +1574,13 @@ TICKET_COMMENTS ||--o{ ATTACHMENTS : contains
 TICKET_INTERNAL_NOTES ||--o{ ATTACHMENTS : contains
 
 ```
-   
-# Mermaid ERD   
-Version simplifiée pour README , documentation et les présentations techniques.   
-   
-flowchart LR   
+
+# Mermaid ERD
+
+Version simplifiée pour README , documentation et les présentations techniques.
+
+flowchart LR
+
 ```
 D[Departments]
 
@@ -1321,37 +1631,43 @@ U --> AL
 SLA --> T
 
 ```
-Cette représentation sera utilisée :   
-- dans le README ;   
-- dans la documentation du projet ;   
-- dans les présentations techniques.   
- --- 
-   
-# 24. Matrice RBAC finale   
-|               Action   <br> |    Agent   <br> |      NOC   <br> |  Billing   <br> |  Support   <br> |    Field   <br> | Supervisor   <br> | Admin   <br> |
-|:----------------------------|:----------------|:----------------|:----------------|:----------------|:----------------|:------------------|:-------------|
-|         Créer ticket   <br> |        ✅   <br> |        ✅   <br> |        ✅   <br> |        ✅   <br> |        ✅   <br> |          ✅   <br> |     ✅   <br> |
-|      Modifier ticket   <br> |  Assigné   <br> |  Assigné   <br> |  Assigné   <br> |  Assigné   <br> |  Assigné   <br> |          ✅   <br> |     ✅   <br> |
-|      Assigner ticket   <br> |        ❌   <br> |        ❌   <br> |        ❌   <br> |        ❌   <br> |        ❌   <br> |          ✅   <br> |     ✅   <br> |
-|    Réassigner ticket   <br> |        ❌   <br> |        ❌   <br> |        ❌   <br> |        ❌   <br> |        ❌   <br> |          ✅   <br> |     ✅   <br> |
-|     Escalader ticket   <br> |        ❌   <br> |        ❌   <br> |        ❌   <br> |        ❌   <br> |        ❌   <br> |          ✅   <br> |     ✅   <br> |
-|      Résoudre ticket   <br> |        ✅   <br> |        ✅   <br> |        ✅   <br> |        ✅   <br> |        ✅   <br> |          ✅   <br> |     ✅   <br> |
-|      Clôturer ticket   <br> |        ❌   <br> |        ❌   <br> |        ❌   <br> |        ❌   <br> |        ❌   <br> |          ✅   <br> |     ✅   <br> |
-|      Réouvrir ticket   <br> |        ❌   <br> |        ❌   <br> |        ❌   <br> |        ❌   <br> |        ❌   <br> |          ✅   <br> |     ✅   <br> |
-|       Notes internes   <br> |        ✅   <br> |        ✅   <br> |        ✅   <br> |        ✅   <br> |        ❌   <br> |          ✅   <br> |     ✅   <br> |
-|           Audit Logs   <br> |        ❌   <br> |        ❌   <br> |        ❌   <br> |        ❌   <br> |        ❌   <br> |          ✅   <br> |     ✅   <br> |
-| Gestion utilisateurs   <br> |        ❌   <br> |        ❌   <br> |        ❌   <br> |        ❌   <br> |        ❌   <br> |  Partielle   <br> |     ✅   <br> |
-|          Gestion SLA   <br> |        ❌   <br> |        ❌   <br> |        ❌   <br> |        ❌   <br> |        ❌   <br> |          ✅   <br> |     ✅   <br> |
 
-# 25. Conclusion   
-Le modèle de données proposé répond aux exigences d'une plateforme de gestion d'incidents télécoms moderne.   
-Les principales caractéristiques de cette conception sont :   
-- intégrité référentielle forte ;   
-- historisation complète des opérations ;   
-- séparation claire des responsabilités ;   
-- support des SLA ;   
-- gestion robuste des notifications ;   
-- préparation à la montée en charge ;   
-- indépendance vis-à-vis du système de stockage des fichiers.   
-   
-Grâce à PostgreSQL, aux ENUM, aux index spécialisés GIN, aux UUIDv7 et à l'utilisation de JSONB, cette base de données constitue une fondation solide pour les phases d'implémentation et d'exploitation du système.   
+Cette représentation sera utilisée :
+
+- dans le README ;
+- dans la documentation du projet ;
+- dans les présentations techniques.
+  ***
+
+# 24. Matrice RBAC finale
+
+| Action <br>               | Agent <br>   | NOC <br>     | Billing <br> | Support <br> | Field <br>   | Supervisor <br> | Admin <br> |
+| :------------------------ | :----------- | :----------- | :----------- | :----------- | :----------- | :-------------- | :--------- |
+| Créer ticket <br>         | ✅ <br>      | ✅ <br>      | ✅ <br>      | ✅ <br>      | ✅ <br>      | ✅ <br>         | ✅ <br>    |
+| Modifier ticket <br>      | Assigné <br> | Assigné <br> | Assigné <br> | Assigné <br> | Assigné <br> | ✅ <br>         | ✅ <br>    |
+| Assigner ticket <br>      | ❌ <br>      | ❌ <br>      | ❌ <br>      | ❌ <br>      | ❌ <br>      | ✅ <br>         | ✅ <br>    |
+| Réassigner ticket <br>    | ❌ <br>      | ❌ <br>      | ❌ <br>      | ❌ <br>      | ❌ <br>      | ✅ <br>         | ✅ <br>    |
+| Escalader ticket <br>     | ❌ <br>      | ❌ <br>      | ❌ <br>      | ❌ <br>      | ❌ <br>      | ✅ <br>         | ✅ <br>    |
+| Résoudre ticket <br>      | ✅ <br>      | ✅ <br>      | ✅ <br>      | ✅ <br>      | ✅ <br>      | ✅ <br>         | ✅ <br>    |
+| Clôturer ticket <br>      | ❌ <br>      | ❌ <br>      | ❌ <br>      | ❌ <br>      | ❌ <br>      | ✅ <br>         | ✅ <br>    |
+| Réouvrir ticket <br>      | ❌ <br>      | ❌ <br>      | ❌ <br>      | ❌ <br>      | ❌ <br>      | ✅ <br>         | ✅ <br>    |
+| Notes internes <br>       | ✅ <br>      | ✅ <br>      | ✅ <br>      | ✅ <br>      | ❌ <br>      | ✅ <br>         | ✅ <br>    |
+| Audit Logs <br>           | ❌ <br>      | ❌ <br>      | ❌ <br>      | ❌ <br>      | ❌ <br>      | ✅ <br>         | ✅ <br>    |
+| Gestion utilisateurs <br> | ❌ <br>      | ❌ <br>      | ❌ <br>      | ❌ <br>      | ❌ <br>      | Partielle <br>  | ✅ <br>    |
+| Gestion SLA <br>          | ❌ <br>      | ❌ <br>      | ❌ <br>      | ❌ <br>      | ❌ <br>      | ✅ <br>         | ✅ <br>    |
+
+# 25. Conclusion
+
+Le modèle de données proposé répond aux exigences d'une plateforme de gestion d'incidents télécoms moderne.  
+Les principales caractéristiques de cette conception sont :
+
+- intégrité référentielle forte ;
+- historisation complète des opérations ;
+- séparation claire des responsabilités ;
+- support des SLA ;
+- gestion robuste des notifications ;
+- préparation à la montée en charge ;
+- indépendance vis-à-vis du système de stockage des fichiers.  
+
+
+Grâce à PostgreSQL, aux ENUM, aux index spécialisés GIN, aux UUIDv7 et à l'utilisation de JSONB, cette base de données constitue une fondation solide pour les phases d'implémentation et d'exploitation du système.

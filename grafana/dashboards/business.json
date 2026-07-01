@@ -27,9 +27,7 @@
       "type": "stat",
       "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
       "datasource": "Prometheus",
-      "targets": [
-        { "expr": "increase(telecom_tickets_created_total[24h])", "legendFormat": "Tickets Created" }
-      ],
+      "targets": [{ "expr": "increase(telecom_tickets_created_total[24h])", "legendFormat": "Tickets Created" }],
       "fieldConfig": {
         "defaults": {
           "unit": "short",
@@ -49,9 +47,7 @@
       "type": "stat",
       "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
       "datasource": "Prometheus",
-      "targets": [
-        { "expr": "telecom_tickets_active", "legendFormat": "Unresolved Tickets" }
-      ],
+      "targets": [{ "expr": "telecom_tickets_active", "legendFormat": "Unresolved Tickets" }],
       "fieldConfig": {
         "defaults": {
           "unit": "short",
@@ -79,7 +75,10 @@
       "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
       "datasource": "Prometheus",
       "targets": [
-        { "expr": "100 - (rate(telecom_sla_breaches_total[1h]) / clamp_min(rate(telecom_tickets_created_total[1h]), 0.001) * 100)", "legendFormat": "Compliance" }
+        {
+          "expr": "100 - (rate(telecom_sla_breaches_total[1h]) / clamp_min(rate(telecom_tickets_created_total[1h]), 0.001) * 100)",
+          "legendFormat": "Compliance"
+        }
       ],
       "fieldConfig": {
         "defaults": {
@@ -103,9 +102,7 @@
       "type": "stat",
       "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
       "datasource": "Prometheus",
-      "targets": [
-        { "expr": "increase(telecom_sla_breaches_total[24h])", "legendFormat": "Breached Tickets" }
-      ],
+      "targets": [{ "expr": "increase(telecom_sla_breaches_total[24h])", "legendFormat": "Breached Tickets" }],
       "fieldConfig": {
         "defaults": {
           "unit": "short",
@@ -140,9 +137,7 @@
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 16, "x": 0, "y": 5 },
       "datasource": "Prometheus",
-      "targets": [
-        { "expr": "telecom_tickets_active", "legendFormat": "Active Tickets" }
-      ],
+      "targets": [{ "expr": "telecom_tickets_active", "legendFormat": "Active Tickets" }],
       "fieldConfig": {
         "defaults": {
           "unit": "short",
@@ -178,7 +173,10 @@
       "gridPos": { "h": 8, "w": 24, "x": 0, "y": 13 },
       "datasource": "Prometheus",
       "targets": [
-        { "expr": "rate(telecom_tickets_created_total[1h])", "legendFormat": "Priority: {{priority}} - Cat: {{category}}" }
+        {
+          "expr": "rate(telecom_tickets_created_total[1h])",
+          "legendFormat": "Priority: {{priority}} - Cat: {{category}}"
+        }
       ],
       "fieldConfig": {
         "defaults": {

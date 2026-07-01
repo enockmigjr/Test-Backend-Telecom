@@ -7,12 +7,12 @@ opérations lentes ou non-critiques du flux HTTP principal.
 
 ### Files (Queues) Définies
 
-| Queue | Clé | Producteur | Consommateur (Worker) | Description |
-|-------|-----|-----------|----------------------|-------------|
-| `email-queue` | `EMAIL_QUEUE` | TicketService, AuthService | `EmailProcessor` | Envoi d'emails transactionnels |
-| `notification-queue` | `NOTIFICATION_QUEUE` | TicketService, SlaEngine | `NotificationProcessor` | Création notifications + WebSocket emit |
-| `sla-queue` | `SLA_QUEUE` | TicketService, SlaEngine | `SlaProcessor` | Vérification SLA, breach, escalation |
-| `audit-queue` | `AUDIT_QUEUE` | Tous les services | `AuditProcessor` | Écriture asynchrone des logs d'audit |
+| Queue                | Clé                  | Producteur                 | Consommateur (Worker)   | Description                             |
+| -------------------- | -------------------- | -------------------------- | ----------------------- | --------------------------------------- |
+| `email-queue`        | `EMAIL_QUEUE`        | TicketService, AuthService | `EmailProcessor`        | Envoi d'emails transactionnels          |
+| `notification-queue` | `NOTIFICATION_QUEUE` | TicketService, SlaEngine   | `NotificationProcessor` | Création notifications + WebSocket emit |
+| `sla-queue`          | `SLA_QUEUE`          | TicketService, SlaEngine   | `SlaProcessor`          | Vérification SLA, breach, escalation    |
+| `audit-queue`        | `AUDIT_QUEUE`        | Tous les services          | `AuditProcessor`        | Écriture asynchrone des logs d'audit    |
 
 ### Flux de Traitement
 
@@ -52,6 +52,7 @@ opérations lentes ou non-critiques du flux HTTP principal.
 ## Observabilité des Jobs
 
 Chaque job BullMQ expose:
+
 - `job.id` — identifiant unique
 - `job.attemptsMade` — nombre de tentatives
 - `job.finishedOn` — timestamp de complétion

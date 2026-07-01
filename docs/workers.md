@@ -43,13 +43,13 @@ SlaEngineService                    — (direct DB)         — (cron */5 min)  
 Les 5 workers sont enregistrés comme `providers` dans le `QueuesModule` (module global).
 Ils implémentent `OnModuleInit` → démarrent automatiquement au lancement de l'API.
 
-| Worker | Fichier | Queue | Concurrency |
-|--------|---------|-------|-------------|
-| EmailWorker | `src/queues/workers/email.worker.ts` | `email-queue` | 5 |
-| NotificationWorker | `src/queues/workers/notification.worker.ts` | `notification-queue` | 10 |
-| SlaWorker | `src/queues/workers/sla.worker.ts` | `sla-queue` | 5 |
-| AuditWorker | `src/queues/workers/audit.worker.ts` | `audit-queue` | 20 |
-| ReportWorker | `src/queues/workers/report.worker.ts` | `report-queue` | 3 |
+| Worker             | Fichier                                     | Queue                | Concurrency |
+| ------------------ | ------------------------------------------- | -------------------- | ----------- |
+| EmailWorker        | `src/queues/workers/email.worker.ts`        | `email-queue`        | 5           |
+| NotificationWorker | `src/queues/workers/notification.worker.ts` | `notification-queue` | 10          |
+| SlaWorker          | `src/queues/workers/sla.worker.ts`          | `sla-queue`          | 5           |
+| AuditWorker        | `src/queues/workers/audit.worker.ts`        | `audit-queue`        | 20          |
+| ReportWorker       | `src/queues/workers/report.worker.ts`       | `report-queue`       | 3           |
 
 ## Cycle de Vie d'un Job
 
@@ -62,18 +62,22 @@ Ils implémentent `OnModuleInit` → démarrent automatiquement au lancement de 
 ## Où sont ajoutés les Jobs ?
 
 ### 1. TicketNotificationListener
+
 **Fichier**: `src/modules/tickets/listeners/ticket-notification.listener.ts`
 
 Écoute les événements de domaine (`@OnEvent`) et ajoute des jobs :
+
 - `ticket.created` → job email (template `ticketCreated`)
 - `ticket.assigned` → job notification (type `TICKET_ASSIGNED`)
 - `ticket.escalated` → job notification (type `TICKET_ESCALATED`)
 - `ticket.resolved` → job email (template `ticketResolved`)
 
 ### 2. TicketAuditListener
+
 **Fichier**: `src/modules/tickets/listeners/ticket-audit.listener.ts`
 
 Écoute TOUS les événements ticket et ajoute des jobs audit :
+
 - `ticket.created` → `TICKET_CREATED`
 - `ticket.assigned` → `TICKET_ASSIGNED`
 - `ticket.status_changed` → `STATUS_CHANGED`
@@ -81,12 +85,14 @@ Ils implémentent `OnModuleInit` → démarrent automatiquement au lancement de 
 - `ticket.reopened` → `TICKET_REOPENED`
 
 ### 3. TicketSlaListener
+
 **Fichier**: `src/modules/tickets/listeners/ticket-sla.listener.ts`
 
 Écoute `ticket.created` et planifie un job SLA avec `delay` = temps restant avant échéance.
 Le job vérifiera si le SLA a été respecté à l'échéance.
 
 ### 4. ReportsController
+
 **Fichier**: `src/modules/reports/reports.controller.ts`
 
 Les routes POST `/reports/ticket/:id` et POST `/reports/sla` ajoutent des jobs dans `REPORT_QUEUE`.
@@ -98,6 +104,7 @@ Les workers loguent tous les jobs (complétés/échoués) via Pino.
 Les jobs échoués restent visibles 24h dans Redis.
 
 Pour voir les jobs en attente / échoués :
+
 ```bash
 # Via Redis CLI
 docker compose exec redis redis-cli

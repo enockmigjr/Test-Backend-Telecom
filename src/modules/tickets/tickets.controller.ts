@@ -12,7 +12,7 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiQuery, ApiBody } from '@nestjs/swagger';
 
 import { TicketsService } from './services/tickets.service';
 import { TicketsSearchService } from './services/tickets-search.service';
@@ -50,23 +50,66 @@ export class TicketsController {
     'FIELD_TECHNICIAN',
   )
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: "Créer un ticket d'incident — idempotent (header Idempotency-Key)" })
-  @ApiResponse({ status: 201, description: 'Ticket créé.' })
+  @ApiOperation({
+    summary: "Créer un ticket d'incident",
+    description:
+      "Crée un nouveau ticket. L'ID d'idempotence (`Idempotency-Key`) dans les headers évite les doublons lors des soumissions multiples.\n\nLe SLA est calculé automatiquement selon la catégorie et la priorité.\n\n**Rôles autorisés :** Tous les rôles authentifiés",
+  })
+  @ApiBody({ type: CreateTicketDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Ticket créé. La réponse inclut le numéro généré (TT-YYYY-XXXXXX) et les échéances SLA.',
+  })
+  @ApiResponse({ status: 400, description: 'Données invalides ou politique SLA introuvable pour catégorie/priorité.' })
+  @ApiResponse({ status: 401, description: 'Non authentifié.' })
+  @ApiResponse({ status: 429, description: 'Limite de requêtes dépassée.' })
   async create(@Body() dto: CreateTicketDto, @CurrentUser() user: JwtPayload) {
     return this.ticketsService.create(dto, user.sub);
   }
 
   @Get()
   @UseInterceptors(FieldProjectionInterceptor)
-  @ApiOperation({ summary: 'Rechercher des tickets avec filtres (param ?detail=summary|full)' })
+  @ApiOperation({
+    summary: 'Rechercher des tickets',
+    description:
+      'Recherche multi-critères sur les tickets. Supports la pagination.\n\nParam `?detail=summary` retourne uniquement les champs essentiels (id, numéro, titre, statut, priorité).\n\n**Rôles autorisés :** Tous les rôles authentifiés',
+  })
+  @ApiQuery({ name: 'status', required: false, example: 'IN_PROGRESS', description: 'Filtrer par statut du ticket' })
+  @ApiQuery({ name: 'priority', required: false, example: 'HIGH', description: 'Filtrer par priorité' })
+  @ApiQuery({ name: 'category', required: false, example: 'NETWORK', description: 'Filtrer par catégorie' })
+  @ApiQuery({ name: 'assignedTo', required: false, description: "UUID de l'agent assigné" })
+  @ApiQuery({ name: 'departmentId', required: false, description: 'UUID du département' })
+  @ApiQuery({ name: 'slaBreached', required: false, type: Boolean, description: 'Filtrer les tickets en breach SLA' })
+  @ApiQuery({ name: 'q', required: false, description: 'Recherche textuelle (titre, numéro)' })
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 20 })
+  @ApiQuery({ name: 'detail', required: false, enum: ['full', 'summary'], description: 'summary = champs réduits' })
+  @ApiResponse({ status: 200, description: 'Liste paginée des tickets correspondant aux filtres.' })
+  @ApiResponse({ status: 401, description: 'Non authentifié.' })
   async search(@Query() filters: SearchTicketsDto) {
     return this.searchService.search(filters);
   }
 
   @Get(':id')
-  @ApiOperation({ summary: "Détails complets d'un ticket" })
-  @ApiResponse({ status: 404, description: 'Ticket non trouvé.' })
-  async findOne(@Param('id') id: string) {
+  @ApiOperation({
+    summary: "Détails d'un ticket",
+    description:
+      "Retourne un ticket par son UUID.\n\nAvec `?detail=full`, enrichit la réponse avec le comptage des commentaires et l'historique des assignations.\n\n**Rôles autorisés :** Tous les rôles authentifiés",
+  })
+  @ApiParam({ name: 'id', description: 'UUID du ticket' })
+  @ApiQuery({
+    name: 'detail',
+    required: false,
+    enum: ['full', 'summary'],
+    description: 'full = ticket + commentaires + historique assignations',
+  })
+  @ApiResponse({ status: 200, description: 'Ticket avec ses relations (créateur, assigné, département).' })
+  @ApiResponse({ status: 401, description: 'Non authentifié.' })
+  @ApiResponse({ status: 404, description: 'Ticket non trouvé ou supprimé.' })
+  async findOne(@Param('id') id: string, @Query('detail') detail?: string) {
+    if (detail === 'full') {
+      return this.ticketsService.findByIdDetailed(id);
+    }
     return this.ticketsService.findById(id);
   }
 

@@ -29,25 +29,25 @@ pnpm run db:push && pnpm run db:seed
 pnpm run start:dev
 ```
 
-| URL | Description |
-|-----|-------------|
-| `http://localhost:3000/api/v1` | API REST |
-| `http://localhost:3000/api/docs` | Swagger / OpenAPI |
+| URL                                         | Description               |
+| ------------------------------------------- | ------------------------- |
+| `http://localhost:3000/api/v1`              | API REST                  |
+| `http://localhost:3000/api/docs`            | Swagger / OpenAPI         |
 | `http://localhost:3000/api/v1/health/ready` | Health check (DB + Redis) |
-| `http://localhost:3000/api/v1/metrics` | Métriques Prometheus |
-| `http://localhost:9025` | Mailpit (emails dev) |
-| `http://localhost:3001` | Grafana (admin/admin) |
-| `http://localhost:9090` | Prometheus |
-| `http://localhost:3002` | Uptime Kuma |
+| `http://localhost:3000/api/v1/metrics`      | Métriques Prometheus      |
+| `http://localhost:9025`                     | Mailpit (emails dev)      |
+| `http://localhost:3001`                     | Grafana (admin/admin)     |
+| `http://localhost:9090`                     | Prometheus                |
+| `http://localhost:3002`                     | Uptime Kuma               |
 
 ## 📊 Comptes de Test
 
-| Email | Rôle | Mot de passe |
-|-------|------|-------------|
-| `admin@telecom.local` | ADMINISTRATOR | `Admin@1234` |
-| `supervisor@telecom.local` | SUPERVISOR | `Super@1234` |
-| `agent-cc@telecom.local` | CUSTOMER_SERVICE_AGENT | `Agent@1234` |
-| `noc@telecom.local` | NOC_ENGINEER | `Agent@1234` |
+| Email                      | Rôle                   | Mot de passe |
+| -------------------------- | ---------------------- | ------------ |
+| `admin@telecom.local`      | ADMINISTRATOR          | `Admin@1234` |
+| `supervisor@telecom.local` | SUPERVISOR             | `Super@1234` |
+| `agent-cc@telecom.local`   | CUSTOMER_SERVICE_AGENT | `Agent@1234` |
+| `noc@telecom.local`        | NOC_ENGINEER           | `Agent@1234` |
 
 ## 🏗️ Architecture
 
@@ -55,21 +55,21 @@ pnpm run start:dev
 16 modules NestJS · 12 tables PostgreSQL · 45+ routes REST · 5 workers BullMQ
 ```
 
-| Module | Responsabilité |
-|--------|---------------|
-| `auth` | JWT (access 15min + refresh 7j rotation), Argon2id, Redis JTI blacklist |
-| `users` | CRUD 7 rôles, activation/désactivation, mot de passe temporaire |
-| `departments` | 6 départements, soft delete |
-| `tickets` | State machine 9 statuts, INC-AAAA-NNNNNN, recherche multi-filtres, historique |
-| `comments` | Commentaires publics (auteur/supervisor/admin) |
-| `internal-notes` | Notes internes (restriction FIELD_TECHNICIAN) |
-| `attachments` | Upload/download streaming, interface abstraite IStorageService |
-| `notifications` | Inbox pattern, WebSocket temps réel |
-| `sla` | Politiques SLA, cron engine */5 min, breach/warning detection |
-| `dashboard` | 7 endpoints: overview, status, priority, departments, SLA, workload, resolution |
-| `audit-logs` | Immutable write-only, recherche multi-filtres |
-| `email` | Nodemailer dev/prod, 7 templates Handlebars |
-| `reports` | Génération PDF (PDFKit), rapports asynchrones via BullMQ |
+| Module           | Responsabilité                                                                  |
+| ---------------- | ------------------------------------------------------------------------------- |
+| `auth`           | JWT (access 15min + refresh 7j rotation), Argon2id, Redis JTI blacklist         |
+| `users`          | CRUD 7 rôles, activation/désactivation, mot de passe temporaire                 |
+| `departments`    | 6 départements, soft delete                                                     |
+| `tickets`        | State machine 9 statuts, INC-AAAA-NNNNNN, recherche multi-filtres, historique   |
+| `comments`       | Commentaires publics (auteur/supervisor/admin)                                  |
+| `internal-notes` | Notes internes (restriction FIELD_TECHNICIAN)                                   |
+| `attachments`    | Upload/download streaming, interface abstraite IStorageService                  |
+| `notifications`  | Inbox pattern, WebSocket temps réel                                             |
+| `sla`            | Politiques SLA, cron engine \*/5 min, breach/warning detection                  |
+| `dashboard`      | 7 endpoints: overview, status, priority, departments, SLA, workload, resolution |
+| `audit-logs`     | Immutable write-only, recherche multi-filtres                                   |
+| `email`          | Nodemailer dev/prod, 7 templates Handlebars                                     |
+| `reports`        | Génération PDF (PDFKit), rapports asynchrones via BullMQ                        |
 
 ## 🔄 Flux Asynchrone (BullMQ)
 
@@ -113,41 +113,41 @@ make up-full   # Tout démarrer
 make down      # Tout arrêter
 ```
 
-| Service | Port |
-|---------|------|
-| API NestJS | 3000 |
-| PostgreSQL 16 | 5432 |
-| Redis 7 | 6379 |
-| Nginx | 80, 443 |
-| Mailpit | 1025, 8025 |
-| Prometheus | 9090 |
-| Grafana | 3001 |
-| Loki | 3100 |
-| Tempo | 3200 |
-| Promtail | 9080 |
-| Uptime Kuma | 3002 |
+| Service       | Port       |
+| ------------- | ---------- |
+| API NestJS    | 3000       |
+| PostgreSQL 16 | 5432       |
+| Redis 7       | 6379       |
+| Nginx         | 80, 443    |
+| Mailpit       | 1025, 8025 |
+| Prometheus    | 9090       |
+| Grafana       | 3001       |
+| Loki          | 3100       |
+| Tempo         | 3200       |
+| Promtail      | 9080       |
+| Uptime Kuma   | 3002       |
 
 ## 📋 Scripts
 
-| Commande | Description |
-|----------|-------------|
-| `pnpm run start:dev` | Développement hot-reload |
-| `pnpm run build` | Compilation TypeScript |
-| `pnpm run test` | Tests (105 tests, 9 suites) |
-| `pnpm run test:cov` | Tests avec couverture |
-| `pnpm run db:push` | Pousser schéma Drizzle |
-| `pnpm run db:seed` | Données de test |
-| `pnpm run db:reset` | db:push + db:seed |
-| `make up-full` | Tous les services Docker |
-| `make help` | Aide Makefile |
+| Commande             | Description                 |
+| -------------------- | --------------------------- |
+| `pnpm run start:dev` | Développement hot-reload    |
+| `pnpm run build`     | Compilation TypeScript      |
+| `pnpm run test`      | Tests (105 tests, 9 suites) |
+| `pnpm run test:cov`  | Tests avec couverture       |
+| `pnpm run db:push`   | Pousser schéma Drizzle      |
+| `pnpm run db:seed`   | Données de test             |
+| `pnpm run db:reset`  | db:push + db:seed           |
+| `make up-full`       | Tous les services Docker    |
+| `make help`          | Aide Makefile               |
 
 ## 📚 Documentation
 
-| Fichier | Contenu |
-|---------|---------|
-| `docs/routes.md` | Catalogue complet des 45+ routes |
-| `docs/architecture-flows.md` | 9 diagrammes Mermaid |
-| `docs/deployment.md` | Guide de déploiement production |
-| `docs/jobs-and-workers.md` | Architecture BullMQ et workers |
-| `docs/implementation-status.md` | État production-readiness |
-| `sql/schema-complet.sql` | Schéma PostgreSQL complet |
+| Fichier                         | Contenu                          |
+| ------------------------------- | -------------------------------- |
+| `docs/routes.md`                | Catalogue complet des 45+ routes |
+| `docs/architecture-flows.md`    | 9 diagrammes Mermaid             |
+| `docs/deployment.md`            | Guide de déploiement production  |
+| `docs/jobs-and-workers.md`      | Architecture BullMQ et workers   |
+| `docs/implementation-status.md` | État production-readiness        |
+| `sql/schema-complet.sql`        | Schéma PostgreSQL complet        |

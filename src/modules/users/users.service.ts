@@ -5,7 +5,7 @@ import * as argon2 from 'argon2';
 import { randomBytes } from 'crypto';
 
 import { DrizzleProvider } from '../../database/drizzle.provider';
-import { users, departments } from '../../database/schemas';
+import { users, departments, tickets } from '../../database/schemas';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 import { PaginationHelper } from '../../common/helpers/pagination.helper';
 
@@ -35,10 +35,12 @@ export class UsersService {
         role: users.role,
         isActive: users.isActive,
         departmentId: users.departmentId,
+        departmentName: departments.name,
         lastLoginAt: users.lastLoginAt,
         createdAt: users.createdAt,
       })
       .from(users)
+      .leftJoin(departments, eq(users.departmentId, departments.id))
       .where(where)
       .orderBy(order === 'asc' ? users.createdAt : sql`${users.createdAt} desc`)
       .limit(limit)
@@ -47,6 +49,9 @@ export class UsersService {
     return PaginationHelper.paginate(data, total?.count || 0, page, limit);
   }
 
+  /**
+   * Profil basique d'un utilisateur — inclut le département.
+   */
   async findOne(id: string) {
     const [user] = await this.drizzle.db
       .select({
@@ -61,7 +66,11 @@ export class UsersService {
         lastLoginAt: users.lastLoginAt,
         createdAt: users.createdAt,
         updatedAt: users.updatedAt,
-        departmentName: departments.name,
+        department: {
+          id: departments.id,
+          name: departments.name,
+          description: departments.description,
+        },
       })
       .from(users)
       .leftJoin(departments, eq(users.departmentId, departments.id))
@@ -75,8 +84,55 @@ export class UsersService {
     return user;
   }
 
+  /**
+   * Profil détaillé d'un utilisateur — inclut département + statistiques tickets.
+   * Utilisé par GET /users/:id?detail=full
+   */
+  async findOneDetailed(id: string) {
+    const user = await this.findOne(id);
+
+    // Statistiques des tickets associés à cet utilisateur
+    const [ticketStats] = await this.drizzle.db
+      .select({
+        totalCreated: sql<number>`count(*) filter (where ${tickets.createdBy} = ${id})`,
+        totalAssigned: sql<number>`count(*) filter (where ${tickets.assignedTo} = ${id})`,
+        openTickets: sql<number>`count(*) filter (where ${tickets.assignedTo} = ${id} and ${tickets.status} not in ('RESOLVED','CLOSED','CANCELLED'))`,
+        resolvedTickets: sql<number>`count(*) filter (where ${tickets.assignedTo} = ${id} and ${tickets.status} = 'RESOLVED')`,
+        slaBreachedCount: sql<number>`count(*) filter (where ${tickets.assignedTo} = ${id} and ${tickets.slaBreached} = true)`,
+      })
+      .from(tickets)
+      .where(isNull(tickets.deletedAt));
+
+    // 5 derniers tickets assignés
+    const recentTickets = await this.drizzle.db
+      .select({
+        id: tickets.id,
+        ticketNumber: tickets.ticketNumber,
+        title: tickets.title,
+        status: tickets.status,
+        priority: tickets.priority,
+        createdAt: tickets.createdAt,
+        slaBreached: tickets.slaBreached,
+      })
+      .from(tickets)
+      .where(and(eq(tickets.assignedTo, id), isNull(tickets.deletedAt)))
+      .orderBy(sql`${tickets.createdAt} desc`)
+      .limit(5);
+
+    return {
+      ...user,
+      ticketStats: {
+        totalCreated: Number(ticketStats?.totalCreated ?? 0),
+        totalAssigned: Number(ticketStats?.totalAssigned ?? 0),
+        openTickets: Number(ticketStats?.openTickets ?? 0),
+        resolvedTickets: Number(ticketStats?.resolvedTickets ?? 0),
+        slaBreachedCount: Number(ticketStats?.slaBreachedCount ?? 0),
+      },
+      recentTickets,
+    };
+  }
+
   async create(dto: { email: string; firstName: string; lastName: string; role: string; departmentId: string }) {
-    // Vérifier l'unicité de l'email
     const [existing] = await this.drizzle.db
       .select({ id: users.id })
       .from(users)
@@ -87,9 +143,8 @@ export class UsersService {
       throw new ConflictException('Un utilisateur avec cet email existe déjà.');
     }
 
-    // Vérifier que le département existe
     const [dept] = await this.drizzle.db
-      .select({ id: departments.id })
+      .select({ id: departments.id, name: departments.name })
       .from(departments)
       .where(eq(departments.id, dto.departmentId))
       .limit(1);
@@ -98,7 +153,6 @@ export class UsersService {
       throw new BadRequestException('Département non trouvé.');
     }
 
-    // Générer un mot de passe temporaire
     const tempPassword = randomBytes(12).toString('hex');
     const passwordHash = await argon2.hash(tempPassword, {
       type: argon2.argon2id,
@@ -119,32 +173,26 @@ export class UsersService {
       mustChangePassword: true,
     });
 
-    const [created] = await this.drizzle.db
-      .select({
-        id: users.id,
-        email: users.email,
-        firstName: users.firstName,
-        lastName: users.lastName,
-        role: users.role,
-        departmentId: users.departmentId,
-      })
-      .from(users)
-      .where(eq(users.id, id))
-      .limit(1);
-
-    this.logger.log(`Utilisateur créé: ${dto.email} (${id}), mot de passe temporaire généré`);
+    this.logger.log(`Utilisateur créé: ${dto.email} (${id}), département: ${dept.name}`);
 
     return {
       message: 'Utilisateur créé avec succès.',
       data: {
-        ...created,
+        id,
+        email: dto.email.toLowerCase().trim(),
+        firstName: dto.firstName,
+        lastName: dto.lastName,
+        role: dto.role,
+        departmentId: dto.departmentId,
+        departmentName: dept.name,
+        mustChangePassword: true,
         tempPassword, // À envoyer par email en production
       },
     };
   }
 
   async update(id: string, dto: { firstName?: string; lastName?: string; role?: string; departmentId?: string }) {
-    await this.findOne(id); // Vérifie l'existence
+    await this.findOne(id);
 
     const updateData: Record<string, unknown> = {};
     if (dto.firstName) updateData['firstName'] = dto.firstName;

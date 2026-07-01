@@ -38,13 +38,14 @@ jest.mock('drizzle-orm', () => {
 describe('SlaEngineService', () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let service: any; // Utiliser any pour contourner les problèmes de typage des modules mockés
-  let mockSelectQuery: { from: jest.Mock; where: jest.Mock; limit: jest.Mock };
+  let mockSelectQuery: { from: jest.Mock; leftJoin: jest.Mock; where: jest.Mock; limit: jest.Mock };
   let mockUpdateQuery: { set: jest.Mock; where: jest.Mock };
   let mockDb: { select: jest.Mock; update: jest.Mock };
 
   beforeEach(async () => {
     mockSelectQuery = {
       from: jest.fn().mockReturnThis(),
+      leftJoin: jest.fn().mockReturnThis(),
       where: jest.fn().mockReturnThis(),
       limit: jest.fn().mockResolvedValue([]),
     };
@@ -77,7 +78,18 @@ describe('SlaEngineService', () => {
     const mockMetricsService = {
       slaBreachesTotal: { inc: jest.fn() },
     };
-    service = new SlaEngineService(drizzle, mockMetricsService);
+    const mockWsGateway = {
+      emitToRole: jest.fn(),
+      emitToUser: jest.fn(),
+    };
+    const mockQueue = {
+      add: jest.fn().mockResolvedValue({ id: 'job-id' }),
+    };
+    const mockQueues = {
+      email: mockQueue,
+      notification: mockQueue,
+    };
+    service = new SlaEngineService(drizzle, mockMetricsService, mockWsGateway, mockQueues);
   });
 
   afterEach(() => {

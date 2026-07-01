@@ -28,6 +28,7 @@ CORS_ORIGIN=https://votre-domaine.com
 ```
 
 **Génération de secrets**:
+
 ```bash
 node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 ```
@@ -101,15 +102,15 @@ scrape_configs:
 
 ### Métriques Disponibles
 
-| Métrique | Type | Labels | Description |
-|----------|------|--------|-------------|
-| `telecom_http_requests_total` | Counter | method, route, status_code | Requêtes HTTP |
-| `telecom_http_request_duration_seconds` | Histogram | method, route | Durée des requêtes |
-| `telecom_tickets_created_total` | Counter | priority, category | Tickets créés |
-| `telecom_tickets_active` | Gauge | — | Tickets actifs |
-| `telecom_sla_breaches_total` | Counter | priority | Violations SLA |
-| `telecom_db_pool_connections` | Gauge | — | Connexions DB |
-| `telecom_nodejs_*` | Default | — | CPU, mémoire, event loop |
+| Métrique                                | Type      | Labels                     | Description              |
+| --------------------------------------- | --------- | -------------------------- | ------------------------ |
+| `telecom_http_requests_total`           | Counter   | method, route, status_code | Requêtes HTTP            |
+| `telecom_http_request_duration_seconds` | Histogram | method, route              | Durée des requêtes       |
+| `telecom_tickets_created_total`         | Counter   | priority, category         | Tickets créés            |
+| `telecom_tickets_active`                | Gauge     | —                          | Tickets actifs           |
+| `telecom_sla_breaches_total`            | Counter   | priority                   | Violations SLA           |
+| `telecom_db_pool_connections`           | Gauge     | —                          | Connexions DB            |
+| `telecom_nodejs_*`                      | Default   | —                          | CPU, mémoire, event loop |
 
 ## 6. Logs
 
@@ -164,11 +165,11 @@ docker compose exec -T postgres psql -U telecom telecom_tickets < backup.sql
 
 ## 10. Troubleshooting
 
-| Problème | Solution |
-|----------|----------|
-| `ECONNREFUSED` PostgreSQL | Vérifier `DATABASE_URL` et que PostgreSQL est accessible |
-| `ECONNREFUSED` Redis | Vérifier `REDIS_HOST`/`REDIS_PORT` et que Redis tourne |
-| Erreur JWT | Vérifier que `JWT_ACCESS_SECRET` et `JWT_REFRESH_SECRET` sont définis |
-| 502 Bad Gateway | Vérifier les logs Nginx et API |
-| Emails non envoyés | Vérifier la config SMTP et les logs du worker BullMQ |
-| SLA non vérifiés | Le cron tourne toutes les 5 min — vérifier les logs `SlaEngineService` |
+| Problème                  | Solution                                                               |
+| ------------------------- | ---------------------------------------------------------------------- |
+| `ECONNREFUSED` PostgreSQL | Vérifier `DATABASE_URL` et que PostgreSQL est accessible               |
+| `ECONNREFUSED` Redis      | Vérifier `REDIS_HOST`/`REDIS_PORT` et que Redis tourne                 |
+| Erreur JWT                | Vérifier que `JWT_ACCESS_SECRET` et `JWT_REFRESH_SECRET` sont définis  |
+| 502 Bad Gateway           | Vérifier les logs Nginx et API                                         |
+| Emails non envoyés        | Vérifier la config SMTP et les logs du worker BullMQ                   |
+| SLA non vérifiés          | Le cron tourne toutes les 5 min — vérifier les logs `SlaEngineService` |

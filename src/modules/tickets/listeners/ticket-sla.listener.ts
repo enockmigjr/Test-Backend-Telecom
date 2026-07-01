@@ -1,36 +1,58 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { Queue } from 'bullmq';
-import { redisConfig } from '../../../common/providers/redis.config';
 import { SLA_QUEUE } from '../../../queues/queues.module';
-import { TicketCreatedEvent, TicketResolvedEvent } from '../domain/ticket.events';
+import { TicketCreatedEvent, TicketResolvedEvent, TicketClosedEvent } from '../domain/ticket.events';
 
+interface BullMqQueues {
+  sla: Queue;
+  [key: string]: Queue;
+}
+
+/**
+ * Listener SLA pour les événements de domaine Ticket.
+ * Planifie des vérifications SLA retardées dans la SLA_QUEUE.
+ *
+ * NOTE : Injecte le token global 'BullMQ_Queues' — connexions Redis partagées.
+ */
 @Injectable()
 export class TicketSlaListener {
   private readonly logger = new Logger(TicketSlaListener.name);
-  private slaQueue: Queue;
 
-  constructor() {
-    this.slaQueue = new Queue(SLA_QUEUE, {
-      connection: { host: redisConfig.host, port: redisConfig.port, password: redisConfig.password || undefined },
-    });
+  constructor(@Inject('BullMQ_Queues') private readonly queues: BullMqQueues) {}
+
+  private get slaQueue(): Queue {
+    return this.queues[SLA_QUEUE] ?? this.queues['sla'];
   }
 
   @OnEvent('ticket.created')
   async handleCreated(event: TicketCreatedEvent): Promise<void> {
-    // Planifier une vérification SLA à l'échéance
-    await this.slaQueue.add(
-      'check_breach',
-      { ticketId: event.ticket['id'] as string, action: 'check_breach' },
-      { delay: this.calculateDelay(event.ticket['resolutionDueAt'] as string) },
-    );
-    this.logger.debug(`Vérification SLA planifiée pour ticket ${event.ticket['ticketNumber']}`);
+    const resolutionDueAt = event.ticket['resolutionDueAt'] as string;
+    const delay = this.calculateDelay(resolutionDueAt);
+
+    if (delay > 0) {
+      await this.slaQueue.add(
+        'check_breach',
+        { ticketId: event.ticket['id'] as string, action: 'check_breach' },
+        { delay, jobId: `sla-breach-${event.ticket['id'] as string}` },
+      );
+      this.logger.debug(
+        `Vérification SLA planifiée dans ${Math.round(delay / 60000)}min pour ticket ${event.ticket['ticketNumber']}`,
+      );
+    }
   }
 
   @OnEvent('ticket.resolved')
   async handleResolved(event: TicketResolvedEvent): Promise<void> {
-    // Annuler la vérification SLA pour les tickets résolus
-    this.logger.debug(`Ticket ${event.ticketId} résolu — SLA check annulé`);
+    // Supprimer le job de vérification SLA si le ticket est résolu avant échéance
+    await this.slaQueue.remove(`sla-breach-${event.ticketId}`).catch(() => {});
+    this.logger.debug(`Ticket ${event.ticketId} résolu — job SLA breach annulé`);
+  }
+
+  @OnEvent('ticket.closed')
+  async handleClosed(event: TicketClosedEvent): Promise<void> {
+    await this.slaQueue.remove(`sla-breach-${event.ticketId}`).catch(() => {});
+    this.logger.debug(`Ticket ${event.ticketId} clôturé — job SLA breach annulé`);
   }
 
   private calculateDelay(dueAt: string): number {

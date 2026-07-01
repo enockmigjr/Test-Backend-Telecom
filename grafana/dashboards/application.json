@@ -27,15 +27,16 @@
       "type": "stat",
       "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
       "datasource": "Prometheus",
-      "targets": [
-        { "expr": "up{job=\"telecom-api\"}", "legendFormat": "Status" }
-      ],
+      "targets": [{ "expr": "up{job=\"telecom-api\"}", "legendFormat": "Status" }],
       "fieldConfig": {
         "defaults": {
           "unit": "short",
           "mappings": [
             { "type": "special", "options": { "match": "null", "result": { "text": "DOWN", "color": "red" } } },
-            { "type": "value", "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } } }
+            {
+              "type": "value",
+              "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } }
+            }
           ]
         }
       },
@@ -52,9 +53,7 @@
       "type": "stat",
       "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
       "datasource": "Prometheus",
-      "targets": [
-        { "expr": "telecom_ws_connections", "legendFormat": "Active Connections" }
-      ],
+      "targets": [{ "expr": "telecom_ws_connections", "legendFormat": "Active Connections" }],
       "fieldConfig": {
         "defaults": {
           "unit": "short",
@@ -74,9 +73,7 @@
       "type": "stat",
       "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
       "datasource": "Prometheus",
-      "targets": [
-        { "expr": "telecom_active_users", "legendFormat": "Users" }
-      ],
+      "targets": [{ "expr": "telecom_active_users", "legendFormat": "Users" }],
       "fieldConfig": {
         "defaults": {
           "unit": "short",
@@ -96,9 +93,7 @@
       "type": "stat",
       "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
       "datasource": "Prometheus",
-      "targets": [
-        { "expr": "sum(rate(telecom_sla_breaches_total[5m]))", "legendFormat": "Breaches / sec" }
-      ],
+      "targets": [{ "expr": "sum(rate(telecom_sla_breaches_total[5m]))", "legendFormat": "Breaches / sec" }],
       "fieldConfig": {
         "defaults": {
           "unit": "reqps",
@@ -157,7 +152,10 @@
       "gridPos": { "h": 8, "w": 8, "x": 16, "y": 5 },
       "datasource": "Prometheus",
       "targets": [
-        { "expr": "sum(rate(telecom_http_requests_total{status_code=~\"5..\"}[5m])) / sum(rate(telecom_http_requests_total[5m])) * 100", "legendFormat": "5xx Ratio" }
+        {
+          "expr": "sum(rate(telecom_http_requests_total{status_code=~\"5..\"}[5m])) / sum(rate(telecom_http_requests_total[5m])) * 100",
+          "legendFormat": "5xx Ratio"
+        }
       ],
       "fieldConfig": {
         "defaults": {
@@ -182,7 +180,10 @@
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 13 },
       "datasource": "Prometheus",
       "targets": [
-        { "expr": "histogram_quantile(0.95, rate(telecom_http_request_duration_seconds_bucket[5m]))", "legendFormat": "{{method}} {{route}}" }
+        {
+          "expr": "histogram_quantile(0.95, rate(telecom_http_request_duration_seconds_bucket[5m]))",
+          "legendFormat": "{{method}} {{route}}"
+        }
       ],
       "fieldConfig": {
         "defaults": {
@@ -204,7 +205,10 @@
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 13 },
       "datasource": "Prometheus",
       "targets": [
-        { "expr": "histogram_quantile(0.50, rate(telecom_http_request_duration_seconds_bucket[5m]))", "legendFormat": "{{method}} {{route}}" }
+        {
+          "expr": "histogram_quantile(0.50, rate(telecom_http_request_duration_seconds_bucket[5m]))",
+          "legendFormat": "{{method}} {{route}}"
+        }
       ],
       "fieldConfig": {
         "defaults": {
@@ -233,9 +237,7 @@
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 22 },
       "datasource": "Prometheus",
-      "targets": [
-        { "expr": "telecom_db_pool_connections", "legendFormat": "Connections" }
-      ],
+      "targets": [{ "expr": "telecom_db_pool_connections", "legendFormat": "Connections" }],
       "fieldConfig": {
         "defaults": {
           "unit": "short",
@@ -257,7 +259,10 @@
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 22 },
       "datasource": "Prometheus",
       "targets": [
-        { "expr": "telecom_nodejs_heap_bytes_used_bytes / telecom_nodejs_heap_bytes_total_bytes * 100", "legendFormat": "Heap Usage %" }
+        {
+          "expr": "telecom_nodejs_heap_bytes_used_bytes / telecom_nodejs_heap_bytes_total_bytes * 100",
+          "legendFormat": "Heap Usage %"
+        }
       ],
       "fieldConfig": {
         "defaults": {

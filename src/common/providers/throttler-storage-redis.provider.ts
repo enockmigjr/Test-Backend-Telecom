@@ -24,7 +24,7 @@ export class ThrottlerStorageRedisService implements ThrottlerStorage, OnModuleD
         host: redisConfig.host,
         port: redisConfig.port,
         password: redisConfig.password || undefined,
-        enableOfflineQueue: false,
+        enableOfflineQueue: true,
         maxRetriesPerRequest: 3,
         retryStrategy(times) {
           return times > 3 ? null : Math.min(times * 200, 2000);

@@ -55,7 +55,7 @@ scrape_configs:
             # Essayer d'extraire les éléments du format pino-pretty
             - regex:
                 expression: '^\[[^\]]+\]\s+(?P<detected_level>[A-Z]+)\s+\(\d+\):\s+(?P<json_payload>\{.*\})$'
-            
+
             # Si json_payload est extrait, on le parse en JSON
             - json:
                 source: json_payload

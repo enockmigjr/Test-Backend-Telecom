@@ -1,7 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { Queue } from 'bullmq';
-import { redisConfig } from '../../../common/providers/redis.config';
 import { AUDIT_QUEUE } from '../../../queues/queues.module';
 import {
   TicketCreatedEvent,
@@ -11,15 +10,27 @@ import {
   TicketReopenedEvent,
 } from '../domain/ticket.events';
 
+interface BullMqQueues {
+  audit: Queue;
+  [key: string]: Queue;
+}
+
+/**
+ * Listener d'audit pour les événements de domaine Ticket.
+ * Envoie les entrées d'audit dans la AUDIT_QUEUE via BullMQ.
+ * Le AuditWorker les persiste de manière asynchrone dans la table audit_logs.
+ *
+ * NOTE : On injecte le token global 'BullMQ_Queues' au lieu de créer
+ * une nouvelle instance Queue — évite les connexions Redis dupliquées.
+ */
 @Injectable()
 export class TicketAuditListener {
   private readonly logger = new Logger(TicketAuditListener.name);
-  private auditQueue: Queue;
 
-  constructor() {
-    this.auditQueue = new Queue(AUDIT_QUEUE, {
-      connection: { host: redisConfig.host, port: redisConfig.port, password: redisConfig.password || undefined },
-    });
+  constructor(@Inject('BullMQ_Queues') private readonly queues: BullMqQueues) {}
+
+  private get auditQueue(): Queue {
+    return this.queues[AUDIT_QUEUE] ?? this.queues['audit'];
   }
 
   @OnEvent('ticket.created')
@@ -29,7 +40,11 @@ export class TicketAuditListener {
       action: 'TICKET_CREATED',
       entityType: 'ticket',
       entityId: event.ticket['id'] as string,
-      newValue: { ticketNumber: event.ticket['ticketNumber'], title: event.ticket['title'] },
+      newValue: {
+        ticketNumber: event.ticket['ticketNumber'],
+        title: event.ticket['title'],
+        priority: event.ticket['priority'],
+      },
     });
   }
 

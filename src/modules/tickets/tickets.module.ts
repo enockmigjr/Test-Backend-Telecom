@@ -8,8 +8,19 @@ import { TicketStateMachine } from './domain/ticket-status-transitions';
 import { TicketNotificationListener } from './listeners/ticket-notification.listener';
 import { TicketAuditListener } from './listeners/ticket-audit.listener';
 import { TicketSlaListener } from './listeners/ticket-sla.listener';
+import { WebSocketModule } from '../../websocket/websocket.module';
 
+/**
+ * Module Tickets — cœur métier de la plateforme.
+ *
+ * Importe WebSocketModule pour que TicketNotificationListener
+ * puisse émettre des événements temps réel via TelecomWebSocketGateway.
+ *
+ * Les listeners injectent 'BullMQ_Queues' via le QueuesModule global
+ * (aucun import requis car @Global()).
+ */
 @Module({
+  imports: [WebSocketModule],
   controllers: [TicketsController],
   providers: [
     TicketsService,
