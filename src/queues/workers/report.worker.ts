@@ -214,23 +214,69 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
   private async generateWeeklyReport(requestedBy: string): Promise<void> {
     const now = new Date();
     const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const where = and(gte(tickets.createdAt, weekAgo), lte(tickets.createdAt, now), isNull(tickets.deletedAt));
 
+    // Stats de la semaine
+    const [[totals], [resolved], [openCount], [breached]] = await Promise.all([
+      this.drizzle.db.select({ count: count() }).from(tickets).where(where),
+      this.drizzle.db
+        .select({ count: count() })
+        .from(tickets)
+        .where(and(where, eq(tickets.status, 'RESOLVED' as const))),
+      this.drizzle.db
+        .select({ count: count() })
+        .from(tickets)
+        .where(and(where, sql`${tickets.status} NOT IN ('RESOLVED','CLOSED','CANCELLED')`)),
+      this.drizzle.db
+        .select({ count: count() })
+        .from(tickets)
+        .where(and(where, eq(tickets.slaBreached, true))),
+    ]);
+
+    const [avgStats] = await this.drizzle.db
+      .select({
+        avgMin: sql<number>`COALESCE(AVG(EXTRACT(EPOCH FROM (${tickets.resolvedAt} - ${tickets.createdAt})) / 60) FILTER (WHERE ${tickets.resolvedAt} IS NOT NULL), 0)`,
+      })
+      .from(tickets)
+      .where(and(where, sql`${tickets.resolvedAt} IS NOT NULL`));
+
+    const totalCreated = Number(totals?.count || 0);
+    const totalResolved = Number(resolved?.count || 0);
+    const totalOpen = Number(openCount?.count || 0);
+    const slaBreaches = Number(breached?.count || 0);
+    const complianceRate = totalCreated > 0 ? ((totalCreated - slaBreaches) / totalCreated * 100).toFixed(1) : '100';
+    const avgMin = Math.round(Number(avgStats?.avgMin || 0));
+
+    const weekNumber = String(Math.ceil((now.getTime() - new Date(now.getFullYear(), 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000)));
+
+    // Notifier le demandeur
     await this.notifyUser(
       requestedBy,
       'REPORT_READY',
       '📈 Rapport hebdomadaire prêt',
-      `Le rapport hebdomadaire (${weekAgo.toLocaleDateString('fr-FR')} → ${now.toLocaleDateString('fr-FR')}) a été généré.`,
+      `Rapport S${weekNumber}: ${totalCreated} tickets, ${totalResolved} résolus, ${slaBreaches} violations SLA.`,
     );
 
+    // Envoyer l'email avec le template adminWeeklyReport
     const email = await this.getUserEmail(requestedBy);
     if (email) {
-      await this.sendEmail(email, '📈 Rapport hebdomadaire Telecom', 'ticketCreated', {
-        ticketNumber: `HEBDO-${weekAgo.toISOString().slice(0, 10)}`,
-        title: 'Rapport hebdomadaire automatique',
-        priority: 'MEDIUM',
+      const dashboardUrl = process.env['DASHBOARD_URL'] || 'http://localhost:3001';
+      await this.sendEmail(email, `📈 Rapport Hebdomadaire — Semaine ${weekNumber}`, 'adminWeeklyReport', {
+        weekNumber,
+        periodStart: weekAgo.toLocaleDateString('fr-FR'),
+        periodEnd: now.toLocaleDateString('fr-FR'),
+        totalCreated,
+        totalResolved,
+        totalOpen,
+        slaBreaches,
+        complianceRate,
+        avgResolutionMinutes: avgMin,
+        dashboardUrl,
+        generatedAt: now.toLocaleString('fr-FR'),
+        year: String(now.getFullYear()),
       });
     }
 
-    this.logger.log(`Rapport hebdomadaire généré et notifié → ${requestedBy}`);
+    this.logger.log(`Rapport hebdomadaire S${weekNumber} généré et notifié → ${requestedBy}`);
   }
 }

@@ -33,7 +33,7 @@
     "db:seed": "ts-node src/database/seed/run-seed.ts",
     "db:reset": "pnpm run db:push && pnpm run db:seed",
     "db:studio": "drizzle-kit studio",
-    "prepare": "husky"
+    "prepare": "husky || true"
   },
   "dependencies": {
     "@faker-js/faker": "^10.5.0",

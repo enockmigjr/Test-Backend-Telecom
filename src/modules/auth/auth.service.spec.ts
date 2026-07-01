@@ -128,6 +128,8 @@ describe('AuthService', () => {
     // Mock RedisProvider
     redisProvider = mock<RedisProvider>();
 
+    const mockQueues = { email: { add: jest.fn().mockResolvedValue(undefined) } };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
@@ -135,6 +137,7 @@ describe('AuthService', () => {
         { provide: JwtService, useValue: jwtService },
         { provide: JwtConfigService, useValue: jwtConfig },
         { provide: RedisProvider, useValue: redisProvider },
+        { provide: 'BullMQ_Queues', useValue: mockQueues },
       ],
     }).compile();
 

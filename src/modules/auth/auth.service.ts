@@ -1,9 +1,10 @@
-import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
+import { Injectable, UnauthorizedException, Logger, Inject } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
 import { generateUuid } from '../../common/helpers/uuidv7.helper';
 import { createHash, randomBytes } from 'crypto';
 import { eq, and, isNull } from 'drizzle-orm';
+import { Queue } from 'bullmq';
 
 import { DrizzleProvider } from '../../database/drizzle.provider';
 import { RedisProvider } from '../../common/providers/redis.provider';
@@ -21,6 +22,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly jwtConfig: JwtConfigService,
     private readonly redisProvider: RedisProvider,
+    @Inject('BullMQ_Queues') private readonly queues: { email: Queue; [key: string]: Queue },
   ) {}
 
   /**
@@ -160,6 +162,34 @@ export class AuthService {
       .update(users)
       .set({ passwordHash: newHash, mustChangePassword: false })
       .where(eq(users.id, userId));
+
+    // Envoyer un email de confirmation (non-bloquant)
+    this.sendPasswordChangedEmail(user.email, user.firstName).catch((err) => {
+      this.logger.warn(`Échec envoi email confirmation changement mot de passe: ${(err as Error).message}`);
+    });
+  }
+
+  /** Envoie l'email de confirmation de changement de mot de passe */
+  private async sendPasswordChangedEmail(to: string, firstName: string): Promise<void> {
+    try {
+      await this.queues.email.add('send-email', {
+        to,
+        subject: '🔒 Votre mot de passe a été modifié',
+        template: 'passwordChanged',
+        data: {
+          firstName: firstName || 'Utilisateur',
+          changeDate: new Date().toLocaleDateString('fr-FR', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+          }),
+        },
+      });
+    } catch (err) {
+      this.logger.warn(`Email queue indisponible pour confirmation mot de passe: ${(err as Error).message}`);
+    }
   }
 
   /**

@@ -105,5 +105,34 @@ export class EmailService {
       <p style="color:red;">Le SLA de ce ticket a été dépassé. Action immédiate requise.</p>
       <hr><small>Telecom Ticket Management — Alerte automatique</small>
     `,
+
+    passwordChanged: (data: { firstName: string; changeDate: string }) => `
+      <h2>🔒 Mot de passe modifié</h2>
+      <p>Bonjour <strong>${data.firstName}</strong>,</p>
+      <p>Votre mot de passe a été modifié le ${data.changeDate}.</p>
+      <p>Si vous n'êtes pas à l'origine de cette modification, contactez immédiatement votre administrateur.</p>
+      <hr><small>Telecom Ticket Management — Sécurité</small>
+    `,
+
+    accountCreated: (data: { firstName: string; lastName: string; email: string; tempPassword: string; loginUrl: string }) => `
+      <h2>👤 Compte créé — Bienvenue</h2>
+      <p>Bonjour <strong>${data.firstName} ${data.lastName}</strong>,</p>
+      <p>Votre compte a été créé: <strong>${data.email}</strong></p>
+      <p>Mot de passe temporaire: <code>${data.tempPassword}</code></p>
+      <p><a href="${data.loginUrl}">Se connecter</a></p>
+      <hr><small>Telecom Ticket Management — Ne pas répondre à cet email</small>
+    `,
+
+    adminWeeklyReport: (data: { weekNumber: string; periodStart: string; periodEnd: string; totalCreated: number; totalResolved: number; totalOpen: number; slaBreaches: number; complianceRate: string; avgResolutionMinutes: number }) => `
+      <h2>📈 Rapport Hebdomadaire — Semaine ${data.weekNumber}</h2>
+      <p><strong>Période:</strong> ${data.periodStart} → ${data.periodEnd}</p>
+      <table><tr><td>Créés:</td><td>${data.totalCreated}</td></tr>
+      <tr><td>Résolus:</td><td>${data.totalResolved}</td></tr>
+      <tr><td>Ouverts:</td><td>${data.totalOpen}</td></tr>
+      <tr><td>Violations SLA:</td><td>${data.slaBreaches}</td></tr>
+      <tr><td>Conformité:</td><td>${data.complianceRate}%</td></tr>
+      <tr><td>Temps moyen:</td><td>${data.avgResolutionMinutes} min</td></tr></table>
+      <hr><small>Telecom Ticket Management — Rapport automatique</small>
+    `,
   };
 }
