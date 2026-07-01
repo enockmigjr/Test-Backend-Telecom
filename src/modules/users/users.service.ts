@@ -251,12 +251,7 @@ export class UsersService {
    * Envoie l'email de bienvenue avec le mot de passe temporaire
    * via la file d'attente BullMQ (non-bloquant).
    */
-  private async sendWelcomeEmail(
-    to: string,
-    firstName: string,
-    lastName: string,
-    tempPassword: string,
-  ): Promise<void> {
+  private async sendWelcomeEmail(to: string, firstName: string, lastName: string, tempPassword: string): Promise<void> {
     const loginUrl = process.env['LOGIN_URL'] || 'http://localhost:3000/login';
     try {
       await this.queues.email.add('send-email', {

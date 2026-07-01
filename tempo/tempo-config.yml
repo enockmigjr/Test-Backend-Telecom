@@ -1,14 +1,14 @@
 server:
-  http_listen_port: 3200
+  http_listen_port: ${TEMPO_HTTP_PORT:-3200}
 
 distributor:
   receivers:
     otlp:
       protocols:
         http:
-          endpoint: 0.0.0.0:4318
+          endpoint: 0.0.0.0:${TEMPO_OTLP_HTTP_PORT:-4318}
         grpc:
-          endpoint: 0.0.0.0:4317
+          endpoint: 0.0.0.0:${TEMPO_OTLP_GRPC_PORT:-4317}
 
 storage:
   trace:
@@ -20,6 +20,3 @@ storage:
     pool:
       max_workers: 100
       queue_depth: 1000
-
-# Le bloc compactor et ingester moderne se configure via l'overrides ou au niveau global
-# Pour éviter les erreurs de type app.Config, on laisse le stockage gérer la rétention locale.

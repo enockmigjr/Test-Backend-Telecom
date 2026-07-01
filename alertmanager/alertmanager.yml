@@ -1,7 +1,7 @@
 global:
   resolve_timeout: 5m
-  smtp_smarthost: 'mailpit:1025'
-  smtp_from: 'alertmanager@telecom-tickets.local'
+  smtp_smarthost: '${ALERTMANAGER_SMTP_HOST:-mailpit}:${ALERTMANAGER_SMTP_PORT:-1025}'
+  smtp_from: '${ALERTMANAGER_SMTP_FROM:-alertmanager@telecom-tickets.local}'
   smtp_require_tls: false
   smtp_hello: 'telecom-tickets.local'
 
@@ -50,7 +50,7 @@ receivers:
   # ─── Receiver par défaut (log interne) ──────────────────────
   - name: 'default'
     email_configs:
-      - to: 'ops@telecom-tickets.local'
+      - to: '${ALERTMANAGER_DEFAULT_EMAIL:-ops@telecom-tickets.local}'
         headers:
           Subject: '[Telecom] {{ .GroupLabels.alertname }} ({{ .GroupLabels.severity }})'
         html: '{{ template "telecom.email.html" . }}'
@@ -58,16 +58,16 @@ receivers:
   # ─── Alertes critiques : Email + Webhook ──────────────────────
   - name: 'critical-alerts'
     email_configs:
-      - to: 'oncall@telecom-tickets.local'
+      - to: '${ALERTMANAGER_CRITICAL_EMAIL:-oncall@telecom-tickets.local}'
         headers:
           Subject: '[CRITICAL] {{ .GroupLabels.alertname }} — Action requise'
         html: '{{ template "telecom.email.html" . }}'
-    # WhatsApp via CallMeBot — configurer les variables d'environnement :
-    #   ALERTMANAGER_WHATSAPP_PHONE, ALERTMANAGER_WHATSAPP_APIKEY
-    # En production, remplacer l'URL ci-dessous ou utiliser un fichier
-    # alertmanager.yml distinct sans valeurs en dur.
+    # WhatsApp via CallMeBot — pour la production, remplacer par vos propres
+    # identifiants dans les variables d'environnement :
+    #   ALERTMANAGER_WHATSAPP_PHONE (défaut: 22967391224)
+    #   ALERTMANAGER_WHATSAPP_APIKEY (défaut: 7499427)
     webhook_configs:
-      - url: 'https://api.callmebot.com/whatsapp.php?phone=${ALERTMANAGER_WHATSAPP_PHONE:-CHANGE_ME}&text=ALERTE%20Telecom%20Ticket%20Management&apikey=${ALERTMANAGER_WHATSAPP_APIKEY:-CHANGE_ME}'
+      - url: 'https://api.callmebot.com/whatsapp.php?phone=${ALERTMANAGER_WHATSAPP_PHONE:-22967391224}&text=ALERTE%20Telecom%20Ticket%20Management&apikey=${ALERTMANAGER_WHATSAPP_APIKEY:-7499427}'
         send_resolved: true
         http_config:
           follow_redirects: true
@@ -75,7 +75,7 @@ receivers:
   # ─── Alertes warning : Email seulement ──────────────────────
   - name: 'warning-alerts'
     email_configs:
-      - to: 'ops@telecom-tickets.local'
+      - to: '${ALERTMANAGER_WARNING_EMAIL:-ops@telecom-tickets.local}'
         headers:
           Subject: '[WARNING] {{ .GroupLabels.alertname }}'
         html: '{{ template "telecom.email.html" . }}'

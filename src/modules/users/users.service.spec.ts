@@ -31,7 +31,10 @@ describe('UsersService', () => {
       values: jest.fn().mockReturnThis(),
     };
 
-    const mockQueues = { email: { add: jest.fn().mockResolvedValue(undefined) }, notification: { add: jest.fn().mockResolvedValue(undefined) } };
+    const mockQueues = {
+      email: { add: jest.fn().mockResolvedValue(undefined) },
+      notification: { add: jest.fn().mockResolvedValue(undefined) },
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [

@@ -56,7 +56,7 @@
       {{ end }}
     </div>
     <div class="footer">
-      <p>Telecom Ticket Management System — <a href="http://localhost:3001">Grafana</a> | <a href="http://localhost:9090">Prometheus</a></p>
+      <p>Telecom Ticket Management System — <a href="http://${GRAFANA_HOST:-localhost}:${GRAFANA_PORT:-3001}">Grafana</a> | <a href="http://${PROMETHEUS_HOST:-localhost}:${PROMETHEUS_PORT:-9090}">Prometheus</a></p>
       <p>Pour modifier les règles d'alerte : <code>prometheus/alert.rules.yml</code></p>
     </div>
   </div>
