@@ -1,97 +1,296 @@
 {
-  "title": "Telecom API — Application Metrics",
-  "uid": "telecom-application",
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "datasource",
+          "uid": "grafana"
+        },
+        "enable": true,
+        "hide": true,
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": false,
   "panels": [
     {
-      "title": "HTTP Requests Rate (/s)",
-      "type": "graph",
-      "targets": [
-        { "expr": "rate(telecom_http_requests_total[1m])", "legendFormat": "{{method}} {{route}} ({{status_code}})" }
-      ]
-    },
-    {
-      "title": "Error Rate 5xx",
-      "type": "graph",
-      "targets": [
-        { "expr": "sum(rate(telecom_http_requests_total{status_code=~\"5..\"}[5m])) / sum(rate(telecom_http_requests_total[5m])) * 100", "legendFormat": "5xx Error %" }
-      ]
-    },
-    {
-      "title": "P95 Latency",
-      "type": "graph",
-      "targets": [
-        { "expr": "histogram_quantile(0.95, rate(telecom_http_request_duration_seconds_bucket[5m]))", "legendFormat": "{{method}} {{route}}" }
-      ]
-    },
-    {
-      "title": "P50 Latency",
-      "type": "graph",
-      "targets": [
-        { "expr": "histogram_quantile(0.50, rate(telecom_http_request_duration_seconds_bucket[5m]))", "legendFormat": "{{method}} {{route}}" }
-      ]
-    },
-    {
-      "title": "Tickets Created / min",
-      "type": "graph",
-      "targets": [
-        { "expr": "rate(telecom_tickets_created_total[1m])", "legendFormat": "{{priority}} ({{category}})" }
-      ]
-    },
-    {
-      "title": "Active Tickets",
-      "type": "stat",
-      "targets": [
-        { "expr": "telecom_tickets_active" }
-      ]
-    },
-    {
-      "title": "Active WebSocket Connections",
-      "type": "stat",
-      "targets": [
-        { "expr": "telecom_ws_connections" }
-      ]
-    },
-    {
-      "title": "Active Users (WebSocket)",
-      "type": "stat",
-      "targets": [
-        { "expr": "telecom_active_users" }
-      ]
-    },
-    {
-      "title": "SLA Breaches",
-      "type": "stat",
-      "targets": [
-        { "expr": "rate(telecom_sla_breaches_total[5m])" }
-      ]
-    },
-    {
-      "title": "DB Pool Connections",
-      "type": "graph",
-      "targets": [
-        { "expr": "telecom_db_pool_connections" }
-      ]
-    },
-    {
-      "title": "Heap Memory Usage %",
-      "type": "gauge",
-      "targets": [
-        { "expr": "telecom_nodejs_heap_bytes_used_bytes / telecom_nodejs_heap_bytes_total_bytes * 100" }
-      ]
-    },
-    {
-      "title": "Event Loop Lag (P95)",
-      "type": "graph",
-      "targets": [
-        { "expr": "histogram_quantile(0.95, rate(telecom_nodejs_eventloop_lag_seconds_bucket[5m]))" }
-      ]
-    },
-    {
+      "id": 1,
       "title": "API Uptime",
       "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "datasource": "Prometheus",
       "targets": [
-        { "expr": "up{job=\"telecom-api\"}" }
-      ]
+        { "expr": "up{job=\"telecom-api\"}", "legendFormat": "Status" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "mappings": [
+            { "type": "special", "options": { "match": "null", "result": { "text": "DOWN", "color": "red" } } },
+            { "type": "value", "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } } }
+          ]
+        }
+      },
+      "options": {
+        "textMode": "value",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 2,
+      "title": "WebSocket Connections",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "telecom_ws_connections", "legendFormat": "Active Connections" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "palette-classic" }
+        }
+      },
+      "options": {
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 3,
+      "title": "Active Users (WebSocket)",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "telecom_active_users", "legendFormat": "Users" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "palette-classic" }
+        }
+      },
+      "options": {
+        "textMode": "value",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 4,
+      "title": "SLA Breaches (Last 5m)",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "sum(rate(telecom_sla_breaches_total[5m]))", "legendFormat": "Breaches / sec" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 0.01 },
+              { "color": "red", "value": 0.05 }
+            ]
+          }
+        }
+      },
+      "options": {
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 5,
+      "title": "HTTP Traffic & Performance",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 4 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 6,
+      "title": "HTTP Requests Rate (/s)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 16, "x": 0, "y": 5 },
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "rate(telecom_http_requests_total[1m])", "legendFormat": "{{method}} {{route}} ({{status_code}})" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth"
+          }
+        }
+      },
+      "options": {
+        "legend": { "calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      }
+    },
+    {
+      "id": 7,
+      "title": "Error Rate 5xx (%)",
+      "type": "gauge",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 5 },
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "sum(rate(telecom_http_requests_total{status_code=~\"5..\"}[5m])) / sum(rate(telecom_http_requests_total[5m])) * 100", "legendFormat": "5xx Ratio" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 1 },
+              { "color": "red", "value": 5 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 8,
+      "title": "HTTP Latency P95 (Seconds)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 13 },
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "histogram_quantile(0.95, rate(telecom_http_request_duration_seconds_bucket[5m]))", "legendFormat": "{{method}} {{route}}" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth"
+          }
+        }
+      },
+      "options": {
+        "legend": { "calcs": ["mean", "max"], "displayMode": "list", "placement": "bottom" }
+      }
+    },
+    {
+      "id": 9,
+      "title": "HTTP Latency P50 (Seconds)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 13 },
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "histogram_quantile(0.50, rate(telecom_http_request_duration_seconds_bucket[5m]))", "legendFormat": "{{method}} {{route}}" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth"
+          }
+        }
+      },
+      "options": {
+        "legend": { "calcs": ["mean", "max"], "displayMode": "list", "placement": "bottom" }
+      }
+    },
+    {
+      "id": 10,
+      "title": "Database & Background Tasks",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 21 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 11,
+      "title": "Database Active Pool Connections",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 22 },
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "telecom_db_pool_connections", "legendFormat": "Connections" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 15 },
+              { "color": "red", "value": 25 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 12,
+      "title": "Node.js Heap Memory Usage (%)",
+      "type": "gauge",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 22 },
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "telecom_nodejs_heap_bytes_used_bytes / telecom_nodejs_heap_bytes_total_bytes * 100", "legendFormat": "Heap Usage %" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 75 },
+              { "color": "red", "value": 90 }
+            ]
+          }
+        }
+      }
     }
-  ]
+  ],
+  "refresh": "5s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["telecom"],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-30m",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Telecom API — Application Metrics",
+  "uid": "telecom-application",
+  "version": 1,
+  "weekStart": ""
 }

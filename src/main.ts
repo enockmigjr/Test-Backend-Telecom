@@ -26,6 +26,10 @@ async function bootstrap(): Promise<void> {
     bufferLogs: true,
   });
 
+  // Activer le trust proxy pour lire correctement l'IP derrière Nginx (rate limiting)
+  const expressApp = app.getHttpAdapter().getInstance();
+  expressApp.set('trust proxy', 1);
+
   const config = app.get(AppConfigService);
 
   // Adapter Redis pour WebSocket (scaling horizontal)

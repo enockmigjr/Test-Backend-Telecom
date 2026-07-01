@@ -2,6 +2,7 @@ import { Injectable, NestMiddleware } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 import { generateUuid } from '../../common/helpers/uuidv7.helper';
 import { AsyncLocalStorage } from 'async_hooks';
+import { trace } from '@opentelemetry/api';
 
 /**
  * Stockage local asynchrone pour propager le correlationId
@@ -25,6 +26,12 @@ export class CorrelationIdMiddleware implements NestMiddleware {
 
     // Ajouter aux headers de réponse
     res.setHeader('X-Correlation-Id', correlationId);
+
+    // Attacher le correlationId à la span active d'OpenTelemetry
+    const activeSpan = trace.getActiveSpan();
+    if (activeSpan) {
+      activeSpan.setAttribute('correlationId', correlationId);
+    }
 
     // Stocker dans AsyncLocalStorage pour accès global
     asyncLocalStorage.run({ correlationId }, () => {

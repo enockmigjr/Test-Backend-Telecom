@@ -11,11 +11,12 @@ import { HealthService } from './health.service';
  */
 @ApiTags('health')
 @Controller('health')
-@SkipThrottle()
+@SkipThrottle({ default: true, auth: true })
 export class HealthController {
   constructor(private readonly healthService: HealthService) {}
 
   @Public()
+  @SkipThrottle({ default: true, auth: true })
   @Get()
   @ApiOperation({ summary: 'Liveness check — le processus est-il vivant ?' })
   liveness() {
@@ -27,6 +28,7 @@ export class HealthController {
   }
 
   @Public()
+  @SkipThrottle({ default: true, auth: true })
   @Get('ready')
   @ApiOperation({ summary: 'Readiness check — les dépendances sont-elles connectées ?' })
   async readiness() {

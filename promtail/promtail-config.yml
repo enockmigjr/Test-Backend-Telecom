@@ -47,13 +47,33 @@ scrape_configs:
           format: RFC3339
 
       # ──────────────────────────────────────────────────
-      # API NestJS → logs Pino JSON
+      # API NestJS → logs Pino JSON (prettified ou brut)
       # ──────────────────────────────────────────────────
       - match:
           selector: '{service="api"}'
           stages:
+            # Essayer d'extraire les éléments du format pino-pretty
+            - regex:
+                expression: '^\[[^\]]+\]\s+(?P<detected_level>[A-Z]+)\s+\(\d+\):\s+(?P<json_payload>\{.*\})$'
+            
+            # Si json_payload est extrait, on le parse en JSON
+            - json:
+                source: json_payload
+                expressions:
+                  correlationId: correlationId
+                  context: context
+                  method: method
+                  url: url
+                  message: message
+
+            # Uniformiser le niveau de log
+            - template:
+                source: final_level
+                template: '{{ if .detected_level }}{{ ToLower .detected_level }}{{ else if .level }}{{ ToLower .level }}{{ else }}info{{ end }}'
+
+            # Assigner les labels pour Loki
             - labels:
-                level:
+                level: final_level
                 correlationId:
                 context:
             - static_labels:

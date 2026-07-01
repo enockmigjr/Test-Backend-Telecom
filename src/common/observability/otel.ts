@@ -27,7 +27,18 @@ export function initOpenTelemetry(): NodeSDK {
     }),
     traceExporter,
     instrumentations: [
-      new HttpInstrumentation(),
+      new HttpInstrumentation({
+        ignoreIncomingRequestHook: (req) => {
+          const url = req.url || '';
+          return (
+            url.endsWith('/metrics') ||
+            url.endsWith('/health') ||
+            url.endsWith('/health/ready') ||
+            url.includes('/api/v1/metrics') ||
+            url.includes('/api/v1/health')
+          );
+        },
+      }),
       new ExpressInstrumentation(),
       new NestInstrumentation(),
       new PgInstrumentation(),

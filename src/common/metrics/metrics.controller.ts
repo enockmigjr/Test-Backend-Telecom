@@ -7,11 +7,12 @@ import { MetricsService } from './metrics.service';
 
 @ApiTags('metrics')
 @Controller('metrics')
-@SkipThrottle()
+@SkipThrottle({ default: true, auth: true })
 export class MetricsController {
   constructor(private readonly metricsService: MetricsService) {}
 
   @Public()
+  @SkipThrottle({ default: true, auth: true })
   @Get()
   @ApiOperation({ summary: 'Métriques Prometheus (format OpenMetrics)' })
   async metrics(@Res() res: Response): Promise<void> {

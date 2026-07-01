@@ -1,55 +1,214 @@
 {
-  "title": "Telecom — Business Dashboard",
-  "uid": "telecom-business",
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "datasource",
+          "uid": "grafana"
+        },
+        "enable": true,
+        "hide": true,
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": false,
   "panels": [
     {
-      "title": "Tickets by Status",
-      "type": "piechart",
-      "targets": [
-        { "expr": "sum by (status_code) (telecom_http_requests_total{route=~\"/api/v1/tickets.*\"})", "legendFormat": "{{status_code}}" }
-      ]
-    },
-    {
-      "title": "Tickets Created by Priority",
-      "type": "barchart",
-      "targets": [
-        { "expr": "rate(telecom_tickets_created_total[1h])", "legendFormat": "{{priority}} ({{category}})" }
-      ]
-    },
-    {
-      "title": "SLA Compliance Rate %",
-      "type": "gauge",
-      "targets": [
-        { "expr": "100 - (rate(telecom_sla_breaches_total[1h]) / rate(telecom_tickets_created_total[1h]) * 100)" }
-      ]
-    },
-    {
-      "title": "Error Rate % (Global)",
-      "type": "stat",
-      "targets": [
-        { "expr": "sum(rate(telecom_http_requests_total{status_code=~\"5..\"}[5m])) / sum(rate(telecom_http_requests_total[5m])) * 100" }
-      ]
-    },
-    {
+      "id": 1,
       "title": "Total Tickets (Last 24h)",
       "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "datasource": "Prometheus",
       "targets": [
-        { "expr": "increase(telecom_tickets_created_total[24h])" }
-      ]
+        { "expr": "increase(telecom_tickets_created_total[24h])", "legendFormat": "Tickets Created" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": { "mode": "palette-classic" }
+        }
+      },
+      "options": {
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "center"
+      }
     },
     {
-      "title": "Active Tickets Trend",
-      "type": "graph",
+      "id": 2,
+      "title": "Active Tickets",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "datasource": "Prometheus",
       "targets": [
-        { "expr": "telecom_tickets_active", "legendFormat": "Active" }
-      ]
+        { "expr": "telecom_tickets_active", "legendFormat": "Unresolved Tickets" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 10 },
+              { "color": "red", "value": 20 }
+            ]
+          }
+        }
+      },
+      "options": {
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "center"
+      }
     },
     {
+      "id": 3,
+      "title": "SLA Compliance Rate (%)",
+      "type": "gauge",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "100 - (rate(telecom_sla_breaches_total[1h]) / clamp_min(rate(telecom_tickets_created_total[1h]), 0.001) * 100)", "legendFormat": "Compliance" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "orange", "value": 90 },
+              { "color": "green", "value": 95 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 4,
       "title": "SLA Breaches (Last 24h)",
       "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "datasource": "Prometheus",
       "targets": [
-        { "expr": "increase(telecom_sla_breaches_total[24h])" }
-      ]
+        { "expr": "increase(telecom_sla_breaches_total[24h])", "legendFormat": "Breached Tickets" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 1 },
+              { "color": "red", "value": 5 }
+            ]
+          }
+        }
+      },
+      "options": {
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 5,
+      "title": "Tickets Overview & SLA Tracking",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 4 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 6,
+      "title": "Active Unresolved Tickets Trend",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 16, "x": 0, "y": 5 },
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "telecom_tickets_active", "legendFormat": "Active Tickets" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth"
+          }
+        }
+      },
+      "options": {
+        "legend": { "calcs": ["mean", "max"], "displayMode": "list", "placement": "bottom" }
+      }
+    },
+    {
+      "id": 7,
+      "title": "Tickets created by Priority (Last 24h)",
+      "type": "piechart",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 5 },
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "sum by (priority) (increase(telecom_tickets_created_total[24h]))", "legendFormat": "{{priority}}" }
+      ],
+      "options": {
+        "reduceOptions": { "values": false, "calcs": ["lastNotNull"] },
+        "pieType": "donut",
+        "legend": { "displayMode": "list", "placement": "right", "values": ["value"] }
+      }
+    },
+    {
+      "id": 8,
+      "title": "Tickets Creation Rate by Priority & Category",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 13 },
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "rate(telecom_tickets_created_total[1h])", "legendFormat": "Priority: {{priority}} - Cat: {{category}}" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth"
+          }
+        }
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom" }
+      }
     }
-  ]
+  ],
+  "refresh": "10s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["telecom", "business"],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Telecom — Business Dashboard",
+  "uid": "telecom-business",
+  "version": 1,
+  "weekStart": ""
 }
