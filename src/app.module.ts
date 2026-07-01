@@ -6,13 +6,11 @@ import { ThrottlerStorageRedisService } from './common/providers/throttler-stora
 import { LoggerModule } from 'nestjs-pino';
 import { ScheduleModule } from '@nestjs/schedule';
 import { EventEmitterModule } from '@nestjs/event-emitter';
-import { trace, context } from '@opentelemetry/api';
 
 import { AppConfigModule } from './config/app-config.module';
 import { AppConfigService } from './config/app.config';
 import { CommonModule } from './common/common.module';
 import { DatabaseModule } from './database/database.module';
-import { asyncLocalStorage } from './common/middleware/correlation-id.middleware';
 
 // Modules métier
 import { AuthModule } from './modules/auth/auth.module';
@@ -59,25 +57,6 @@ import { ReportsModule } from './modules/reports/reports.module';
           autoLogging: false,
           formatters: {
             level: (label: string) => ({ level: label }),
-          },
-          // Injecte trace_id, span_id (OpenTelemetry) et correlationId
-          // dans chaque log pour le lien Loki ↔ Tempo
-          mixin() {
-            const store = asyncLocalStorage.getStore();
-            const activeSpan = trace.getSpan(context.active());
-            const injected: Record<string, unknown> = {};
-
-            if (activeSpan) {
-              const spanContext = activeSpan.spanContext();
-              injected['trace_id'] = spanContext.traceId;
-              injected['span_id'] = spanContext.spanId;
-            }
-
-            if (store?.correlationId) {
-              injected['correlationId'] = store.correlationId;
-            }
-
-            return injected;
           },
         },
       }),

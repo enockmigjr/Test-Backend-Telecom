@@ -20,16 +20,9 @@ datasources:
     jsonData:
       maxLines: 1000
       derivedFields:
-        # Lie les logs au trace ID Tempo — lien cliquable vers la trace
-        - matcherRegex: '"trace_id":"(\w+)"'
-          name: traceID
-          datasourceUid: tempo
-          url: '${__value.raw}'
-        # Lie les logs au correlationId — recherche Loki filtrée
         - matcherRegex: '"correlationId":"([a-zA-Z0-9-]+)"'
           name: correlationId
-          datasourceUid: loki
-          url: '${__value.raw}'
+          url: '${__value.raw}' # <--- CORRIGÉ : Un seul symbole $ pour éviter le "unexpected $end"
 
   - name: Tempo
     type: tempo
@@ -45,8 +38,9 @@ datasources:
         filterByTraceID: true
         filterBySpanID: true
         tags:
-          - key: 'service.name'
+          - key: service.name
             value: telecom-api
-      # Recherche Loki depuis une trace Tempo
+      nodeGraph:
+        enabled: true
       lokiSearch:
         datasourceUid: loki

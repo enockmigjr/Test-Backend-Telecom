@@ -32,8 +32,6 @@ scrape_configs:
             level: level
             msg: msg
             correlationId: correlationId
-            trace_id: trace_id
-            span_id: span_id
             context: context
             time: time
             durationMs: durationMs
@@ -49,39 +47,14 @@ scrape_configs:
           format: RFC3339
 
       # ──────────────────────────────────────────────────
-      # API NestJS → logs pino-pretty
-      # Format: "[HH:MM:SS.mmm] LEVEL (pid): { JSON }"
-      # pino-pretty extrait le niveau du JSON et le place
-      # dans le préfixe → on utilise un regex pour le récupérer
+      # API NestJS → logs Pino JSON
       # ──────────────────────────────────────────────────
       - match:
           selector: '{service="api"}'
           stages:
-            # Étape 1 : extraire le niveau et le corps JSON du format pretty
-            - regex:
-                expression: '^\[\d{2}:\d{2}:\d{2}\.\d{3}\]\s+(?P<parsed_level>\w+)\s+\(\d+\):\s+(?P<json_body>\{.*\})$'
-            # Étape 2 : normaliser le niveau en minuscules (INFO → info)
-            - template:
-                source: parsed_level
-                template: '{{ ToLower .Value }}'
-            # Étape 3 : parser le corps JSON pour extraire les champs
-            - json:
-                source: json_body
-                expressions:
-                  correlationId: correlationId
-                  trace_id: trace_id
-                  span_id: span_id
-                  context: context
-                  msg: msg
-                  method: method
-                  url: url
-                  statusCode: statusCode
-                  durationMs: durationMs
-            # Étape 4 : définir les labels (correlationId/trace_id/span_id
-            # sont gardés comme métadonnées structurées, pas comme labels,
-            # pour éviter l'explosion de cardinalité)
             - labels:
-                level: parsed_level
+                level:
+                correlationId:
                 context:
             - static_labels:
                 service_name: telecom-api
