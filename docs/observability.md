@@ -55,16 +55,16 @@ NestJS (Pino JSON)
 
 ```bash
 # Voir les alertes actives dans Prometheus
-curl http://localhost:9090/api/v1/alerts
+curl http://${PROMETHEUS_HOST:-localhost}:${PROMETHEUS_PORT:-9090}/api/v1/alerts
 
 # Voir le statut Alertmanager
-curl http://localhost:9093/api/v2/alerts
+curl http://${ALERTMANAGER_HOST:-localhost}:${ALERTMANAGER_PORT:-9093}/api/v2/alerts
 
 # Tester une alerte : arrêter l'API 2 minutes
 docker compose stop api && sleep 120 && docker compose start api
 
 # Vérifier les emails dans Mailpit
-# http://localhost:9025
+# http://localhost:${MAILPIT_WEB_PORT:-9025}
 ```
 
 ### Configuration WhatsApp (CallMeBot gratuit)
@@ -86,7 +86,7 @@ Dans `alertmanager/alertmanager.yml`, décommenter le bloc `webhook_configs` du 
 
 ```yaml
 webhook_configs:
-  - url: 'https://api.callmebot.com/whatsapp.php?phone=33612345678&apikey=XXXXXX&text={{ template "telecom.webhook.body" . }}'
+  - url: 'https://api.callmebot.com/whatsapp.php?phone=${ALERTMANAGER_WHATSAPP_PHONE:-33612345678}&apikey=${ALERTMANAGER_WHATSAPP_APIKEY:-XXXXXX}&text={{ template "telecom.webhook.body" . }}'
     send_resolved: true
     http_config:
       follow_redirects: true
@@ -165,7 +165,7 @@ docker compose restart alertmanager
 - PostgreSQL (requêtes SQL)
 - Redis (commandes ioredis)
 
-**Export**: OTLP HTTP → Tempo (`http://tempo:4318/v1/traces`)
+**Export**: OTLP HTTP → Tempo (`http://${TEMPO_HOST:-tempo}:${TEMPO_OTLP_HTTP_PORT:-4318}/v1/traces`)
 
 **Fichier config**: `tempo/tempo-config.yml`
 
@@ -180,7 +180,7 @@ docker logs telecom-tempo | grep "traces"
 
 ## Grafana
 
-**URL**: `http://localhost:3001` (admin/admin)
+**URL**: `http://${GRAFANA_HOST:-localhost}:${GRAFANA_PORT:-3001}` (${GRAFANA_ADMIN_USER:-admin}/${GRAFANA_ADMIN_PASSWORD:-admin})
 
 **Datasources**: `grafana/datasources/datasources.yml`
 
@@ -204,15 +204,15 @@ docker logs telecom-tempo | grep "traces"
 
 | Nom          | Type    | URL                                   | Intervalle |
 | ------------ | ------- | ------------------------------------- | ---------- |
-| API Health   | HTTP(s) | `http://api:3000/api/v1/health`       | 60s        |
-| API Ready    | HTTP(s) | `http://api:3000/api/v1/health/ready` | 60s        |
-| Grafana      | HTTP(s) | `http://grafana:3000/api/health`      | 120s       |
-| Prometheus   | HTTP(s) | `http://prometheus:9090/-/healthy`    | 120s       |
-| Alertmanager | HTTP(s) | `http://alertmanager:9093/-/healthy`  | 120s       |
+| API Health   | HTTP(s) | `http://${API_HOST:-api}:${API_PORT:-3000}/api/v1/health`       | 60s        |
+| API Ready    | HTTP(s) | `http://${API_HOST:-api}:${API_PORT:-3000}/api/v1/health/ready` | 60s        |
+| Grafana      | HTTP(s) | `http://${GRAFANA_HOST:-grafana}:3000/api/health`               | 120s       |
+| Prometheus   | HTTP(s) | `http://${PROMETHEUS_HOST:-prometheus}:${PROMETHEUS_PORT:-9090}/-/healthy`    | 120s       |
+| Alertmanager | HTTP(s) | `http://${ALERTMANAGER_HOST:-alertmanager}:${ALERTMANAGER_PORT:-9093}/-/healthy`  | 120s       |
 
 3. Configurer les notifications Uptime Kuma (optionnel) :
    - Webhook → URL Prometheus Alertmanager ou Slack
-   - Email → via SMTP Mailpit (`mailpit:1025`)
+   - Email → via SMTP Mailpit (`${SMTP_HOST:-mailpit}:${SMTP_PORT:-1025}`)
 
 ### API pour configurer les moniteurs automatiquement
 
@@ -241,27 +241,27 @@ docker compose up -d postgres redis api nginx mailpit
 ## Architecture des conteneurs
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    telecom-network                       │
-│                                                         │
-│  ┌──────┐  ┌──────┐  ┌──────┐  ┌────────┐  ┌────────┐ │
-│  │  API │  │  DB  │  │Redis │  │ Nginx  │  │Mailpit │ │
-│  │:3000 │  │:5432 │  │:6379 │  │:80/443 │  │:1025   │ │
-│  └──┬───┘  └──────┘  └──────┘  └────────┘  └────────┘ │
-│     │                                                    │
-│     ├── traces OTLP ──→ Tempo (:4318) ──→ Grafana       │
-│     ├── logs stdout ──→ Promtail ──→ Loki (:3100) ──┐   │
-│     └── /metrics ──→ Prometheus (:9090) ──→ Grafana  │   │
-│                          │                            │   │
-│                    Alertmanager (:9093)               │   │
-│                          │                            │   │
-│                    Email (Mailpit :1025)              │   │
-│                    WhatsApp (webhook)                 │   │
-│                                                       │   │
-│  ┌──────────┐  ┌────────┐                             │   │
-│  │  Grafana │  │ Uptime │                             │   │
-│  │  :3001   │  │ Kuma   │                             │   │
-│  │          │  │ :3002  │                             │   │
-│  └──────────┘  └────────┘                             │   │
-└─────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────┐
+│                         telecom-network                             │
+│                                                                     │
+│  ┌──────┐  ┌──────┐  ┌────────┐  ┌──────────┐  ┌──────────────┐   │
+│  │ API  │  │  DB  │  │ Redis  │  │  Nginx   │  │   Mailpit    │   │
+│  │:${API_PORT:-3000} │  │:${DATABASE_PORT:-5432} │  │:${REDIS_PORT:-6379}   │  │:${NGINX_PORT:-80}/443 │  │:${SMTP_PORT:-1025}        │   │
+│  └──┬───┘  └──────┘  └────────┘  └──────────┘  └──────────────┘   │
+│     │                                                                │
+│     ├── traces OTLP ──→ Tempo (:${TEMPO_OTLP_HTTP_PORT:-4318}) ──→ Grafana   │
+│     ├── logs stdout ──→ Promtail ──→ Loki (:${LOKI_PORT:-3100}) ──┐           │
+│     └── /metrics ──→ Prometheus (:${PROMETHEUS_PORT:-9090}) ──→ Grafana      │
+│                              │                                                │
+│                        Alertmanager (:${ALERTMANAGER_PORT:-9093})           │
+│                              │                                                │
+│                        Email (Mailpit :${SMTP_PORT:-1025})                  │
+│                        WhatsApp (webhook)                                     │
+│                                                                               │
+│  ┌──────────────┐  ┌────────────┐                                             │
+│  │   Grafana    │  │ Uptime     │                                             │
+│  │  :${GRAFANA_PORT:-3001}   │  │ Kuma       │                                             │
+│  │              │  │ :3002     │                                             │
+│  └──────────────┘  └────────────┘                                             │
+└───────────────────────────────────────────────────────────────────────────────┘
 ```

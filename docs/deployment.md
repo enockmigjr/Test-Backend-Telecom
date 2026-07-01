@@ -75,13 +75,13 @@ NODE_ENV=production node dist/main.js
 
 ```bash
 # Liveness
-curl http://localhost:3000/api/v1/health
+curl http://localhost:${API_PORT:-3000}/api/v1/health
 
 # Readiness (DB + Redis)
-curl http://localhost:3000/api/v1/health/ready
+curl http://localhost:${API_PORT:-3000}/api/v1/health/ready
 
 # Métriques Prometheus
-curl http://localhost:3000/api/v1/metrics
+curl http://localhost:${API_PORT:-3000}/api/v1/metrics
 ```
 
 ## 5. Monitoring
@@ -97,7 +97,7 @@ scrape_configs:
     scrape_interval: 15s
     metrics_path: '/api/v1/metrics'
     static_configs:
-      - targets: ['api:3000']
+      - targets: ['${API_HOST:-api}:${API_PORT:-3000}']
 ```
 
 ### Métriques Disponibles

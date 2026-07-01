@@ -29,16 +29,16 @@ pnpm run db:push && pnpm run db:seed
 pnpm run start:dev
 ```
 
-| URL                                         | Description               |
-| ------------------------------------------- | ------------------------- |
-| `http://localhost:3000/api/v1`              | API REST                  |
-| `http://localhost:3000/api/docs`            | Swagger / OpenAPI         |
-| `http://localhost:3000/api/v1/health/ready` | Health check (DB + Redis) |
-| `http://localhost:3000/api/v1/metrics`      | Métriques Prometheus      |
-| `http://localhost:9025`                     | Mailpit (emails dev)      |
-| `http://localhost:3001`                     | Grafana (admin/admin)     |
-| `http://localhost:9090`                     | Prometheus                |
-| `http://localhost:3002`                     | Uptime Kuma               |
+| URL                                                   | Description               |
+| ----------------------------------------------------- | ------------------------- |
+| `http://localhost:${API_PORT:-3000}/${API_PREFIX:-api/v1}` | API REST                  |
+| `http://localhost:${API_PORT:-3000}/api/docs`          | Swagger / OpenAPI         |
+| `http://localhost:${API_PORT:-3000}/${API_PREFIX:-api/v1}/health/ready` | Health check (DB + Redis) |
+| `http://localhost:${API_PORT:-3000}/${API_PREFIX:-api/v1}/metrics` | Métriques Prometheus      |
+| `http://localhost:${MAILPIT_WEB_PORT:-9025}`           | Mailpit (emails dev)      |
+| `http://localhost:${GRAFANA_PORT:-3001}`               | Grafana (admin/admin)     |
+| `http://localhost:${PROMETHEUS_PORT:-9090}`            | Prometheus                |
+| `http://localhost:3002`                                 | Uptime Kuma               |
 
 ## 📊 Comptes de Test
 

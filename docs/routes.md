@@ -1,7 +1,7 @@
 # Catalogue Complet des Routes API
 
-**Base URL**: `http://localhost:3000/api/v1`
-**Documentation Swagger**: `http://localhost:3000/api/docs`
+**Base URL**: `http://localhost:${API_PORT:-3000}/${API_PREFIX:-api/v1}`
+**Documentation Swagger**: `http://localhost:${API_PORT:-3000}/api/docs`
 
 ---
 

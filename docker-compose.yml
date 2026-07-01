@@ -144,9 +144,9 @@ services:
     ports:
       - '9093:9093'
     environment:
-      # WhatsApp webhook URL — à configurer pour la production
+      # WhatsApp webhook URL — configurable via variable d'environnement
       # Utiliser un service comme CallMeBot, Twilio, ou un webhook personnalisé
-      WHATSAPP_WEBHOOK_URL: 'https://webhook.example.com/whatsapp'
+      WHATSAPP_WEBHOOK_URL: ${ALERTMANAGER_WHATSAPP_WEBHOOK_URL:-https://webhook.example.com/whatsapp}
     volumes:
       - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
       - ./alertmanager/templates:/etc/alertmanager/templates:ro
@@ -154,7 +154,7 @@ services:
     command:
       - '--config.file=/etc/alertmanager/alertmanager.yml'
       - '--storage.path=/alertmanager'
-      - '--web.external-url=http://localhost:9093'
+      - '--web.external-url=${ALERTMANAGER_EXTERNAL_URL:-http://localhost:9093}'
     networks:
       - telecom-network
 

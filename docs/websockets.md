@@ -5,7 +5,7 @@
 ```
 Client (navigateur)
   │
-  ├── connexion WS: ws://localhost:3000/ws
+  ├── connexion WS: ws://${API_HOST:-localhost}:${API_PORT:-3000}/ws
   │     auth: { token: "Bearer <jwt>" }
   │
   ▼
@@ -61,11 +61,11 @@ if (this.wsGateway.isUserConnected(userId)) {
 Le client envoie le JWT lors de la connexion :
 
 ```javascript
-const socket = io('http://localhost:3000/ws', {
+const socket = io('http://${API_HOST:-localhost}:${API_PORT:-3000}/ws', {
   auth: { token: 'Bearer eyJ...' },
 });
 // Ou en query param:
-const socket = io('http://localhost:3000/ws', {
+const socket = io('http://${API_HOST:-localhost}:${API_PORT:-3000}/ws', {
   query: { token: 'eyJ...' },
 });
 ```

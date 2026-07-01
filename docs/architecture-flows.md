@@ -239,18 +239,18 @@ flowchart TB
     end
 
     subgraph "Docker Host"
-        Nginx[Nginx Reverse Proxy<br/>:80, :443]
-        API[NestJS API<br/>:3000]
+        Nginx[Nginx Reverse Proxy<br/>:${NGINX_PORT:-80}, :443]
+        API[NestJS API<br/>:${API_PORT:-3000}]
         Worker[BullMQ Workers<br/>Processus séparé]
-        PG[(PostgreSQL 16<br/>:5432)]
-        RD[(Redis 7<br/>:6379)]
-        Mailpit[Mailpit<br/>SMTP :1025, Web :8025]
+        PG[(PostgreSQL 16<br/>:${DATABASE_PORT:-5432})]
+        RD[(Redis 7<br/>:${REDIS_PORT:-6379})]
+        Mailpit[Mailpit<br/>SMTP :${SMTP_PORT:-1025}, Web :${MAILPIT_WEB_PORT:-8025}]
 
         subgraph "Observabilité (optionnel)"
-            Prom[Prometheus]
-            LokiS[Loki]
-            TempoS[Tempo]
-            Graf[Grafana :3001]
+            Prom[Prometheus :${PROMETHEUS_PORT:-9090}]
+            LokiS[Loki :${LOKI_PORT:-3100}]
+            TempoS[Tempo :${TEMPO_PORT:-3200}]
+            Graf[Grafana :${GRAFANA_PORT:-3001}]
         end
     end
 

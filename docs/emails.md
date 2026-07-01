@@ -22,7 +22,7 @@ EmailWorker
   ▼
 Nodemailer → SMTP
   │
-  ├── DEV:  Mailpit (localhost:1025) — pas d'auth
+  ├── DEV:  Mailpit (${SMTP_HOST:-localhost}:${SMTP_PORT:-1025}) — pas d'auth
   └── PROD: SMTP configuré (host, port, user, password, TLS)
 ```
 
@@ -68,7 +68,7 @@ SMTP_HOST=localhost
 SMTP_PORT=1025
 ```
 
-→ Mailpit intercepte tous les emails. Interface web: `http://localhost:8025`
+→ Mailpit intercepte tous les emails. Interface web: `http://localhost:${MAILPIT_WEB_PORT:-8025}`
 
 **PROD** (si `NODE_ENV=production`):
 

@@ -110,8 +110,9 @@ async function bootstrap(): Promise<void> {
   await app.listen(config.port);
 
   const logger = app.get(Logger);
-  logger.log(`🚀 API démarrée sur http://localhost:${config.port}/${config.apiPrefix}`);
-  logger.log(`📚 Swagger disponible sur http://localhost:${config.port}/api/docs`);
+  const apiHost = process.env['API_PUBLIC_HOST'] || `localhost:${config.port}`;
+  logger.log(`🚀 API démarrée sur http://${apiHost}/${config.apiPrefix}`);
+  logger.log(`📚 Swagger disponible sur http://${apiHost}/api/docs`);
 }
 
 bootstrap();
