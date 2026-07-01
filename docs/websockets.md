@@ -43,10 +43,14 @@ if (this.wsGateway.isUserConnected(userId)) {
 
 | Événement               | Room              | Déclencheur                   |
 | ----------------------- | ----------------- | ----------------------------- |
-| `notification.created`  | `user:{id}`       | Nouvelle notification en base |
-| `ticket.created`        | `department:{id}` | Création d'un ticket          |
-| `ticket.assigned`       | `user:{id}`       | Assignation à un agent        |
-| `ticket.status_changed` | `department:{id}` | Changement de statut          |
+| `notification.created`  | `user:{id}`       | NotificationWorker (via NOTIFICATION_QUEUE) |
+| `ticket.created`        | `department:{id}` + `role:SUPERVISOR` | TicketNotificationListener |
+| `ticket.assigned`       | `user:{id}`       | TicketNotificationListener |
+| `ticket.escalated`      | `user:{id}` + `role:SUPERVISOR` | TicketNotificationListener |
+| `ticket.resolved`       | `role:SUPERVISOR` | TicketNotificationListener |
+| `ticket.status_changed` | `role:SUPERVISOR` | TicketNotificationListener |
+| `ticket.sla_breached`   | `user:{id}` + `role:SUPERVISOR` | SlaEngineService (cron) |
+| `ticket.sla_warning`    | `user:{id}` + `role:SUPERVISOR` | SlaEngineService (cron) |
 
 ### 3. Rooms
 

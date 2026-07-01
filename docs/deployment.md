@@ -84,7 +84,21 @@ curl http://localhost:${API_PORT:-3000}/api/v1/health/ready
 curl http://localhost:${API_PORT:-3000}/api/v1/metrics
 ```
 
-## 5. Monitoring
+## 5. BullBoard — Supervision des Queues
+
+**URL**: `/admin/queues`
+
+En développement, l'accès est libre. En production, l'accès est protégé par Basic Auth.
+
+Configurer dans `.env` :
+```env
+BULLBOARD_USER=admin
+BULLBOARD_PASSWORD=un-mot-de-passe-securise
+```
+
+Laisser ces variables vides ou non définies utilisera les valeurs par défaut (`admin` / `bullboard`), ce qui est déconseillé en production.
+
+## 6. Monitoring
 
 ### Prometheus
 

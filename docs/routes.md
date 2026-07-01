@@ -170,6 +170,16 @@
 
 ---
 
-**Total: 45+ routes REST sur 12 contrôleurs**
+## Supervision BullMQ (`/admin/queues`)
+
+| Méthode | Route          | Auth                    | Description                                     |
+| ------- | -------------- | ----------------------- | ----------------------------------------------- |
+| `GET`   | `/admin/queues` | Basic Auth (prod) / Public (dev) | Interface BullBoard de supervision des 5 queues |
+
+En production, protéger avec `BULLBOARD_USER` et `BULLBOARD_PASSWORD` dans `.env`.
+
+---
+
+**Total: 46 routes sur 13 contrôleurs (dont 1 route admin BullBoard)**
 
 ---

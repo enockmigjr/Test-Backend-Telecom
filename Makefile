@@ -85,6 +85,7 @@ up-full: ## Démarre TOUS les services (API + monitoring)
 	@echo "   Grafana:   http://localhost:$${GRAFANA_PORT:-3001} ($${GRAFANA_ADMIN_USER:-admin}/$${GRAFANA_ADMIN_PASSWORD:-admin})"
 	@echo "   Prometheus: http://localhost:$${PROMETHEUS_PORT:-9090}"
 	@echo "   Mailpit:   http://localhost:9025"
+	@echo "   BullBoard: http://localhost:$${API_PORT:-3000}/admin/queues"
 	@echo "   Uptime Kuma: http://localhost:3002"
 
 # ─── Nettoyage ────────────────────────────────────────────

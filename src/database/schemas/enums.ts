@@ -60,4 +60,5 @@ export const notificationTypeEnum = pgEnum('notification_type_enum', [
   'COMMENT_ADDED',
   'SLA_WARNING',
   'SLA_BREACHED',
+  'REPORT_READY',
 ]);
