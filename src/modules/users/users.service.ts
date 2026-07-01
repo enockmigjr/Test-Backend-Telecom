@@ -1,8 +1,9 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException, Logger, Inject } from '@nestjs/common';
 import { eq, and, isNull, sql } from 'drizzle-orm';
 import { generateUuid } from '../../common/helpers/uuidv7.helper';
 import * as argon2 from 'argon2';
 import { randomBytes } from 'crypto';
+import { Queue } from 'bullmq';
 
 import { DrizzleProvider } from '../../database/drizzle.provider';
 import { users, departments, tickets } from '../../database/schemas';
@@ -13,7 +14,10 @@ import { PaginationHelper } from '../../common/helpers/pagination.helper';
 export class UsersService {
   private readonly logger = new Logger(UsersService.name);
 
-  constructor(private readonly drizzle: DrizzleProvider) {}
+  constructor(
+    private readonly drizzle: DrizzleProvider,
+    @Inject('BullMQ_Queues') private readonly queues: { email: Queue; notification: Queue; [key: string]: Queue },
+  ) {}
 
   async findAll(dto: PaginationDto) {
     const { page = 1, limit = 20, order = 'desc' } = dto;
@@ -175,6 +179,11 @@ export class UsersService {
 
     this.logger.log(`Utilisateur créé: ${dto.email} (${id}), département: ${dept.name}`);
 
+    // Envoyer l'email de bienvenue avec le mot de passe temporaire (asynchrone, non-bloquant)
+    this.sendWelcomeEmail(dto.email, dto.firstName, dto.lastName, tempPassword).catch((err) => {
+      this.logger.warn(`Échec envoi email de bienvenue à ${dto.email}: ${(err as Error).message}`);
+    });
+
     return {
       message: 'Utilisateur créé avec succès.',
       data: {
@@ -186,7 +195,7 @@ export class UsersService {
         departmentId: dto.departmentId,
         departmentName: dept.name,
         mustChangePassword: true,
-        tempPassword, // À envoyer par email en production
+        tempPassword,
       },
     };
   }
@@ -236,5 +245,37 @@ export class UsersService {
 
     this.logger.log(`Utilisateur réactivé: ${id}`);
     return { message: 'Utilisateur réactivé avec succès.' };
+  }
+
+  /**
+   * Envoie l'email de bienvenue avec le mot de passe temporaire
+   * via la file d'attente BullMQ (non-bloquant).
+   */
+  private async sendWelcomeEmail(
+    to: string,
+    firstName: string,
+    lastName: string,
+    tempPassword: string,
+  ): Promise<void> {
+    const loginUrl = process.env['LOGIN_URL'] || 'http://localhost:3000/login';
+    try {
+      await this.queues.email.add('send-email', {
+        to,
+        subject: '👤 Votre compte Telecom Ticket Management',
+        template: 'accountCreated',
+        data: {
+          firstName,
+          lastName,
+          email: to,
+          tempPassword,
+          loginUrl,
+        },
+      });
+      this.logger.log(`Email de bienvenue enqueued pour ${to}`);
+    } catch (err) {
+      // Redis/BullMQ indisponible — non-bloquant, le mot de passe est aussi
+      // retourné dans la réponse HTTP (usage unique)
+      this.logger.warn(`Impossible d'enqueuer l'email de bienvenue pour ${to}: ${(err as Error).message}`);
+    }
   }
 }

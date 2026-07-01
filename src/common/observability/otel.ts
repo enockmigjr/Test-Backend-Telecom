@@ -21,8 +21,8 @@ export function initOpenTelemetry(): NodeSDK {
 
   const sdk = new NodeSDK({
     resource: resourceFromAttributes({
-      [SemanticResourceAttributes.SERVICE_NAME]: 'telecom-api',
-      [SemanticResourceAttributes.SERVICE_VERSION]: '1.0.0',
+      [SemanticResourceAttributes.SERVICE_NAME]: process.env['OTEL_SERVICE_NAME'] || 'telecom-api',
+      [SemanticResourceAttributes.SERVICE_VERSION]: process.env['OTEL_SERVICE_VERSION'] || '1.0.0',
       [SemanticResourceAttributes.DEPLOYMENT_ENVIRONMENT]: process.env['NODE_ENV'] || 'development',
     }),
     traceExporter,

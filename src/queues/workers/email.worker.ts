@@ -20,10 +20,17 @@ export class EmailWorker implements OnModuleInit, OnModuleDestroy {
       EMAIL_QUEUE,
       async (job: Job) => {
         const { to, subject, template, data } = job.data;
-        const html =
-          this.emailService.templates[template as keyof typeof this.emailService.templates]?.(data) ||
-          `<p>${JSON.stringify(data)}</p>`;
-        await this.emailService.send(to, subject, html);
+
+        // Essayer d'abord le template Handlebars du système de fichiers
+        try {
+          await this.emailService.sendTemplate(to, subject, template, data);
+        } catch {
+          // Fallback: utiliser les templates inline si le fichier .hbs n'existe pas
+          const html =
+            this.emailService.templates[template as keyof typeof this.emailService.templates]?.(data) ||
+            `<p>Template "${template}" non trouvé. Données: ${JSON.stringify(data)}</p>`;
+          await this.emailService.send(to, subject, html);
+        }
       },
       {
         connection: { host: redisConfig.host, port: redisConfig.port, password: redisConfig.password || undefined },

@@ -31,8 +31,14 @@ describe('UsersService', () => {
       values: jest.fn().mockReturnThis(),
     };
 
+    const mockQueues = { email: { add: jest.fn().mockResolvedValue(undefined) }, notification: { add: jest.fn().mockResolvedValue(undefined) } };
+
     const module: TestingModule = await Test.createTestingModule({
-      providers: [UsersService, { provide: DrizzleProvider, useValue: mockDb }],
+      providers: [
+        UsersService,
+        { provide: DrizzleProvider, useValue: mockDb },
+        { provide: 'BullMQ_Queues', useValue: mockQueues },
+      ],
     }).compile();
 
     service = module.get<UsersService>(UsersService);

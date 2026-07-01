@@ -9,9 +9,9 @@ services:
     container_name: telecom-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: telecom
-      POSTGRES_PASSWORD: telecom_secret
-      POSTGRES_DB: telecom_tickets
+      POSTGRES_USER: ${POSTGRES_USER:-telecom}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-telecom_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-telecom_tickets}
     ports:
       - '5432:5432'
     volumes:
@@ -63,10 +63,10 @@ services:
       DATABASE_USER: telecom
       DATABASE_PASSWORD: telecom_secret
       DATABASE_NAME: telecom_tickets
-      DATABASE_URL: postgresql://telecom:telecom_secret@postgres:5432/telecom_tickets
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      REDIS_URL: redis://redis:6379
+      DATABASE_URL: ${DATABASE_URL:-postgresql://telecom:telecom_secret@postgres:5432/telecom_tickets}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       OTEL_ENABLED: 'true'
       OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4318/v1/traces
     volumes:
@@ -202,8 +202,8 @@ services:
     container_name: telecom-grafana
     restart: unless-stopped
     environment:
-      GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
       GF_INSTALL_PLUGINS: ''
     ports:
       - '3001:3000'

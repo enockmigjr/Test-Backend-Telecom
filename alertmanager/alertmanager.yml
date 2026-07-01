@@ -62,10 +62,12 @@ receivers:
         headers:
           Subject: '[CRITICAL] {{ .GroupLabels.alertname }} — Action requise'
         html: '{{ template "telecom.email.html" . }}'
-    # WhatsApp via CallMeBot — configuré et actif
-    # Pour modifier : changer phone/apikey dans l'URL ci-dessous
+    # WhatsApp via CallMeBot — configurer les variables d'environnement :
+    #   ALERTMANAGER_WHATSAPP_PHONE, ALERTMANAGER_WHATSAPP_APIKEY
+    # En production, remplacer l'URL ci-dessous ou utiliser un fichier
+    # alertmanager.yml distinct sans valeurs en dur.
     webhook_configs:
-      - url: 'https://api.callmebot.com/whatsapp.php?phone=22967391224&text=This+is+a+test&apikey=7499427'
+      - url: 'https://api.callmebot.com/whatsapp.php?phone=${ALERTMANAGER_WHATSAPP_PHONE:-CHANGE_ME}&text=ALERTE%20Telecom%20Ticket%20Management&apikey=${ALERTMANAGER_WHATSAPP_APIKEY:-CHANGE_ME}'
         send_resolved: true
         http_config:
           follow_redirects: true
