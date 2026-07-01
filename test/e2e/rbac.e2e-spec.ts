@@ -1,11 +1,8 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { AppModule } from '../../src/app.module';
-import { GlobalExceptionFilter } from '../../src/common/filters/global-exception.filter';
-import { TransformInterceptor } from '../../src/common/interceptors/transform.interceptor';
-import { DrizzleProvider } from '@database/drizzle.provider';
-import { departments, users } from '@database/schemas';
+import { createTestApp } from '../setup';
+import { DrizzleProvider } from '../../src/database/drizzle.provider';
+import { departments, users } from '../../src/database/schemas';
 import { eq } from 'drizzle-orm';
 
 /**
@@ -35,30 +32,12 @@ describe("RBAC — Controle d'acces par roles", () => {
   let departmentId: string;
   let agentUserId: string;
 
+  jest.setTimeout(30000);
+
   beforeAll(async () => {
-    process.env.LOG_LEVEL = 'error';
-    process.env.THROTTLE_LIMIT = '10000';
-    process.env.THROTTLE_AUTH_LIMIT = '10000';
-
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-
-    app = moduleFixture.createNestApplication();
-    app.setGlobalPrefix('api/v1');
-
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        forbidNonWhitelisted: true,
-        transform: true,
-        transformOptions: { enableImplicitConversion: true },
-      }),
-    );
-    app.useGlobalFilters(new GlobalExceptionFilter());
-    app.useGlobalInterceptors(new TransformInterceptor());
-
-    await app.init();
+    const { app: testApp, flushRedis } = await createTestApp();
+    await flushRedis();
+    app = testApp;
 
     // Récupérer dynamiquement les données du seed
     const drizzle = app.get(DrizzleProvider);
@@ -86,7 +65,7 @@ describe("RBAC — Controle d'acces par roles", () => {
     const supervisorLogin = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
       .send({ email: 'supervisor@telecom.local', password: 'Super@1234' });
-    supervisorToken = supervisorLogin.body.data?.accessToken || '';
+    supervisorToken = supervisorLogin.body?.data?.accessToken || '';
   });
 
   afterAll(async () => {
@@ -98,8 +77,7 @@ describe("RBAC — Controle d'acces par roles", () => {
   // =========================================================================
   describe("POST /api/v1/users — Creation d'utilisateur", () => {
     const getNewUserPayload = () => ({
-      email: 'nouvel-agent@telecom.local',
-      password: 'NewAgent@1234',
+      email: `test-rbac-${Date.now()}-${Math.random().toString(36).substring(2, 8)}@telecom.local`,
       firstName: 'Nouvel',
       lastName: 'Agent',
       role: 'TECHNICAL_SUPPORT_ENGINEER',

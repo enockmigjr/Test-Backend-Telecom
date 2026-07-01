@@ -41,13 +41,13 @@ ReportsController                   REPORT_QUEUE          ReportWorker          
 
 ## Les 5 Workers — Fichiers et Responsabilités
 
-| Worker             | Fichier                                     | Queue                | Concurrence | Rôle                                          |
-| ------------------ | ------------------------------------------- | -------------------- | ----------- | --------------------------------------------- |
-| EmailWorker        | `src/queues/workers/email.worker.ts`        | `email-queue`        | 5           | Envoi d'emails via Nodemailer (7 templates)   |
-| NotificationWorker | `src/queues/workers/notification.worker.ts` | `notification-queue` | 10          | Persiste en DB + émet WS si user connecté     |
-| SlaWorker          | `src/queues/workers/sla.worker.ts`          | `sla-queue`          | 5           | Vérifie les breaches SLA à l'échéance         |
+| Worker             | Fichier                                     | Queue                | Concurrence | Rôle                                             |
+| ------------------ | ------------------------------------------- | -------------------- | ----------- | ------------------------------------------------ |
+| EmailWorker        | `src/queues/workers/email.worker.ts`        | `email-queue`        | 5           | Envoi d'emails via Nodemailer (7 templates)      |
+| NotificationWorker | `src/queues/workers/notification.worker.ts` | `notification-queue` | 10          | Persiste en DB + émet WS si user connecté        |
+| SlaWorker          | `src/queues/workers/sla.worker.ts`          | `sla-queue`          | 5           | Vérifie les breaches SLA à l'échéance            |
 | AuditWorker        | `src/queues/workers/audit.worker.ts`        | `audit-queue`        | 20          | Persiste les actions en `audit_logs` (immuables) |
-| ReportWorker       | `src/queues/workers/report.worker.ts`       | `report-queue`       | 3           | Génère des rapports PDF et les envoie par email |
+| ReportWorker       | `src/queues/workers/report.worker.ts`       | `report-queue`       | 3           | Génère des rapports PDF et les envoie par email  |
 
 ### Où sont-ils instanciés ?
 
@@ -66,6 +66,7 @@ Ils implémentent `OnModuleInit` → démarrent automatiquement au lancement de 
 En développement → Mailpit. En production → SMTP réel (`SMTP_HOST`/`SMTP_PORT`).
 
 **Templates disponibles** :
+
 - `ticketCreated` — confirmation de création de ticket au créateur
 - `ticketAssigned` — notification d'assignation à l'agent
 - `ticketResolved` — confirmation de résolution au client
@@ -75,6 +76,7 @@ En développement → Mailpit. En production → SMTP réel (`SMTP_HOST`/`SMTP_P
 - `tempPassword` — mot de passe temporaire à un nouvel utilisateur
 
 **Déclencheurs** :
+
 - `TicketNotificationListener` → `@OnEvent('ticket.created'|'ticket.assigned'|'ticket.escalated'|'ticket.resolved')`
 - `AuthService` → directement (mot de passe temporaire, reset)
 
@@ -85,13 +87,16 @@ En développement → Mailpit. En production → SMTP réel (`SMTP_HOST`/`SMTP_P
 **Fichier** : `src/queues/workers/notification.worker.ts`
 
 **Rôle** : Double canal de notification :
+
 1. **Persistance DB** : INSERT dans `notifications` (consultable dans l'inbox `/api/v1/notifications`)
 2. **WebSocket temps réel** : si l'utilisateur est connecté (`wsGateway.isUserConnected()`), émet l'événement immédiatement
 
 **Événements émis** :
+
 - `notification.created` sur la room `user:{userId}`
 
 **Déclencheurs** :
+
 - `TicketNotificationListener` → tickets assignés, escaladés, résolus
 
 ---
@@ -103,6 +108,7 @@ En développement → Mailpit. En production → SMTP réel (`SMTP_HOST`/`SMTP_P
 **Rôle** : Vérifie si un ticket a respecté ses délais SLA à l'échéance.
 
 **Mécanisme** :
+
 1. À la création d'un ticket, `TicketSlaListener` planifie un job **délayé** : `delay = resolutionDueAt - now`
 2. Le job `check_breach` s'exécute exactement à l'échéance SLA
 3. Si le ticket n'est pas résolu → `sla_breached = true` + notification
@@ -120,10 +126,12 @@ Le `SlaEngineService` tourne en cron `*/5 min` pour rattraper les breaches manqu
 **Rôle** : Persiste les événements d'audit dans la table `audit_logs` (immuable, write-only).
 
 **Enregistrements** :
+
 - Toutes les actions importantes sur les tickets
 - Les connexions/déconnexions utilisateurs (AuthService → directement)
 
 **Déclencheurs** :
+
 - `TicketAuditListener` → tous les événements `ticket.*`
 
 ---
@@ -135,10 +143,12 @@ Le `SlaEngineService` tourne en cron `*/5 min` pour rattraper les breaches manqu
 **Rôle** : Génération asynchrone de rapports PDF volumineux.
 
 **Types de rapports** :
+
 - `generate-ticket-report` — rapport détaillé d'un ticket (commentaires, historique, SLA)
 - `generate-sla-report` — rapport de conformité SLA sur une période
 
 **Déclencheurs** :
+
 - `POST /api/v1/reports/ticket/:id` (Admin, Supervisor)
 - `POST /api/v1/reports/sla` (Admin, Supervisor)
 

@@ -1,9 +1,6 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { AppModule } from '../src/app.module';
-import { GlobalExceptionFilter } from '../src/common/filters/global-exception.filter';
-import { TransformInterceptor } from '../src/common/interceptors/transform.interceptor';
+import { createTestApp } from './setup';
 
 /**
  * Tests End-to-End du flux d'authentification.
@@ -25,25 +22,9 @@ describe('Auth — Flux E2E', () => {
   let refreshToken: string;
 
   beforeAll(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-
-    app = moduleFixture.createNestApplication();
-
-    // Configurer comme en production
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        forbidNonWhitelisted: true,
-        transform: true,
-        transformOptions: { enableImplicitConversion: true },
-      }),
-    );
-    app.useGlobalFilters(new GlobalExceptionFilter());
-    app.useGlobalInterceptors(new TransformInterceptor());
-
-    await app.init();
+    const { app: testApp, flushRedis } = await createTestApp();
+    await flushRedis();
+    app = testApp;
   });
 
   afterAll(async () => {

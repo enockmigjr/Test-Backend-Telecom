@@ -1,22 +1,15 @@
-import { Test } from '@nestjs/testing';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { AppModule } from '../../src/app.module';
-import { GlobalExceptionFilter } from '../../src/common/filters/global-exception.filter';
-import { TransformInterceptor } from '../../src/common/interceptors/transform.interceptor';
+import { createTestApp } from '../setup';
 
 describe('Dashboard — E2E (DB réelle)', () => {
   let app: INestApplication;
   let adminToken: string;
 
   beforeAll(async () => {
-    const m = await Test.createTestingModule({ imports: [AppModule] }).compile();
-    app = m.createNestApplication();
-    app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
-    app.useGlobalFilters(new GlobalExceptionFilter());
-    app.useGlobalInterceptors(new TransformInterceptor());
-    app.setGlobalPrefix('api/v1');
-    await app.init();
+    const { app: testApp, flushRedis } = await createTestApp();
+    await flushRedis();
+    app = testApp;
 
     const login = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
@@ -35,7 +28,7 @@ describe('Dashboard — E2E (DB réelle)', () => {
       .set('Authorization', `Bearer ${adminToken}`)
       .expect(200);
     expect(res.body.success).toBe(true);
-    expect(res.body.ticketVolume).toBeDefined();
+    expect(res.body.data.ticketVolume).toBeDefined();
   });
 
   it('GET /dashboard/workload — charge agents (200)', async () => {
@@ -45,7 +38,7 @@ describe('Dashboard — E2E (DB réelle)', () => {
       .set('Authorization', `Bearer ${adminToken}`)
       .expect(200);
     expect(res.body.success).toBe(true);
-    expect(res.body.summary).toBeDefined();
+    expect(res.body.data.summary).toBeDefined();
   });
 
   it('GET /dashboard/tickets-by-status — tickets par statut (200)', async () => {

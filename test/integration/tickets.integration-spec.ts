@@ -107,8 +107,8 @@ describe('Tickets — Workflow Intégration (DB réelle)', () => {
 
     expect(res.body.success).toBe(true);
     expect(res.body.data).toBeDefined();
-    expect(res.body.meta).toBeDefined();
-    expect(res.body.meta.page).toBe(1);
+    expect(res.body.data.meta).toBeDefined();
+    expect(res.body.data.meta.page).toBe(1);
   });
 
   it('GET /tickets/:id — doit retourner 404 pour un ticket inexistant', async () => {

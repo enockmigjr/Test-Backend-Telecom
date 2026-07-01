@@ -1,10 +1,7 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { eq } from 'drizzle-orm';
-import { AppModule } from '../../src/app.module';
-import { GlobalExceptionFilter } from '../../src/common/filters/global-exception.filter';
-import { TransformInterceptor } from '../../src/common/interceptors/transform.interceptor';
+import { createTestApp } from '../setup';
 import { DrizzleProvider } from '../../src/database/drizzle.provider';
 import { departments, users } from '../../src/database/schemas';
 
@@ -35,32 +32,13 @@ describe('Tickets — Workflow E2E', () => {
   let assignedTeamId: string;
   let agentUserId: string;
 
+  // Augmenter le timeout global pour l'initialisation et le nettoyage
+  jest.setTimeout(30000);
+
   beforeAll(async () => {
-    // Reduire le bruit des logs pendant les tests
-    process.env.LOG_LEVEL = 'error';
-    process.env.THROTTLE_LIMIT = '10000';
-    process.env.THROTTLE_AUTH_LIMIT = '10000';
-
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-
-    app = moduleFixture.createNestApplication();
-    app.setGlobalPrefix('api/v1');
-
-    // Configurer comme en production
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        forbidNonWhitelisted: true,
-        transform: true,
-        transformOptions: { enableImplicitConversion: true },
-      }),
-    );
-    app.useGlobalFilters(new GlobalExceptionFilter());
-    app.useGlobalInterceptors(new TransformInterceptor());
-
-    await app.init();
+    const { app: testApp, flushRedis } = await createTestApp();
+    await flushRedis();
+    app = testApp;
 
     // Récupérer dynamiquement les données du seed
     const drizzle = app.get(DrizzleProvider);
@@ -79,9 +57,6 @@ describe('Tickets — Workflow E2E', () => {
     const loginRes = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
       .send({ email: 'admin@telecom.local', password: 'Admin@1234' });
-
-    console.log('LOGIN RESP STATUS:', loginRes.status);
-    console.log('LOGIN RESP BODY:', JSON.stringify(loginRes.body));
 
     adminToken = loginRes.body?.data?.accessToken || '';
   });

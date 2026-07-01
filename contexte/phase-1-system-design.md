@@ -31,8 +31,7 @@ Actuellement, les incidents impliquent souvent plusieurs équipes :
 - Facturation
 - Support Technique
 - Opérations Terrain
-  La plateforme centralise la gestion des incidents et fournit un flux de travail unifié pour le suivi des incidents tout au long de leur cycle de vie.  
-
+  La plateforme centralise la gestion des incidents et fournit un flux de travail unifié pour le suivi des incidents tout au long de leur cycle de vie.
 
 ## 3. Objectifs du Système
 
@@ -44,40 +43,35 @@ La plateforme doit fournir :
 - Attribuer des incidents à des équipes et des agents
 - Réattribuer des incidents si nécessaire
 - Escalader des incidents
-- Résoudre et clôturer des incidents  
-
+- Résoudre et clôturer des incidents
 
 ### Collaboration
 
 - Notes internes
 - Commentaires publics
 - Pièces jointes
-- Historique des attributions  
-
+- Historique des attributions
 
 ### Sécurité
 
 - Authentification JWT
 - Rotation des jetons de rafraîchissement
 - Autorisation basée sur les rôles
-- Journalisation d'audit  
-
+- Journalisation d'audit
 
 ### Surveillance
 
 - Journaux d'application
 - Collecte de métriques
 - Traçage distribué
-- Surveillance de l'état de santé  
-
+- Surveillance de l'état de santé
 
 ### Reporting
 
 - Statistiques des tickets
 - Conformité aux SLA
 - Charge de travail des agents
-- Performance des départements  
-
+- Performance des départements
 
 ## 4. Exigences Fonctionnelles
 
@@ -88,8 +82,7 @@ Le système permettra aux administrateurs de :
 - Créer des utilisateurs
 - Activer ou désactiver des utilisateurs
 - Attribuer des départements
-- Attribuer des rôles  
-
+- Attribuer des rôles
 
 ### Authentification
 
@@ -98,8 +91,7 @@ Le système fournira :
 - Connexion
 - Déconnexion
 - Rafraîchissement du jeton
-- Changement du mot de passe  
-
+- Changement du mot de passe
 
 ### Gestion des Tickets
 
@@ -112,8 +104,7 @@ Le système permettra aux utilisateurs autorisés de :
 - Réattribuer des tickets
 - Escalader des tickets
 - Résoudre des tickets
-- Clôturer des tickets  
-
+- Clôturer des tickets
 
 ### Fonctionnalités de Collaboration
 
@@ -122,8 +113,7 @@ Le système prendra en charge :
 - Commentaires internes
 - Commentaires publics
 - Pièces jointes
-- Historique des activités  
-
+- Historique des activités
 
 ### Notifications
 
@@ -132,8 +122,7 @@ Le système notifiera les utilisateurs lorsque :
 - Des tickets sont attribués
 - Des tickets sont escaladés
 - Des tickets sont résolus
-- Les seuils de SLA sont dépassés  
-
+- Les seuils de SLA sont dépassés
 
 ## 5. Exigences Non Fonctionnelles
 
@@ -143,8 +132,7 @@ Le système notifiera les utilisateurs lorsque :
 - Rotation des jetons de rafraîchissement
 - Hachage des mots de passe utilisant Argon2
 - Contrôle d'accès basé sur les rôles
-- Piste d'audit pour les actions critiques  
-
+- Piste d'audit pour les actions critiques
 
 ### Évolutivité
 
@@ -165,8 +153,7 @@ Le système doit fournir :
 - Des journaux structurés
 - Des métriques
 - Des traces
-- Des vérifications de l'état de santé  
-
+- Des vérifications de l'état de santé
 
 ## 6. Style Architectural
 
@@ -185,8 +172,7 @@ Avantages :
 - Tests plus faciles
 - Débogage plus facile
 - Frontières de domaine claires
-  Les microservices ont été intentionnellement évités car ils introduiraient une complexité d'infrastructure inutile pour le périmètre actuel du projet.  
-
+  Les microservices ont été intentionnellement évités car ils introduiraient une complexité d'infrastructure inutile pour le périmètre actuel du projet.
 
 ## 7. Architecture Haut Niveau
 
@@ -245,8 +231,7 @@ Responsabilités :
 
 - Authentification
 - Rafraîchissement du jeton
-- Gestion des mots de passe  
-
+- Gestion des mots de passe
 
 ### Module Utilisateurs
 
@@ -254,8 +239,7 @@ Responsabilités :
 
 - Gestion des utilisateurs
 - Attribution des départements
-- Attribution des rôles  
-
+- Attribution des rôles
 
 ### Module Tickets
 
@@ -263,8 +247,7 @@ Responsabilités :
 
 - Cycle de vie des tickets
 - Propriété des tickets
-- Mises à jour des tickets  
-
+- Mises à jour des tickets
 
 ### Module Attributions
 
@@ -272,32 +255,28 @@ Responsabilités :
 
 - Suivi des attributions
 - Historique des réattributions
-- Suivi des escalades  
-
+- Suivi des escalades
 
 ### Module Commentaires
 
 Responsabilités :
 
 - Commentaires publics
-- Notes internes  
-
+- Notes internes
 
 ### Module Pièces Jointes
 
 Responsabilités :
 
 - Téléversements de fichiers
-- Gestion des pièces jointes  
-
+- Gestion des pièces jointes
 
 ### Module Notifications
 
 Responsabilités :
 
 - Notifications par e-mail
-- Notifications dans l'application  
-
+- Notifications dans l'application
 
 ### Module SLA
 
@@ -305,16 +284,14 @@ Responsabilités :
 
 - Surveillance des SLA
 - Détection des violations
-- Déclencheurs d'escalade  
-
+- Déclencheurs d'escalade
 
 ### Module Audit
 
 Responsabilités :
 
 - Suivi des activités
-- Journaux de conformité  
-
+- Journaux de conformité
 
 ### Module Tableau de Bord
 
@@ -322,8 +299,7 @@ Responsabilités :
 
 - Statistiques
 - Reporting
-- KPI  
-
+- KPI
 
 ## 10. Départements
 
@@ -335,8 +311,7 @@ La plateforme prend en charge les départements suivants :
 - Facturation
 - Support Technique
 - Opérations Terrain
-  Chaque utilisateur appartient à exactement un département.  
-
+  Chaque utilisateur appartient à exactement un département.
 
 ## 11. Rôles
 
@@ -349,8 +324,7 @@ La plateforme prend en charge les rôles suivants :
 - Agent de Facturation
 - Ingénieur Support Technique
 - Technicien Terrain
-  Chaque utilisateur a exactement un rôle.  
-
+  Chaque utilisateur a exactement un rôle.
 
 ## 12. Architecture de Sécurité
 
@@ -359,15 +333,13 @@ La plateforme prend en charge les rôles suivants :
 L'authentification est basée sur :
 
 - Jeton d'accès (JWT)
-- Rotation des jetons de rafraîchissement  
-
+- Rotation des jetons de rafraîchissement
 
 ### Sécurité des Mots de Passe
 
 Les mots de passe sont stockés en utilisant :
 
-- Hachage Argon2  
-
+- Hachage Argon2
 
 ### Sécurité des Sessions
 
@@ -376,8 +348,7 @@ Les jetons de rafraîchissement sont :
 - Hachés avant le stockage
 - Associés à l'adresse IP
 - Associés à l'User-Agent
-- Révocables individuellement  
-
+- Révocables individuellement
 
 ### Autorisation
 
@@ -547,8 +518,7 @@ Responsabilités :
 - Compression HTTP
 - Gestion des en-têtes de sécurité
 - Limitation du débit (Rate Limiting)
-- Protection contre certaines attaques automatisées  
-
+- Protection contre certaines attaques automatisées
 
 ### Middleware
 
@@ -556,8 +526,7 @@ Responsabilités :
 
 - Génération du Correlation ID
 - Journalisation des requêtes
-- Extraction des informations de contexte  
-
+- Extraction des informations de contexte
 
 ### Guards
 
@@ -565,14 +534,12 @@ Responsabilités :
 
 - Vérification du JWT
 - Vérification des rôles
-- Contrôle d'accès aux ressources  
-
+- Contrôle d'accès aux ressources
 
 Exemples :
 
 - Un agent NOC ne peut pas gérer les utilisateurs.
-- Un agent Billing ne peut pas modifier un ticket clôturé.  
-
+- Un agent Billing ne peut pas modifier un ticket clôturé.
 
 ### Validation Pipes
 
@@ -580,8 +547,7 @@ Responsabilités :
 
 - Validation des DTO
 - Transformation des données
-- Rejet des requêtes invalides  
-
+- Rejet des requêtes invalides
 
 ### Controllers
 
@@ -589,8 +555,7 @@ Responsabilités :
 
 - Réception des requêtes HTTP
 - Appel des services applicatifs
-- Retour des réponses standardisées  
-
+- Retour des réponses standardisées
 
 ### Services
 
@@ -598,8 +563,7 @@ Responsabilités :
 
 - Implémentation des règles métier
 - Coordination entre les modules
-- Gestion des transactions  
-
+- Gestion des transactions
 
 ### Repositories (Drizzle ORM)
 
@@ -618,8 +582,7 @@ L'objectif est de pouvoir répondre rapidement aux questions suivantes :
 - Pourquoi une requête est-elle lente ?
 - Pourquoi un ticket n'a-t-il pas été assigné ?
 - Pourquoi un SLA a-t-il été dépassé ?
-- Pourquoi une erreur s'est-elle produite ?  
-
+- Pourquoi une erreur s'est-elle produite ?
 
 ### Architecture retenue
 
@@ -649,8 +612,7 @@ Chaque événement important est journalisé :
 - Création de ticket
 - Réassignation
 - Escalade
-- Erreurs applicatives  
-
+- Erreurs applicatives
 
 Exemple :
 
@@ -677,8 +639,7 @@ Prometheus collecte notamment :
 - Nombre d'erreurs
 - Utilisation CPU
 - Utilisation mémoire
-- Nombre de tickets créés  
-
+- Nombre de tickets créés
 
 ### Traces distribuées
 
@@ -733,8 +694,7 @@ Pour le rate limiting, `@nestjs/throttler` avec le storage Redis permet un rate 
 Stockage :
 
 - Révocation des refresh tokens
-- Blacklist JWT  
-
+- Blacklist JWT
 
 ### Données fréquemment consultées
 
@@ -742,8 +702,7 @@ Exemples :
 
 - Départements
 - Paramètres SLA
-- Configuration système  
-
+- Configuration système
 
 ### Limitation du débit
 
@@ -767,16 +726,14 @@ Exemples :
 
 - Création de compte
 - Réinitialisation du mot de passe
-- Affectation de ticket  
-
+- Affectation de ticket
 
 ### Vérification des SLA
 
 Exemples :
 
 - Première réponse dépassée
-- Résolution dépassée  
-
+- Résolution dépassée
 
 ### Escalade automatique
 
@@ -825,8 +782,7 @@ La base de données stocke uniquement :
 - Nom du fichier
 - Type MIME
 - Taille
-- Emplacement  
-
+- Emplacement
 
 ### Évolution future
 
@@ -834,8 +790,7 @@ Le système pourra migrer vers :
 
 - Amazon S3
 - MinIO
-- Azure Blob Storage  
-
+- Azure Blob Storage
 
 sans modification majeure du modèle de données.
 
@@ -851,8 +806,7 @@ Mécanismes retenus :
 
 - JWT Access Token
 - Refresh Token Rotation
-- Révocation des sessions  
-
+- Révocation des sessions
 
 ### Stockage des mots de passe
 
@@ -874,8 +828,7 @@ Mesures mises en place :
 - DTO NestJS
 - Sanitization des données
 - Rate Limiting
-- Headers de sécurité  
-
+- Headers de sécurité
 
 ### Journalisation de sécurité
 
@@ -886,8 +839,7 @@ Les événements suivants sont audités :
 - Changement de mot de passe
 - Création d'utilisateur
 - Modification des rôles
-- Escalades critiques  
-
+- Escalades critiques
 
 ### Gestion des permissions
 

@@ -21,8 +21,7 @@ L'objectif du modèle de données est de garantir :
 - la traçabilité complète des opérations ;
 - la conservation des historiques ;
 - de bonnes performances de lecture et d'écriture ;
-- l'évolutivité du système.  
-
+- l'évolutivité du système.
 
 La solution retenue repose sur PostgreSQL en raison de sa robustesse, de son support avancé des contraintes relationnelles, de ses types de données modernes (JSONB, ARRAY, ENUM) et de ses excellentes performances.
 
@@ -482,8 +481,7 @@ Le système peut migrer vers :
 
 - MinIO
 - Amazon S3
-- Azure Blob Storage  
-
+- Azure Blob Storage
 
 sans modification du schéma de base de données.
 
@@ -945,8 +943,7 @@ Chaque événement d'affectation doit référencer :
 
 - un ticket ;
 - un utilisateur cible ;
-- un département cible.  
-
+- un département cible.
 
 ```
 ticket_id NOT NULL
@@ -1667,7 +1664,6 @@ Les principales caractéristiques de cette conception sont :
 - support des SLA ;
 - gestion robuste des notifications ;
 - préparation à la montée en charge ;
-- indépendance vis-à-vis du système de stockage des fichiers.  
-
+- indépendance vis-à-vis du système de stockage des fichiers.
 
 Grâce à PostgreSQL, aux ENUM, aux index spécialisés GIN, aux UUIDv7 et à l'utilisation de JSONB, cette base de données constitue une fondation solide pour les phases d'implémentation et d'exploitation du système.

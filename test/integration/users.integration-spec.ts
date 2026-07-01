@@ -44,7 +44,7 @@ describe('Users — CRUD Intégration (DB réelle)', () => {
 
     expect(res.body.success).toBe(true);
     expect(res.body.data).toBeDefined();
-    expect(res.body.meta).toBeDefined();
+    expect(res.body.data.meta).toBeDefined();
   });
 
   it('GET /users/me — doit retourner le profil connecté (200)', async () => {
