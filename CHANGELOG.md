@@ -58,7 +58,7 @@ Tous les changements notables sont documentés ici. Format basé sur [Keep a Cha
 - **Collaboration** : Commentaires publics, notes internes (restriction FIELD_TECHNICIAN), pièces jointes (interface abstraite IStorageService)
 - **Notifications** : Inbox pattern, read/unread, mark-all-read
 - **Temps réel** : WebSocket Gateway JWT auth, rooms user/department/role, Redis adapter pour scaling horizontal
-- **SLA Engine** : Cron */5 min, breach/warning detection
+- **SLA Engine** : Cron \*/5 min, breach/warning detection
 - **Dashboard** : 7 endpoints (overview, tickets-by-status, tickets-by-priority, departments, sla-compliance, workload, resolution-time)
 - **Audit Logs** : Immutable write-only, recherche multi-filtres
 - **Email** : Nodemailer dev (Mailpit) / prod (SMTP), 7 templates Handlebars

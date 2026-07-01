@@ -1,7 +1,7 @@
 -- ============================================
 -- Telecom Ticket Management — Schéma Complet
 -- PostgreSQL 16
--- Généré le 2026-06-29
+-- Généré le 2026-06-29 — Mis à jour le 2026-07-01
 -- ============================================
 
 -- Types ENUM
@@ -20,7 +20,7 @@ CREATE TYPE ticket_severity_enum AS ENUM ('S1', 'S2', 'S3', 'S4');
 CREATE TYPE ticket_category_enum AS ENUM ('NETWORK', 'BILLING', 'TECHNICAL', 'HARDWARE', 'SOFTWARE', 'OTHER');
 CREATE TYPE notification_type_enum AS ENUM (
   'TICKET_ASSIGNED', 'TICKET_ESCALATED', 'TICKET_RESOLVED',
-  'COMMENT_ADDED', 'SLA_WARNING', 'SLA_BREACHED'
+  'COMMENT_ADDED', 'SLA_WARNING', 'SLA_BREACHED', 'REPORT_READY'
 );
 
 -- Séquence de numérotation des tickets

@@ -36,6 +36,9 @@
     "prepare": "husky || true"
   },
   "dependencies": {
+    "@bull-board/api": "^8.0.2",
+    "@bull-board/express": "^8.0.2",
+    "@bull-board/nestjs": "^8.0.2",
     "@faker-js/faker": "^10.5.0",
     "@nestjs/common": "^10.4.4",
     "@nestjs/config": "^3.2.3",

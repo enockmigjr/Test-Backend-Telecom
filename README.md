@@ -29,16 +29,16 @@ pnpm run db:push && pnpm run db:seed
 pnpm run start:dev
 ```
 
-| URL                                                   | Description               |
-| ----------------------------------------------------- | ------------------------- |
-| `http://localhost:${API_PORT:-3000}/${API_PREFIX:-api/v1}` | API REST                  |
-| `http://localhost:${API_PORT:-3000}/api/docs`          | Swagger / OpenAPI         |
+| URL                                                                     | Description               |
+| ----------------------------------------------------------------------- | ------------------------- |
+| `http://localhost:${API_PORT:-3000}/${API_PREFIX:-api/v1}`              | API REST                  |
+| `http://localhost:${API_PORT:-3000}/api/docs`                           | Swagger / OpenAPI         |
 | `http://localhost:${API_PORT:-3000}/${API_PREFIX:-api/v1}/health/ready` | Health check (DB + Redis) |
-| `http://localhost:${API_PORT:-3000}/${API_PREFIX:-api/v1}/metrics` | Métriques Prometheus      |
-| `http://localhost:${MAILPIT_WEB_PORT:-9025}`           | Mailpit (emails dev)      |
-| `http://localhost:${GRAFANA_PORT:-3001}`               | Grafana (admin/admin)     |
-| `http://localhost:${PROMETHEUS_PORT:-9090}`            | Prometheus                |
-| `http://localhost:3002`                                 | Uptime Kuma               |
+| `http://localhost:${API_PORT:-3000}/${API_PREFIX:-api/v1}/metrics`      | Métriques Prometheus      |
+| `http://localhost:${MAILPIT_WEB_PORT:-9025}`                            | Mailpit (emails dev)      |
+| `http://localhost:${GRAFANA_PORT:-3001}`                                | Grafana (admin/admin)     |
+| `http://localhost:${PROMETHEUS_PORT:-9090}`                             | Prometheus                |
+| `http://localhost:3002`                                                 | Uptime Kuma               |
 
 ## 📊 Comptes de Test
 
@@ -141,21 +141,21 @@ make down      # Tout arrêter
 
 ## 📋 Scripts
 
-| Commande                | Description                        |
-| ----------------------- | ---------------------------------- |
-| `pnpm run start:dev`    | Développement hot-reload           |
-| `pnpm run build`        | Compilation TypeScript             |
-| `pnpm run test`         | Tests unitaires (113 tests)        |
-| `pnpm run test:e2e`     | Tests end-to-end (43 tests)        |
-| `pnpm run test:integration` | Tests intégration (10 tests)   |
-| `pnpm run test:all`     | Tous les tests (166 tests)         |
-| `pnpm run test:cov`     | Tests avec couverture              |
-| `pnpm run db:push`      | Pousser schéma Drizzle             |
-| `pnpm run db:seed`      | Données de test                    |
-| `pnpm run db:reset`     | db:push + db:seed                  |
-| `make up`               | Démarrer services essentiels       |
-| `make up-full`          | Tous les services Docker           |
-| `make help`             | Aide Makefile                      |
+| Commande                    | Description                  |
+| --------------------------- | ---------------------------- |
+| `pnpm run start:dev`        | Développement hot-reload     |
+| `pnpm run build`            | Compilation TypeScript       |
+| `pnpm run test`             | Tests unitaires (113 tests)  |
+| `pnpm run test:e2e`         | Tests end-to-end (43 tests)  |
+| `pnpm run test:integration` | Tests intégration (10 tests) |
+| `pnpm run test:all`         | Tous les tests (166 tests)   |
+| `pnpm run test:cov`         | Tests avec couverture        |
+| `pnpm run db:push`          | Pousser schéma Drizzle       |
+| `pnpm run db:seed`          | Données de test              |
+| `pnpm run db:reset`         | db:push + db:seed            |
+| `make up`                   | Démarrer services essentiels |
+| `make up-full`              | Tous les services Docker     |
+| `make help`                 | Aide Makefile                |
 
 ## 📚 Documentation
 

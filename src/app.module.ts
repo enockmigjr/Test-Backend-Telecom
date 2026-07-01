@@ -33,6 +33,7 @@ import { MetricsModule } from './common/metrics/metrics.module';
 import { ObservabilityModule } from './common/observability/observability.module';
 import { EmailModule } from './modules/email/email.module';
 import { ReportsModule } from './modules/reports/reports.module';
+import { BullBoardModule } from './common/bull-board/bull-board.module';
 
 @Module({
   imports: [
@@ -118,6 +119,7 @@ import { ReportsModule } from './modules/reports/reports.module';
     AuditLogsModule,
     WebSocketModule,
     QueuesModule,
+    BullBoardModule,
   ],
   providers: [
     {
