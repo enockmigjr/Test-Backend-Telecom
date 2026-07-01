@@ -244,10 +244,12 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
     const totalResolved = Number(resolved?.count || 0);
     const totalOpen = Number(openCount?.count || 0);
     const slaBreaches = Number(breached?.count || 0);
-    const complianceRate = totalCreated > 0 ? ((totalCreated - slaBreaches) / totalCreated * 100).toFixed(1) : '100';
+    const complianceRate = totalCreated > 0 ? (((totalCreated - slaBreaches) / totalCreated) * 100).toFixed(1) : '100';
     const avgMin = Math.round(Number(avgStats?.avgMin || 0));
 
-    const weekNumber = String(Math.ceil((now.getTime() - new Date(now.getFullYear(), 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000)));
+    const weekNumber = String(
+      Math.ceil((now.getTime() - new Date(now.getFullYear(), 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000)),
+    );
 
     // Notifier le demandeur
     await this.notifyUser(

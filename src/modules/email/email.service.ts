@@ -114,7 +114,13 @@ export class EmailService {
       <hr><small>Telecom Ticket Management — Sécurité</small>
     `,
 
-    accountCreated: (data: { firstName: string; lastName: string; email: string; tempPassword: string; loginUrl: string }) => `
+    accountCreated: (data: {
+      firstName: string;
+      lastName: string;
+      email: string;
+      tempPassword: string;
+      loginUrl: string;
+    }) => `
       <h2>👤 Compte créé — Bienvenue</h2>
       <p>Bonjour <strong>${data.firstName} ${data.lastName}</strong>,</p>
       <p>Votre compte a été créé: <strong>${data.email}</strong></p>
@@ -123,7 +129,17 @@ export class EmailService {
       <hr><small>Telecom Ticket Management — Ne pas répondre à cet email</small>
     `,
 
-    adminWeeklyReport: (data: { weekNumber: string; periodStart: string; periodEnd: string; totalCreated: number; totalResolved: number; totalOpen: number; slaBreaches: number; complianceRate: string; avgResolutionMinutes: number }) => `
+    adminWeeklyReport: (data: {
+      weekNumber: string;
+      periodStart: string;
+      periodEnd: string;
+      totalCreated: number;
+      totalResolved: number;
+      totalOpen: number;
+      slaBreaches: number;
+      complianceRate: string;
+      avgResolutionMinutes: number;
+    }) => `
       <h2>📈 Rapport Hebdomadaire — Semaine ${data.weekNumber}</h2>
       <p><strong>Période:</strong> ${data.periodStart} → ${data.periodEnd}</p>
       <table><tr><td>Créés:</td><td>${data.totalCreated}</td></tr>

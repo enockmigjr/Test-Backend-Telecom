@@ -5,7 +5,7 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql)
 ![Redis](https://img.shields.io/badge/Redis-7-DC382D?logo=redis)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker)
-![Tests](https://img.shields.io/badge/Tests-105%20passed-success)
+![Tests](https://img.shields.io/badge/Tests-166%20passed-success)
 ![License](https://img.shields.io/badge/License-UNLICENSED-lightgrey)
 
 Backend **NestJS** pour la plateforme de gestion des tickets d'incidents télécoms.
@@ -75,14 +75,26 @@ pnpm run start:dev
 
 ```
 Ticket créé → TicketNotificationListener (@OnEvent)
-  ├── EMAIL_QUEUE    → EmailWorker       → SMTP (confirmation, assignation, alerte)
+  ├── EMAIL_QUEUE        → EmailWorker       → SMTP (confirmation, assignation, alerte)
   ├── NOTIFICATION_QUEUE → NotificationWorker → DB + WebSocket emit
-  ├── AUDIT_QUEUE    → AuditWorker       → INSERT audit_logs
-  └── SLA_QUEUE      → SlaWorker         → Vérification breach
+  ├── AUDIT_QUEUE        → AuditWorker       → INSERT audit_logs
+  └── SLA_QUEUE          → SlaWorker         → Vérification breach (delayed job)
 
-ReportsController → REPORT_QUEUE → ReportWorker → PDF generation
+Compte créé → UsersService
+  └── EMAIL_QUEUE        → EmailWorker       → Email bienvenue + tempPassword
 
-SlaEngineService (@Cron */5 min) → Détection directe breaches/warnings
+Mot de passe changé → AuthService
+  └── EMAIL_QUEUE        → EmailWorker       → Email confirmation
+
+ReportsController → REPORT_QUEUE → ReportWorker
+  ├── NOTIFICATION_QUEUE → NotificationWorker → Notification in-app
+  └── EMAIL_QUEUE        → EmailWorker       → Email avec résumé
+
+SlaEngineService (@Cron */5 min)
+  ├── DB update (slaBreached = true)
+  ├── WebSocket emit (supervisor + assigné)
+  ├── NOTIFICATION_QUEUE → NotificationWorker → DB + WebSocket
+  └── EMAIL_QUEUE        → EmailWorker       → Alerte SLA
 ```
 
 ## 🛡️ Sécurité
@@ -129,25 +141,33 @@ make down      # Tout arrêter
 
 ## 📋 Scripts
 
-| Commande             | Description                 |
-| -------------------- | --------------------------- |
-| `pnpm run start:dev` | Développement hot-reload    |
-| `pnpm run build`     | Compilation TypeScript      |
-| `pnpm run test`      | Tests (105 tests, 9 suites) |
-| `pnpm run test:cov`  | Tests avec couverture       |
-| `pnpm run db:push`   | Pousser schéma Drizzle      |
-| `pnpm run db:seed`   | Données de test             |
-| `pnpm run db:reset`  | db:push + db:seed           |
-| `make up-full`       | Tous les services Docker    |
-| `make help`          | Aide Makefile               |
+| Commande                | Description                        |
+| ----------------------- | ---------------------------------- |
+| `pnpm run start:dev`    | Développement hot-reload           |
+| `pnpm run build`        | Compilation TypeScript             |
+| `pnpm run test`         | Tests unitaires (113 tests)        |
+| `pnpm run test:e2e`     | Tests end-to-end (43 tests)        |
+| `pnpm run test:integration` | Tests intégration (10 tests)   |
+| `pnpm run test:all`     | Tous les tests (166 tests)         |
+| `pnpm run test:cov`     | Tests avec couverture              |
+| `pnpm run db:push`      | Pousser schéma Drizzle             |
+| `pnpm run db:seed`      | Données de test                    |
+| `pnpm run db:reset`     | db:push + db:seed                  |
+| `make up`               | Démarrer services essentiels       |
+| `make up-full`          | Tous les services Docker           |
+| `make help`             | Aide Makefile                      |
 
 ## 📚 Documentation
 
-| Fichier                         | Contenu                          |
-| ------------------------------- | -------------------------------- |
-| `docs/routes.md`                | Catalogue complet des 45+ routes |
-| `docs/architecture-flows.md`    | 9 diagrammes Mermaid             |
-| `docs/deployment.md`            | Guide de déploiement production  |
-| `docs/jobs-and-workers.md`      | Architecture BullMQ et workers   |
-| `docs/implementation-status.md` | État production-readiness        |
-| `sql/schema-complet.sql`        | Schéma PostgreSQL complet        |
+| Fichier                         | Contenu                                   |
+| ------------------------------- | ----------------------------------------- |
+| `CHANGELOG.md`                  | Historique complet des versions           |
+| `docs/routes.md`                | Catalogue complet des 45+ routes          |
+| `docs/architecture-flows.md`    | 9 diagrammes Mermaid                      |
+| `docs/deployment.md`            | Guide de déploiement production           |
+| `docs/emails.md`                | Architecture email, templates, flux       |
+| `docs/observability.md`         | Prometheus, Loki, Tempo, Grafana, alertes |
+| `docs/websockets.md`            | WebSocket temps réel, rooms, scaling      |
+| `docs/jobs-and-workers.md`      | Architecture BullMQ et 5 workers          |
+| `docs/implementation-status.md` | État production-readiness                 |
+| `.env.example`                  | 60+ variables d'environnement documentées |
