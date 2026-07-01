@@ -38,17 +38,17 @@ export class SearchTicketsDto extends PaginationDto {
 
   @ApiPropertyOptional({ description: 'Filtrer par agent assigné (UUID)' })
   @IsOptional()
-  @IsUUID('4')
+  @IsUUID('all')
   assignedTo?: string;
 
   @ApiPropertyOptional({ description: 'Filtrer par équipe assignée (UUID)' })
   @IsOptional()
-  @IsUUID('4')
+  @IsUUID('all')
   assignedTeam?: string;
 
   @ApiPropertyOptional({ description: 'Filtrer par département propriétaire (UUID)' })
   @IsOptional()
-  @IsUUID('4')
+  @IsUUID('all')
   departmentId?: string;
 
   @ApiPropertyOptional({ description: 'Recherche texte (titre, description, numéro, client)' })

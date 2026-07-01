@@ -28,8 +28,9 @@ interface BullMqQueues {
  * 2. NOTIFICATION_QUEUE → persistance en DB (lue au prochain login si offline)
  * 3. EMAIL_QUEUE → email asynchrone pour les événements critiques
  *
- * NOTE : Injecte BullMQ_Queues (connexions partagées) et TelecomWebSocketGateway.
- * Les emails référencent les vrais emails des utilisateurs (lookup DB).
+ * RESILIENCE : Tous les appels BullMQ sont protégés par try/catch.
+ * Une indisponibilité Redis (ex: tests E2E, environnement de dev sans Redis)
+ * ne doit jamais provoquer un 500 sur la requête HTTP principale.
  */
 @Injectable()
 export class TicketNotificationListener {
@@ -51,12 +52,34 @@ export class TicketNotificationListener {
 
   /** Récupère l'email d'un utilisateur depuis la DB */
   private async getUserEmail(userId: string): Promise<string | null> {
-    const [user] = await this.drizzle.db
-      .select({ email: users.email })
-      .from(users)
-      .where(and(eq(users.id, userId), isNull(users.deletedAt)))
-      .limit(1);
-    return user?.email ?? null;
+    try {
+      const [user] = await this.drizzle.db
+        .select({ email: users.email })
+        .from(users)
+        .where(and(eq(users.id, userId), isNull(users.deletedAt)))
+        .limit(1);
+      return user?.email ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  /** Enqueue un job email de façon résiliente */
+  private async sendEmail(data: Record<string, unknown>): Promise<void> {
+    try {
+      await this.emailQueue.add('send-email', data);
+    } catch (err) {
+      this.logger.warn(`Email queue unavailable. Job dropped: ${String(err)}`);
+    }
+  }
+
+  /** Enqueue une notification de façon résiliente */
+  private async createNotification(data: Record<string, unknown>): Promise<void> {
+    try {
+      await this.notificationQueue.add('create-notification', data);
+    } catch (err) {
+      this.logger.warn(`Notification queue unavailable. Job dropped: ${String(err)}`);
+    }
   }
 
   @OnEvent('ticket.created')
@@ -89,7 +112,7 @@ export class TicketNotificationListener {
     // Email de confirmation au créateur
     const creatorEmail = await this.getUserEmail(creatorId);
     if (creatorEmail) {
-      await this.emailQueue.add('send-email', {
+      await this.sendEmail({
         to: creatorEmail,
         subject: `✅ Ticket créé — ${ticketNumber}`,
         template: 'ticketCreated',
@@ -109,7 +132,7 @@ export class TicketNotificationListener {
     });
 
     // Persistance en DB via notification-queue (visible même si offline)
-    await this.notificationQueue.add('create-notification', {
+    await this.createNotification({
       userId: event.assignedTo,
       type: 'TICKET_ASSIGNED',
       title: 'Nouveau ticket assigné',
@@ -121,7 +144,7 @@ export class TicketNotificationListener {
     // Email à l'assigné
     const assigneeEmail = await this.getUserEmail(event.assignedTo);
     if (assigneeEmail) {
-      await this.emailQueue.add('send-email', {
+      await this.sendEmail({
         to: assigneeEmail,
         subject: `📋 Ticket assigné — ID: ${event.ticketId}`,
         template: 'ticketAssigned',
@@ -148,7 +171,7 @@ export class TicketNotificationListener {
     });
 
     // Persistance notification
-    await this.notificationQueue.add('create-notification', {
+    await this.createNotification({
       userId: event.escalatedTo,
       type: 'TICKET_ESCALATED',
       title: 'Ticket escaladé',
@@ -160,7 +183,7 @@ export class TicketNotificationListener {
     // Email
     const escalatedToEmail = await this.getUserEmail(event.escalatedTo);
     if (escalatedToEmail) {
-      await this.emailQueue.add('send-email', {
+      await this.sendEmail({
         to: escalatedToEmail,
         subject: `⚠️ Ticket escaladé — ID: ${event.ticketId}`,
         template: 'ticketAssigned',
@@ -185,7 +208,7 @@ export class TicketNotificationListener {
     });
 
     // Persistance
-    await this.notificationQueue.add('create-notification', {
+    await this.createNotification({
       userId: event.resolvedBy,
       type: 'TICKET_RESOLVED',
       title: 'Ticket résolu',

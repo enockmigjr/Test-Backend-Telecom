@@ -32,6 +32,6 @@ export class CreateUserDto {
   role: string;
 
   @ApiProperty({ description: 'ID du département (UUID)', example: '550e8400-e29b-41d4-a716-446655440000' })
-  @IsUUID('4', { message: "L'ID du département doit être un UUID valide." })
+  @IsUUID('all')
   departmentId: string;
 }

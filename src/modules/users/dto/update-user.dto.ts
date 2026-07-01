@@ -32,6 +32,6 @@ export class UpdateUserDto {
 
   @ApiPropertyOptional({ description: 'ID du département (UUID)' })
   @IsOptional()
-  @IsUUID('4')
+  @IsUUID('all')
   departmentId?: string;
 }

@@ -4,6 +4,9 @@ import request from 'supertest';
 import { AppModule } from '../../src/app.module';
 import { GlobalExceptionFilter } from '../../src/common/filters/global-exception.filter';
 import { TransformInterceptor } from '../../src/common/interceptors/transform.interceptor';
+import { DrizzleProvider } from '@database/drizzle.provider';
+import { departments, users } from '@database/schemas';
+import { eq } from 'drizzle-orm';
 
 /**
  * Tests End-to-End du controle d'acces base sur les roles (RBAC).
@@ -29,15 +32,20 @@ describe("RBAC — Controle d'acces par roles", () => {
   let adminToken: string;
   let agentToken: string;
   let supervisorToken: string;
+  let departmentId: string;
+  let agentUserId: string;
 
   beforeAll(async () => {
     process.env.LOG_LEVEL = 'error';
+    process.env.THROTTLE_LIMIT = '10000';
+    process.env.THROTTLE_AUTH_LIMIT = '10000';
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.setGlobalPrefix('api/v1');
 
     app.useGlobalPipes(
       new ValidationPipe({
@@ -51,6 +59,18 @@ describe("RBAC — Controle d'acces par roles", () => {
     app.useGlobalInterceptors(new TransformInterceptor());
 
     await app.init();
+
+    // Récupérer dynamiquement les données du seed
+    const drizzle = app.get(DrizzleProvider);
+    const [dept] = await drizzle.db.select().from(departments).limit(1);
+    departmentId = dept?.id;
+
+    const [agent] = await drizzle.db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.email, 'agent@telecom.local'))
+      .limit(1);
+    agentUserId = agent?.id;
 
     // Authentification des differents roles
     const adminLogin = await request(app.getHttpServer())
@@ -77,33 +97,34 @@ describe("RBAC — Controle d'acces par roles", () => {
   // Creer un utilisateur (POST /api/v1/users) — Admin uniquement
   // =========================================================================
   describe("POST /api/v1/users — Creation d'utilisateur", () => {
-    const newUserPayload = {
+    const getNewUserPayload = () => ({
       email: 'nouvel-agent@telecom.local',
       password: 'NewAgent@1234',
       firstName: 'Nouvel',
       lastName: 'Agent',
       role: 'TECHNICAL_SUPPORT_ENGINEER',
-      departmentId: 'dept-001',
-    };
+      departmentId,
+    });
 
     it('ADMINISTRATOR doit pouvoir creer un utilisateur → 201', async () => {
+      const payload = getNewUserPayload();
       const res = await request(app.getHttpServer())
         .post('/api/v1/users')
         .set('Authorization', `Bearer ${adminToken}`)
-        .send(newUserPayload)
+        .send(payload)
         .expect(201);
 
       expect(res.body.success).toBe(true);
       expect(res.body.data).toBeDefined();
-      expect(res.body.data.email).toBe(newUserPayload.email);
-      expect(res.body.data.role).toBe(newUserPayload.role);
+      expect(res.body.data.email).toBe(payload.email);
+      expect(res.body.data.role).toBe(payload.role);
     });
 
     it('TECHNICAL_SUPPORT_ENGINEER ne doit PAS pouvoir creer un utilisateur → 403', async () => {
       const res = await request(app.getHttpServer())
         .post('/api/v1/users')
         .set('Authorization', `Bearer ${agentToken}`)
-        .send(newUserPayload)
+        .send(getNewUserPayload())
         .expect(403);
 
       expect(res.body.success).toBe(false);
@@ -115,21 +136,21 @@ describe("RBAC — Controle d'acces par roles", () => {
       const res = await request(app.getHttpServer())
         .post('/api/v1/users')
         .set('Authorization', `Bearer ${supervisorToken}`)
-        .send(newUserPayload)
+        .send(getNewUserPayload())
         .expect(403);
 
       expect(res.body.success).toBe(false);
     });
 
     it("doit retourner 401 sans token d'authentification", async () => {
-      await request(app.getHttpServer()).post('/api/v1/users').send(newUserPayload).expect(401);
+      await request(app.getHttpServer()).post('/api/v1/users').send(getNewUserPayload()).expect(401);
     });
 
     it('doit retourner 400 pour un email invalide', async () => {
       const res = await request(app.getHttpServer())
         .post('/api/v1/users')
         .set('Authorization', `Bearer ${adminToken}`)
-        .send({ ...newUserPayload, email: 'pas-un-email' })
+        .send({ ...getNewUserPayload(), email: 'pas-un-email' })
         .expect(400);
 
       expect(res.body.success).toBe(false);
@@ -211,7 +232,7 @@ describe("RBAC — Controle d'acces par roles", () => {
       const res = await request(app.getHttpServer())
         .post(`/api/v1/tickets/${fakeTicketId}/assign`)
         .set('Authorization', `Bearer ${adminToken}`)
-        .send({ userId: 'agent-001' });
+        .send({ userId: agentUserId });
 
       // Le ticket n'existe pas, donc 404 — mais l'acces est autorise
       expect([200, 404]).toContain(res.status);
@@ -221,7 +242,7 @@ describe("RBAC — Controle d'acces par roles", () => {
       const res = await request(app.getHttpServer())
         .post(`/api/v1/tickets/${fakeTicketId}/assign`)
         .set('Authorization', `Bearer ${agentToken}`)
-        .send({ userId: 'agent-001' })
+        .send({ userId: agentUserId })
         .expect(403);
 
       expect(res.body.success).toBe(false);

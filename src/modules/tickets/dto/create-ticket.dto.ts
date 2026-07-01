@@ -31,11 +31,11 @@ export class CreateTicketDto {
   category: string;
 
   @ApiProperty({ description: 'ID du département propriétaire', example: '550e8400-e29b-41d4-a716-446655440000' })
-  @IsUUID('4', { message: "L'ID du département doit être un UUID valide." })
+  @IsUUID('all')
   departmentId: string;
 
   @ApiProperty({ description: "ID de l'équipe assignée", example: '550e8400-e29b-41d4-a716-446655440000' })
-  @IsUUID('4', { message: "L'ID de l'équipe assignée doit être un UUID valide." })
+  @IsUUID('all')
   assignedTeamId: string;
 
   @ApiPropertyOptional({ description: 'Numéro de compte client' })

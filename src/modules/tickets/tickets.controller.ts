@@ -122,6 +122,7 @@ export class TicketsController {
 
   @Post(':id/assign')
   @Idempotent()
+  @HttpCode(HttpStatus.OK)
   @Roles('ADMINISTRATOR', 'SUPERVISOR')
   @ApiOperation({ summary: 'Assigner un ticket à un agent — idempotent (header Idempotency-Key)' })
   async assign(@Param('id') id: string, @Body() dto: AssignTicketDto, @CurrentUser() user: JwtPayload) {
@@ -130,13 +131,34 @@ export class TicketsController {
 
   @Post(':id/escalate')
   @Idempotent()
+  @HttpCode(HttpStatus.OK)
   @Roles('ADMINISTRATOR', 'SUPERVISOR')
   @ApiOperation({ summary: 'Escalader un ticket — idempotent (header Idempotency-Key)' })
   async escalate(@Param('id') id: string, @Body() dto: EscalateTicketDto, @CurrentUser() user: JwtPayload) {
     return this.ticketsService.escalate(id, dto.userId, dto.departmentId, user.sub, dto.reason);
   }
 
+  @Post(':id/start')
+  @HttpCode(HttpStatus.OK)
+  @Roles(
+    'ADMINISTRATOR',
+    'SUPERVISOR',
+    'CUSTOMER_SERVICE_AGENT',
+    'NOC_ENGINEER',
+    'BILLING_AGENT',
+    'TECHNICAL_SUPPORT_ENGINEER',
+    'FIELD_TECHNICIAN',
+  )
+  @ApiOperation({ summary: 'Démarrer le traitement d’un ticket (ASSIGNED → IN_PROGRESS)' })
+  @ApiParam({ name: 'id', description: 'UUID du ticket' })
+  @ApiResponse({ status: 200, description: 'Ticket en cours de traitement.' })
+  @ApiResponse({ status: 400, description: 'Transition invalide.' })
+  async start(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
+    return this.ticketsService.changeStatus(id, 'IN_PROGRESS', user.sub);
+  }
+
   @Post(':id/resolve')
+  @HttpCode(HttpStatus.OK)
   @Roles(
     'ADMINISTRATOR',
     'SUPERVISOR',
@@ -152,6 +174,7 @@ export class TicketsController {
   }
 
   @Post(':id/close')
+  @HttpCode(HttpStatus.OK)
   @Roles('ADMINISTRATOR', 'SUPERVISOR')
   @ApiOperation({ summary: 'Clôturer un ticket résolu' })
   async close(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
@@ -159,6 +182,7 @@ export class TicketsController {
   }
 
   @Post(':id/reopen')
+  @HttpCode(HttpStatus.OK)
   @Roles('ADMINISTRATOR', 'SUPERVISOR')
   @ApiOperation({ summary: 'Réouvrir un ticket clôturé' })
   async reopen(@Param('id') id: string, @CurrentUser() user: JwtPayload) {

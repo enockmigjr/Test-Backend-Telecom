@@ -1,9 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
+import { eq } from 'drizzle-orm';
 import { AppModule } from '../../src/app.module';
 import { GlobalExceptionFilter } from '../../src/common/filters/global-exception.filter';
 import { TransformInterceptor } from '../../src/common/interceptors/transform.interceptor';
+import { DrizzleProvider } from '../../src/database/drizzle.provider';
+import { departments, users } from '../../src/database/schemas';
 
 /**
  * Tests End-to-End du cycle de vie complet d'un ticket d'incident.
@@ -28,16 +31,22 @@ describe('Tickets — Workflow E2E', () => {
   let app: INestApplication;
   let adminToken: string;
   let createdTicketId: string;
+  let departmentId: string;
+  let assignedTeamId: string;
+  let agentUserId: string;
 
   beforeAll(async () => {
     // Reduire le bruit des logs pendant les tests
     process.env.LOG_LEVEL = 'error';
+    process.env.THROTTLE_LIMIT = '10000';
+    process.env.THROTTLE_AUTH_LIMIT = '10000';
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.setGlobalPrefix('api/v1');
 
     // Configurer comme en production
     app.useGlobalPipes(
@@ -53,12 +62,28 @@ describe('Tickets — Workflow E2E', () => {
 
     await app.init();
 
+    // Récupérer dynamiquement les données du seed
+    const drizzle = app.get(DrizzleProvider);
+    const depts = await drizzle.db.select().from(departments).limit(2);
+    departmentId = depts[0]?.id;
+    assignedTeamId = depts[1]?.id || depts[0]?.id;
+
+    const [agent] = await drizzle.db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.email, 'agent@telecom.local'))
+      .limit(1);
+    agentUserId = agent?.id;
+
     // Authentification admin pour les operations superviseur
     const loginRes = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
       .send({ email: 'admin@telecom.local', password: 'Admin@1234' });
 
-    adminToken = loginRes.body.data.accessToken;
+    console.log('LOGIN RESP STATUS:', loginRes.status);
+    console.log('LOGIN RESP BODY:', JSON.stringify(loginRes.body));
+
+    adminToken = loginRes.body?.data?.accessToken || '';
   });
 
   afterAll(async () => {
@@ -76,8 +101,8 @@ describe('Tickets — Workflow E2E', () => {
           priority: 'HIGH',
           severity: 'S2',
           category: 'NETWORK',
-          departmentId: 'dept-001',
-          assignedTeamId: 'dept-002',
+          departmentId,
+          assignedTeamId,
           customerAccountNumber: 'CUST-12345',
           customerName: 'Entreprise ABC',
           customerContact: 'contact@abc.local',
@@ -112,8 +137,8 @@ describe('Tickets — Workflow E2E', () => {
           priority: 'HIGH',
           severity: 'S2',
           category: 'NETWORK',
-          departmentId: 'dept-001',
-          assignedTeamId: 'dept-002',
+          departmentId,
+          assignedTeamId,
         })
         .expect(400);
 
@@ -130,8 +155,8 @@ describe('Tickets — Workflow E2E', () => {
           priority: 'URGENT', // Valeur invalide
           severity: 'S2',
           category: 'NETWORK',
-          departmentId: 'dept-001',
-          assignedTeamId: 'dept-002',
+          departmentId,
+          assignedTeamId,
         })
         .expect(400);
 
@@ -147,8 +172,8 @@ describe('Tickets — Workflow E2E', () => {
           priority: 'MEDIUM',
           severity: 'S3',
           category: 'OTHER',
-          departmentId: 'dept-001',
-          assignedTeamId: 'dept-002',
+          departmentId,
+          assignedTeamId,
         })
         .expect(401);
     });
@@ -160,7 +185,7 @@ describe('Tickets — Workflow E2E', () => {
         .post(`/api/v1/tickets/${createdTicketId}/assign`)
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
-          userId: 'agent-001', // Agent technique
+          userId: agentUserId,
           reason: 'Competence reseau requise',
         })
         .expect(200);
@@ -175,14 +200,24 @@ describe('Tickets — Workflow E2E', () => {
         .post('/api/v1/tickets/00000000-0000-0000-0000-000000000000/assign')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
-          userId: 'agent-001',
+          userId: agentUserId,
         })
         .expect(404);
     });
   });
 
   describe('POST /api/v1/tickets/:id/resolve — Resolution', () => {
-    it('doit retourner 200 pour une resolution valide', async () => {
+    it('doit passer en IN_PROGRESS puis en RESOLVED', async () => {
+      // Étape 1 : passer en IN_PROGRESS (transition ASSIGNED → IN_PROGRESS)
+      const inProgressRes = await request(app.getHttpServer())
+        .post(`/api/v1/tickets/${createdTicketId}/start`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200);
+
+      expect(inProgressRes.body.success).toBe(true);
+      expect(inProgressRes.body.data.status).toBe('IN_PROGRESS');
+
+      // Étape 2 : résoudre (transition IN_PROGRESS → RESOLVED)
       const res = await request(app.getHttpServer())
         .post(`/api/v1/tickets/${createdTicketId}/resolve`)
         .set('Authorization', `Bearer ${adminToken}`)
@@ -194,7 +229,7 @@ describe('Tickets — Workflow E2E', () => {
   });
 
   describe('POST /api/v1/tickets/:id/close — Cloture', () => {
-    it('doit retourner 200 pour une cloture valide', async () => {
+    it('doit retourner 200 pour une cloture valide (depuis RESOLVED)', async () => {
       const res = await request(app.getHttpServer())
         .post(`/api/v1/tickets/${createdTicketId}/close`)
         .set('Authorization', `Bearer ${adminToken}`)
@@ -206,7 +241,7 @@ describe('Tickets — Workflow E2E', () => {
   });
 
   describe('POST /api/v1/tickets/:id/reopen — Reouverture', () => {
-    it('doit retourner 200 pour une reouverture valide', async () => {
+    it('doit retourner 200 pour une reouverture valide (depuis CLOSED)', async () => {
       const res = await request(app.getHttpServer())
         .post(`/api/v1/tickets/${createdTicketId}/reopen`)
         .set('Authorization', `Bearer ${adminToken}`)
@@ -228,9 +263,11 @@ describe('Tickets — Workflow E2E', () => {
       const history = res.body.data;
       expect(Array.isArray(history)).toBe(true);
 
-      // Verifier que les etapes du workflow sont presentes
-      const statuses = history.map((entry: { status?: string }) => entry.status).filter(Boolean);
-      expect(statuses.length).toBeGreaterThanOrEqual(1);
+      // L'historique contient les actions (TICKET_CREATED, ASSIGNED, STATUS_CHANGED...)
+      expect(history.length).toBeGreaterThanOrEqual(1);
+      const actions = history.map((entry: { action?: string }) => entry.action).filter(Boolean);
+      expect(actions.length).toBeGreaterThanOrEqual(1);
+      expect(actions).toContain('TICKET_CREATED');
     });
 
     it('doit retourner 401 sans authentification', async () => {

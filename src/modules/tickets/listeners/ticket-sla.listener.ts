@@ -14,6 +14,9 @@ interface BullMqQueues {
  * Planifie des vérifications SLA retardées dans la SLA_QUEUE.
  *
  * NOTE : Injecte le token global 'BullMQ_Queues' — connexions Redis partagées.
+ *
+ * RESILIENCE : Les appels BullMQ sont dans un try/catch pour ne jamais
+ * bloquer la requête HTTP principale en cas d'indisponibilité Redis.
  */
 @Injectable()
 export class TicketSlaListener {
@@ -31,14 +34,18 @@ export class TicketSlaListener {
     const delay = this.calculateDelay(resolutionDueAt);
 
     if (delay > 0) {
-      await this.slaQueue.add(
-        'check_breach',
-        { ticketId: event.ticket['id'] as string, action: 'check_breach' },
-        { delay, jobId: `sla-breach-${event.ticket['id'] as string}` },
-      );
-      this.logger.debug(
-        `Vérification SLA planifiée dans ${Math.round(delay / 60000)}min pour ticket ${event.ticket['ticketNumber']}`,
-      );
+      try {
+        await this.slaQueue.add(
+          'check_breach',
+          { ticketId: event.ticket['id'] as string, action: 'check_breach' },
+          { delay, jobId: `sla-breach-${event.ticket['id'] as string}` },
+        );
+        this.logger.debug(
+          `Vérification SLA planifiée dans ${Math.round(delay / 60000)}min pour ticket ${event.ticket['ticketNumber']}`,
+        );
+      } catch (err) {
+        this.logger.warn(`SLA queue unavailable. Breach check not scheduled: ${String(err)}`);
+      }
     }
   }
 

@@ -22,6 +22,10 @@ interface BullMqQueues {
  *
  * NOTE : On injecte le token global 'BullMQ_Queues' au lieu de créer
  * une nouvelle instance Queue — évite les connexions Redis dupliquées.
+ *
+ * RESILIENCE : Chaque ajout de job est entouré d'un try/catch afin
+ * qu'une indisponibilité Redis ne provoque pas d'erreur 500 sur la requête HTTP
+ * d'origine. L'audit est un effet de bord non bloquant.
  */
 @Injectable()
 export class TicketAuditListener {
@@ -33,9 +37,18 @@ export class TicketAuditListener {
     return this.queues[AUDIT_QUEUE] ?? this.queues['audit'];
   }
 
+  private async enqueue(jobName: string, data: Record<string, unknown>): Promise<void> {
+    try {
+      await this.auditQueue.add(jobName, data);
+    } catch (err) {
+      // L'audit est un effet de bord — ne jamais bloquer la requête principale
+      this.logger.warn(`Audit queue unavailable (${String(err)}). Job "${jobName}" dropped.`);
+    }
+  }
+
   @OnEvent('ticket.created')
   async handleCreated(event: TicketCreatedEvent): Promise<void> {
-    await this.auditQueue.add('audit-log', {
+    await this.enqueue('audit-log', {
       userId: event.userId,
       action: 'TICKET_CREATED',
       entityType: 'ticket',
@@ -50,7 +63,7 @@ export class TicketAuditListener {
 
   @OnEvent('ticket.assigned')
   async handleAssigned(event: TicketAssignedEvent): Promise<void> {
-    await this.auditQueue.add('audit-log', {
+    await this.enqueue('audit-log', {
       userId: event.assignedBy,
       action: 'TICKET_ASSIGNED',
       entityType: 'ticket',
@@ -61,7 +74,7 @@ export class TicketAuditListener {
 
   @OnEvent('ticket.status_changed')
   async handleStatusChanged(event: TicketStatusChangedEvent): Promise<void> {
-    await this.auditQueue.add('audit-log', {
+    await this.enqueue('audit-log', {
       userId: event.userId,
       action: 'STATUS_CHANGED',
       entityType: 'ticket',
@@ -73,7 +86,7 @@ export class TicketAuditListener {
 
   @OnEvent('ticket.closed')
   async handleClosed(event: TicketClosedEvent): Promise<void> {
-    await this.auditQueue.add('audit-log', {
+    await this.enqueue('audit-log', {
       userId: event.closedBy,
       action: 'TICKET_CLOSED',
       entityType: 'ticket',
@@ -83,7 +96,7 @@ export class TicketAuditListener {
 
   @OnEvent('ticket.reopened')
   async handleReopened(event: TicketReopenedEvent): Promise<void> {
-    await this.auditQueue.add('audit-log', {
+    await this.enqueue('audit-log', {
       userId: event.reopenedBy,
       action: 'TICKET_REOPENED',
       entityType: 'ticket',
