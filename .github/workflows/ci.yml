@@ -9,6 +9,8 @@ on:
 env:
   PNPM_VERSION: '10'
   NODE_VERSION: '22'
+  # Désactiver Husky en CI (pas de hooks git nécessaires)
+  HUSKY: '0'
 
 jobs:
   # ─── Qualité de code ────────────────────────────────────
