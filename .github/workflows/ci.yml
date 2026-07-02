@@ -183,7 +183,6 @@ jobs:
   zap-scan:
     name: 🔐 OWASP ZAP Scan
     runs-on: ubuntu-latest
-    needs: build
     services:
       postgres:
         image: postgres:16-alpine
@@ -223,6 +222,9 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      - name: Build project
+        run: pnpm run build
+
       - name: Push DB + seed
         run: |
           pnpm run db:push
@@ -230,11 +232,14 @@ jobs:
         env:
           DATABASE_URL: ${{ env.DATABASE_URL }}
 
-      - name: Start API in background
+      - name: Start API
         run: |
-          pnpm run start:prod &
-          sleep 10
-          curl --retry 5 --retry-delay 2 http://localhost:3000/api/v1/health
+          node dist/main &
+          echo "⏳ Waiting for API..."
+          for i in $(seq 1 30); do
+            curl -s http://localhost:3000/api/v1/health && break
+            sleep 2
+          done
         env:
           DATABASE_URL: ${{ env.DATABASE_URL }}
           REDIS_URL: ${{ env.REDIS_URL }}
