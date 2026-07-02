@@ -1,4 +1,10 @@
-{{/* Template de notification Telecom — utilisé par Alertmanager */}}
+{{/* ============================================================
+   Template de notification Telecom — utilisé par Alertmanager
+
+   Pour la production, remplacer les URLs dans le footer :
+     - localhost:3001 → votre URL Grafana
+     - localhost:9090 → votre URL Prometheus
+   ============================================================ */}}
 
 {{ define "telecom.email.html" }}
 <!DOCTYPE html>
@@ -56,7 +62,8 @@
       {{ end }}
     </div>
     <div class="footer">
-      <p>Telecom Ticket Management System — <a href="http://${GRAFANA_HOST:-localhost}:${GRAFANA_PORT:-3001}">Grafana</a> | <a href="http://${PROMETHEUS_HOST:-localhost}:${PROMETHEUS_PORT:-9090}">Prometheus</a></p>
+      {{/* Prod: remplacer localhost:3001 et localhost:9090 par vos URLs réelles */}}
+      <p>Telecom Ticket Management System — <a href="http://localhost:3001">Grafana</a> | <a href="http://localhost:9090">Prometheus</a></p>
       <p>Pour modifier les règles d'alerte : <code>prometheus/alert.rules.yml</code></p>
     </div>
   </div>

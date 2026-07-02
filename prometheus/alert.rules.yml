@@ -1,3 +1,13 @@
+# ============================================================
+# Prometheus — Règles d'Alerte
+# ============================================================
+# Les runbook_url ci-dessous pointent vers Grafana (port 3001).
+#
+# Pour la production :
+#   - Remplacer localhost:3001 par votre URL Grafana réelle
+#   - ex: https://grafana.votre-domaine.com/d/telecom-application
+# ============================================================
+
 groups:
   - name: telecom-alerts
     rules:
@@ -12,7 +22,7 @@ groups:
         annotations:
           summary: 'API Télécom indisponible'
           description: "L'API NestJS ({{ $labels.instance }}) ne répond plus depuis 2 minutes. Vérifier les logs avec: docker logs telecom-api"
-          runbook_url: 'http://${GRAFANA_HOST:-localhost}:${GRAFANA_PORT:-3001}/d/telecom-application'
+          runbook_url: 'http://localhost:3001/d/telecom-application'  # Prod: votre URL Grafana
           action: "1. Vérifier `docker logs telecom-api`\n2. Vérifier `docker compose ps api`\n3. Redémarrer avec `docker compose restart api` si nécessaire"
 
       - alert: HighErrorRate
@@ -25,7 +35,7 @@ groups:
         annotations:
           summary: "Taux d'erreur 5xx élevé"
           description: 'Plus de 5% de requêtes retournent une erreur 5xx ({{ $value | humanizePercentage }}) sur {{ $labels.route }}.'
-          runbook_url: 'http://${GRAFANA_HOST:-localhost}:${GRAFANA_PORT:-3001}/d/telecom-application'
+          runbook_url: 'http://localhost:3001/d/telecom-application'  # Prod: votre URL Grafana
           action: "1. Vérifier les logs d'erreur dans Grafana → Loki\n2. Filtrer par correlationId affecté\n3. Vérifier PostgreSQL: `docker logs telecom-postgres`"
 
       - alert: HighLatency
@@ -38,7 +48,7 @@ groups:
         annotations:
           summary: 'Latence P95 élevée'
           description: 'La latence P95 dépasse 2s ({{ $value }}s) sur {{ $labels.route }}.'
-          runbook_url: 'http://${GRAFANA_HOST:-localhost}:${GRAFANA_PORT:-3001}/d/telecom-application'
+          runbook_url: 'http://localhost:3001/d/telecom-application'  # Prod: votre URL Grafana
           action: "1. Vérifier les requêtes lentes dans Tempo (Grafana → Explore → Tempo)\n2. Vérifier les connexions DB: `telecom_db_pool_connections`\n3. Vérifier Redis: `docker logs telecom-redis`"
 
       # ─── SLA ──────────────────────────────────────────────
@@ -52,7 +62,7 @@ groups:
         annotations:
           summary: 'Violations SLA détectées'
           description: '{{ $value }} violations SLA dans les 15 dernières minutes. Priorité: {{ $labels.priority }}.'
-          runbook_url: 'http://${GRAFANA_HOST:-localhost}:${GRAFANA_PORT:-3001}/d/telecom-business'
+          runbook_url: 'http://localhost:3001/d/telecom-business'  # Prod: votre URL Grafana
           action: "1. Vérifier le dashboard business pour les tickets en souffrance\n2. Réaffecter les tickets non traités\n3. Escalader si nécessaire"
 
       # ─── Base de Données ──────────────────────────────────
@@ -66,7 +76,7 @@ groups:
         annotations:
           summary: 'Connexions DB élevées'
           description: '{{ $value }} connexions actives au pool PostgreSQL.'
-          runbook_url: 'http://${GRAFANA_HOST:-localhost}:${GRAFANA_PORT:-3001}/d/telecom-application'
+          runbook_url: 'http://localhost:3001/d/telecom-application'  # Prod: votre URL Grafana
           action: "1. Vérifier les sessions actives: `SELECT count(*) FROM pg_stat_activity;`\n2. Identifier les connexions idle: `SELECT * FROM pg_stat_activity WHERE state = 'idle';`"
 
       # ─── Système ──────────────────────────────────────────
@@ -80,5 +90,5 @@ groups:
         annotations:
           summary: 'Mémoire heap élevée'
           description: '{{ $value | humanizePercentage }} de la heap mémoire utilisée.'
-          runbook_url: 'http://${GRAFANA_HOST:-localhost}:${GRAFANA_PORT:-3001}/d/telecom-application'
+          runbook_url: 'http://localhost:3001/d/telecom-application'  # Prod: votre URL Grafana
           action: "1. Vérifier les fuites mémoire via le dashboard\n2. Redémarrer l'API si nécessaire: `docker compose restart api`"
