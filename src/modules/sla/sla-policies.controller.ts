@@ -30,7 +30,7 @@ export class SlaPoliciesController {
 
   @Get(':id')
   @ApiOperation({
-    summary: 'Détails d\'une politique SLA',
+    summary: "Détails d'une politique SLA",
     description:
       'Retourne une politique SLA par son UUID avec ses délais (firstResponseMinutes, resolutionMinutes).\n\n**Rôles autorisés :** Tous les rôles authentifiés',
   })

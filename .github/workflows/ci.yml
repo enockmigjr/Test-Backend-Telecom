@@ -179,6 +179,80 @@ jobs:
         run: pnpm audit --audit-level=high
         continue-on-error: true
 
+  # ─── OWASP ZAP Security Scan ────────────────────────────
+  zap-scan:
+    name: 🔐 OWASP ZAP Scan
+    runs-on: ubuntu-latest
+    needs: build
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: telecom
+          POSTGRES_PASSWORD: telecom_secret
+          POSTGRES_DB: telecom_tickets_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+    env:
+      DATABASE_URL: postgresql://telecom:telecom_secret@localhost:5432/telecom_tickets_test
+      REDIS_URL: redis://localhost:6379
+      NODE_ENV: test
+      JWT_ACCESS_SECRET: test-access-secret-min-32-chars!!
+      JWT_REFRESH_SECRET: test-refresh-secret-min-32-chars!!
+      LOG_LEVEL: error
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Push DB + seed
+        run: |
+          pnpm run db:push
+          pnpm run db:seed
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+
+      - name: Start API in background
+        run: |
+          pnpm run start:prod &
+          sleep 10
+          curl --retry 5 --retry-delay 2 http://localhost:3000/api/v1/health
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+          REDIS_URL: ${{ env.REDIS_URL }}
+          NODE_ENV: ${{ env.NODE_ENV }}
+          JWT_ACCESS_SECRET: ${{ env.JWT_ACCESS_SECRET }}
+          JWT_REFRESH_SECRET: ${{ env.JWT_REFRESH_SECRET }}
+          LOG_LEVEL: ${{ env.LOG_LEVEL }}
+
+      - name: OWASP ZAP Baseline Scan
+        uses: zaproxy/action-baseline@v0.12.0
+        with:
+          target: 'http://localhost:3000'
+          fail_on_risk: 'High'
+
+      - name: Stop API
+        if: always()
+        run: kill $(lsof -t -i:3000) || true
+
   # ─── Docker Build Check ──────────────────────────────────
   docker:
     name: 🐳 Docker Build

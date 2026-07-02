@@ -30,9 +30,8 @@ export class DepartmentsController {
 
   @Get(':id')
   @ApiOperation({
-    summary: 'Détails d\'un département',
-    description:
-      'Retourne un département par son UUID.\n\n**Rôles autorisés :** Tous les rôles authentifiés',
+    summary: "Détails d'un département",
+    description: 'Retourne un département par son UUID.\n\n**Rôles autorisés :** Tous les rôles authentifiés',
   })
   @ApiParam({ name: 'id', description: 'UUID du département', example: '01922b3c-...' })
   @ApiResponse({ status: 200, description: 'Département trouvé.' })
@@ -67,7 +66,7 @@ export class DepartmentsController {
   @ApiOperation({
     summary: 'Modifier un département (Admin uniquement)',
     description:
-      'Met à jour le nom et/ou la description d\'un département.\n\n**Rôles autorisés :** ADMINISTRATOR uniquement',
+      "Met à jour le nom et/ou la description d'un département.\n\n**Rôles autorisés :** ADMINISTRATOR uniquement",
   })
   @ApiParam({ name: 'id', description: 'UUID du département' })
   @ApiBody({ type: UpdateDepartmentDto })
@@ -88,7 +87,7 @@ export class DepartmentsController {
   @ApiOperation({
     summary: 'Supprimer un département (Admin uniquement, soft delete)',
     description:
-      'Supprime un département (soft delete) si aucun utilisateur ou ticket n\'y est lié.\n\n**Rôles autorisés :** ADMINISTRATOR uniquement',
+      "Supprime un département (soft delete) si aucun utilisateur ou ticket n'y est lié.\n\n**Rôles autorisés :** ADMINISTRATOR uniquement",
   })
   @ApiParam({ name: 'id', description: 'UUID du département' })
   @ApiResponse({ status: 204, description: 'Département supprimé.' })

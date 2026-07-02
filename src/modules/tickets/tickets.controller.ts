@@ -166,7 +166,7 @@ export class TicketsController {
   @ApiOperation({
     summary: 'Escalader un ticket -- idempotent (header Idempotency-Key)',
     description:
-      "Escalade un ticket vers un autre département ou un autre agent. Utile quand le niveau de support actuel ne peut pas résoudre le problème.\n\n**Rôles autorisés :** ADMINISTRATOR, SUPERVISOR",
+      'Escalade un ticket vers un autre département ou un autre agent. Utile quand le niveau de support actuel ne peut pas résoudre le problème.\n\n**Rôles autorisés :** ADMINISTRATOR, SUPERVISOR',
   })
   @ApiParam({ name: 'id', description: 'UUID du ticket' })
   @ApiBody({ type: EscalateTicketDto })
@@ -223,7 +223,7 @@ export class TicketsController {
   @ApiOperation({
     summary: 'Marquer un ticket comme résolu (IN_PROGRESS -> RESOLVED)',
     description:
-      "Fait passer le statut du ticket de IN_PROGRESS à RESOLVED. Le ticket sera ensuite vérifié avant clôture.\n\n**Rôles autorisés :** Tous les rôles authentifiés (avec accès au ticket)",
+      'Fait passer le statut du ticket de IN_PROGRESS à RESOLVED. Le ticket sera ensuite vérifié avant clôture.\n\n**Rôles autorisés :** Tous les rôles authentifiés (avec accès au ticket)',
   })
   @ApiParam({ name: 'id', description: 'UUID du ticket' })
   @ApiResponse({ status: 200, description: 'Ticket marqué comme résolu (RESOLVED).' })
@@ -241,9 +241,9 @@ export class TicketsController {
   @HttpCode(HttpStatus.OK)
   @Roles('ADMINISTRATOR', 'SUPERVISOR')
   @ApiOperation({
-    summary: "Clôturer un ticket résolu (RESOLVED -> CLOSED)",
+    summary: 'Clôturer un ticket résolu (RESOLVED -> CLOSED)',
     description:
-      "Ferme définitivement un ticket résolu. Seuls ADMINISTRATOR et SUPERVISOR peuvent clôturer.\n\n**Rôles autorisés :** ADMINISTRATOR, SUPERVISOR",
+      'Ferme définitivement un ticket résolu. Seuls ADMINISTRATOR et SUPERVISOR peuvent clôturer.\n\n**Rôles autorisés :** ADMINISTRATOR, SUPERVISOR',
   })
   @ApiParam({ name: 'id', description: 'UUID du ticket' })
   @ApiResponse({ status: 200, description: 'Ticket clôturé (CLOSED).' })
@@ -261,7 +261,7 @@ export class TicketsController {
   @HttpCode(HttpStatus.OK)
   @Roles('ADMINISTRATOR', 'SUPERVISOR')
   @ApiOperation({
-    summary: "Réouvrir un ticket clôturé (CLOSED -> REOPENED)",
+    summary: 'Réouvrir un ticket clôturé (CLOSED -> REOPENED)',
     description:
       "Réouvre un ticket précédemment clôturé, généralement parce que le problème n'est pas entièrement résolu.\n\n**Rôles autorisés :** ADMINISTRATOR, SUPERVISOR",
   })
