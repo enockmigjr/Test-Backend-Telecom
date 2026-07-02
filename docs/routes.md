@@ -182,6 +182,6 @@ En production, protéger avec `BULLBOARD_USER` et `BULLBOARD_PASSWORD` dans `.en
 
 ---
 
-**Total: 49 routes sur 14 contrôleurs (dont 1 route admin BullBoard)**
+**Total: 48 routes sur 14 contrôleurs (dont 1 route admin BullBoard)**
 
 ---

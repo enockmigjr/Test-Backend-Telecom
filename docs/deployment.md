@@ -127,7 +127,17 @@ scrape_configs:
 | `telecom_db_pool_connections`           | Gauge     | —                          | Connexions DB            |
 | `telecom_nodejs_*`                      | Default   | —                          | CPU, mémoire, event loop |
 
-## 6. Logs
+### Token Cleanup
+
+Un cron quotidien (3h du matin) nettoie les tokens de rafraîchissement expirés ou révoqués depuis plus de 30 jours. Il logge le nombre de tokens supprimés :
+
+```bash
+# Vérifier que le cleanup s'exécute
+docker compose logs api | grep "TokenCleanup"
+# Exemple: {"msg":"TokenCleanup: 42 refresh_tokens supprimés","level":30}
+```
+
+## 7. Logs
 
 Les logs sont émis au format JSON structuré via Pino.
 En production, les logs sont écrits sur stdout (capturés par Docker).
@@ -141,7 +151,7 @@ docker compose logs -f api
 docker compose logs api | grep '"level":50'
 ```
 
-## 7. Sécurité Checklist
+## 8. Sécurité Checklist
 
 - [ ] Changer les secrets JWT par défaut
 - [ ] Configurer CORS pour le domaine de production
@@ -153,7 +163,7 @@ docker compose logs api | grep '"level":50'
 - [ ] Vérifier que `NODE_ENV=production`
 - [ ] Scanner les vulnérabilités: `pnpm audit`
 
-## 8. Scaling
+## 9. Scaling
 
 L'application est **stateless** et conçue pour le scaling horizontal:
 
@@ -168,7 +178,7 @@ docker compose up -d --scale api=3
 - **Files d'attente**: BullMQ via Redis partagé
 - **WebSocket**: Nécessite un adapter Redis pour multi-instance (à configurer)
 
-## 9. Backup
+## 10. Backup
 
 ```bash
 # Backup PostgreSQL
@@ -178,7 +188,7 @@ docker compose exec postgres pg_dump -U telecom telecom_tickets > backup.sql
 docker compose exec -T postgres psql -U telecom telecom_tickets < backup.sql
 ```
 
-## 10. Troubleshooting
+## 11. Troubleshooting
 
 | Problème                  | Solution                                                               |
 | ------------------------- | ---------------------------------------------------------------------- |
