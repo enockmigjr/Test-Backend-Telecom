@@ -63,10 +63,13 @@ services:
       DATABASE_USER: telecom
       DATABASE_PASSWORD: telecom_secret
       DATABASE_NAME: telecom_tickets
-      DATABASE_URL: ${DATABASE_URL:-postgresql://telecom:telecom_secret@postgres:5432/telecom_tickets}
-      REDIS_HOST: ${REDIS_HOST:-redis}
-      REDIS_PORT: ${REDIS_PORT:-6379}
-      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      # ⚠️ Pour Docker, ces variables DOIVENT pointer vers les noms de service Docker.
+      #    Si votre .env a REDIS_HOST=localhost, il sera ignoré au profit
+      #    de la valeur par défaut ci-dessous (redis). Le .env est pour le dev local.
+      DATABASE_URL: ${DOCKER_DATABASE_URL:-postgresql://telecom:telecom_secret@postgres:5432/telecom_tickets}
+      REDIS_HOST: ${DOCKER_REDIS_HOST:-redis}
+      REDIS_PORT: ${DOCKER_REDIS_PORT:-6379}
+      REDIS_URL: ${DOCKER_REDIS_URL:-redis://redis:6379}
       OTEL_ENABLED: 'true'
       OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4318/v1/traces
     volumes:

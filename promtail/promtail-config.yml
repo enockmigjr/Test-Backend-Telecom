@@ -133,16 +133,67 @@ scrape_configs:
                 service_name: nginx
                 log_type: proxy
 
-      # ── Services d'infrastructure (log_level natif) ──
+      # ── Prometheus ──
       - match:
-          selector: '{service=~"prometheus|loki|tempo|grafana|promtail|alertmanager"}'
+          selector: '{service="prometheus"}'
           stages:
             - labels:
                 level:
             - static_labels:
-                service_name: '{{ .service }}'
+                service_name: prometheus
                 log_type: infrastructure
 
+      # ── Loki ──
+      - match:
+          selector: '{service="loki"}'
+          stages:
+            - labels:
+                level:
+            - static_labels:
+                service_name: loki
+                log_type: infrastructure
+
+      # ── Tempo ──
+      - match:
+          selector: '{service="tempo"}'
+          stages:
+            - labels:
+                level:
+            - static_labels:
+                service_name: tempo
+                log_type: infrastructure
+
+      # ── Grafana ──
+      - match:
+          selector: '{service="grafana"}'
+          stages:
+            - labels:
+                level:
+            - static_labels:
+                service_name: grafana
+                log_type: infrastructure
+
+      # ── Promtail ──
+      - match:
+          selector: '{service="promtail"}'
+          stages:
+            - labels:
+                level:
+            - static_labels:
+                service_name: promtail
+                log_type: infrastructure
+
+      # ── Alertmanager ──
+      - match:
+          selector: '{service="alertmanager"}'
+          stages:
+            - labels:
+                level:
+            - static_labels:
+                service_name: alertmanager
+                log_type: infrastructure
+
+      # ── Uptime Kuma ──
       - match:
           selector: '{service="uptime-kuma"}'
           stages:
@@ -152,6 +203,7 @@ scrape_configs:
                 service_name: uptime-kuma
                 log_type: infrastructure
 
+      # ── Mailpit ──
       - match:
           selector: '{service="mailpit"}'
           stages:
@@ -159,6 +211,7 @@ scrape_configs:
                 service_name: mailpit
                 log_type: infrastructure
 
+      # ── Fallback : conteneurs non identifiés ──
       - match:
           selector: '{service!~"api|postgres|redis|nginx|prometheus|loki|tempo|grafana|promtail|alertmanager|uptime-kuma|mailpit"}'
           stages:
