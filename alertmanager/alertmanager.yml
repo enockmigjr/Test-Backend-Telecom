@@ -1,15 +1,13 @@
 global:
   resolve_timeout: 5m
-  smtp_smarthost: '${ALERTMANAGER_SMTP_HOST:-mailpit}:${ALERTMANAGER_SMTP_PORT:-1025}'
-  smtp_from: '${ALERTMANAGER_SMTP_FROM:-alertmanager@telecom-tickets.local}'
+  smtp_smarthost: 'mailpit:1025'
+  smtp_from: 'alertmanager@telecom-tickets.local'
   smtp_require_tls: false
   smtp_hello: 'telecom-tickets.local'
 
-# Templates pour les notifications
 templates:
   - '/etc/alertmanager/templates/telecom.tmpl'
 
-# Routage des alertes
 route:
   receiver: 'default'
   group_by: ['alertname', 'severity']
@@ -18,7 +16,6 @@ route:
   repeat_interval: 4h
 
   routes:
-    # Alertes critiques → email + WhatsApp
     - match:
         severity: critical
       receiver: 'critical-alerts'
@@ -26,19 +23,16 @@ route:
       group_interval: 2m
       repeat_interval: 1h
 
-    # Alertes warning → email seulement
     - match:
         severity: warning
       receiver: 'warning-alerts'
       group_interval: 10m
       repeat_interval: 8h
 
-    # Alertes info → pas de notification (log only)
     - match:
         severity: info
       receiver: 'null'
 
-# Inhibitions : une alerte ApiDown supprime les autres alertes
 inhibit_rules:
   - source_match:
       alertname: 'ApiDown'
@@ -47,38 +41,31 @@ inhibit_rules:
     equal: ['service']
 
 receivers:
-  # ─── Receiver par défaut (log interne) ──────────────────────
   - name: 'default'
     email_configs:
-      - to: '${ALERTMANAGER_DEFAULT_EMAIL:-ops@telecom-tickets.local}'
+      - to: 'ops@telecom-tickets.local'
         headers:
           Subject: '[Telecom] {{ .GroupLabels.alertname }} ({{ .GroupLabels.severity }})'
         html: '{{ template "telecom.email.html" . }}'
 
-  # ─── Alertes critiques : Email + Webhook ──────────────────────
   - name: 'critical-alerts'
     email_configs:
-      - to: '${ALERTMANAGER_CRITICAL_EMAIL:-oncall@telecom-tickets.local}'
+      - to: 'oncall@telecom-tickets.local'
         headers:
           Subject: '[CRITICAL] {{ .GroupLabels.alertname }} — Action requise'
         html: '{{ template "telecom.email.html" . }}'
-    # WhatsApp via CallMeBot — pour la production, remplacer par vos propres
-    # identifiants dans les variables d'environnement :
-    #   ALERTMANAGER_WHATSAPP_PHONE (défaut: 22967391224)
-    #   ALERTMANAGER_WHATSAPP_APIKEY (défaut: 7499427)
+    # WhatsApp via CallMeBot — configurable via variables d'environnement dans docker-compose
     webhook_configs:
-      - url: 'https://api.callmebot.com/whatsapp.php?phone=${ALERTMANAGER_WHATSAPP_PHONE:-22967391224}&text=ALERTE%20Telecom%20Ticket%20Management&apikey=${ALERTMANAGER_WHATSAPP_APIKEY:-7499427}'
+      - url: 'https://api.callmebot.com/whatsapp.php?phone=22967391224&text=ALERTE%20Telecom%20Ticket%20Management&apikey=7499427'
         send_resolved: true
         http_config:
           follow_redirects: true
 
-  # ─── Alertes warning : Email seulement ──────────────────────
   - name: 'warning-alerts'
     email_configs:
-      - to: '${ALERTMANAGER_WARNING_EMAIL:-ops@telecom-tickets.local}'
+      - to: 'ops@telecom-tickets.local'
         headers:
           Subject: '[WARNING] {{ .GroupLabels.alertname }}'
         html: '{{ template "telecom.email.html" . }}'
 
-  # ─── Receiver vide (supprime les alertes) ───────────────────
   - name: 'null'

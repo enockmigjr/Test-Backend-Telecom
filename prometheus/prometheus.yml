@@ -10,13 +10,13 @@ rule_files:
 alerting:
   alertmanagers:
     - static_configs:
-        - targets: ['${ALERTMANAGER_HOST:-alertmanager}:${ALERTMANAGER_PORT:-9093}']
+        - targets: ['alertmanager:9093']
 
 scrape_configs:
   - job_name: 'telecom-api'
     metrics_path: '/api/v1/metrics'
     static_configs:
-      - targets: ['${API_HOST:-api}:${API_PORT:-3000}']
+      - targets: ['api:3000']
         labels:
           service: 'telecom-api'
           env: 'production'
@@ -28,8 +28,8 @@ scrape_configs:
 
   - job_name: 'prometheus'
     static_configs:
-      - targets: ['${PROMETHEUS_HOST:-localhost}:${PROMETHEUS_PORT:-9090}']
+      - targets: ['localhost:9090']
 
   - job_name: 'alertmanager'
     static_configs:
-      - targets: ['${ALERTMANAGER_HOST:-alertmanager}:${ALERTMANAGER_PORT:-9093}']
+      - targets: ['alertmanager:9093']

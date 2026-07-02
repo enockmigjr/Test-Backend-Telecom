@@ -1,14 +1,14 @@
 server:
-  http_listen_port: ${TEMPO_HTTP_PORT:-3200}
+  http_listen_port: 3200
 
 distributor:
   receivers:
     otlp:
       protocols:
         http:
-          endpoint: 0.0.0.0:${TEMPO_OTLP_HTTP_PORT:-4318}
+          endpoint: 0.0.0.0:4318
         grpc:
-          endpoint: 0.0.0.0:${TEMPO_OTLP_GRPC_PORT:-4317}
+          endpoint: 0.0.0.0:4317
 
 storage:
   trace:

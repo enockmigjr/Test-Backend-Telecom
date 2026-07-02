@@ -4,7 +4,7 @@ datasources:
   - name: Prometheus
     type: prometheus
     access: proxy
-    url: http://${PROMETHEUS_HOST:-prometheus}:${PROMETHEUS_PORT:-9090}
+    url: http://prometheus:9090
     isDefault: true
     editable: false
     jsonData:
@@ -15,7 +15,7 @@ datasources:
   - name: Loki
     type: loki
     access: proxy
-    url: http://${LOKI_HOST:-loki}:${LOKI_PORT:-3100}
+    url: http://loki:3100
     editable: false
     jsonData:
       maxLines: 1000
@@ -27,7 +27,7 @@ datasources:
   - name: Tempo
     type: tempo
     access: proxy
-    url: http://${TEMPO_HOST:-tempo}:${TEMPO_PORT:-3200}
+    url: http://tempo:3200
     editable: false
     jsonData:
       tracesToLogsV2:

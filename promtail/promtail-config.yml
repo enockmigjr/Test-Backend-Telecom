@@ -1,12 +1,12 @@
 server:
-  http_listen_port: ${PROMTAIL_HTTP_PORT:-9080}
+  http_listen_port: 9080
   grpc_listen_port: 0
 
 positions:
   filename: /tmp/positions.yaml
 
 clients:
-  - url: http://${LOKI_HOST:-loki}:${LOKI_PORT:-3100}/loki/api/v1/push
+  - url: http://loki:3100/loki/api/v1/push
     batchwait: 1s
     batchsize: 1048576
 
@@ -26,7 +26,6 @@ scrape_configs:
         action: keep
 
     pipeline_stages:
-      # ── Tenter un parse JSON (réussit sur Pino, échoue silencieusement sur texte) ──
       - json:
           expressions:
             level: level
@@ -41,22 +40,15 @@ scrape_configs:
             ip: ip
             userAgent: userAgent
 
-      # ── Utiliser le timestamp JSON Pino si trouvé ──
       - timestamp:
           source: time
           format: RFC3339
 
-      # ──────────────────────────────────────────────────
-      # API NestJS → logs Pino JSON (prettified ou brut)
-      # ──────────────────────────────────────────────────
       - match:
           selector: '{service="api"}'
           stages:
-            # Essayer d'extraire les éléments du format pino-pretty
             - regex:
                 expression: '^\[[^\]]+\]\s+(?P<detected_level>[A-Z]+)\s+\(\d+\):\s+(?P<json_payload>\{.*\})$'
-
-            # Si json_payload est extrait, on le parse en JSON
             - json:
                 source: json_payload
                 expressions:
@@ -65,13 +57,9 @@ scrape_configs:
                   method: method
                   url: url
                   message: message
-
-            # Uniformiser le niveau de log
             - template:
                 source: final_level
                 template: '{{ if .detected_level }}{{ ToLower .detected_level }}{{ else if .level }}{{ ToLower .level }}{{ else }}info{{ end }}'
-
-            # Assigner les labels pour Loki
             - labels:
                 level: final_level
                 correlationId:
@@ -80,10 +68,6 @@ scrape_configs:
                 service_name: telecom-api
                 log_type: application
 
-      # ──────────────────────────────────────────────────
-      # PostgreSQL → logs texte
-      # Format: "2026-06-30 10:02:03.650 UTC [27] LOG:  message..."
-      # ──────────────────────────────────────────────────
       - match:
           selector: '{service="postgres"}'
           stages:
@@ -101,11 +85,6 @@ scrape_configs:
                 service_name: postgresql
                 log_type: database
 
-      # ──────────────────────────────────────────────────
-      # Redis → logs texte
-      # Format: "1:M 30 Jun 2026 09:58:26.434 * message..."
-      # . = debug, # = info (verbose), * = notice, - = verbose
-      # ──────────────────────────────────────────────────
       - match:
           selector: '{service="redis"}'
           stages:
@@ -123,9 +102,6 @@ scrape_configs:
                 service_name: redis
                 log_type: cache
 
-      # ──────────────────────────────────────────────────
-      # Nginx → logs HTTP combined format
-      # ──────────────────────────────────────────────────
       - match:
           selector: '{service="nginx"}'
           stages:
@@ -141,9 +117,6 @@ scrape_configs:
                 service_name: nginx
                 log_type: proxy
 
-      # ──────────────────────────────────────────────────
-      # Prometheus → logs structurés (level=INFO/ERROR/DEBUG)
-      # ──────────────────────────────────────────────────
       - match:
           selector: '{service="prometheus"}'
           stages:
@@ -153,9 +126,6 @@ scrape_configs:
                 service_name: prometheus
                 log_type: infrastructure
 
-      # ──────────────────────────────────────────────────
-      # Loki → logs structurés
-      # ──────────────────────────────────────────────────
       - match:
           selector: '{service="loki"}'
           stages:
@@ -165,9 +135,6 @@ scrape_configs:
                 service_name: loki
                 log_type: infrastructure
 
-      # ──────────────────────────────────────────────────
-      # Tempo → logs structurés
-      # ──────────────────────────────────────────────────
       - match:
           selector: '{service="tempo"}'
           stages:
@@ -177,9 +144,6 @@ scrape_configs:
                 service_name: tempo
                 log_type: infrastructure
 
-      # ──────────────────────────────────────────────────
-      # Grafana → logs structurés
-      # ──────────────────────────────────────────────────
       - match:
           selector: '{service="grafana"}'
           stages:
@@ -189,9 +153,6 @@ scrape_configs:
                 service_name: grafana
                 log_type: infrastructure
 
-      # ──────────────────────────────────────────────────
-      # Promtail → logs structurés
-      # ──────────────────────────────────────────────────
       - match:
           selector: '{service="promtail"}'
           stages:
@@ -201,9 +162,6 @@ scrape_configs:
                 service_name: promtail
                 log_type: infrastructure
 
-      # ──────────────────────────────────────────────────
-      # Alertmanager → logs structurés
-      # ──────────────────────────────────────────────────
       - match:
           selector: '{service="alertmanager"}'
           stages:
@@ -213,9 +171,6 @@ scrape_configs:
                 service_name: alertmanager
                 log_type: infrastructure
 
-      # ──────────────────────────────────────────────────
-      # Uptime Kuma → logs structurés
-      # ──────────────────────────────────────────────────
       - match:
           selector: '{service="uptime-kuma"}'
           stages:
@@ -225,9 +180,6 @@ scrape_configs:
                 service_name: uptime-kuma
                 log_type: infrastructure
 
-      # ──────────────────────────────────────────────────
-      # Mailpit → logs divers
-      # ──────────────────────────────────────────────────
       - match:
           selector: '{service="mailpit"}'
           stages:
@@ -235,9 +187,6 @@ scrape_configs:
                 service_name: mailpit
                 log_type: infrastructure
 
-      # ──────────────────────────────────────────────────
-      # Fallback — conteneurs non identifiés
-      # ──────────────────────────────────────────────────
       - match:
           selector: '{service!~"api|postgres|redis|nginx|prometheus|loki|tempo|grafana|promtail|alertmanager|uptime-kuma|mailpit"}'
           stages:
