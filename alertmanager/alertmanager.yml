@@ -1,8 +1,22 @@
+# ============================================================
+# Alertmanager — Configuration
+# ============================================================
+# Les valeurs ci-dessous sont pour le développement local
+# (Docker Compose avec Mailpit pour les emails).
+#
+# Pour la production, remplacer :
+#   - smtp_smarthost → votre serveur SMTP réel (ex: smtp.example.com:587)
+#   - smtp_from       → une adresse email valide
+#   - email to        → les adresses de l'équipe ops
+#   - WhatsApp phone  → le numéro du responsable (via CallMeBot)
+#   - WhatsApp apikey → la clé API CallMeBot
+# ============================================================
+
 global:
   resolve_timeout: 5m
-  smtp_smarthost: 'mailpit:1025'
+  smtp_smarthost: 'mailpit:1025'           # Prod: smtp.example.com:587
   smtp_from: 'alertmanager@telecom-tickets.local'
-  smtp_require_tls: false
+  smtp_require_tls: false                   # Prod: true
   smtp_hello: 'telecom-tickets.local'
 
 templates:
@@ -16,6 +30,7 @@ route:
   repeat_interval: 4h
 
   routes:
+    # ── Alertes critiques → email + WhatsApp ──
     - match:
         severity: critical
       receiver: 'critical-alerts'
@@ -23,12 +38,14 @@ route:
       group_interval: 2m
       repeat_interval: 1h
 
+    # ── Alertes warning → email seulement ──
     - match:
         severity: warning
       receiver: 'warning-alerts'
       group_interval: 10m
       repeat_interval: 8h
 
+    # ── Alertes info → silencieux ──
     - match:
         severity: info
       receiver: 'null'
@@ -41,26 +58,32 @@ inhibit_rules:
     equal: ['service']
 
 receivers:
+  # ── Défaut (log interne) ──
   - name: 'default'
     email_configs:
-      - to: 'ops@telecom-tickets.local'
+      - to: 'ops@telecom-tickets.local'    # Prod: equipe-ops@votre-domaine.com
         headers:
           Subject: '[Telecom] {{ .GroupLabels.alertname }} ({{ .GroupLabels.severity }})'
         html: '{{ template "telecom.email.html" . }}'
 
+  # ── Critique : Email + WhatsApp ──
   - name: 'critical-alerts'
     email_configs:
-      - to: 'oncall@telecom-tickets.local'
+      - to: 'oncall@telecom-tickets.local'  # Prod: astreinte@votre-domaine.com
         headers:
           Subject: '[CRITICAL] {{ .GroupLabels.alertname }} — Action requise'
         html: '{{ template "telecom.email.html" . }}'
-    # WhatsApp via CallMeBot — configurable via variables d'environnement dans docker-compose
+
+    # WhatsApp via CallMeBot (gratuit, ~80 msg/jour)
+    # Obtenir la clé API : envoyer "I allow callmebot to send me messages" au +34 644 51 95 23 sur WhatsApp
+    # Prod : remplacer phone et apikey par vos identifiants
     webhook_configs:
       - url: 'https://api.callmebot.com/whatsapp.php?phone=22967391224&text=ALERTE%20Telecom%20Ticket%20Management&apikey=7499427'
         send_resolved: true
         http_config:
           follow_redirects: true
 
+  # ── Warning : Email seulement ──
   - name: 'warning-alerts'
     email_configs:
       - to: 'ops@telecom-tickets.local'
@@ -68,4 +91,5 @@ receivers:
           Subject: '[WARNING] {{ .GroupLabels.alertname }}'
         html: '{{ template "telecom.email.html" . }}'
 
+  # ── Silencieux ──
   - name: 'null'

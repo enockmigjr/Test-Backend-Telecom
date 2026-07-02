@@ -1,3 +1,14 @@
+# ============================================================
+# Prometheus — Configuration de Scraping
+# ============================================================
+# Les cibles ci-dessous utilisent les noms de service Docker
+# (réseau interne telecom-network).
+#
+# Pour la production :
+#   - alertmanager → ${ALERTMANAGER_HOST:-alertmanager}:${ALERTMANAGER_PORT:-9093}
+#   - api          → ${API_HOST:-api}:${API_PORT:-3000}
+# ============================================================
+
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
@@ -13,6 +24,7 @@ alerting:
         - targets: ['alertmanager:9093']
 
 scrape_configs:
+  # ── API NestJS (métriques applicatives) ──
   - job_name: 'telecom-api'
     metrics_path: '/api/v1/metrics'
     static_configs:
@@ -26,10 +38,12 @@ scrape_configs:
         regex: '(.+):\d+'
         replacement: '$1'
 
+  # ── Prometheus (auto-surveillance) ──
   - job_name: 'prometheus'
     static_configs:
       - targets: ['localhost:9090']
 
+  # ── Alertmanager ──
   - job_name: 'alertmanager'
     static_configs:
       - targets: ['alertmanager:9093']

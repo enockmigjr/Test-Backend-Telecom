@@ -1,3 +1,15 @@
+# ============================================================
+# Tempo — Configuration
+# ============================================================
+# Les ports ci-dessous sont les valeurs par défaut pour le
+# réseau Docker interne (telecom-network).
+#
+# Pour la production :
+#   - http_listen_port → utiliser TEMPO_HTTP_PORT (défaut: 3200)
+#   - OTLP HTTP     → utiliser TEMPO_OTLP_HTTP_PORT (défaut: 4318)
+#   - OTLP gRPC     → utiliser TEMPO_OTLP_GRPC_PORT (défaut: 4317)
+# ============================================================
+
 server:
   http_listen_port: 3200
 

@@ -1,3 +1,14 @@
+# ============================================================
+# Promtail — Configuration
+# ============================================================
+# Collecte les logs Docker et les envoie vers Loki.
+#
+# Pour la production :
+#   - http_listen_port → utiliser PROMTAIL_HTTP_PORT (défaut: 9080)
+#   - url (Loki push)  → utiliser LOKI_HOST et LOKI_PORT
+#     ex: http://${LOKI_HOST:-loki}:${LOKI_PORT:-3100}/loki/api/v1/push
+# ============================================================
+
 server:
   http_listen_port: 9080
   grpc_listen_port: 0
@@ -6,6 +17,7 @@ positions:
   filename: /tmp/positions.yaml
 
 clients:
+  # En prod, remplacer par : http://<loki-host>:<loki-port>/loki/api/v1/push
   - url: http://loki:3100/loki/api/v1/push
     batchwait: 1s
     batchsize: 1048576
@@ -26,6 +38,7 @@ scrape_configs:
         action: keep
 
     pipeline_stages:
+      # ── Pino JSON (logs NestJS) ──
       - json:
           expressions:
             level: level
@@ -39,11 +52,11 @@ scrape_configs:
             url: url
             ip: ip
             userAgent: userAgent
-
       - timestamp:
           source: time
           format: RFC3339
 
+      # ── API (Pino pretty-print fallback) ──
       - match:
           selector: '{service="api"}'
           stages:
@@ -68,6 +81,7 @@ scrape_configs:
                 service_name: telecom-api
                 log_type: application
 
+      # ── PostgreSQL ──
       - match:
           selector: '{service="postgres"}'
           stages:
@@ -85,6 +99,7 @@ scrape_configs:
                 service_name: postgresql
                 log_type: database
 
+      # ── Redis ──
       - match:
           selector: '{service="redis"}'
           stages:
@@ -102,6 +117,7 @@ scrape_configs:
                 service_name: redis
                 log_type: cache
 
+      # ── Nginx (combined log format) ──
       - match:
           selector: '{service="nginx"}'
           stages:
@@ -117,58 +133,14 @@ scrape_configs:
                 service_name: nginx
                 log_type: proxy
 
+      # ── Services d'infrastructure (log_level natif) ──
       - match:
-          selector: '{service="prometheus"}'
+          selector: '{service=~"prometheus|loki|tempo|grafana|promtail|alertmanager"}'
           stages:
             - labels:
                 level:
             - static_labels:
-                service_name: prometheus
-                log_type: infrastructure
-
-      - match:
-          selector: '{service="loki"}'
-          stages:
-            - labels:
-                level:
-            - static_labels:
-                service_name: loki
-                log_type: infrastructure
-
-      - match:
-          selector: '{service="tempo"}'
-          stages:
-            - labels:
-                level:
-            - static_labels:
-                service_name: tempo
-                log_type: infrastructure
-
-      - match:
-          selector: '{service="grafana"}'
-          stages:
-            - labels:
-                level:
-            - static_labels:
-                service_name: grafana
-                log_type: infrastructure
-
-      - match:
-          selector: '{service="promtail"}'
-          stages:
-            - labels:
-                level:
-            - static_labels:
-                service_name: promtail
-                log_type: infrastructure
-
-      - match:
-          selector: '{service="alertmanager"}'
-          stages:
-            - labels:
-                level:
-            - static_labels:
-                service_name: alertmanager
+                service_name: '{{ .service }}'
                 log_type: infrastructure
 
       - match:
