@@ -172,8 +172,8 @@
 
 ## Supervision BullMQ (`/admin/queues`)
 
-| Méthode | Route          | Auth                    | Description                                     |
-| ------- | -------------- | ----------------------- | ----------------------------------------------- |
+| Méthode | Route           | Auth                             | Description                                     |
+| ------- | --------------- | -------------------------------- | ----------------------------------------------- |
 | `GET`   | `/admin/queues` | Basic Auth (prod) / Public (dev) | Interface BullBoard de supervision des 5 queues |
 
 En production, protéger avec `BULLBOARD_USER` et `BULLBOARD_PASSWORD` dans `.env`.

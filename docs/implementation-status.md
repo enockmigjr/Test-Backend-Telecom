@@ -43,7 +43,7 @@ Dernière mise à jour: 2026-07-01
 | BullBoard         | Interface de supervision des 5 queues BullMQ à /admin/queues                                    |
 | Token Cleanup     | Cron quotidien 3h — supprime refresh_tokens expirés + révoqués >30j                             |
 | Documentation     | 9 fichiers docs/, CHANGELOG v1.1.0, README à jour, .env.example 60+ variables                   |
-| Tests             | **468 tests** (unitaire) + 43 E2E + 10 intégration = **521 total**, 34 suites                 |
+| Tests             | **468 tests** (unitaire) + 43 E2E + 10 intégration = **521 total**, 34 suites                   |
 | Build             | TypeScript strict, zéro erreur                                                                  |
 
 ## 🔶 Reste à faire

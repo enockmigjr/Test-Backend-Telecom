@@ -45,9 +45,7 @@ function basicAuthMiddleware(req: Request, res: Response, next: NextFunction): v
 export class BullBoardModule implements NestModule {
   private readonly logger = new Logger(BullBoardModule.name);
 
-  constructor(
-    @Inject('BullMQ_Queues') private readonly queues: Record<string, unknown>,
-  ) {}
+  constructor(@Inject('BullMQ_Queues') private readonly queues: Record<string, unknown>) {}
 
   configure(consumer: MiddlewareConsumer): void {
     const queueInstances = [
@@ -71,6 +69,9 @@ export class BullBoardModule implements NestModule {
       })
       .forRoutes('/admin/queues');
 
-    this.logger.log('BullBoard disponible sur /admin/queues' + (process.env['NODE_ENV'] === 'production' ? ' (protégé par Basic Auth)' : ' (dev — accès libre)'));
+    this.logger.log(
+      'BullBoard disponible sur /admin/queues' +
+        (process.env['NODE_ENV'] === 'production' ? ' (protégé par Basic Auth)' : ' (dev — accès libre)'),
+    );
   }
 }

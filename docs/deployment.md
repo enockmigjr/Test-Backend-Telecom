@@ -91,6 +91,7 @@ curl http://localhost:${API_PORT:-3000}/api/v1/metrics
 En développement, l'accès est libre. En production, l'accès est protégé par Basic Auth.
 
 Configurer dans `.env` :
+
 ```env
 BULLBOARD_USER=admin
 BULLBOARD_PASSWORD=un-mot-de-passe-securise
