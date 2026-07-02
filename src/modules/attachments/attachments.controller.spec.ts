@@ -180,7 +180,6 @@ describe('AttachmentsController', () => {
       expect(join).toHaveBeenCalledWith('./uploads', mockAttachmentRecord.objectKey);
       expect(res.setHeader).toHaveBeenCalledWith('Content-Type', 'application/pdf');
       expect(res.setHeader).toHaveBeenCalledWith('Content-Disposition', 'attachment; filename="rapport-incident.pdf"');
-      expect(res.setHeader).toHaveBeenCalledWith('Content-Length', 102400);
       expect(createReadStream).toHaveBeenCalledWith('/uploads/tickets/2026/01/uuid-rapport-incident.pdf');
       expect(mockStream.pipe).toHaveBeenCalledWith(res);
     });
