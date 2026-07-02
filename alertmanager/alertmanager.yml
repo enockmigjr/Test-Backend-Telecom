@@ -14,9 +14,9 @@
 
 global:
   resolve_timeout: 5m
-  smtp_smarthost: 'mailpit:1025'           # Prod: smtp.example.com:587
+  smtp_smarthost: 'mailpit:1025' # Prod: smtp.example.com:587
   smtp_from: 'alertmanager@telecom-tickets.local'
-  smtp_require_tls: false                   # Prod: true
+  smtp_require_tls: false # Prod: true
   smtp_hello: 'telecom-tickets.local'
 
 templates:
@@ -61,7 +61,7 @@ receivers:
   # ── Défaut (log interne) ──
   - name: 'default'
     email_configs:
-      - to: 'ops@telecom-tickets.local'    # Prod: equipe-ops@votre-domaine.com
+      - to: 'ops@telecom-tickets.local' # Prod: equipe-ops@votre-domaine.com
         headers:
           Subject: '[Telecom] {{ .GroupLabels.alertname }} ({{ .GroupLabels.severity }})'
         html: '{{ template "telecom.email.html" . }}'
@@ -69,7 +69,7 @@ receivers:
   # ── Critique : Email + WhatsApp ──
   - name: 'critical-alerts'
     email_configs:
-      - to: 'oncall@telecom-tickets.local'  # Prod: astreinte@votre-domaine.com
+      - to: 'oncall@telecom-tickets.local' # Prod: astreinte@votre-domaine.com
         headers:
           Subject: '[CRITICAL] {{ .GroupLabels.alertname }} — Action requise'
         html: '{{ template "telecom.email.html" . }}'

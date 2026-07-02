@@ -88,9 +88,9 @@ Le système permettra aux administrateurs de :
 
 Le système fournira :
 
-- Connexion
-- Déconnexion
-- Rafraîchissement du jeton
+- Connexion (génère access token et refresh token)
+- Déconnexion (révoque le refresh token en DB et ajoute immédiatement l'access token dans la blacklist Redis avec un TTL individuel via `jwt_bl:{jti}`)
+- Rafraîchissement du jeton (rotation des refresh tokens)
 - Changement du mot de passe
 
 ### Gestion des Tickets
@@ -99,40 +99,43 @@ Le système permettra aux utilisateurs autorisés de :
 
 - Créer des tickets
 - Voir des tickets
-- Mettre à jour des tickets
-- Attribuer des tickets
+- Mettre à jour des tickets (permissions validées dynamiquement selon l'ownership du champ)
+- Attribuer des tickets (incluant l'auto-assignation pour les tickets NEW non assignés)
 - Réattribuer des tickets
-- Escalader des tickets
-- Résoudre des tickets
-- Clôturer des tickets
+- Escalader des tickets (escalade fonctionnelle ou hiérarchique)
+- Mettre en attente des tickets (PENDING_CUSTOMER, PENDING_THIRD_PARTY)
+- Résoudre des tickets (en fournissant un résumé de résolution)
+- Clôturer des tickets (incluant l'auto-clôture système après 48h en RESOLVED)
+- Réouvrir des tickets (dans la limite de 30 jours max pour le créateur avec rôle CS Agent)
 
 ### Fonctionnalités de Collaboration
 
 Le système prendra en charge :
 
-- Commentaires internes
+- Commentaires internes (réservés aux agents)
 - Commentaires publics
-- Pièces jointes
+- Pièces jointes (téléversement avec vérification physique d'existence et téléchargement sécurisé sans crash)
 - Historique des activités
 
 ### Notifications
 
 Le système notifiera les utilisateurs lorsque :
 
-- Des tickets sont attribués
+- Des tickets sont attribués ou réassignés
 - Des tickets sont escaladés
-- Des tickets sont résolus
-- Les seuils de SLA sont dépassés
+- Des tickets sont résolus ou réouverts
+- Les seuils de SLA sont dépassés (warnings et breaches)
 
 ## 5. Exigences Non Fonctionnelles
 
 ### Sécurité
 
-- Authentification basée sur JWT
+- Authentification basée sur JWT avec invalidation dynamique via blacklist individuelle Redis (clé `jwt_bl:{jti}`)
 - Rotation des jetons de rafraîchissement
 - Hachage des mots de passe utilisant Argon2
-- Contrôle d'accès basé sur les rôles
+- Contrôle d'accès hybride : RBAC global couplé à des permissions fines basées sur l'ownership (Créateur, Assigné, Superviseur, Admin) pour la gestion des tickets
 - Piste d'audit pour les actions critiques
+- Route des départements (/departments) sécurisée et authentifiée car c'est un outil interne
 
 ### Évolutivité
 
@@ -306,25 +309,27 @@ Responsabilités :
 La plateforme prend en charge les départements suivants :
 
 - Administration
-- Service Client
+- Service Client (Customer Care)
 - NOC
 - Facturation
 - Support Technique
 - Opérations Terrain
-  Chaque utilisateur appartient à exactement un département.
+
+Chaque utilisateur appartient à exactement un département. Les données des départements sont internes au système ; l'accès à la liste des départements (`GET /departments`) exige une authentification pour tous les rôles.
 
 ## 11. Rôles
 
 La plateforme prend en charge les rôles suivants :
 
-- Administrateur
-- Superviseur
-- Agent du Service Client
-- Ingénieur NOC
-- Agent de Facturation
-- Ingénieur Support Technique
-- Technicien Terrain
-  Chaque utilisateur a exactement un rôle.
+- Administrateur (ADMINISTRATOR)
+- Superviseur (SUPERVISOR)
+- Agent du Service Client (CUSTOMER_SERVICE_AGENT)
+- Ingénieur NOC (NOC_ENGINEER)
+- Agent de Facturation (BILLING_AGENT)
+- Ingénieur Support Technique (TECHNICAL_SUPPORT_ENGINEER)
+- Technicien Terrain (FIELD_TECHNICIAN)
+
+Chaque utilisateur a exactement un rôle.
 
 ## 12. Architecture de Sécurité
 
@@ -332,14 +337,14 @@ La plateforme prend en charge les rôles suivants :
 
 L'authentification est basée sur :
 
-- Jeton d'accès (JWT)
-- Rotation des jetons de rafraîchissement
+- Jeton d'accès (JWT) révoqué individuellement en cas de logout via Redis (clé `jwt_bl:{jti}`).
+- Rotation des jetons de rafraîchissement (rotation en DB).
 
 ### Sécurité des Mots de Passe
 
 Les mots de passe sont stockés en utilisant :
 
-- Hachage Argon2
+- Hachage Argon2id
 
 ### Sécurité des Sessions
 
@@ -350,10 +355,16 @@ Les jetons de rafraîchissement sont :
 - Associés à l'User-Agent
 - Révocables individuellement
 
-### Autorisation
+### Autorisation (Rôles & Ownership)
 
-L'autorisation est implémentée en utilisant RBAC.
-Les vérifications de rôles sont appliquées via les Gardes NestJS.
+L'autorisation combine :
+
+1. **RBAC (Role Based Access Control)** : Les actions globales d'administration (création d'utilisateurs, gestion globale des départements ou des politiques SLA) sont restreintes par rôle au niveau des contrôleurs.
+2. **Permissions basées sur l'ownership** : Pour les tickets, le système utilise un modèle d'ownership dynamique géré dans la couche service :
+   - **Créateur (Niveau 1)** : Peut modifier le titre, description et catégorie (si le statut est `NEW`). Peut réouvrir le ticket s'il est CS Agent créateur du ticket (sous 30 jours).
+   - **Assigné (Niveau 2)** : Peut modifier le titre, description, tags, métadonnées et statut (IN_PROGRESS, PENDING_CUSTOMER, PENDING_THIRD_PARTY, RESOLVED, CLOSED). Peut réassigner et effectuer une escalade hiérarchique au sein de son propre département.
+   - **Superviseur (Niveau 3)** : A les droits de supervision globaux. Peut tout modifier sur le ticket excepté la politique SLA. Peut assigner à des tiers, réassigner et effectuer des escalades fonctionnelles (changement de département).
+   - **Admin (Niveau 4)** : A tous les privilèges sans exception, incluant la modification de la politique SLA (`slaPolicyId`) et la suppression logique (soft-delete) du ticket.
 
 ## 13. Cycle de Vie des Tickets
 

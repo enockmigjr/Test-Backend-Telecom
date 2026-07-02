@@ -1,6 +1,6 @@
 # Workers BullMQ — Traitement Asynchrone
 
-Dernière mise à jour : 2026-07-01
+Dernière mise à jour : 2026-07-02
 
 ## Pourquoi des Workers ?
 
@@ -176,4 +176,4 @@ docker compose exec redis redis-cli
 > LRANGE bull:audit-queue:failed 0 10
 ```
 
-**BullBoard** (optionnel, non installé) permettrait une UI de supervision.
+**BullBoard** est disponible à `/admin/queues`. En développement, l'accès est libre. En production, protéger avec Basic Auth (`BULLBOARD_USER` et `BULLBOARD_PASSWORD`).

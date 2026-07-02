@@ -141,13 +141,13 @@ describe('ReportsService', () => {
     it("doit lever une erreur si le ticket n'existe pas", async () => {
       mockSelectQuery.limit.mockResolvedValueOnce([]);
 
-      await expect(service.ticketReport('ticket-inexistant')).rejects.toThrow('Ticket non trouvé');
+      await expect(service.ticketReport('ticket-inexistant')).rejects.toThrow('Ticket introuvable');
     });
 
-    it('doit lever une erreur si le ticket est soft-deleté', async () => {
+    it('doit lever une erreur si le ticket est soft-delete', async () => {
       mockSelectQuery.limit.mockResolvedValueOnce([]);
 
-      await expect(service.ticketReport('ticket-supprime')).rejects.toThrow('Ticket non trouvé');
+      await expect(service.ticketReport('ticket-supprime')).rejects.toThrow('Ticket introuvable');
     });
 
     it('doit faire une jointure avec la table departments', async () => {

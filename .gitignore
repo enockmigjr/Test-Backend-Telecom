@@ -17,3 +17,6 @@ plan/
 .claude/
 CLAUDE.md
 scripts/
+.agents/
+.codex/
+AGENTS.md

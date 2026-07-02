@@ -1,12 +1,15 @@
-import { Injectable, Logger, Inject } from '@nestjs/common';
+﻿import { Injectable, Logger, Inject } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { and, lt, gte, eq, notInArray, isNull } from 'drizzle-orm';
 import { Queue } from 'bullmq';
 import { DrizzleProvider } from '../../database/drizzle.provider';
-import { tickets, users } from '../../database/schemas';
+import { tickets, users, ticketHistory } from '../../database/schemas';
 import { MetricsService } from '../../common/metrics/metrics.service';
 import { TelecomWebSocketGateway } from '../../websocket/websocket.gateway';
 import { EMAIL_QUEUE, NOTIFICATION_QUEUE } from '../../queues/queues.module';
+import { generateUuid } from '../../common/helpers/uuidv7.helper';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { TicketStatusChangedEvent, TicketClosedEvent } from '../tickets/domain/ticket.events';
 
 interface BullMqQueues {
   email: Queue;
@@ -15,18 +18,7 @@ interface BullMqQueues {
 }
 
 /**
- * Moteur de vérification des SLA.
- * Exécuté toutes les 5 minutes via cron pour détecter les dépassements
- * et avertissements SLA sur les tickets actifs.
- *
- * En cas de breach :
- * - Met à jour slaBreached = true dans la DB
- * - Émet un event WebSocket aux superviseurs et à l'assigné
- * - Envoie un email via la email-queue
- * - Persiste une notification via notification-queue
- *
- * En cas de warning (< 30 min restantes) :
- * - Émet un event WebSocket à l'assigné seulement
+ * Moteur de verification des SLA et auto-cloture.
  */
 @Injectable()
 export class SlaEngineService {
@@ -42,6 +34,7 @@ export class SlaEngineService {
     private readonly drizzle: DrizzleProvider,
     private readonly metricsService: MetricsService,
     private readonly wsGateway: TelecomWebSocketGateway,
+    private readonly eventEmitter: EventEmitter2,
     @Inject('BullMQ_Queues') private readonly queues: BullMqQueues,
   ) {}
 
@@ -54,16 +47,23 @@ export class SlaEngineService {
   }
 
   /**
-   * Cron toutes les 5 minutes — vérifie les SLA.
+   * Cron toutes les 5 minutes — SLA + Auto-cloture.
    */
   @Cron('*/5 * * * *')
   async checkSla(): Promise<void> {
-    this.logger.debug('Vérification périodique des SLA...');
+    this.logger.debug('Verification periodique des SLA et auto-cloture...');
+    await this.processSlaBreachesAndWarnings();
+    await this.processAutoCloseResolvedTickets();
+  }
 
+  /**
+   * Detecte les breaches et warnings SLA.
+   */
+  private async processSlaBreachesAndWarnings(): Promise<void> {
     const now = new Date();
     const warningThreshold = new Date(now.getTime() + 30 * 60 * 1000); // 30 minutes
 
-    // ─── Phase 1 : Breach (échéance dépassée) ────────────────
+    // ─── Phase 1 : Breach (echeance depassee) ────────────────
     const breachedTickets = await this.drizzle.db
       .select({
         id: tickets.id,
@@ -88,12 +88,9 @@ export class SlaEngineService {
       .limit(100);
 
     for (const ticket of breachedTickets) {
-      this.logger.warn(`SLA Breach détecté: ${ticket.ticketNumber} (priorité: ${ticket.priority})`);
+      this.logger.warn(`SLA Breach detecte: ${ticket.ticketNumber} (priorite: ${ticket.priority})`);
 
-      // 1. Mettre à jour en DB
       await this.drizzle.db.update(tickets).set({ slaBreached: true }).where(eq(tickets.id, ticket.id));
-
-      // 2. Métrique Prometheus
       this.metricsService.slaBreachesTotal.inc({ priority: ticket.priority });
 
       const payload = {
@@ -103,28 +100,24 @@ export class SlaEngineService {
         resolutionDueAt: ticket.resolutionDueAt,
       };
 
-      // 3. WebSocket → superviseurs
       this.wsGateway.emitToRole('SUPERVISOR', 'ticket.sla_breached', payload);
 
-      // 4. WebSocket → assigné (si connecté)
       if (ticket.assignedTo) {
         this.wsGateway.emitToUser(ticket.assignedTo, 'ticket.sla_breached', payload);
 
-        // 5. Notification persistante pour l'assigné
         await this.notificationQueue.add('create-notification', {
           userId: ticket.assignedTo,
           type: 'SLA_BREACHED',
-          title: `⚠️ SLA Dépassé — ${ticket.ticketNumber}`,
-          message: `Le SLA du ticket ${ticket.ticketNumber} a été dépassé. Action urgente requise.`,
+          title: `⚠️ SLA Depasse — ${ticket.ticketNumber}`,
+          message: `Le SLA du ticket ${ticket.ticketNumber} a ete depasse. Action urgente requise.`,
           referenceType: 'ticket',
           referenceId: ticket.id,
         });
 
-        // 6. Email à l'assigné
         if (ticket.assigneeEmail) {
           await this.emailQueue.add('send-email', {
             to: ticket.assigneeEmail,
-            subject: `🔴 SLA Dépassé — ${ticket.ticketNumber}`,
+            subject: `🔴 SLA Depasse — ${ticket.ticketNumber}`,
             template: 'slaBreach',
             data: {
               ticketNumber: ticket.ticketNumber,
@@ -159,7 +152,7 @@ export class SlaEngineService {
       .limit(100);
 
     for (const ticket of warningTickets) {
-      this.logger.warn(`SLA Warning: ${ticket.ticketNumber} — échéance imminente (< 30 min)`);
+      this.logger.warn(`SLA Warning: ${ticket.ticketNumber} — echeance imminente (< 30 min)`);
 
       const warningPayload = {
         ticketId: ticket.id,
@@ -171,33 +164,88 @@ export class SlaEngineService {
           : 0,
       };
 
-      // WebSocket → assigné uniquement pour le warning
       if (ticket.assignedTo) {
         this.wsGateway.emitToUser(ticket.assignedTo, 'ticket.sla_warning', warningPayload);
 
-        // Notification persistante
         await this.notificationQueue.add('create-notification', {
           userId: ticket.assignedTo,
           type: 'SLA_WARNING',
           title: `⏰ SLA Warning — ${ticket.ticketNumber}`,
-          message: `Moins de 30 minutes avant l'échéance SLA du ticket ${ticket.ticketNumber}.`,
+          message: `Moins de 30 minutes avant l'echeance SLA du ticket ${ticket.ticketNumber}.`,
           referenceType: 'ticket',
           referenceId: ticket.id,
         });
       }
 
-      // Superviseurs aussi informés des warnings
       this.wsGateway.emitToRole('SUPERVISOR', 'ticket.sla_warning', warningPayload);
-    }
-
-    if (breachedTickets.length > 0 || warningTickets.length > 0) {
-      this.logger.log(`SLA check terminé: ${breachedTickets.length} breaches, ${warningTickets.length} warnings`);
     }
   }
 
   /**
-   * Calcule la date d'échéance SLA pour un ticket.
+   * Cloture automatiquement les tickets en RESOLVED depuis plus de 48 heures.
    */
+  private async processAutoCloseResolvedTickets(): Promise<void> {
+    const fortyEightHoursAgo = new Date(Date.now() - 48 * 60 * 60 * 1000);
+
+    // Trouver les tickets resolus depuis plus de 48h
+    const resolvedTickets = await this.drizzle.db
+      .select({
+        id: tickets.id,
+        ticketNumber: tickets.ticketNumber,
+        status: tickets.status,
+        assignedTo: tickets.assignedTo,
+      })
+      .from(tickets)
+      .where(and(eq(tickets.status, 'RESOLVED'), lt(tickets.resolvedAt, fortyEightHoursAgo), isNull(tickets.deletedAt)))
+      .limit(100);
+
+    if (resolvedTickets.length === 0) return;
+
+    // Trouver l'utilisateur admin systeme par defaut pour lui attribuer l'action d'historique
+    const [adminUser] = await this.drizzle.db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.email, 'admin@telecom.local'))
+      .limit(1);
+
+    const systemUserId = adminUser?.id;
+    if (!systemUserId) {
+      this.logger.error("Impossible de proceder a l'auto-cloture : administrateur systeme introuvable.");
+      return;
+    }
+
+    for (const ticket of resolvedTickets) {
+      this.logger.log(`Auto-cloture du ticket ${ticket.ticketNumber} (RESOLVED depuis plus de 48h)`);
+
+      // Mettre a jour en base
+      await this.drizzle.db
+        .update(tickets)
+        .set({ status: 'CLOSED', closedAt: new Date() })
+        .where(eq(tickets.id, ticket.id));
+
+      // Enregistrer l'historique
+      await this.drizzle.db.insert(ticketHistory).values({
+        id: generateUuid(),
+        ticketId: ticket.id,
+        userId: systemUserId,
+        action: 'STATUS_CHANGED',
+        oldValue: { status: 'RESOLVED' },
+        newValue: { status: 'CLOSED' },
+        metadata: { reason: 'Cloture automatique par le systeme apres 48 heures de resolution sans activite.' },
+      });
+
+      // Emettre les evenements NestJS pour les listeners (notifications, etc)
+      this.eventEmitter.emit(
+        'ticket.status_changed',
+        new TicketStatusChangedEvent(ticket.id, 'RESOLVED', 'CLOSED', systemUserId),
+      );
+      this.eventEmitter.emit('ticket.closed', new TicketClosedEvent(ticket.id, systemUserId));
+
+      // Mettre a jour les metriques Prometheus
+      this.metricsService.ticketsActive.dec();
+    }
+  }
+
   calculateDueDate(createdAt: Date, resolutionMinutes: number): Date {
     return new Date(createdAt.getTime() + resolutionMinutes * 60 * 1000);
   }

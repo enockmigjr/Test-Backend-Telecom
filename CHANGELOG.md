@@ -4,6 +4,30 @@ Tous les changements notables sont documentés ici. Format basé sur [Keep a Cha
 
 ---
 
+## [1.2.0] — 2026-07-02
+
+### Added
+
+- **Ownership-based RBAC tickets** : refonte complète des permissions tickets — plus de blocage `ADMIN/SUPERVISOR only`. Les agents peuvent désormais agir sur leurs propres tickets (auto-assign, start, resolve, close). Les superviseurs conservent les droits élargis
+- **Nouveaux endpoints tickets** :
+  - `POST /tickets/:id/reassign` — réassignation par l'assigné actuel, superviseur ou admin
+  - `POST /tickets/:id/pending-customer` — mise en attente client (IN_PROGRESS → PENDING_CUSTOMER)
+  - `POST /tickets/:id/pending-third-party` — mise en attente tiers (IN_PROGRESS → PENDING_THIRD_PARTY)
+- **Auto-clôture après 48h** : `SlaEngineService` clôture automatiquement les tickets `RESOLVED` depuis plus de 48h (cron `/\*5 min`)
+- **Swagger enrichi** : `@ApiBody`, `@ApiResponse` (200/201/204/400/403/404) et `@ApiQuery` complets sur tous les endpoints tickets (13 filtres sur `GET /tickets`)
+- **Suite E2E complète** : 102 tests E2E passants (14 suites) dont `tickets-permissions.e2e-spec.ts`, `rbac.e2e-spec.ts`, `comments.e2e-spec.ts`, `internal-notes.e2e-spec.ts`, `notifications.e2e-spec.ts`, `sla-policies.e2e-spec.ts`, `reports.e2e-spec.ts`, `audit-logs.e2e-spec.ts`, `dashboard.e2e-spec.ts`, `health.e2e-spec.ts`, `departments.e2e-spec.ts`, `users.e2e-spec.ts`
+- **Nouveaux DTOs** : `ResolveTicketDto` (resolutionSummary optionnel), `ReopenTicketDto` (reason obligatoire ≥ 10 car.), `PendingTicketDto` (reason optionnel)
+- **WebSocket** : nouveaux événements `ticket.closed` et `ticket.reopened` émis par le listener
+- **`GET /sla-policies/:id`** : route de détail d'une politique SLA ajoutée (manquante)
+
+### Fixed
+
+- **tickets.controller.ts** : restauration de tous les décorateurs Swagger (`@ApiBody`, `@ApiResponse`, `@ApiQuery` complets) supprimés lors de la refonte
+- **docs/routes.md** : correction des rôles tickets (ownership-based), ajout des 4 nouvelles routes (total 52), correction departments (bearer auth, non public), ajout `GET /sla-policies/:id`
+- **tests E2E** : `users.e2e-spec.ts` → assertion pagination corrigée (`data.data`), `departments.e2e-spec.ts` → nom dynamique pour éviter les 409, `tickets-permissions.e2e-spec.ts` → sélection utilisateurs par email
+
+---
+
 ## [1.1.0] — 2026-07-01
 
 ### Added

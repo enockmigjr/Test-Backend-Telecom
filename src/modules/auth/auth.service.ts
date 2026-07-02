@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, Logger, Inject } from '@nestjs/common';
+﻿import { Injectable, UnauthorizedException, Logger, Inject } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
 import { generateUuid } from '../../common/helpers/uuidv7.helper';
@@ -25,9 +25,6 @@ export class AuthService {
     @Inject('BullMQ_Queues') private readonly queues: { email: Queue; [key: string]: Queue },
   ) {}
 
-  /**
-   * Authentifie un utilisateur et génère les tokens.
-   */
   async login(email: string, password: string, ipAddress: string, userAgent: string): Promise<LoginResponse> {
     const [user] = await this.drizzle.db
       .select()
@@ -35,25 +32,16 @@ export class AuthService {
       .where(and(eq(users.email, email.toLowerCase().trim()), isNull(users.deletedAt)))
       .limit(1);
 
-    if (!user) {
-      throw new UnauthorizedException('Identifiants invalides.');
-    }
-
-    if (!user.isActive) {
-      throw new UnauthorizedException('Ce compte est désactivé. Contactez un administrateur.');
-    }
+    if (!user) throw new UnauthorizedException('Identifiants invalides.');
+    if (!user.isActive) throw new UnauthorizedException('Ce compte est desactive. Contactez un administrateur.');
 
     const isPasswordValid = await argon2.verify(user.passwordHash, password);
-    if (!isPasswordValid) {
-      throw new UnauthorizedException('Identifiants invalides.');
-    }
+    if (!isPasswordValid) throw new UnauthorizedException('Identifiants invalides.');
 
-    // Mettre à jour lastLoginAt
     await this.drizzle.db.update(users).set({ lastLoginAt: new Date() }).where(eq(users.id, user.id));
 
     const tokens = await this.generateTokens(user, ipAddress, userAgent);
 
-    // Récupérer le nom du département
     const { departments } = await import('../../database/schemas/departments');
     const [department] = await this.drizzle.db
       .select({ name: departments.name })
@@ -75,9 +63,6 @@ export class AuthService {
     };
   }
 
-  /**
-   * Rafraîchit la paire de tokens (rotation).
-   */
   async refresh(refreshToken: string, ipAddress: string, userAgent: string): Promise<TokenPair> {
     const tokenHash = this.hashToken(refreshToken);
 
@@ -87,47 +72,42 @@ export class AuthService {
       .where(eq(refreshTokens.tokenHash, tokenHash))
       .limit(1);
 
-    if (!storedToken || storedToken.revokedAt) {
-      throw new UnauthorizedException('Refresh token invalide ou révoqué.');
-    }
+    if (!storedToken || storedToken.revokedAt) throw new UnauthorizedException('Refresh token invalide ou revoque.');
+    if (new Date() > storedToken.expiresAt) throw new UnauthorizedException('Refresh token expire.');
 
-    if (new Date() > storedToken.expiresAt) {
-      throw new UnauthorizedException('Refresh token expiré.');
-    }
-
-    // Révoquer l'ancien token
     await this.drizzle.db
       .update(refreshTokens)
       .set({ revokedAt: new Date() })
       .where(eq(refreshTokens.id, storedToken.id));
 
-    // Récupérer l'utilisateur
     const [user] = await this.drizzle.db
       .select()
       .from(users)
       .where(and(eq(users.id, storedToken.userId), isNull(users.deletedAt)))
       .limit(1);
 
-    if (!user || !user.isActive) {
-      throw new UnauthorizedException('Utilisateur non trouvé ou désactivé.');
-    }
+    if (!user || !user.isActive) throw new UnauthorizedException('Utilisateur non trouve ou desactive.');
 
     return this.generateTokens(user, ipAddress, userAgent);
   }
 
   /**
-   * Déconnecte l'utilisateur (révoque un refresh token spécifique).
+   * Deconnecte l utilisateur : revoque le refresh token en DB ET blackliste
+   * l access token dans Redis (cle individuelle jwt_bl:{jti} avec TTL).
    */
-  async logout(refreshToken: string): Promise<void> {
+  async logout(refreshToken: string, jti: string): Promise<void> {
     const tokenHash = this.hashToken(refreshToken);
     await this.drizzle.db
       .update(refreshTokens)
       .set({ revokedAt: new Date() })
       .where(eq(refreshTokens.tokenHash, tokenHash));
+
+    await this.blacklistJti(jti);
   }
 
   /**
-   * Déconnecte toutes les sessions actives de l'utilisateur.
+   * Deconnecte toutes les sessions : revoque tous les refresh tokens.
+   * Les access tokens actifs expirent naturellement (TTL 15 min max).
    */
   async logoutAll(userId: string): Promise<void> {
     await this.drizzle.db
@@ -136,20 +116,13 @@ export class AuthService {
       .where(and(eq(refreshTokens.userId, userId), isNull(refreshTokens.revokedAt)));
   }
 
-  /**
-   * Change le mot de passe de l'utilisateur connecté.
-   */
   async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
     const [user] = await this.drizzle.db.select().from(users).where(eq(users.id, userId)).limit(1);
 
-    if (!user) {
-      throw new UnauthorizedException('Utilisateur non trouvé.');
-    }
+    if (!user) throw new UnauthorizedException('Utilisateur non trouve.');
 
     const isCurrentPasswordValid = await argon2.verify(user.passwordHash, currentPassword);
-    if (!isCurrentPasswordValid) {
-      throw new UnauthorizedException('Le mot de passe actuel est incorrect.');
-    }
+    if (!isCurrentPasswordValid) throw new UnauthorizedException('Le mot de passe actuel est incorrect.');
 
     const newHash = await argon2.hash(newPassword, {
       type: argon2.argon2id,
@@ -163,18 +136,16 @@ export class AuthService {
       .set({ passwordHash: newHash, mustChangePassword: false })
       .where(eq(users.id, userId));
 
-    // Envoyer un email de confirmation (non-bloquant)
     this.sendPasswordChangedEmail(user.email, user.firstName).catch((err) => {
-      this.logger.warn(`Échec envoi email confirmation changement mot de passe: ${(err as Error).message}`);
+      this.logger.warn(`Echec envoi email confirmation changement mot de passe: ${(err as Error).message}`);
     });
   }
 
-  /** Envoie l'email de confirmation de changement de mot de passe */
   private async sendPasswordChangedEmail(to: string, firstName: string): Promise<void> {
     try {
       await this.queues.email.add('send-email', {
         to,
-        subject: '🔒 Votre mot de passe a été modifié',
+        subject: 'Votre mot de passe a ete modifie',
         template: 'passwordChanged',
         data: {
           firstName: firstName || 'Utilisateur',
@@ -188,13 +159,25 @@ export class AuthService {
         },
       });
     } catch (err) {
-      this.logger.warn(`Email queue indisponible pour confirmation mot de passe: ${(err as Error).message}`);
+      this.logger.warn(`Email queue indisponible: ${(err as Error).message}`);
     }
   }
 
   /**
-   * Génère une paire de tokens (access + refresh).
+   * Blackliste un JTI dans Redis avec TTL individuel.
+   * Cle : jwt_bl:{jti} — expire automatiquement avec le token.
+   * Non-bloquant : en cas d indisponibilite Redis, le token expire naturellement.
    */
+  private async blacklistJti(jti: string): Promise<void> {
+    try {
+      const redis = this.redisProvider.getClient();
+      const ttl = this.jwtConfig.accessExpirationSeconds;
+      await redis.setex(`jwt_bl:${jti}`, ttl, '1');
+    } catch (err) {
+      this.logger.warn(`Impossible de blacklister le JTI ${jti}: ${(err as Error).message}`);
+    }
+  }
+
   private async generateTokens(
     user: typeof users.$inferSelect,
     ipAddress: string,
@@ -214,28 +197,18 @@ export class AuthService {
       expiresIn: this.jwtConfig.accessExpiration,
     });
 
-    // Générer et stocker le refresh token
     const rawRefreshToken = randomBytes(48).toString('hex');
     const tokenHash = this.hashToken(rawRefreshToken);
-
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7); // 7 jours
+    expiresAt.setDate(expiresAt.getDate() + 7);
 
-    await this.drizzle.db.insert(refreshTokens).values({
-      id: generateUuid(),
-      userId: user.id,
-      tokenHash,
-      userAgent,
-      ipAddress,
-      expiresAt,
-    });
+    await this.drizzle.db
+      .insert(refreshTokens)
+      .values({ id: generateUuid(), userId: user.id, tokenHash, userAgent, ipAddress, expiresAt });
 
     return { accessToken, refreshToken: rawRefreshToken };
   }
 
-  /**
-   * Hash un token pour stockage sécurisé (SHA-256).
-   */
   private hashToken(token: string): string {
     return createHash('sha256').update(token).digest('hex');
   }

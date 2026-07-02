@@ -156,9 +156,9 @@ describe('AuthController', () => {
       authService.logout.mockResolvedValue(undefined);
       const dto: RefreshDto = { refreshToken: 'token-a-revoquer' };
 
-      const result = await controller.logout(dto);
+      const result = await controller.logout(dto, mockUser);
 
-      expect(authService.logout).toHaveBeenCalledWith(dto.refreshToken);
+      expect(authService.logout).toHaveBeenCalledWith(dto.refreshToken, mockUser.jti);
       expect(result).toBeUndefined();
     });
 
@@ -166,7 +166,7 @@ describe('AuthController', () => {
       authService.logout.mockResolvedValue(undefined);
       const dto: RefreshDto = { refreshToken: 'token-deja-revoque' };
 
-      await expect(controller.logout(dto)).resolves.toBeUndefined();
+      await expect(controller.logout(dto, mockUser)).resolves.toBeUndefined();
     });
   });
 

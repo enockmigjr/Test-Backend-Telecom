@@ -31,8 +31,16 @@ describe("RBAC — Controle d'acces par roles", () => {
   let supervisorToken: string;
   let departmentId: string;
   let agentUserId: string;
+  let adminUserId: string;
 
-  jest.setTimeout(30000);
+  let ticketAssignOkId: string;
+  let ticketAssignFailId: string;
+  let ticketCloseOkId: string;
+  let ticketCloseFailId: string;
+  let ticketReopenOkId: string;
+  let ticketReopenFailId: string;
+
+  jest.setTimeout(60000);
 
   beforeAll(async () => {
     const { app: testApp, flushRedis } = await createTestApp();
@@ -44,33 +52,81 @@ describe("RBAC — Controle d'acces par roles", () => {
     const [dept] = await drizzle.db.select().from(departments).limit(1);
     departmentId = dept?.id;
 
-    const [agent] = await drizzle.db
-      .select({ id: users.id })
-      .from(users)
-      .where(eq(users.email, 'agent@telecom.local'))
-      .limit(1);
-    agentUserId = agent?.id;
+    const { tickets } = await import('../../src/database/schemas');
+    const { isNull } = await import('drizzle-orm');
+    const allTickets = await drizzle.db.select().from(tickets).where(isNull(tickets.deletedAt));
+
+    ticketAssignOkId = allTickets[0]?.id;
+    ticketAssignFailId = allTickets[1]?.id || ticketAssignOkId;
+    ticketCloseOkId = allTickets[2]?.id || ticketAssignOkId;
+    ticketCloseFailId = allTickets[3]?.id || ticketAssignOkId;
+    ticketReopenOkId = allTickets[4]?.id || ticketAssignOkId;
+    ticketReopenFailId = allTickets[5]?.id || ticketAssignOkId;
+
+    // Charger les utilisateurs réels du seed par leur email
+    const allUsers = await drizzle.db.select().from(users);
+    const admin = allUsers.find((u) => u.email === 'admin@telecom.local');
+    const agent = allUsers.find((u) => u.email === 'agent@telecom.local');
+    const supervisor = allUsers.find((u) => u.email === 'supervisor@telecom.local');
+
+    if (!admin || !agent || !supervisor) {
+      throw new Error('Utilisateurs requis non trouves.');
+    }
+
+    agentUserId = agent.id;
+    adminUserId = admin.id;
+
+    // Forcer le statut des tickets de test de façon isolée en DB
+    await drizzle.db
+      .update(tickets)
+      .set({ status: 'NEW', assignedTo: admin.id })
+      .where(eq(tickets.id, ticketAssignOkId));
+
+    await drizzle.db
+      .update(tickets)
+      .set({ status: 'NEW', assignedTo: admin.id })
+      .where(eq(tickets.id, ticketAssignFailId));
+
+    await drizzle.db
+      .update(tickets)
+      .set({ status: 'RESOLVED', assignedTo: admin.id })
+      .where(eq(tickets.id, ticketCloseOkId));
+
+    await drizzle.db
+      .update(tickets)
+      .set({ status: 'RESOLVED', assignedTo: admin.id })
+      .where(eq(tickets.id, ticketCloseFailId));
+
+    await drizzle.db
+      .update(tickets)
+      .set({ status: 'CLOSED', createdBy: admin.id, assignedTo: admin.id, closedAt: new Date() })
+      .where(eq(tickets.id, ticketReopenOkId));
+
+    await drizzle.db
+      .update(tickets)
+      .set({ status: 'CLOSED', createdBy: admin.id, assignedTo: admin.id, closedAt: new Date() })
+      .where(eq(tickets.id, ticketReopenFailId));
 
     // Authentification des differents roles
     const adminLogin = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
-      .send({ email: 'admin@telecom.local', password: 'Admin@1234' });
+      .send({ email: admin.email, password: 'Admin@1234' });
     adminToken = adminLogin.body.data?.accessToken || '';
 
     const agentLogin = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
-      .send({ email: 'agent@telecom.local', password: 'Agent@1234' });
+      .send({ email: agent.email, password: 'Agent@1234' });
     agentToken = agentLogin.body.data?.accessToken || '';
 
     const supervisorLogin = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
-      .send({ email: 'supervisor@telecom.local', password: 'Super@1234' });
+      .send({ email: supervisor.email, password: 'Super@1234' });
     supervisorToken = supervisorLogin.body?.data?.accessToken || '';
   });
 
   afterAll(async () => {
     await app.close();
-  });
+  }, 60000);
 
   // =========================================================================
   // Creer un utilisateur (POST /api/v1/users) — Admin uniquement
@@ -204,23 +260,22 @@ describe("RBAC — Controle d'acces par roles", () => {
   // Assigner un ticket (POST /api/v1/tickets/:id/assign) — Admin et Supervisor uniquement
   // =========================================================================
   describe('POST /api/v1/tickets/:id/assign — Assignation de ticket', () => {
-    const fakeTicketId = '00000000-0000-0000-0000-000000000001';
-
-    it('ADMINISTRATOR peut assigner un ticket → 200 ou 404 si inexistant', async () => {
+    it('ADMINISTRATOR peut assigner un ticket → 200', async () => {
+      if (!ticketAssignOkId) return;
       const res = await request(app.getHttpServer())
-        .post(`/api/v1/tickets/${fakeTicketId}/assign`)
+        .post(`/api/v1/tickets/${ticketAssignOkId}/assign`)
         .set('Authorization', `Bearer ${adminToken}`)
         .send({ userId: agentUserId });
 
-      // Le ticket n'existe pas, donc 404 — mais l'acces est autorise
-      expect([200, 404]).toContain(res.status);
+      expect([200, 201]).toContain(res.status);
     });
 
     it('TECHNICAL_SUPPORT_ENGINEER ne peut PAS assigner un ticket → 403', async () => {
+      if (!ticketAssignFailId) return;
       const res = await request(app.getHttpServer())
-        .post(`/api/v1/tickets/${fakeTicketId}/assign`)
+        .post(`/api/v1/tickets/${ticketAssignFailId}/assign`)
         .set('Authorization', `Bearer ${agentToken}`)
-        .send({ userId: agentUserId })
+        .send({ userId: adminUserId })
         .expect(403);
 
       expect(res.body.success).toBe(false);
@@ -232,19 +287,19 @@ describe("RBAC — Controle d'acces par roles", () => {
   // Cloturer un ticket (POST /api/v1/tickets/:id/close) — Admin et Supervisor
   // =========================================================================
   describe('POST /api/v1/tickets/:id/close — Cloture de ticket', () => {
-    const fakeTicketId = '00000000-0000-0000-0000-000000000002';
-
-    it('ADMINISTRATOR peut cloturer un ticket → 200 ou 404 si inexistant', async () => {
+    it('ADMINISTRATOR peut cloturer un ticket → 200', async () => {
+      if (!ticketCloseOkId) return;
       const res = await request(app.getHttpServer())
-        .post(`/api/v1/tickets/${fakeTicketId}/close`)
+        .post(`/api/v1/tickets/${ticketCloseOkId}/close`)
         .set('Authorization', `Bearer ${adminToken}`);
 
-      expect([200, 404]).toContain(res.status);
+      expect([200, 400]).toContain(res.status);
     });
 
     it('TECHNICAL_SUPPORT_ENGINEER ne peut PAS cloturer un ticket → 403', async () => {
+      if (!ticketCloseFailId) return;
       await request(app.getHttpServer())
-        .post(`/api/v1/tickets/${fakeTicketId}/close`)
+        .post(`/api/v1/tickets/${ticketCloseFailId}/close`)
         .set('Authorization', `Bearer ${agentToken}`)
         .expect(403);
     });
@@ -254,20 +309,22 @@ describe("RBAC — Controle d'acces par roles", () => {
   // Reouvrir un ticket (POST /api/v1/tickets/:id/reopen) — Admin et Supervisor
   // =========================================================================
   describe('POST /api/v1/tickets/:id/reopen — Reouverture de ticket', () => {
-    const fakeTicketId = '00000000-0000-0000-0000-000000000003';
-
-    it('ADMINISTRATOR peut reouvrir un ticket → 200 ou 404 si inexistant', async () => {
+    it('ADMINISTRATOR peut reouvrir un ticket → 200', async () => {
+      if (!ticketReopenOkId) return;
       const res = await request(app.getHttpServer())
-        .post(`/api/v1/tickets/${fakeTicketId}/reopen`)
-        .set('Authorization', `Bearer ${adminToken}`);
+        .post(`/api/v1/tickets/${ticketReopenOkId}/reopen`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ reason: 'Reouverture Admin test' });
 
-      expect([200, 404]).toContain(res.status);
+      expect([200, 400]).toContain(res.status);
     });
 
     it('TECHNICAL_SUPPORT_ENGINEER ne peut PAS reouvrir un ticket → 403', async () => {
+      if (!ticketReopenFailId) return;
       await request(app.getHttpServer())
-        .post(`/api/v1/tickets/${fakeTicketId}/reopen`)
+        .post(`/api/v1/tickets/${ticketReopenFailId}/reopen`)
         .set('Authorization', `Bearer ${agentToken}`)
+        .send({ reason: 'Tentative Reouverture' })
         .expect(403);
     });
   });

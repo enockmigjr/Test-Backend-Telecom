@@ -5,6 +5,7 @@ import { TicketsSearchService } from './services/tickets-search.service';
 import { TicketNumberService } from './services/ticket-number.service';
 import { TicketHistoryService } from './services/ticket-history.service';
 import { TicketStateMachine } from './domain/ticket-status-transitions';
+import { TicketPermissions } from './domain/ticket-permissions';
 import { TicketNotificationListener } from './listeners/ticket-notification.listener';
 import { TicketAuditListener } from './listeners/ticket-audit.listener';
 import { TicketSlaListener } from './listeners/ticket-sla.listener';
@@ -28,10 +29,11 @@ import { WebSocketModule } from '../../websocket/websocket.module';
     TicketNumberService,
     TicketHistoryService,
     TicketStateMachine,
+    TicketPermissions,
     TicketNotificationListener,
     TicketAuditListener,
     TicketSlaListener,
   ],
-  exports: [TicketsService, TicketsSearchService, TicketHistoryService],
+  exports: [TicketsService, TicketsSearchService, TicketHistoryService, TicketPermissions],
 })
 export class TicketsModule {}

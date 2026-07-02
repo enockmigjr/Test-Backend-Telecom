@@ -21,6 +21,9 @@ import { SearchTicketsDto } from './dto/search-tickets.dto';
 import { AssignTicketDto } from './dto/assign-ticket.dto';
 import { EscalateTicketDto } from './dto/escalate-ticket.dto';
 import { UpdateTicketDto } from './dto/update-ticket.dto';
+import { ResolveTicketDto } from './dto/resolve-ticket.dto';
+import { ReopenTicketDto } from './dto/reopen-ticket.dto';
+import { PendingTicketDto } from './dto/pending-ticket.dto';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { Idempotent } from '../../common/decorators/idempotent.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -40,29 +43,17 @@ export class TicketsController {
 
   @Post()
   @Idempotent()
-  @Roles(
-    'ADMINISTRATOR',
-    'SUPERVISOR',
-    'CUSTOMER_SERVICE_AGENT',
-    'NOC_ENGINEER',
-    'BILLING_AGENT',
-    'TECHNICAL_SUPPORT_ENGINEER',
-    'FIELD_TECHNICIAN',
-  )
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: "Créer un ticket d'incident",
     description:
-      "Crée un nouveau ticket. L'ID d'idempotence (Idempotency-Key) dans les headers évite les doublons lors des soumissions multiples.\n\nLe SLA est calculé automatiquement selon la catégorie et la priorité.\n\n**Rôles autorisés :** Tous les rôles authentifiés",
+      'Crée un nouveau ticket. Le SLA est calculé automatiquement selon la catégorie et la priorité.\n\n**Rôles autorisés :** Tous les rôles authentifiés',
   })
   @ApiBody({ type: CreateTicketDto })
   @ApiResponse({
     status: 201,
-    description: 'Ticket créé. La réponse inclut le numéro généré (TT-YYYY-XXXXXX) et les échéances SLA.',
+    description: 'Ticket créé.',
   })
-  @ApiResponse({ status: 400, description: 'Données invalides ou politique SLA introuvable pour catégorie/priorité.' })
-  @ApiResponse({ status: 401, description: 'Token JWT manquant ou expiré.' })
-  @ApiResponse({ status: 429, description: 'Limite de requêtes dépassée.' })
   async create(@Body() dto: CreateTicketDto, @CurrentUser() user: JwtPayload) {
     return this.ticketsService.create(dto, user.sub);
   }
@@ -71,24 +62,23 @@ export class TicketsController {
   @UseInterceptors(FieldProjectionInterceptor)
   @ApiOperation({
     summary: 'Rechercher des tickets',
-    description:
-      'Recherche multi-critères sur les tickets. Supports la pagination.\n\nParam detail=summary retourne uniquement les champs essentiels (id, numéro, titre, statut, priorité).\n\n**Rôles autorisés :** Tous les rôles authentifiés',
+    description: "Recherche multi-critères avec pagination sur les tickets visibles selon le rôle de l'utilisateur.",
   })
-  @ApiQuery({ name: 'status', required: false, example: 'IN_PROGRESS', description: 'Filtrer par statut du ticket' })
-  @ApiQuery({ name: 'priority', required: false, example: 'HIGH', description: 'Filtrer par priorité' })
-  @ApiQuery({ name: 'category', required: false, example: 'NETWORK', description: 'Filtrer par catégorie' })
+  @ApiQuery({ name: 'status', required: false, description: 'Filtrer par statut (ex: NEW, ASSIGNED, IN_PROGRESS)' })
+  @ApiQuery({ name: 'priority', required: false, description: 'Filtrer par priorité (LOW, MEDIUM, HIGH, CRITICAL)' })
+  @ApiQuery({ name: 'severity', required: false, description: 'Filtrer par sévérité' })
+  @ApiQuery({ name: 'category', required: false, description: 'Filtrer par catégorie' })
   @ApiQuery({ name: 'assignedTo', required: false, description: "UUID de l'agent assigné" })
-  @ApiQuery({ name: 'departmentId', required: false, description: 'UUID du département' })
-  @ApiQuery({ name: 'slaBreached', required: false, type: Boolean, description: 'Filtrer les tickets en breach SLA' })
-  @ApiQuery({ name: 'q', required: false, description: 'Recherche textuelle (titre, numéro)' })
-  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
-  @ApiQuery({ name: 'limit', required: false, type: Number, example: 20 })
-  @ApiQuery({ name: 'detail', required: false, enum: ['full', 'summary'], description: 'summary = champs réduits' })
-  @ApiResponse({ status: 200, description: 'Liste paginée des tickets correspondant aux filtres.' })
-  @ApiResponse({ status: 400, description: 'Paramètres de filtrage invalides.' })
-  @ApiResponse({ status: 401, description: 'Token JWT manquant ou expiré.' })
-  @ApiResponse({ status: 403, description: 'Rôle insuffisant.' })
-  @ApiResponse({ status: 429, description: 'Limite de requêtes dépassée.' })
+  @ApiQuery({ name: 'assignedTeam', required: false, description: 'UUID du département assigné' })
+  @ApiQuery({ name: 'departmentId', required: false, description: 'UUID du département du ticket' })
+  @ApiQuery({ name: 'search', required: false, description: 'Recherche texte libre (titre, description, numéro)' })
+  @ApiQuery({ name: 'from', required: false, description: 'Date de début ISO 8601 (ex: 2026-01-01)' })
+  @ApiQuery({ name: 'to', required: false, description: 'Date de fin ISO 8601' })
+  @ApiQuery({ name: 'page', required: false, description: 'Page courante (défaut: 1)' })
+  @ApiQuery({ name: 'limit', required: false, description: 'Résultats par page (défaut: 20, max: 100)' })
+  @ApiQuery({ name: 'sort', required: false, description: 'Champ de tri (ex: createdAt, priority)' })
+  @ApiQuery({ name: 'order', required: false, description: 'Ordre de tri: asc | desc' })
+  @ApiResponse({ status: 200, description: 'Liste paginée de tickets.' })
   async search(@Query() filters: SearchTicketsDto) {
     return this.searchService.search(filters);
   }
@@ -97,19 +87,12 @@ export class TicketsController {
   @ApiOperation({
     summary: "Détails d'un ticket",
     description:
-      "Retourne un ticket par son UUID.\n\nAvec detail=full, enrichit la réponse avec le comptage des commentaires et l'historique des assignations.\n\n**Rôles autorisés :** Tous les rôles authentifiés",
+      'Retourne un ticket par son UUID. Avec ?detail=full, retourne aussi les commentaires, notes internes et historique.',
   })
-  @ApiParam({ name: 'id', description: 'UUID du ticket', example: '01922b3c-...' })
-  @ApiQuery({
-    name: 'detail',
-    required: false,
-    enum: ['full', 'summary'],
-    description: 'full = ticket + commentaires + historique assignations',
-  })
-  @ApiResponse({ status: 200, description: 'Ticket avec ses relations (créateur, assigné, département).' })
-  @ApiResponse({ status: 401, description: 'Token JWT manquant ou expiré.' })
-  @ApiResponse({ status: 404, description: 'Ticket non trouvé ou supprimé.' })
-  @ApiResponse({ status: 429, description: 'Limite de requêtes dépassée.' })
+  @ApiParam({ name: 'id', description: 'UUID du ticket' })
+  @ApiQuery({ name: 'detail', required: false, description: "Option 'full' pour retourner les relations détaillées" })
+  @ApiResponse({ status: 200, description: 'Détails du ticket.' })
+  @ApiResponse({ status: 404, description: 'Ticket introuvable.' })
   async findOne(@Param('id') id: string, @Query('detail') detail?: string) {
     if (detail === 'full') {
       return this.ticketsService.findByIdDetailed(id);
@@ -118,176 +101,172 @@ export class TicketsController {
   }
 
   @Patch(':id')
-  @Roles('ADMINISTRATOR', 'SUPERVISOR')
   @ApiOperation({
     summary: 'Mettre à jour un ticket',
     description:
-      "Met à jour les champs modifiables d'un ticket (titre, description, priorité, catégorie).\n\n**Rôles autorisés :** ADMINISTRATOR, SUPERVISOR",
+      "Met à jour les champs modifiables d'un ticket. Les permissions d'édition sont validées dynamiquement selon l'ownership du champ.",
   })
   @ApiParam({ name: 'id', description: 'UUID du ticket' })
   @ApiBody({ type: UpdateTicketDto })
-  @ApiResponse({ status: 200, description: 'Ticket mis à jour avec succès.' })
-  @ApiResponse({ status: 400, description: 'Données invalides ou transition de statut interdite.' })
-  @ApiResponse({ status: 401, description: 'Token JWT manquant ou expiré.' })
-  @ApiResponse({ status: 403, description: 'Rôle insuffisant -- ADMINISTRATOR ou SUPERVISOR requis.' })
-  @ApiResponse({ status: 404, description: 'Ticket non trouvé.' })
-  @ApiResponse({ status: 409, description: 'Conflit -- transition de statut non autorisée.' })
-  @ApiResponse({ status: 429, description: 'Limite de requêtes dépassée.' })
+  @ApiResponse({ status: 200, description: 'Ticket mis à jour.' })
+  @ApiResponse({ status: 400, description: 'Données invalides.' })
+  @ApiResponse({ status: 403, description: 'Permission refusée.' })
+  @ApiResponse({ status: 404, description: 'Ticket introuvable.' })
   async update(@Param('id') id: string, @Body() dto: UpdateTicketDto, @CurrentUser() user: JwtPayload) {
-    return this.ticketsService.update(id, dto, user.sub);
+    return this.ticketsService.update(id, dto, user);
   }
 
   @Post(':id/assign')
   @Idempotent()
   @HttpCode(HttpStatus.OK)
-  @Roles('ADMINISTRATOR', 'SUPERVISOR')
   @ApiOperation({
-    summary: 'Assigner un ticket à un agent -- idempotent (header Idempotency-Key)',
+    summary: 'Assigner un ticket à un agent',
     description:
-      "Assigne un ticket à un agent spécifique. L'idempotence via Idempotency-Key empêche les assignations multiples frauduleuses.\n\n**Rôles autorisés :** ADMINISTRATOR, SUPERVISOR",
+      "Assigne ou auto-assigne un ticket. Un agent peut s'auto-assigner un ticket NEW non assigné. L'assignation à des tiers exige le rôle SUPERVISOR ou ADMINISTRATOR.",
   })
   @ApiParam({ name: 'id', description: 'UUID du ticket' })
   @ApiBody({ type: AssignTicketDto })
-  @ApiResponse({ status: 200, description: 'Ticket assigné avec succès.' })
-  @ApiResponse({ status: 400, description: "Données invalides ou ticket déjà assigné à l'utilisateur." })
-  @ApiResponse({ status: 401, description: 'Token JWT manquant ou expiré.' })
-  @ApiResponse({ status: 403, description: 'Rôle insuffisant -- ADMINISTRATOR ou SUPERVISOR requis.' })
-  @ApiResponse({ status: 404, description: 'Ticket ou utilisateur non trouvé.' })
-  @ApiResponse({ status: 409, description: 'Conflit -- assignation incompatible avec le statut actuel.' })
-  @ApiResponse({ status: 429, description: 'Limite de requêtes dépassée.' })
+  @ApiResponse({ status: 200, description: 'Ticket assigné.' })
+  @ApiResponse({ status: 403, description: 'Permission refusée.' })
+  @ApiResponse({ status: 404, description: 'Ticket ou utilisateur introuvable.' })
   async assign(@Param('id') id: string, @Body() dto: AssignTicketDto, @CurrentUser() user: JwtPayload) {
-    return this.ticketsService.assign(id, dto.userId, user.sub, dto.reason);
+    return this.ticketsService.assign(id, dto.userId, user, dto.reason);
+  }
+
+  @Post(':id/reassign')
+  @Idempotent()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Réassigner un ticket à un autre agent',
+    description:
+      "Réassigne un ticket déjà assigné. Autorisé pour l'assigné actuel (escalade hiérarchique), un SUPERVISOR ou un ADMINISTRATOR.",
+  })
+  @ApiParam({ name: 'id', description: 'UUID du ticket' })
+  @ApiBody({ type: AssignTicketDto })
+  @ApiResponse({ status: 200, description: 'Ticket réassigné.' })
+  @ApiResponse({ status: 403, description: 'Permission refusée.' })
+  @ApiResponse({ status: 404, description: 'Ticket ou utilisateur introuvable.' })
+  async reassign(@Param('id') id: string, @Body() dto: AssignTicketDto, @CurrentUser() user: JwtPayload) {
+    return this.ticketsService.assign(id, dto.userId, user, dto.reason);
   }
 
   @Post(':id/escalate')
   @Idempotent()
   @HttpCode(HttpStatus.OK)
-  @Roles('ADMINISTRATOR', 'SUPERVISOR')
   @ApiOperation({
-    summary: 'Escalader un ticket -- idempotent (header Idempotency-Key)',
+    summary: 'Escalader un ticket',
     description:
-      'Escalade un ticket vers un autre département ou un autre agent. Utile quand le niveau de support actuel ne peut pas résoudre le problème.\n\n**Rôles autorisés :** ADMINISTRATOR, SUPERVISOR',
+      "Escalade le ticket. L'escalade fonctionnelle (changement de département) exige SUPERVISOR ou ADMINISTRATOR. L'escalade hiérarchique (même département) est autorisée pour l'assigné actuel.",
   })
   @ApiParam({ name: 'id', description: 'UUID du ticket' })
   @ApiBody({ type: EscalateTicketDto })
-  @ApiResponse({ status: 200, description: 'Ticket escaladé avec succès.' })
-  @ApiResponse({ status: 400, description: "Données invalides ou transition d'escalade interdite." })
-  @ApiResponse({ status: 401, description: 'Token JWT manquant ou expiré.' })
-  @ApiResponse({ status: 403, description: 'Rôle insuffisant -- ADMINISTRATOR ou SUPERVISOR requis.' })
-  @ApiResponse({ status: 404, description: 'Ticket, département ou utilisateur cible non trouvé.' })
-  @ApiResponse({ status: 409, description: 'Conflit -- escalade incompatible avec le statut actuel.' })
-  @ApiResponse({ status: 429, description: 'Limite de requêtes dépassée.' })
+  @ApiResponse({ status: 200, description: 'Ticket escaladé.' })
+  @ApiResponse({ status: 403, description: 'Permission refusée.' })
+  @ApiResponse({ status: 404, description: 'Ticket introuvable.' })
   async escalate(@Param('id') id: string, @Body() dto: EscalateTicketDto, @CurrentUser() user: JwtPayload) {
-    return this.ticketsService.escalate(id, dto.userId, dto.departmentId, user.sub, dto.reason);
+    return this.ticketsService.escalate(id, dto.userId, dto.departmentId, user, dto.reason);
   }
 
   @Post(':id/start')
   @HttpCode(HttpStatus.OK)
-  @Roles(
-    'ADMINISTRATOR',
-    'SUPERVISOR',
-    'CUSTOMER_SERVICE_AGENT',
-    'NOC_ENGINEER',
-    'BILLING_AGENT',
-    'TECHNICAL_SUPPORT_ENGINEER',
-    'FIELD_TECHNICIAN',
-  )
   @ApiOperation({
-    summary: "Démarrer le traitement d'un ticket (ASSIGNED -> IN_PROGRESS)",
+    summary: "Démarrer le traitement d'un ticket",
     description:
-      "Fait passer le statut du ticket de ASSIGNED à IN_PROGRESS, indiquant que l'agent a commencé à travailler sur le ticket.\n\n**Rôles autorisés :** Tous les rôles authentifiés (avec accès au ticket)",
+      "Fait passer le statut du ticket à IN_PROGRESS (depuis ASSIGNED). Autorisé pour l'assigné, superviseur et admin.",
   })
   @ApiParam({ name: 'id', description: 'UUID du ticket' })
-  @ApiResponse({ status: 200, description: 'Ticket en cours de traitement (IN_PROGRESS).' })
-  @ApiResponse({ status: 400, description: 'Transition invalide -- le statut actuel ne permet pas ce changement.' })
-  @ApiResponse({ status: 401, description: 'Token JWT manquant ou expiré.' })
-  @ApiResponse({ status: 403, description: 'Rôle insuffisant.' })
-  @ApiResponse({ status: 404, description: 'Ticket non trouvé.' })
-  @ApiResponse({ status: 409, description: 'Conflit -- transition non autorisée.' })
-  @ApiResponse({ status: 429, description: 'Limite de requêtes dépassée.' })
+  @ApiResponse({ status: 200, description: 'Traitement démarré, statut: IN_PROGRESS.' })
+  @ApiResponse({ status: 400, description: 'Transition de statut invalide.' })
+  @ApiResponse({ status: 403, description: 'Permission refusée.' })
   async start(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
-    return this.ticketsService.changeStatus(id, 'IN_PROGRESS', user.sub);
+    return this.ticketsService.changeStatus(id, 'IN_PROGRESS', user);
   }
 
   @Post(':id/resolve')
   @HttpCode(HttpStatus.OK)
-  @Roles(
-    'ADMINISTRATOR',
-    'SUPERVISOR',
-    'CUSTOMER_SERVICE_AGENT',
-    'NOC_ENGINEER',
-    'BILLING_AGENT',
-    'TECHNICAL_SUPPORT_ENGINEER',
-    'FIELD_TECHNICIAN',
-  )
   @ApiOperation({
-    summary: 'Marquer un ticket comme résolu (IN_PROGRESS -> RESOLVED)',
+    summary: 'Marquer un ticket comme résolu',
     description:
-      'Fait passer le statut du ticket de IN_PROGRESS à RESOLVED. Le ticket sera ensuite vérifié avant clôture.\n\n**Rôles autorisés :** Tous les rôles authentifiés (avec accès au ticket)',
+      "Fait passer le statut du ticket à RESOLVED. Annule le job SLA breach planifié. Autorisé pour l'assigné, superviseur et admin.",
   })
   @ApiParam({ name: 'id', description: 'UUID du ticket' })
-  @ApiResponse({ status: 200, description: 'Ticket marqué comme résolu (RESOLVED).' })
-  @ApiResponse({ status: 400, description: 'Transition invalide.' })
-  @ApiResponse({ status: 401, description: 'Token JWT manquant ou expiré.' })
-  @ApiResponse({ status: 403, description: 'Rôle insuffisant.' })
-  @ApiResponse({ status: 404, description: 'Ticket non trouvé.' })
-  @ApiResponse({ status: 409, description: 'Conflit -- transition non autorisée.' })
-  @ApiResponse({ status: 429, description: 'Limite de requêtes dépassée.' })
-  async resolve(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
-    return this.ticketsService.changeStatus(id, 'RESOLVED', user.sub);
+  @ApiBody({ type: ResolveTicketDto })
+  @ApiResponse({ status: 200, description: 'Ticket résolu.' })
+  @ApiResponse({ status: 400, description: 'Transition de statut invalide.' })
+  @ApiResponse({ status: 403, description: 'Permission refusée.' })
+  async resolve(@Param('id') id: string, @Body() dto: ResolveTicketDto, @CurrentUser() user: JwtPayload) {
+    return this.ticketsService.changeStatus(id, 'RESOLVED', user, dto.resolutionSummary);
   }
 
   @Post(':id/close')
   @HttpCode(HttpStatus.OK)
-  @Roles('ADMINISTRATOR', 'SUPERVISOR')
   @ApiOperation({
-    summary: 'Clôturer un ticket résolu (RESOLVED -> CLOSED)',
+    summary: 'Clôturer un ticket résolu',
     description:
-      'Ferme définitivement un ticket résolu. Seuls ADMINISTRATOR et SUPERVISOR peuvent clôturer.\n\n**Rôles autorisés :** ADMINISTRATOR, SUPERVISOR',
+      "Clôture définitivement un ticket résolu (RESOLVED → CLOSED). L'auto-clôture automatique ferme les tickets 48h après résolution. Autorisé pour l'assigné, superviseur et admin.",
   })
   @ApiParam({ name: 'id', description: 'UUID du ticket' })
-  @ApiResponse({ status: 200, description: 'Ticket clôturé (CLOSED).' })
-  @ApiResponse({ status: 400, description: 'Transition invalide -- le ticket doit être en statut RESOLVED.' })
-  @ApiResponse({ status: 401, description: 'Token JWT manquant ou expiré.' })
-  @ApiResponse({ status: 403, description: 'Rôle insuffisant -- ADMINISTRATOR ou SUPERVISOR requis.' })
-  @ApiResponse({ status: 404, description: 'Ticket non trouvé.' })
-  @ApiResponse({ status: 409, description: 'Conflit -- transition non autorisée.' })
-  @ApiResponse({ status: 429, description: 'Limite de requêtes dépassée.' })
+  @ApiResponse({ status: 200, description: 'Ticket clôturé.' })
+  @ApiResponse({ status: 400, description: 'Transition de statut invalide (ticket non résolu).' })
+  @ApiResponse({ status: 403, description: 'Permission refusée.' })
   async close(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
-    return this.ticketsService.changeStatus(id, 'CLOSED', user.sub);
+    return this.ticketsService.changeStatus(id, 'CLOSED', user);
   }
 
   @Post(':id/reopen')
   @HttpCode(HttpStatus.OK)
-  @Roles('ADMINISTRATOR', 'SUPERVISOR')
   @ApiOperation({
-    summary: 'Réouvrir un ticket clôturé (CLOSED -> REOPENED)',
+    summary: 'Réouvrir un ticket clôturé',
     description:
-      "Réouvre un ticket précédemment clôturé, généralement parce que le problème n'est pas entièrement résolu.\n\n**Rôles autorisés :** ADMINISTRATOR, SUPERVISOR",
+      'Réouvre un ticket fermé de moins de 30 jours. Autorisé pour le CS Agent créateur du ticket, SUPERVISOR et ADMINISTRATOR. Remettre à null resolvedAt et closedAt.',
   })
   @ApiParam({ name: 'id', description: 'UUID du ticket' })
-  @ApiResponse({ status: 200, description: 'Ticket réouvert (REOPENED).' })
-  @ApiResponse({ status: 400, description: 'Transition invalide -- le ticket doit être en statut CLOSED.' })
-  @ApiResponse({ status: 401, description: 'Token JWT manquant ou expiré.' })
-  @ApiResponse({ status: 403, description: 'Rôle insuffisant -- ADMINISTRATOR ou SUPERVISOR requis.' })
-  @ApiResponse({ status: 404, description: 'Ticket non trouvé.' })
-  @ApiResponse({ status: 409, description: 'Conflit -- transition non autorisée.' })
-  @ApiResponse({ status: 429, description: 'Limite de requêtes dépassée.' })
-  async reopen(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
-    return this.ticketsService.changeStatus(id, 'REOPENED', user.sub);
+  @ApiBody({ type: ReopenTicketDto })
+  @ApiResponse({ status: 200, description: 'Ticket réouvert (statut: REOPENED).' })
+  @ApiResponse({ status: 400, description: 'Délai de 30 jours dépassé ou raison trop courte (min 10 caractères).' })
+  @ApiResponse({ status: 403, description: 'Permission refusée.' })
+  async reopen(@Param('id') id: string, @Body() dto: ReopenTicketDto, @CurrentUser() user: JwtPayload) {
+    return this.ticketsService.changeStatus(id, 'REOPENED', user, dto.reason);
+  }
+
+  @Post(':id/pending-customer')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Mettre en attente du client (IN_PROGRESS -> PENDING_CUSTOMER)',
+    description: "Met le ticket en attente d'une action du client. Autorisé pour l'assigné, superviseur et admin.",
+  })
+  @ApiParam({ name: 'id', description: 'UUID du ticket' })
+  @ApiBody({ type: PendingTicketDto })
+  @ApiResponse({ status: 200, description: 'Ticket mis en attente client.' })
+  @ApiResponse({ status: 400, description: 'Transition de statut invalide (ticket non IN_PROGRESS).' })
+  @ApiResponse({ status: 403, description: 'Permission refusée.' })
+  async pendingCustomer(@Param('id') id: string, @Body() dto: PendingTicketDto, @CurrentUser() user: JwtPayload) {
+    return this.ticketsService.changeStatus(id, 'PENDING_CUSTOMER', user, dto.reason);
+  }
+
+  @Post(':id/pending-third-party')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Mettre en attente tiers (IN_PROGRESS -> PENDING_THIRD_PARTY)',
+    description: "Met le ticket en attente d'un fournisseur ou tiers. Autorisé pour l'assigné, superviseur et admin.",
+  })
+  @ApiParam({ name: 'id', description: 'UUID du ticket' })
+  @ApiBody({ type: PendingTicketDto })
+  @ApiResponse({ status: 200, description: 'Ticket mis en attente tiers.' })
+  @ApiResponse({ status: 400, description: 'Transition de statut invalide (ticket non IN_PROGRESS).' })
+  @ApiResponse({ status: 403, description: 'Permission refusée.' })
+  async pendingThirdParty(@Param('id') id: string, @Body() dto: PendingTicketDto, @CurrentUser() user: JwtPayload) {
+    return this.ticketsService.changeStatus(id, 'PENDING_THIRD_PARTY', user, dto.reason);
   }
 
   @Get(':id/history')
   @ApiOperation({
     summary: "Historique complet d'un ticket",
-    description:
-      "Retourne l'historique complet des changements de statut, assignations et escalades pour un ticket.\n\n**Rôles autorisés :** Tous les rôles authentifiés",
+    description: "Retourne l'historique de toutes les transitions de statut et d'assignation du ticket.",
   })
   @ApiParam({ name: 'id', description: 'UUID du ticket' })
-  @ApiResponse({ status: 200, description: 'Historique des événements du ticket.' })
-  @ApiResponse({ status: 401, description: 'Token JWT manquant ou expiré.' })
-  @ApiResponse({ status: 404, description: 'Ticket non trouvé.' })
-  @ApiResponse({ status: 429, description: 'Limite de requêtes dépassée.' })
+  @ApiResponse({ status: 200, description: 'Historique du ticket.' })
+  @ApiResponse({ status: 404, description: 'Ticket introuvable.' })
   async history(@Param('id') id: string) {
     return this.ticketsService.getHistory(id);
   }
@@ -297,16 +276,11 @@ export class TicketsController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
     summary: 'Supprimer un ticket (soft delete, Admin uniquement)',
-    description:
-      "Effectue une suppression logique (soft delete) du ticket. Le ticket n'est pas effacé de la base de données mais marqué comme supprimé.\n\n**Rôles autorisés :** ADMINISTRATOR uniquement",
+    description: 'Suppression logique du ticket. Le ticket reste en base avec deleted_at renseigné.',
   })
   @ApiParam({ name: 'id', description: 'UUID du ticket' })
   @ApiResponse({ status: 204, description: 'Ticket supprimé (soft delete).' })
-  @ApiResponse({ status: 401, description: 'Token JWT manquant ou expiré.' })
-  @ApiResponse({ status: 403, description: 'Rôle insuffisant -- ADMINISTRATOR requis.' })
-  @ApiResponse({ status: 404, description: 'Ticket non trouvé.' })
-  @ApiResponse({ status: 409, description: 'Conflit -- le ticket a des dépendances qui empêchent la suppression.' })
-  @ApiResponse({ status: 429, description: 'Limite de requêtes dépassée.' })
+  @ApiResponse({ status: 404, description: 'Ticket introuvable.' })
   async remove(@Param('id') id: string) {
     await this.ticketsService.softDelete(id);
   }

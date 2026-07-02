@@ -23,10 +23,15 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   }
 
   async validate(payload: JwtPayload) {
-    // Vérifier si le token est dans la blacklist Redis (connexion mutualisée)
+    // Vérifier si le token est blacklisté dans Redis.
+    // Nouvelle stratégie : clé individuelle jwt_bl:{jti} avec TTL automatique.
+    // Ancienne stratégie (Set global jwt_blacklist) maintenue pour compatibilité.
     const redis = this.redisProvider.getClient();
-    const isRevoked = await redis.sismember('jwt_blacklist', payload.jti);
-    if (isRevoked) {
+    const [isRevokedNew, isRevokedLegacy] = await Promise.all([
+      redis.exists(`jwt_bl:${payload.jti}`),
+      redis.sismember('jwt_blacklist', payload.jti),
+    ]);
+    if (isRevokedNew || isRevokedLegacy) {
       throw new UnauthorizedException('Token révoqué.');
     }
 

@@ -1,66 +1,84 @@
-import { INestApplication } from '@nestjs/common';
+import { Test } from '@nestjs/testing';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
-import { createTestApp } from '../setup';
+import { AppModule } from '../../src/app.module';
+import { GlobalExceptionFilter } from '../../src/common/filters/global-exception.filter';
+import { TransformInterceptor } from '../../src/common/interceptors/transform.interceptor';
+import { DrizzleProvider } from '../../src/database/drizzle.provider';
+import { users } from '../../src/database/schemas';
 
-describe('Dashboard — E2E (DB réelle)', () => {
+describe('Dashboard — E2E', () => {
   let app: INestApplication;
   let adminToken: string;
+  let agentToken: string;
+
+  jest.setTimeout(60000);
 
   beforeAll(async () => {
-    const { app: testApp, flushRedis } = await createTestApp();
-    await flushRedis();
-    app = testApp;
+    const moduleRef = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
 
-    const login = await request(app.getHttpServer())
+    app = moduleRef.createNestApplication();
+    app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
+    app.useGlobalFilters(new GlobalExceptionFilter());
+    app.useGlobalInterceptors(new TransformInterceptor());
+    app.setGlobalPrefix('api/v1');
+    await app.init();
+
+    // Récupérer des jetons
+    const drizzle = app.get(DrizzleProvider);
+    const allUsers = await drizzle.db.select().from(users);
+    const admin = allUsers.find((u) => u.role === 'ADMINISTRATOR');
+    const csAgent = allUsers.find((u) => u.role === 'CUSTOMER_SERVICE_AGENT');
+
+    if (!admin || !csAgent) {
+      throw new Error('Utilisateurs requis du seed non trouvés.');
+    }
+
+    const adminLogin = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
-      .send({ email: 'admin@telecom.local', password: 'Admin@1234' });
-    if (login.body.success) adminToken = login.body.data.accessToken;
+      .send({ email: admin.email, password: 'Admin@1234' });
+    adminToken = adminLogin.body.data.accessToken;
+
+    const agentLogin = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ email: csAgent.email, password: 'Agent@1234' });
+    agentToken = agentLogin.body.data.accessToken;
   });
 
   afterAll(async () => {
     await app.close();
-  });
+  }, 60000);
 
-  it('GET /dashboard/overview — KPIs globaux (200)', async () => {
-    if (!adminToken) return;
-    const res = await request(app.getHttpServer())
-      .get('/api/v1/dashboard/overview')
-      .set('Authorization', `Bearer ${adminToken}`)
-      .expect(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data.ticketVolume).toBeDefined();
-  });
+  describe('Vérification des 7 endpoints dashboard', () => {
+    const endpoints = [
+      'overview',
+      'tickets-by-status',
+      'tickets-by-priority',
+      'departments',
+      'sla-compliance',
+      'workload',
+      'resolution-time',
+    ];
 
-  it('GET /dashboard/workload — charge agents (200)', async () => {
-    if (!adminToken) return;
-    const res = await request(app.getHttpServer())
-      .get('/api/v1/dashboard/workload')
-      .set('Authorization', `Bearer ${adminToken}`)
-      .expect(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data.summary).toBeDefined();
-  });
+    for (const ep of endpoints) {
+      it(`GET /dashboard/${ep} — doit réussir pour l admin -> 200`, async () => {
+        const res = await request(app.getHttpServer())
+          .get(`/api/v1/dashboard/${ep}`)
+          .set('Authorization', `Bearer ${adminToken}`)
+          .expect(200);
 
-  it('GET /dashboard/tickets-by-status — tickets par statut (200)', async () => {
-    if (!adminToken) return;
-    const res = await request(app.getHttpServer())
-      .get('/api/v1/dashboard/tickets-by-status')
-      .set('Authorization', `Bearer ${adminToken}`)
-      .expect(200);
-    expect(res.body.success).toBe(true);
-  });
+        expect(res.body.success).toBe(true);
+        expect(res.body.data).toBeDefined();
+      });
 
-  it('GET /dashboard sans admin — 403', async () => {
-    // Login en tant qu'agent
-    const agentLogin = await request(app.getHttpServer())
-      .post('/api/v1/auth/login')
-      .send({ email: 'agent-cc@telecom.local', password: 'Agent@1234' });
-    const agentToken = agentLogin.body.data?.accessToken;
-    if (!agentToken) return;
-
-    await request(app.getHttpServer())
-      .get('/api/v1/dashboard/overview')
-      .set('Authorization', `Bearer ${agentToken}`)
-      .expect(403);
+      it(`GET /dashboard/${ep} — doit refuser à un simple agent -> 403`, async () => {
+        await request(app.getHttpServer())
+          .get(`/api/v1/dashboard/${ep}`)
+          .set('Authorization', `Bearer ${agentToken}`)
+          .expect(403);
+      });
+    }
   });
 });

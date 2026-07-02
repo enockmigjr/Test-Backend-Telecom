@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { DrizzleProvider } from '../../database/drizzle.provider';
 import { tickets, departments } from '../../database/schemas';
 import { eq, and, gte, lte, isNull, count, sql } from 'drizzle-orm';
@@ -37,7 +37,7 @@ export class ReportsService {
       .where(and(eq(tickets.id, ticketId), isNull(tickets.deletedAt)))
       .limit(1);
 
-    if (!ticket) throw new Error('Ticket non trouvé');
+    if (!ticket) throw new NotFoundException(`Ticket introuvable pour l'id ${ticketId}.`);
 
     return {
       generatedAt: new Date().toISOString(),

@@ -4,7 +4,8 @@ import { Public } from '../../common/decorators/public.decorator';
 
 /**
  * Contrôleur racine de l'API.
- * Fournit les informations de base et les health checks.
+ * Fournit les informations de base sur la plateforme.
+ * Les health checks sont gérés par HealthController (GET /api/v1/health, /api/v1/health/ready).
  */
 @ApiTags('root')
 @Controller()
@@ -22,26 +23,5 @@ export class AppController {
       health: '/api/v1/health',
       metrics: '/api/v1/metrics (Prometheus OpenMetrics)',
     };
-  }
-
-  @Public()
-  @Get('health')
-  @ApiOperation({ summary: 'Health check — liveness' })
-  @ApiResponse({ status: 200, description: 'Service en vie.' })
-  health() {
-    return {
-      status: 'ok',
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-      memory: process.memoryUsage(),
-    };
-  }
-
-  @Public()
-  @Get('test-swagger')
-  @ApiOperation({ summary: 'Route de test — vérifie que Swagger détecte les nouvelles routes' })
-  @ApiResponse({ status: 200, description: 'Route test fonctionnelle.' })
-  testSwagger() {
-    return { message: 'Si tu vois cette route dans Swagger, le problème reports est spécifique à ce module.' };
   }
 }

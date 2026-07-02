@@ -5,7 +5,7 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql)
 ![Redis](https://img.shields.io/badge/Redis-7-DC382D?logo=redis)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker)
-![Tests](https://img.shields.io/badge/Tests-499%20passed-success)
+![Tests](https://img.shields.io/badge/Tests-558%20passed-success)
 ![License](https://img.shields.io/badge/License-UNLICENSED-lightgrey)
 
 Backend **NestJS** pour la plateforme de gestion des tickets d'incidents télécoms.
@@ -35,13 +35,13 @@ pnpm run start:dev
 # Tests unitaires (446 tests)
 pnpm run test:unit
 
-# Tests end-to-end (43 tests)
+# Tests end-to-end (102 tests)
 pnpm run test:e2e
 
 # Tests d'intégration (10 tests)
 pnpm run test:integration
 
-# Tous les tests (499 tests)
+# Tous les tests (558 tests)
 pnpm run test:all
 ```
 
@@ -78,7 +78,7 @@ docker compose up -d
 ## 🏗️ Architecture
 
 ```
-14 modules NestJS · 12 tables PostgreSQL · 48 routes REST · 5 workers BullMQ
+14 modules NestJS · 12 tables PostgreSQL · 52 routes REST · 5 workers BullMQ
 ```
 
 | Module           | Responsabilité                                                                  |
@@ -86,7 +86,7 @@ docker compose up -d
 | `auth`           | JWT (access 15min + refresh 7j rotation), Argon2id, Redis JTI blacklist         |
 | `users`          | CRUD 7 rôles, activation/désactivation, mot de passe temporaire                 |
 | `departments`    | 6 départements, soft delete                                                     |
-| `tickets`        | State machine 9 statuts, INC-AAAA-NNNNNN, recherche multi-filtres, historique   |
+| `tickets`        | State machine 9 statuts + 2 pending, ownership-based RBAC, INC-AAAA-NNNNNN, auto-clôture 48h |
 | `comments`       | Commentaires publics (auteur/supervisor/admin)                                  |
 | `internal-notes` | Notes internes (restriction FIELD_TECHNICIAN)                                   |
 | `attachments`    | Upload/download streaming, interface abstraite IStorageService                  |
@@ -173,9 +173,9 @@ make down      # Tout arrêter
 | `pnpm run build`            | Compilation TypeScript                   |
 | `pnpm run test`             | Tests unitaires (446 tests)              |
 | `pnpm run test:unit`        | Tests unitaires (446 tests, chemin src/) |
-| `pnpm run test:e2e`         | Tests end-to-end (43 tests)              |
+| `pnpm run test:e2e`         | Tests end-to-end (102 tests)             |
 | `pnpm run test:integration` | Tests intégration (10 tests)             |
-| `pnpm run test:all`         | Tous les tests (499 tests)               |
+| `pnpm run test:all`         | Tous les tests (558 tests)               |
 | `pnpm run test:cov`         | Tests avec couverture                    |
 | `pnpm run db:push`          | Pousser schéma Drizzle                   |
 | `pnpm run db:seed`          | Données de test                          |
@@ -188,8 +188,8 @@ make down      # Tout arrêter
 
 | Fichier                         | Contenu                                   |
 | ------------------------------- | ----------------------------------------- |
-| `CHANGELOG.md`                  | Historique complet des versions           |
-| `docs/routes.md`                | Catalogue complet des 48 routes           |
+| `CHANGELOG.md`                  | Historique complet des versions (v1.2.0)  |
+| `docs/routes.md`                | Catalogue complet des 52 routes           |
 | `docs/architecture-flows.md`    | 9 diagrammes Mermaid                      |
 | `docs/deployment.md`            | Guide de déploiement production           |
 | `docs/emails.md`                | Architecture email, templates, flux       |
@@ -197,4 +197,4 @@ make down      # Tout arrêter
 | `docs/websockets.md`            | WebSocket temps réel, rooms, scaling      |
 | `docs/jobs-and-workers.md`      | Architecture BullMQ et 5 workers          |
 | `docs/implementation-status.md` | État production-readiness                 |
-| `.env.example`                  | 60+ variables d'environnement documentées |
+| `.env.example`                  | 70+ variables d'environnement documentées |

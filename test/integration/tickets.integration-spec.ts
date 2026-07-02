@@ -35,13 +35,21 @@ describe('Tickets — Workflow Intégration (DB réelle)', () => {
     app.setGlobalPrefix('api/v1');
     await app.init();
 
-    // Seed minimal: département + utilisateur + SLA policy
+    // Seed minimal ou chargement existant
     const drizzle = app.get(DrizzleProvider);
-    deptId = generateUuid();
+
+    // Récupérer un département existant
+    const [existingDept] = await drizzle.db.select().from(departments).limit(1);
+    if (existingDept) {
+      deptId = existingDept.id;
+    } else {
+      deptId = generateUuid();
+      await drizzle.db.insert(departments).values({ id: deptId, name: 'Test Dept' });
+    }
+
     userId = generateUuid();
 
     try {
-      await drizzle.db.insert(departments).values({ id: deptId, name: 'Test Dept' });
       await drizzle.db.insert(users).values({
         id: userId,
         departmentId: deptId,
@@ -52,6 +60,11 @@ describe('Tickets — Workflow Intégration (DB réelle)', () => {
         role: 'ADMINISTRATOR',
         isActive: true,
       });
+    } catch {
+      /* Déjà seedé ou utilisateur existant */
+    }
+
+    try {
       await drizzle.db.insert(slaPolicies).values({
         id: generateUuid(),
         category: 'TECHNICAL',

@@ -7,14 +7,14 @@
 
 ## Authentification (`/auth`)
 
-| Méthode | Route                   | Auth   | Rôles | Description                                     |
-| ------- | ----------------------- | ------ | ----- | ----------------------------------------------- |
-| `POST`  | `/auth/login`           | Public | -     | Connexion utilisateur (rate limit: 10/heure/IP) |
-| `POST`  | `/auth/refresh`         | Public | -     | Rafraîchir la paire de tokens (rotation)        |
-| `POST`  | `/auth/logout`          | Bearer | Tous  | Déconnexion — révoque le refresh token fourni   |
-| `POST`  | `/auth/logout-all`      | Bearer | Tous  | Déconnexion de toutes les sessions actives      |
-| `GET`   | `/auth/me`              | Bearer | Tous  | Profil de l'utilisateur connecté                |
-| `PUT`   | `/auth/change-password` | Bearer | Tous  | Changer le mot de passe                         |
+| Méthode | Route                   | Auth   | Rôles | Description                                                                     |
+| ------- | ----------------------- | ------ | ----- | ------------------------------------------------------------------------------- |
+| `POST`  | `/auth/login`           | Public | -     | Connexion utilisateur (rate limit: 10/heure/IP)                                 |
+| `POST`  | `/auth/refresh`         | Public | -     | Rafraîchir la paire de tokens (rotation)                                        |
+| `POST`  | `/auth/logout`          | Bearer | Tous  | Déconnexion — révoque le refresh token fourni + blacklist JTI access token      |
+| `POST`  | `/auth/logout-all`      | Bearer | Tous  | Déconnexion de toutes les sessions actives                                      |
+| `GET`   | `/auth/me`              | Bearer | Tous  | Profil de l'utilisateur connecté                                                |
+| `PUT`   | `/auth/change-password` | Bearer | Tous  | Changer le mot de passe                                                         |
 
 ---
 
@@ -22,7 +22,7 @@
 
 | Méthode  | Route              | Auth   | Rôles         | Description                                             |
 | -------- | ------------------ | ------ | ------------- | ------------------------------------------------------- |
-| `GET`    | `/departments`     | Public | -             | Liste des départements (accessible sans auth)           |
+| `GET`    | `/departments`     | Bearer | Tous          | Liste des départements (utilisateurs authentifiés)      |
 | `GET`    | `/departments/:id` | Bearer | Tous          | Détails d'un département                                |
 | `POST`   | `/departments`     | Bearer | ADMINISTRATOR | Créer un département                                    |
 | `PATCH`  | `/departments/:id` | Bearer | ADMINISTRATOR | Modifier un département                                 |
@@ -46,20 +46,23 @@
 
 ## Tickets (`/tickets`)
 
-| Méthode  | Route                   | Auth   | Rôles                      | Description                                           |
-| -------- | ----------------------- | ------ | -------------------------- | ----------------------------------------------------- |
-| `POST`   | `/tickets`              | Bearer | Tous sauf restrictions     | Créer un ticket d'incident                            |
-| `GET`    | `/tickets`              | Bearer | Tous                       | Rechercher des tickets (filtres combinés, pagination) |
-| `GET`    | `/tickets/:id`          | Bearer | Tous (selon visibilité)    | Détails complets d'un ticket                          |
-| `PATCH`  | `/tickets/:id`          | Bearer | Assigné, SUPERVISOR, ADMIN | Mettre à jour un ticket                               |
-| `POST`   | `/tickets/:id/assign`   | Bearer | SUPERVISOR, ADMIN          | Assigner un ticket à un agent                         |
-| `POST`   | `/tickets/:id/escalate` | Bearer | SUPERVISOR, ADMIN          | Escalader un ticket (changer agent + département)     |
-| `POST`   | `/tickets/:id/resolve`  | Bearer | Tous                       | Marquer comme résolu                                  |
-| `POST`   | `/tickets/:id/start`    | Bearer | Tous (assigné)             | Commencer le traitement (NEW/ASSIGNED → IN_PROGRESS)  |
-| `POST`   | `/tickets/:id/close`    | Bearer | SUPERVISOR, ADMIN          | Clôturer un ticket résolu                             |
-| `POST`   | `/tickets/:id/reopen`   | Bearer | SUPERVISOR, ADMIN          | Réouvrir un ticket clôturé                            |
-| `GET`    | `/tickets/:id/history`  | Bearer | Tous (selon visibilité)    | Historique complet du ticket                          |
-| `DELETE` | `/tickets/:id`          | Bearer | ADMINISTRATOR              | Suppression logique (soft delete)                     |
+| Méthode  | Route                              | Auth   | Rôles                                        | Description                                                   |
+| -------- | ---------------------------------- | ------ | -------------------------------------------- | ------------------------------------------------------------- |
+| `POST`   | `/tickets`                         | Bearer | Tous                                         | Créer un ticket d'incident                                    |
+| `GET`    | `/tickets`                         | Bearer | Tous                                         | Rechercher des tickets (filtres combinés, pagination)         |
+| `GET`    | `/tickets/:id`                     | Bearer | Tous (selon visibilité)                      | Détails complets d'un ticket                                  |
+| `PATCH`  | `/tickets/:id`                     | Bearer | Ownership-based (créateur/assigné/SUP/ADMIN) | Mettre à jour un ticket (champs selon ownership)              |
+| `POST`   | `/tickets/:id/assign`              | Bearer | Agent (auto-assign NEW), SUPERVISOR, ADMIN   | Assigner un ticket à un agent                                 |
+| `POST`   | `/tickets/:id/reassign`            | Bearer | Assigné actuel, SUPERVISOR, ADMIN            | Réassigner un ticket à un autre agent                         |
+| `POST`   | `/tickets/:id/escalate`            | Bearer | Assigné (hiérarchique), SUPERVISOR, ADMIN    | Escalader un ticket (changer agent + département)             |
+| `POST`   | `/tickets/:id/start`               | Bearer | Assigné, SUPERVISOR, ADMIN                   | Commencer le traitement (ASSIGNED → IN_PROGRESS)              |
+| `POST`   | `/tickets/:id/resolve`             | Bearer | Assigné, SUPERVISOR, ADMIN                   | Marquer comme résolu (IN_PROGRESS → RESOLVED)                 |
+| `POST`   | `/tickets/:id/close`               | Bearer | Assigné, SUPERVISOR, ADMIN                   | Clôturer un ticket résolu (RESOLVED → CLOSED)                 |
+| `POST`   | `/tickets/:id/reopen`              | Bearer | Créateur CS Agent, SUPERVISOR, ADMIN         | Réouvrir un ticket (≤ 30 jours, raison obligatoire ≥ 10 car.) |
+| `POST`   | `/tickets/:id/pending-customer`    | Bearer | Assigné, SUPERVISOR, ADMIN                   | Mettre en attente client (IN_PROGRESS → PENDING_CUSTOMER)     |
+| `POST`   | `/tickets/:id/pending-third-party` | Bearer | Assigné, SUPERVISOR, ADMIN                   | Mettre en attente tiers (IN_PROGRESS → PENDING_THIRD_PARTY)   |
+| `GET`    | `/tickets/:id/history`             | Bearer | Tous (selon visibilité)                      | Historique complet du ticket                                  |
+| `DELETE` | `/tickets/:id`                     | Bearer | ADMINISTRATOR                                | Suppression logique (soft delete)                             |
 
 **Filtres de recherche** (query params sur `GET /tickets`):
 
@@ -119,6 +122,7 @@
 | Méthode | Route               | Auth   | Rôles         | Description                |
 | ------- | ------------------- | ------ | ------------- | -------------------------- |
 | `GET`   | `/sla-policies`     | Bearer | Tous          | Liste des politiques SLA   |
+| `GET`   | `/sla-policies/:id` | Bearer | Tous          | Détail d'une politique SLA |
 | `POST`  | `/sla-policies`     | Bearer | ADMINISTRATOR | Créer une politique SLA    |
 | `PATCH` | `/sla-policies/:id` | Bearer | ADMINISTRATOR | Modifier une politique SLA |
 
@@ -153,11 +157,12 @@
 
 ## Rapports (`/reports`)
 
-| Méthode | Route                 | Auth   | Rôles             | Description                                       |
-| ------- | --------------------- | ------ | ----------------- | ------------------------------------------------- |
-| `POST`  | `/reports/ticket/:id` | Bearer | SUPERVISOR, ADMIN | Générer un rapport détaillé (async, notification) |
-| `GET`   | `/reports/sla`        | Bearer | SUPERVISOR, ADMIN | Rapport SLA synchrone (params: from, to)          |
-| `POST`  | `/reports/sla`        | Bearer | SUPERVISOR, ADMIN | Générer un rapport SLA complet en arrière-plan    |
+| Méthode | Route                          | Auth   | Rôles             | Description                                       |
+| ------- | ------------------------------ | ------ | ----------------- | ------------------------------------------------- |
+| `GET`   | `/reports/ticket/:id`          | Bearer | SUPERVISOR, ADMIN | Détails du rapport d'un ticket (synchrone)        |
+| `POST`  | `/reports/ticket/:id/generate` | Bearer | SUPERVISOR, ADMIN | Générer un rapport détaillé (async, notification) |
+| `GET`   | `/reports/sla`                 | Bearer | SUPERVISOR, ADMIN | Rapport SLA synchrone (params: from, to)          |
+| `POST`  | `/reports/sla/generate`        | Bearer | SUPERVISOR, ADMIN | Générer un rapport SLA complet en arrière-plan    |
 
 ---
 
@@ -182,6 +187,6 @@ En production, protéger avec `BULLBOARD_USER` et `BULLBOARD_PASSWORD` dans `.en
 
 ---
 
-**Total: 48 routes sur 14 contrôleurs (dont 1 route admin BullBoard)**
+**Total: 52 routes sur 14 contrôleurs (dont 1 route admin BullBoard)**
 
 ---

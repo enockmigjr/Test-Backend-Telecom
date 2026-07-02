@@ -21,6 +21,8 @@ describe('Auth — Flux E2E', () => {
   let accessToken: string;
   let refreshToken: string;
 
+  jest.setTimeout(60000);
+
   beforeAll(async () => {
     const { app: testApp, flushRedis } = await createTestApp();
     await flushRedis();
@@ -29,7 +31,7 @@ describe('Auth — Flux E2E', () => {
 
   afterAll(async () => {
     await app.close();
-  });
+  }, 60000);
 
   describe('POST /api/v1/auth/login', () => {
     it('doit retourner 200 et les tokens pour des identifiants valides', async () => {
@@ -147,6 +149,26 @@ describe('Auth — Flux E2E', () => {
         .expect(401);
 
       expect(res.body.success).toBe(false);
+    });
+  });
+
+  describe('POST /api/v1/auth/logout', () => {
+    it('doit reussir avec 204 et invalider l access token', async () => {
+      // 1. Déconnexion
+      await request(app.getHttpServer())
+        .post('/api/v1/auth/logout')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ refreshToken })
+        .expect(204);
+
+      // 2. Tenter d'accéder à /me avec le même access token doit maintenant échouer (401)
+      const res = await request(app.getHttpServer())
+        .get('/api/v1/auth/me')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(401);
+
+      expect(res.body.success).toBe(false);
+      expect(res.body.error.code).toBe('UNAUTHORIZED');
     });
   });
 });

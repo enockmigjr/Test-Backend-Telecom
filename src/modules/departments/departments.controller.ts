@@ -6,7 +6,6 @@ import { CreateDepartmentDto } from './dto/create-department.dto';
 import { UpdateDepartmentDto } from './dto/update-department.dto';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../auth/guards/roles.guard';
-import { Public } from '../../common/decorators/public.decorator';
 
 @ApiTags('departments')
 @ApiBearerAuth()
@@ -15,14 +14,14 @@ import { Public } from '../../common/decorators/public.decorator';
 export class DepartmentsController {
   constructor(private readonly departmentsService: DepartmentsService) {}
 
-  @Public()
   @Get()
   @ApiOperation({
-    summary: 'Liste des départements disponibles (public)',
+    summary: 'Liste des départements (outil interne)',
     description:
-      'Retourne la liste de tous les départements.\n\nCet endpoint est public (aucune authentification requise).',
+      'Retourne la liste de tous les départements.\n\n**Rôles autorisés :** Tous les utilisateurs authentifiés.',
   })
   @ApiResponse({ status: 200, description: 'Liste des départements.' })
+  @ApiResponse({ status: 401, description: 'Token JWT manquant ou expiré.' })
   @ApiResponse({ status: 429, description: 'Limite de requêtes dépassée.' })
   async findAll() {
     return this.departmentsService.findAll();

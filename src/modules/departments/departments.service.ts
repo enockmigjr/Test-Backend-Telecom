@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, ConflictException, Logger } from '@nestjs/common';
-import { eq, sql } from 'drizzle-orm';
+import { eq, sql, and, isNull } from 'drizzle-orm';
 import { generateUuid } from '../../common/helpers/uuidv7.helper';
 
 import { DrizzleProvider } from '../../database/drizzle.provider';
@@ -12,11 +12,15 @@ export class DepartmentsService {
   constructor(private readonly drizzle: DrizzleProvider) {}
 
   async findAll() {
-    return this.drizzle.db.select().from(departments).orderBy(departments.name);
+    return this.drizzle.db.select().from(departments).where(isNull(departments.deletedAt)).orderBy(departments.name);
   }
 
   async findOne(id: string) {
-    const [department] = await this.drizzle.db.select().from(departments).where(eq(departments.id, id)).limit(1);
+    const [department] = await this.drizzle.db
+      .select()
+      .from(departments)
+      .where(and(eq(departments.id, id), isNull(departments.deletedAt)))
+      .limit(1);
 
     if (!department) {
       throw new NotFoundException('Département non trouvé.');

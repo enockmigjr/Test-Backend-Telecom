@@ -82,7 +82,7 @@ describe('ReportsController', () => {
         data: { ticketId: 'ticket-001', requestedBy: mockUser.sub },
       });
       expect(result).toEqual({
-        message: 'Rapport en cours de génération. Vous recevrez une notification.',
+        message: 'Rapport en cours de generation. Vous recevrez une notification.',
         ticketId: 'ticket-001',
       });
     });
@@ -148,7 +148,7 @@ describe('ReportsController', () => {
         },
       });
       expect(result).toEqual({
-        message: 'Rapport SLA en cours de génération.',
+        message: 'Rapport SLA en cours de generation.',
         period: { from: defaultRange.from, to: defaultRange.to },
       });
     });

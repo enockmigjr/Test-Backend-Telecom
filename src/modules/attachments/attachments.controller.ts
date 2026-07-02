@@ -10,6 +10,8 @@ import {
   HttpStatus,
   Res,
   Query,
+  UseGuards,
+  NotFoundException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
@@ -28,9 +30,11 @@ import { join } from 'path';
 import { AttachmentsService } from './attachments.service';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
+import { RolesGuard } from '../auth/guards/roles.guard';
 
 @ApiTags('attachments')
 @ApiBearerAuth()
+@UseGuards(RolesGuard)
 @Controller('attachments')
 export class AttachmentsController {
   constructor(private readonly attachmentsService: AttachmentsService) {}
@@ -89,10 +93,27 @@ export class AttachmentsController {
   async download(@Param('id') id: string, @Res() res: Response) {
     const att = await this.attachmentsService.findOne(id);
     const filePath = join(process.env['STORAGE_LOCAL_PATH'] || './uploads', att.objectKey);
+
+    // Vérifier que le fichier existe physiquement avant de streamer
+    const { existsSync } = await import('fs');
+    if (!existsSync(filePath)) {
+      throw new NotFoundException(`Le fichier physique est introuvable pour la pièce jointe ${id}.`);
+    }
+
     res.setHeader('Content-Type', att.mimeType);
     res.setHeader('Content-Disposition', `attachment; filename="${att.originalFilename}"`);
+
     // Streaming — ne charge pas le fichier entier en RAM
     const stream = createReadStream(filePath);
+    stream.on('error', (err) => {
+      // Fermer la réponse proprement en cas d erreur de lecture
+      if (!res.headersSent) {
+        res
+          .status(500)
+          .json({ success: false, error: { code: 'INTERNAL_ERROR', message: 'Erreur de lecture du fichier.' } });
+      }
+      stream.destroy(err);
+    });
     stream.pipe(res);
   }
 
@@ -109,7 +130,7 @@ export class AttachmentsController {
   @ApiResponse({ status: 403, description: 'Rôle insuffisant.' })
   @ApiResponse({ status: 404, description: 'Pièce jointe non trouvée.' })
   @ApiResponse({ status: 429, description: 'Limite de requêtes dépassée.' })
-  async remove(@Param('id') id: string) {
-    await this.attachmentsService.remove(id);
+  async remove(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
+    await this.attachmentsService.remove(id, user);
   }
 }

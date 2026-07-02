@@ -40,6 +40,14 @@ describe('SLA — Intégration (DB réelle)', () => {
 
   it('POST /sla-policies — doit créer une politique SLA (201)', async () => {
     if (!adminToken) return;
+    const { DrizzleProvider } = await import('../../src/database/drizzle.provider');
+    const { slaPolicies } = await import('../../src/database/schemas');
+    const { and, eq } = await import('drizzle-orm');
+    const drizzle = app.get(DrizzleProvider);
+    await drizzle.db
+      .delete(slaPolicies)
+      .where(and(eq(slaPolicies.category, 'HARDWARE'), eq(slaPolicies.priority, 'LOW')));
+
     const res = await request(app.getHttpServer())
       .post('/api/v1/sla-policies')
       .set('Authorization', `Bearer ${adminToken}`)

@@ -7,9 +7,22 @@ import { CreateInternalNoteDto } from './dto/create-internal-note.dto';
 import { UpdateInternalNoteDto } from './dto/update-internal-note.dto';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 
+import { Roles } from '../../common/decorators/roles.decorator';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { UseGuards } from '@nestjs/common';
+
 @ApiTags('internal-notes')
 @ApiBearerAuth()
+@UseGuards(RolesGuard)
 @Controller()
+@Roles(
+  'ADMINISTRATOR',
+  'SUPERVISOR',
+  'CUSTOMER_SERVICE_AGENT',
+  'NOC_ENGINEER',
+  'BILLING_AGENT',
+  'TECHNICAL_SUPPORT_ENGINEER',
+)
 export class InternalNotesController {
   constructor(private readonly notesService: InternalNotesService) {}
 

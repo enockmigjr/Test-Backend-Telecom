@@ -1636,22 +1636,22 @@ Cette représentation sera utilisée :
 - dans les présentations techniques.
   ***
 
-# 24. Matrice RBAC finale
+# 24. Matrice RBAC et d'Ownership finale
 
-| Action <br>               | Agent <br>   | NOC <br>     | Billing <br> | Support <br> | Field <br>   | Supervisor <br> | Admin <br> |
-| :------------------------ | :----------- | :----------- | :----------- | :----------- | :----------- | :-------------- | :--------- |
-| Créer ticket <br>         | ✅ <br>      | ✅ <br>      | ✅ <br>      | ✅ <br>      | ✅ <br>      | ✅ <br>         | ✅ <br>    |
-| Modifier ticket <br>      | Assigné <br> | Assigné <br> | Assigné <br> | Assigné <br> | Assigné <br> | ✅ <br>         | ✅ <br>    |
-| Assigner ticket <br>      | ❌ <br>      | ❌ <br>      | ❌ <br>      | ❌ <br>      | ❌ <br>      | ✅ <br>         | ✅ <br>    |
-| Réassigner ticket <br>    | ❌ <br>      | ❌ <br>      | ❌ <br>      | ❌ <br>      | ❌ <br>      | ✅ <br>         | ✅ <br>    |
-| Escalader ticket <br>     | ❌ <br>      | ❌ <br>      | ❌ <br>      | ❌ <br>      | ❌ <br>      | ✅ <br>         | ✅ <br>    |
-| Résoudre ticket <br>      | ✅ <br>      | ✅ <br>      | ✅ <br>      | ✅ <br>      | ✅ <br>      | ✅ <br>         | ✅ <br>    |
-| Clôturer ticket <br>      | ❌ <br>      | ❌ <br>      | ❌ <br>      | ❌ <br>      | ❌ <br>      | ✅ <br>         | ✅ <br>    |
-| Réouvrir ticket <br>      | ❌ <br>      | ❌ <br>      | ❌ <br>      | ❌ <br>      | ❌ <br>      | ✅ <br>         | ✅ <br>    |
-| Notes internes <br>       | ✅ <br>      | ✅ <br>      | ✅ <br>      | ✅ <br>      | ❌ <br>      | ✅ <br>         | ✅ <br>    |
-| Audit Logs <br>           | ❌ <br>      | ❌ <br>      | ❌ <br>      | ❌ <br>      | ❌ <br>      | ✅ <br>         | ✅ <br>    |
-| Gestion utilisateurs <br> | ❌ <br>      | ❌ <br>      | ❌ <br>      | ❌ <br>      | ❌ <br>      | Partielle <br>  | ✅ <br>    |
-| Gestion SLA <br>          | ❌ <br>      | ❌ <br>      | ❌ <br>      | ❌ <br>      | ❌ <br>      | ✅ <br>         | ✅ <br>    |
+| Action <br>               | Créateur <br>               | Assigné <br>                     | Agent (Autre) <br>        | Supervisor <br>        | Admin <br>     |
+| :------------------------ | :-------------------------- | :------------------------------- | :------------------------ | :--------------------- | :------------- |
+| Créer ticket <br>         | — <br>                      | — <br>                           | ✅ (Tous rôles) <br>      | ✅ <br>                | ✅ <br>        |
+| Modifier ticket <br>      | ✅ (Titre/Desc si NEW) <br> | ✅ (Titre/Desc/Tags/Status) <br> | ❌ <br>                   | ✅ (Tous champs)<br>   | ✅ (Tous) <br> |
+| Assigner ticket <br>      | ❌ <br>                     | — <br>                           | Auto-assigne si NEW <br>  | ✅ <br>                | ✅ <br>        |
+| Réassigner ticket <br>    | ❌ <br>                     | ✅ (Vers un tiers) <br>          | ❌ <br>                   | ✅ <br>                | ✅ <br>        |
+| Escalader ticket <br>     | ❌ <br>                     | ✅ (Hiérarchique) <br>           | ❌ <br>                   | ✅ (Fonctionnelle)<br> | ✅ <br>        |
+| Résoudre ticket <br>      | ❌ <br>                     | ✅ <br>                          | ❌ <br>                   | ✅ <br>                | ✅ <br>        |
+| Clôturer ticket <br>      | ❌ <br>                     | ✅ <br>                          | ❌ <br>                   | ✅ <br>                | ✅ <br>        |
+| Réouvrir ticket <br>      | CS Agent (si < 30 j) <br>   | ❌ <br>                          | ❌ <br>                   | ✅ <br>                | ✅ <br>        |
+| Notes internes <br>       | — <br>                      | ✅ (Sauf Field Tech) <br>        | ✅ (Sauf Field Tech) <br> | ✅ <br>                | ✅ <br>        |
+| Audit Logs <br>           | ❌ <br>                     | ❌ <br>                          | ❌ <br>                   | ✅ <br>                | ✅ <br>        |
+| Gestion utilisateurs <br> | ❌ <br>                     | ❌ <br>                          | ❌ <br>                   | Partielle <br>         | ✅ <br>        |
+| Gestion SLA <br>          | ❌ <br>                     | ❌ <br>                          | ❌ <br>                   | ✅ <br>                | ✅ <br>        |
 
 # 25. Conclusion
 

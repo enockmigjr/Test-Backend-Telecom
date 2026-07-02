@@ -228,11 +228,9 @@ POST /api/v1/auth/refresh — Public. Body : { refreshToken }. Effectue une rota
 ### Logout
 
 ```
-POST /api/v1/auth/logout — Authentifié. Body : { refreshToken }. Révoque le refresh token fourni. Réponse : 204 No Content. Erreurs : 401 si non authentifié.
+POST /api/v1/auth/logout — Authentifié. Body : { refreshToken }. Révoque le refresh token fourni en DB et place le JTI de l'access token courant dans la blacklist individuelle Redis (clé `jwt_bl:{jti}`) avec un TTL calculé sur sa date d'expiration. Réponse : 204 No Content. Erreurs : 401 si non authentifié.
 
-POST /api/v1/auth/logout-all — Authentifié. Révoque toutes les sessions actives de l'utilisateur. Réponse : 204 No Content.
-
-
+POST /api/v1/auth/logout-all — Authentifié. Révoque toutes les sessions actives (refresh tokens) de l'utilisateur. Réponse : 204 No Content.
 ```
 
 ### Me
@@ -375,9 +373,7 @@ PATCH /api/v1/users/:id/activate — ADMINISTRATOR uniquement. Réactive un comp
 ### Liste
 
 ```
-GET /api/v1/departments — Tout utilisateur authentifié. Retourne les départements disponibles. Réponse : liste des départements.
-
-
+GET /api/v1/departments — Tout utilisateur authentifié. Retourne les départements disponibles. Réponse : liste des départements. Erreurs : 401.
 ```
 
 ### Création
@@ -448,75 +444,66 @@ GET /api/v1/tickets/:id — Utilisateur autorisé sur le ticket. Retourne les d�
 ### Modification
 
 ```
-PATCH /api/v1/tickets/:id — Assigné du ticket, SUPERVISOR ou ADMINISTRATOR. Met à jour les informations du ticket. Réponse : TicketUpdated. Erreurs : 400, 403, 404.
-
-
+PATCH /api/v1/tickets/:id — Authentifié. Body : { title, description, priority, severity, category, tags }. Met à jour sélectivement les champs du ticket. Les permissions d'édition sont validées au niveau du service selon l'ownership du champ par rapport à l'utilisateur courant. Réponse : Ticket mis à jour. Erreurs : 400 (validation), 403 (permission refusée), 404 (non trouvé).
 ```
 
 ### Assignation
 
 ```
-POST /api/v1/tickets/:id/assign — SUPERVISOR, ADMINISTRATOR. Assigne le ticket à un agent. Crée un historique d'affectation. Réponse : TicketAssigned. Erreurs : 400, 403, 404.
-
-
+POST /api/v1/tickets/:id/assign — Authentifié. Body : { userId, reason }. Assigne le ticket à un agent. Un agent peut s'auto-assigner un ticket NEW non assigné. L'assignation à des tiers exige le rôle SUPERVISOR ou ADMINISTRATOR. Réponse : Ticket assigné. Erreurs : 400, 403, 404.
 ```
 
 Request :
 
-```
+```json
 {
-  "userId": "uuid"
+  "userId": "uuid",
+  "reason": "Compétence réseau requise"
 }
-
-
 ```
 
 ### Réassignation
 
 ```
-POST /api/v1/tickets/:id/reassign — SUPERVISOR, ADMINISTRATOR. Change l'assigné actif du ticket. Réponse : TicketReassigned. Erreurs : 400, 403, 404.
-
-
+POST /api/v1/tickets/:id/reassign — Authentifié. Body : { userId, reason }. Réassigne un ticket déjà assigné. Autorisé pour l'assigné actuel, un SUPERVISOR ou un ADMINISTRATOR. Réponse : Ticket réassigné. Erreurs : 400, 403, 404.
 ```
 
 ### Escalade
 
 ```
-POST /api/v1/tickets/:id/escalate — SUPERVISOR, ADMINISTRATOR. Escalade le ticket vers une autre équipe ou priorité. Réponse : TicketEscalated. Erreurs : 400, 403.
-
-
+POST /api/v1/tickets/:id/escalate — Authentifié. Body : { userId, departmentId, reason }. Escalade le ticket. L'escalade peut être fonctionnelle (vers un autre département, exige SUPERVISOR ou ADMINISTRATOR) ou hiérarchique (au sein du même département, autorisée pour l'assigné actuel). Réponse : Ticket escaladé. Erreurs : 400, 403, 404.
 ```
 
 ### Résolution
 
 ```
-POST /api/v1/tickets/:id/resolve — Assigné du ticket, SUPERVISOR, ADMINISTRATOR. Marque le ticket comme résolu. Réponse : TicketResolved. Erreurs : 400, 403.
-
-
+POST /api/v1/tickets/:id/resolve — Authentifié. Body : { resolutionSummary } (optionnel). Résout le ticket. Autorisé pour l'assigné actuel, un SUPERVISOR ou un ADMINISTRATOR. Fait passer le statut du ticket à RESOLVED et annule le job de SLA breach. Réponse : Ticket résolu. Erreurs : 400, 403, 404.
 ```
 
 ### Clôture
 
 ```
-POST /api/v1/tickets/:id/close — SUPERVISOR, ADMINISTRATOR. Clôture un ticket résolu. Réponse : TicketClosed. Erreurs : 400 (non résolu), 403.
-
-
+POST /api/v1/tickets/:id/close — Authentifié. Clôture le ticket résolu. Autorisé pour l'assigné actuel, un SUPERVISOR ou un ADMINISTRATOR. Le statut passe à CLOSED. (Note : l'auto-clôture automatique ferme les tickets après 48h sans action en RESOLVED via le cron système). Réponse : Ticket clôturé. Erreurs : 400, 403, 404.
 ```
 
 ### Réouverture
 
 ```
-POST /api/v1/tickets/:id/reopen — SUPERVISOR, ADMINISTRATOR. Réouvre un ticket clôturé. Réponse : TicketReopened. Erreurs : 400, 403.
+POST /api/v1/tickets/:id/reopen — Authentifié. Body : { reason } (obligatoire, min 10 caract.). Réouvre un ticket fermé de moins de 30 jours (CS Agent créateur du ticket, SUPERVISOR, ADMINISTRATOR). Remet à null `resolvedAt` et `closedAt`. Réponse : Ticket réouvert (REOPENED). Erreurs : 400, 403, 404.
+```
 
+### Mises en attente (Pending)
 
+```
+POST /api/v1/tickets/:id/pending-customer — Authentifié. Body : { reason } (optionnel). Met le ticket en attente du client (IN_PROGRESS -> PENDING_CUSTOMER). Autorisé pour l'assigné actuel, un SUPERVISOR ou un ADMINISTRATOR. Réponse : Ticket mis en attente. Erreurs : 400, 403, 404.
+
+POST /api/v1/tickets/:id/pending-third-party — Authentifié. Body : { reason } (optionnel). Met le ticket en attente d'un tiers (IN_PROGRESS -> PENDING_THIRD_PARTY). Autorisé pour l'assigné actuel, un SUPERVISOR ou un ADMINISTRATOR. Réponse : Ticket mis en attente. Erreurs : 400, 403, 404.
 ```
 
 ### Ticket History
 
 ```
-GET /api/v1/tickets/:id/history — Utilisateur autorisé sur le ticket. Retourne l'historique complet des actions. Réponse : liste chronologique des événements. Erreurs : 403, 404.
-
-
+GET /api/v1/tickets/:id/history — Authentifié. Retourne l'historique complet des actions, changements de statut, assignations et escalades du ticket. Réponse : liste chronologique des événements. Erreurs : 401, 404.
 ```
 
 ### Suppression
@@ -1209,6 +1196,60 @@ Authorization: SUPERVISOR, ADMINISTRATOR
 | `GET /dashboard/workload` <br>            | SUP, ADMIN <br> | Charge par agent + unassigned <br>       |
 | `GET /dashboard/resolution-time` <br>     | SUP, ADMIN <br> | MTTR + médiane + p90 + tendance <br>     |
 
+---
+
+## 16 bis. Rapports (Reports) — Spécification des routes
+
+Ces endpoints permettent d'extraire des rapports opérationnels et analytiques pour la direction et l'audit.
+
+### Rapport Ticket Individuel (Synchrone)
+
+```
+GET /api/v1/reports/ticket/:id
+Authorization: SUPERVISOR, ADMINISTRATOR
+```
+
+Retourne les données JSON consolidées d'un ticket spécifique pour le reporting (les logs d'activité, commentaires, et attributions). Réponse: `200 OK`. Erreurs: `404` (ticket introuvable), `403` (accès refusé).
+
+### Génération Rapport PDF Ticket (Asynchrone)
+
+```
+POST /api/v1/reports/ticket/:id/generate
+Authorization: SUPERVISOR, ADMINISTRATOR
+```
+
+Lance la génération en arrière-plan d'un rapport PDF détaillé. Une fois le document généré, une notification et un email sont envoyés au demandeur. Réponse: `202 Accepted`. Erreurs: `404` (ticket introuvable), `403`.
+
+### Rapport Global SLA (Synchrone)
+
+```
+GET /api/v1/reports/sla
+Authorization: SUPERVISOR, ADMINISTRATOR
+```
+
+**Query params :**
+
+- `?from=...` (ISO Date, optionnel)
+- `?to=...` (ISO Date, optionnel)
+
+Retourne les métriques de performance et de violation SLA consolidated sous format JSON. Réponse: `200 OK`. Erreurs: `403`.
+
+### Génération Rapport SLA PDF (Asynchrone)
+
+```
+POST /api/v1/reports/sla/generate
+Authorization: SUPERVISOR, ADMINISTRATOR
+```
+
+**Query params :**
+
+- `?from=...` (ISO Date, optionnel)
+- `?to=...` (ISO Date, optionnel)
+
+Déclenche la génération en arrière-plan du rapport SLA PDF pour la période spécifiée. Réponse: `202 Accepted`. Erreurs: `403`.
+
+---
+
 # 17. Pagination, tri et recherche
 
 Toutes les collections supportent :
@@ -1255,6 +1296,8 @@ SLAModule
 AuditLogsModule
 
 DashboardModule
+
+ReportsModule
 
 
 ```

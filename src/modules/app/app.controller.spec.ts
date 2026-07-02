@@ -52,63 +52,23 @@ describe('AppController', () => {
 
       expect(result.version).toBe('1.0.0');
     });
-  });
 
-  // =========================================================================
-  // GET /health
-  // =========================================================================
-  describe('GET /health — Health check', () => {
-    it('doit retourner un status ok', () => {
-      const result = controller.health();
+    it('doit retourner le bon chemin docs', () => {
+      const result = controller.getApiInfo();
 
-      expect(result.status).toBe('ok');
+      expect(result.docs).toBe('/api/docs');
     });
 
-    it('doit contenir un timestamp ISO valide', () => {
-      const result = controller.health();
+    it('doit retourner le bon chemin health', () => {
+      const result = controller.getApiInfo();
 
-      expect(result.timestamp).toBeDefined();
-      expect(new Date(result.timestamp).toISOString()).toBe(result.timestamp);
+      expect(result.health).toBe('/api/v1/health');
     });
 
-    it('doit contenir uptime comme nombre positif', () => {
-      const result = controller.health();
+    it('doit retourner le chemin metrics avec mention Prometheus', () => {
+      const result = controller.getApiInfo();
 
-      expect(result.uptime).toBeGreaterThanOrEqual(0);
-    });
-
-    it('doit contenir memory usage avec rss, heapTotal, heapUsed', () => {
-      const result = controller.health();
-
-      expect(result.memory).toHaveProperty('rss');
-      expect(result.memory).toHaveProperty('heapTotal');
-      expect(result.memory).toHaveProperty('heapUsed');
-      expect(typeof result.memory.rss).toBe('number');
-      expect(typeof result.memory.heapTotal).toBe('number');
-      expect(typeof result.memory.heapUsed).toBe('number');
-    });
-
-    it('doit retourner les 4 proprietes du health check', () => {
-      const result = controller.health();
-
-      expect(Object.keys(result)).toEqual(['status', 'timestamp', 'uptime', 'memory']);
-    });
-  });
-
-  // =========================================================================
-  // GET /test-swagger
-  // =========================================================================
-  describe('GET /test-swagger — Route de test', () => {
-    it('doit retourner un message de confirmation', () => {
-      const result = controller.testSwagger();
-
-      expect(result).toHaveProperty('message');
-    });
-
-    it('doit contenir le texte attendu', () => {
-      const result = controller.testSwagger();
-
-      expect(result.message).toContain('Si tu vois cette route dans Swagger');
+      expect(result.metrics).toContain('Prometheus');
     });
   });
 });

@@ -9,6 +9,7 @@ import {
   TicketEscalatedEvent,
   TicketResolvedEvent,
   TicketStatusChangedEvent,
+  TicketReopenedEvent,
 } from '../domain/ticket.events';
 import { DrizzleProvider } from '../../../database/drizzle.provider';
 import { users, tickets } from '../../../database/schemas';
@@ -244,6 +245,62 @@ export class TicketNotificationListener {
       referenceType: 'ticket',
       referenceId: event.ticketId,
     });
+  }
+
+  @OnEvent('ticket.reopened')
+  async handleTicketReopened(event: TicketReopenedEvent): Promise<void> {
+    this.logger.log(`Notification: ticket ${event.ticketId} reouvert par ${event.reopenedBy}`);
+
+    const ticket = await this.drizzle.db
+      .select({
+        ticketNumber: tickets.ticketNumber,
+        assignedTo: tickets.assignedTo,
+        departmentId: tickets.departmentId,
+        title: tickets.title,
+      })
+      .from(tickets)
+      .where(eq(tickets.id, event.ticketId))
+      .limit(1)
+      .then((rows) => rows[0]);
+
+    if (!ticket) return;
+
+    const payload = {
+      ticketId: event.ticketId,
+      ticketNumber: ticket.ticketNumber,
+      reopenedBy: event.reopenedBy,
+    };
+
+    // WebSocket → superviseurs
+    this.wsGateway.emitToRole('SUPERVISOR', 'ticket.reopened', payload);
+
+    // WebSocket + Notification + Email → assigne
+    if (ticket.assignedTo) {
+      this.wsGateway.emitToUser(ticket.assignedTo, 'ticket.reopened', payload);
+
+      await this.createNotification({
+        userId: ticket.assignedTo,
+        type: 'COMMENT_ADDED', // utiliser un type existant ou generic pour eviter les problemes d'enum
+        title: `Ticket reouvert — ${ticket.ticketNumber}`,
+        message: `Le ticket a ete reouvert par l'agent CS.`,
+        referenceType: 'ticket',
+        referenceId: event.ticketId,
+      });
+
+      const assigneeEmail = await this.getUserEmail(ticket.assignedTo);
+      if (assigneeEmail) {
+        await this.sendEmail({
+          to: assigneeEmail,
+          subject: `⚠️ Ticket reouvert — ${ticket.ticketNumber}`,
+          template: 'ticketAssigned',
+          data: {
+            ticketNumber: ticket.ticketNumber,
+            title: ticket.title ?? 'Sans titre',
+            assignedBy: event.reopenedBy,
+          },
+        });
+      }
+    }
   }
 
   @OnEvent('ticket.status_changed')

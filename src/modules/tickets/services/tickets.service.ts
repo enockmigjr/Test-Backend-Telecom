@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+﻿import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { eq, and, isNull, sql, count } from 'drizzle-orm';
 import { generateUuid } from '../../../common/helpers/uuidv7.helper';
@@ -6,10 +6,12 @@ import { generateUuid } from '../../../common/helpers/uuidv7.helper';
 import { DrizzleProvider } from '../../../database/drizzle.provider';
 import { tickets, ticketAssignments, slaPolicies, users, departments, ticketComments } from '../../../database/schemas';
 import { TicketStateMachine, TicketStatus } from '../domain/ticket-status-transitions';
+import { TicketPermissions } from '../domain/ticket-permissions';
 import { TicketNumberService } from './ticket-number.service';
 import { TicketHistoryService } from './ticket-history.service';
 import { TicketNotFoundException } from '../domain/exceptions/ticket-not-found.exception';
 import { MetricsService } from '../../../common/metrics/metrics.service';
+import { JwtPayload } from '../../auth/interfaces/jwt-payload.interface';
 import {
   TicketCreatedEvent,
   TicketStatusChangedEvent,
@@ -28,6 +30,7 @@ export class TicketsService {
   constructor(
     private readonly drizzle: DrizzleProvider,
     private readonly stateMachine: TicketStateMachine,
+    private readonly ticketPermissions: TicketPermissions,
     private readonly ticketNumber: TicketNumberService,
     private readonly ticketHistory: TicketHistoryService,
     private readonly eventEmitter: EventEmitter2,
@@ -66,7 +69,9 @@ export class TicketsService {
       .limit(1);
 
     if (!policy) {
-      throw new Error(`Aucune politique SLA trouvée pour ${dto.category}/${dto.priority}`);
+      throw new BadRequestException(
+        `Aucune politique SLA trouvee pour la combinaison category='${dto.category}' / priority='${dto.priority}'. Verifiez les politiques SLA disponibles.`,
+      );
     }
 
     const ticketNumber = await this.ticketNumber.generate();
@@ -114,7 +119,7 @@ export class TicketsService {
   }
 
   /**
-   * Récupère un ticket par son ID avec toutes les relations (basique).
+   * Récupère un ticket par son ID.
    */
   async findById(id: string) {
     const ticket = await this.findTicketById(id);
@@ -122,7 +127,7 @@ export class TicketsService {
   }
 
   /**
-   * Récupère un ticket avec toutes les relations enrichies (créateur, assigné, département, SLA, commentaires).
+   * Récupère un ticket avec toutes les relations enrichies.
    */
   async findByIdDetailed(id: string) {
     const ticket = await this.findTicketById(id);
@@ -159,7 +164,7 @@ export class TicketsService {
   }
 
   /**
-   * Met à jour les informations d'un ticket.
+   * Met à jour les informations d'un ticket avec validation fine (ownership-based).
    */
   async update(
     id: string,
@@ -171,34 +176,79 @@ export class TicketsService {
       category?: string;
       tags?: string;
     },
-    userId: string,
+    user: JwtPayload,
   ) {
     const ticket = await this.findTicketById(id);
 
+    // Déterminer quels champs sont modifiés pour valider les permissions correspondantes
+    const updatedFields = Object.keys(dto).filter((key) => dto[key as keyof typeof dto] !== undefined);
+    this.ticketPermissions.checkCanUpdateFields(ticket, user, updatedFields);
+
     const updateData: Record<string, unknown> = {};
-    if (dto.title) updateData['title'] = dto.title;
-    if (dto.description) updateData['description'] = dto.description;
-    if (dto.priority) updateData['priority'] = dto.priority;
-    if (dto.severity) updateData['severity'] = dto.severity;
-    if (dto.category) updateData['category'] = dto.category;
-    if (dto.tags) updateData['tags'] = dto.tags;
+    if (dto.title !== undefined) updateData['title'] = dto.title;
+    if (dto.description !== undefined) updateData['description'] = dto.description;
+    if (dto.priority !== undefined) updateData['priority'] = dto.priority;
+    if (dto.severity !== undefined) updateData['severity'] = dto.severity;
+    if (dto.category !== undefined) updateData['category'] = dto.category;
+    if (dto.tags !== undefined) updateData['tags'] = dto.tags;
 
     await this.drizzle.db.update(tickets).set(updateData).where(eq(tickets.id, id));
 
-    await this.ticketHistory.record(id, userId, 'UPDATED', ticket, updateData);
+    await this.ticketHistory.record(id, user.sub, 'UPDATED', ticket, updateData);
 
     const updated = await this.findTicketById(id);
     return { message: 'Ticket mis à jour avec succès.', data: updated };
   }
 
   /**
-   * Change le statut d'un ticket en validant la transition.
+   * Change le statut d'un ticket en validant la transition de statut ET la permission (ownership-based).
    */
-  async changeStatus(id: string, newStatus: TicketStatus, userId: string, reason?: string) {
+  async changeStatus(id: string, newStatus: TicketStatus, user: JwtPayload, reason?: string) {
     const ticket = await this.findTicketById(id);
     const oldStatus = ticket.status as TicketStatus;
 
+    // 1. Valider la transition de la state machine
     this.stateMachine.validateTransition(oldStatus, newStatus);
+
+    // 2. Valider les permissions d'ownership-based d'accès à la transition
+    if (newStatus === 'IN_PROGRESS') {
+      const isAssignee = ticket.assignedTo === user.sub;
+      const isSupervisor = user.role === 'SUPERVISOR';
+      const isAdmin = user.role === 'ADMINISTRATOR';
+      if (!isAssignee && !isSupervisor && !isAdmin) {
+        throw new BadRequestException(
+          "Seul l'agent assigne, un superviseur ou un administrateur peut demarrer le traitement de ce ticket.",
+        );
+      }
+    } else if (newStatus === 'RESOLVED') {
+      const isAssignee = ticket.assignedTo === user.sub;
+      const isSupervisor = user.role === 'SUPERVISOR';
+      const isAdmin = user.role === 'ADMINISTRATOR';
+      if (!isAssignee && !isSupervisor && !isAdmin) {
+        throw new BadRequestException(
+          "Seul l'agent assigne, un superviseur ou un administrateur peut resoudre ce ticket.",
+        );
+      }
+    } else if (newStatus === 'CLOSED') {
+      this.ticketPermissions.checkCanClose(ticket, user);
+    } else if (newStatus === 'REOPENED') {
+      this.ticketPermissions.checkCanReopen(ticket, user);
+    } else if (newStatus === 'PENDING_CUSTOMER' || newStatus === 'PENDING_THIRD_PARTY') {
+      const isAssignee = ticket.assignedTo === user.sub;
+      const isSupervisor = user.role === 'SUPERVISOR';
+      const isAdmin = user.role === 'ADMINISTRATOR';
+      if (!isAssignee && !isSupervisor && !isAdmin) {
+        throw new BadRequestException(
+          "Seul l'agent assigne, un superviseur ou un administrateur peut mettre ce ticket en attente.",
+        );
+      }
+    } else if (newStatus === 'CANCELLED') {
+      const isSupervisor = user.role === 'SUPERVISOR';
+      const isAdmin = user.role === 'ADMINISTRATOR';
+      if (!isSupervisor && !isAdmin) {
+        throw new BadRequestException('Seul un superviseur ou un administrateur peut annuler ce ticket.');
+      }
+    }
 
     const updateFields: Record<string, unknown> = { status: newStatus };
 
@@ -208,26 +258,37 @@ export class TicketsService {
     }
     if (newStatus === 'RESOLVED') {
       updateFields['resolvedAt'] = new Date();
+      if (reason) {
+        updateFields['resolutionSummary'] = reason;
+      }
     }
     if (newStatus === 'CLOSED') {
       updateFields['closedAt'] = new Date();
+    }
+    if (newStatus === 'REOPENED') {
+      // Re-ouvrir le ticket remet son resolvedAt et closedAt à null
+      updateFields['resolvedAt'] = null;
+      updateFields['closedAt'] = null;
+      // Recalculer le SLA à la réouverture (optionnel : ici on peut repousser de la durée restante ou recréer une échéance)
+      const now = new Date();
+      updateFields['resolutionDueAt'] = new Date(now.getTime() + 4 * 60 * 60 * 1000); // Ex: Rallonge de 4h
     }
 
     await this.drizzle.db.update(tickets).set(updateFields).where(eq(tickets.id, id));
     await this.ticketHistory.record(
       id,
-      userId,
+      user.sub,
       'STATUS_CHANGED',
       { status: oldStatus },
       { status: newStatus },
       { reason },
     );
 
-    // Émettre l'événement
-    this.eventEmitter.emit('ticket.status_changed', new TicketStatusChangedEvent(id, oldStatus, newStatus, userId));
+    // Émettre l'événement de changement de statut
+    this.eventEmitter.emit('ticket.status_changed', new TicketStatusChangedEvent(id, oldStatus, newStatus, user.sub));
 
     // Émettre des événements spécifiques
-    this.emitStatusEvent(newStatus, id, userId);
+    this.emitStatusEvent(newStatus, id, user.sub);
 
     // Métriques Prometheus — décrémenter les tickets actifs si terminé
     if (['RESOLVED', 'CLOSED', 'CANCELLED'].includes(newStatus)) {
@@ -239,16 +300,19 @@ export class TicketsService {
     }
 
     const updated = await this.findTicketById(id);
-    return { message: `Statut changé : ${oldStatus} → ${newStatus}`, data: updated };
+    return { message: `Statut change : ${oldStatus} -> ${newStatus}`, data: updated };
   }
 
   /**
-   * Assigne un ticket à un agent.
+   * Assigne ou réassigne un ticket à un agent avec validation fine (ownership-based).
    */
-  async assign(id: string, toUserId: string, assignedBy: string, reason?: string) {
+  async assign(id: string, toUserId: string, user: JwtPayload, reason?: string) {
     const ticket = await this.findTicketById(id);
 
-    // Créer l'entrée d'assignation
+    // 1. Valider la permission d'assignation
+    const { isAutoAssign } = this.ticketPermissions.checkCanAssign(ticket, toUserId, user);
+
+    // 2. Créer l'entrée d'assignation
     await this.drizzle.db.insert(ticketAssignments).values({
       id: generateUuid(),
       ticketId: id,
@@ -256,12 +320,13 @@ export class TicketsService {
       toUserId,
       fromDepartmentId: ticket.assignedTeamId || null,
       toDepartmentId: ticket.assignedTeamId,
-      assignedBy,
+      assignedBy: user.sub,
       reason: reason || null,
     });
 
-    // Mettre à jour le ticket
-    const newStatus = ticket.status === 'NEW' ? 'ASSIGNED' : ticket.status;
+    // 3. Mettre à jour le ticket
+    // Si c'est un s'auto-assigner de ticket NEW, on fait automatiquement la transition vers ASSIGNED
+    const newStatus = isAutoAssign ? 'ASSIGNED' : ticket.status === 'NEW' ? 'ASSIGNED' : ticket.status;
     await this.drizzle.db
       .update(tickets)
       .set({ assignedTo: toUserId, status: newStatus as typeof tickets.$inferSelect.status })
@@ -269,25 +334,31 @@ export class TicketsService {
 
     await this.ticketHistory.record(
       id,
-      assignedBy,
+      user.sub,
       'ASSIGNED',
-      { assignedTo: ticket.assignedTo },
-      { assignedTo: toUserId },
+      { assignedTo: ticket.assignedTo, status: ticket.status },
+      { assignedTo: toUserId, status: newStatus },
       { reason },
     );
 
-    this.eventEmitter.emit('ticket.assigned', new TicketAssignedEvent(id, toUserId, assignedBy));
-    this.logger.log(`Ticket ${ticket.ticketNumber} assigné à ${toUserId} par ${assignedBy}`);
+    this.eventEmitter.emit('ticket.assigned', new TicketAssignedEvent(id, toUserId, user.sub));
+    this.logger.log(`Ticket ${ticket.ticketNumber} assigne a ${toUserId} par ${user.sub} (auto: ${isAutoAssign})`);
 
     const updated = await this.findTicketById(id);
-    return { message: 'Ticket assigné avec succès.', data: updated };
+    return {
+      message: isAutoAssign ? 'Ticket auto-assigne avec succes.' : 'Ticket assigne avec succes.',
+      data: updated,
+    };
   }
 
   /**
-   * Escalade un ticket vers un autre agent/département.
+   * Escalade un ticket vers un autre agent/département avec validation fine (ownership-based).
    */
-  async escalate(id: string, toUserId: string, toDepartmentId: string, escalatedBy: string, reason?: string) {
+  async escalate(id: string, toUserId: string, toDepartmentId: string, user: JwtPayload, reason?: string) {
     const ticket = await this.findTicketById(id);
+
+    // 1. Valider la permission d'escalade
+    const { isHierarchical } = this.ticketPermissions.checkCanEscalate(ticket, toDepartmentId, user);
 
     await this.drizzle.db.insert(ticketAssignments).values({
       id: generateUuid(),
@@ -296,7 +367,7 @@ export class TicketsService {
       toUserId,
       fromDepartmentId: ticket.assignedTeamId || null,
       toDepartmentId,
-      assignedBy: escalatedBy,
+      assignedBy: user.sub,
       reason: reason || null,
     });
 
@@ -307,18 +378,23 @@ export class TicketsService {
 
     await this.ticketHistory.record(
       id,
-      escalatedBy,
+      user.sub,
       'ESCALATED',
       { assignedTo: ticket.assignedTo, assignedTeamId: ticket.assignedTeamId },
       { assignedTo: toUserId, assignedTeamId: toDepartmentId },
-      { reason },
+      { reason, type: isHierarchical ? 'hierarchical' : 'functional' },
     );
 
-    this.eventEmitter.emit('ticket.escalated', new TicketEscalatedEvent(id, toUserId, escalatedBy));
-    this.logger.log(`Ticket ${ticket.ticketNumber} escaladé par ${escalatedBy}`);
+    this.eventEmitter.emit('ticket.escalated', new TicketEscalatedEvent(id, toUserId, user.sub));
+    this.logger.log(
+      `Ticket ${ticket.ticketNumber} escalade par ${user.sub} (type: ${isHierarchical ? 'hierarchical' : 'functional'})`,
+    );
 
     const updated = await this.findTicketById(id);
-    return { message: 'Ticket escaladé avec succès.', data: updated };
+    return {
+      message: `Ticket escalade avec succes (${isHierarchical ? 'hierarchique' : 'fonctionnelle'}).`,
+      data: updated,
+    };
   }
 
   /**
@@ -328,7 +404,7 @@ export class TicketsService {
     const ticket = await this.findTicketById(id);
     await this.drizzle.db.update(tickets).set({ deletedAt: new Date() }).where(eq(tickets.id, id));
 
-    this.logger.log(`Ticket ${ticket.ticketNumber} supprimé (soft delete)`);
+    this.logger.log(`Ticket ${ticket.ticketNumber} supprime (soft delete)`);
   }
 
   /**
@@ -387,7 +463,6 @@ export class TicketsService {
     return result[0];
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private emitStatusEvent(newStatus: TicketStatus, id: string, userId: string): void {
     switch (newStatus) {
       case 'RESOLVED':

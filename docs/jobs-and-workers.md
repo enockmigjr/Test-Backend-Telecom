@@ -1,6 +1,6 @@
 # Jobs et Workers — Documentation Technique
 
-Dernière mise à jour : 2026-07-01
+Dernière mise à jour : 2026-07-02
 
 ## Architecture BullMQ
 
@@ -45,6 +45,7 @@ opérations lentes ou non-critiques du flux HTTP principal.
   2. Vérifie si `resolutionDueAt < NOW()` → SLA BREACH
   3. Vérifie si `resolutionDueAt` dans < 30 min → SLA WARNING
   4. Marque `sla_breached = true` sur les tickets en breach
+  5. **Auto-clôture** : passe les tickets `RESOLVED` depuis plus de 48h en `CLOSED` (avec entrée d'historique système)
 - **Actions**: DB update + métrique Prometheus + WebSocket + notification + email
 - **Impact**: ~10-50ms par exécution (requête SQL avec index)
 

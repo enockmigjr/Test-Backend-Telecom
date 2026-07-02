@@ -20,4 +20,18 @@ export class JwtConfigService {
   get refreshExpiration(): string {
     return process.env['JWT_REFRESH_EXPIRATION'] || '7d';
   }
+
+  /**
+   * Durée de vie de l'access token en secondes (pour le TTL Redis de la blacklist).
+   * Supporte les formats : '15m', '1h', '30s', '1d'.
+   */
+  get accessExpirationSeconds(): number {
+    const raw = this.accessExpiration;
+    const match = raw.match(/^(\d+)([smhd])$/);
+    if (!match) return 900; // fallback 15 min
+    const value = parseInt(match[1], 10);
+    const unit = match[2];
+    const multipliers: Record<string, number> = { s: 1, m: 60, h: 3600, d: 86400 };
+    return value * (multipliers[unit] ?? 60);
+  }
 }

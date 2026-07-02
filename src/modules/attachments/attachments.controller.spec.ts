@@ -12,7 +12,8 @@ import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 // Fixtures
 // ---------------------------------------------------------------------------
 jest.mock('fs', () => ({
-  createReadStream: jest.fn(),
+  createReadStream: jest.fn().mockReturnValue({ on: jest.fn(), pipe: jest.fn() }),
+  existsSync: jest.fn().mockReturnValue(true),
 }));
 
 jest.mock('path', () => ({
@@ -170,7 +171,7 @@ describe('AttachmentsController', () => {
     it('doit diffuser le fichier avec les bons headers', async () => {
       attachmentsService.findOne.mockResolvedValue(mockAttachmentRecord);
       (join as jest.Mock).mockReturnValue('/uploads/tickets/2026/01/uuid-rapport-incident.pdf');
-      const mockStream = { pipe: jest.fn() } as any;
+      const mockStream = { on: jest.fn(), pipe: jest.fn() } as any;
       (createReadStream as jest.Mock).mockReturnValue(mockStream);
       const res = makeMockResponse() as Response;
 
@@ -190,7 +191,7 @@ describe('AttachmentsController', () => {
 
       attachmentsService.findOne.mockResolvedValue(mockAttachmentRecord);
       (join as jest.Mock).mockReturnValue('./uploads/tickets/2026/01/uuid-rapport-incident.pdf');
-      const mockStream = { pipe: jest.fn() } as any;
+      const mockStream = { on: jest.fn(), pipe: jest.fn() } as any;
       (createReadStream as jest.Mock).mockReturnValue(mockStream);
       const res = makeMockResponse() as Response;
 
@@ -214,7 +215,7 @@ describe('AttachmentsController', () => {
       process.env['STORAGE_LOCAL_PATH'] = '/custom/storage';
       attachmentsService.findOne.mockResolvedValue(mockAttachmentRecord);
       (join as jest.Mock).mockReturnValue('/custom/storage/tickets/2026/01/uuid-rapport-incident.pdf');
-      const mockStream = { pipe: jest.fn() } as any;
+      const mockStream = { on: jest.fn(), pipe: jest.fn() } as any;
       (createReadStream as jest.Mock).mockReturnValue(mockStream);
       const res = makeMockResponse() as Response;
 
@@ -231,23 +232,23 @@ describe('AttachmentsController', () => {
     it('doit supprimer une piece jointe avec succes', async () => {
       attachmentsService.remove.mockResolvedValue(undefined);
 
-      const result = await controller.remove('att-001');
+      const result = await controller.remove('att-001', mockUser);
 
-      expect(attachmentsService.remove).toHaveBeenCalledWith('att-001');
+      expect(attachmentsService.remove).toHaveBeenCalledWith('att-001', mockUser);
       expect(result).toBeUndefined();
     });
 
     it('doit propager les erreurs du service', async () => {
       attachmentsService.remove.mockRejectedValue(new Error('Pièce jointe non trouvée.'));
 
-      await expect(controller.remove('att-unknown')).rejects.toThrow('Pièce jointe non trouvée.');
+      await expect(controller.remove('att-unknown', mockUser)).rejects.toThrow('Pièce jointe non trouvée.');
     });
 
     it('doit etre idempotent si le service ne leve pas derreur', async () => {
       attachmentsService.remove.mockResolvedValue(undefined);
 
-      await expect(controller.remove('att-001')).resolves.toBeUndefined();
-      await expect(controller.remove('att-001')).resolves.toBeUndefined();
+      await expect(controller.remove('att-001', mockUser)).resolves.toBeUndefined();
+      await expect(controller.remove('att-001', mockUser)).resolves.toBeUndefined();
       expect(attachmentsService.remove).toHaveBeenCalledTimes(2);
     });
   });

@@ -1,9 +1,10 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 import { generateUuid } from '../../common/helpers/uuidv7.helper';
 import { DrizzleProvider } from '../../database/drizzle.provider';
 import { attachments } from '../../database/schemas';
 import { LocalStorageService } from './storage/local-storage.service';
+import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 
 @Injectable()
 export class AttachmentsService {
@@ -56,8 +57,11 @@ export class AttachmentsService {
     return this.storage.download(att.objectKey);
   }
 
-  async remove(id: string) {
+  async remove(id: string, user: JwtPayload) {
     const att = await this.findOne(id);
+    if (att.uploadedBy !== user.sub && user.role !== 'ADMINISTRATOR' && user.role !== 'SUPERVISOR') {
+      throw new ForbiddenException("Vous n'avez pas le droit de supprimer cette pièce jointe.");
+    }
     await this.storage.delete(att.objectKey);
     await this.drizzle.db.delete(attachments).where(eq(attachments.id, id));
   }

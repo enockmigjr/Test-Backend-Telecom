@@ -340,7 +340,7 @@ describe('AuthService', () => {
   // =========================================================================
   describe('logout() — Deconnexion', () => {
     it('doit revoquer le refresh token et retourner void', async () => {
-      await service.logout('some-refresh-token');
+      await service.logout('some-refresh-token', 'jti-test-123');
 
       expect(mockUpdateQuery.set).toHaveBeenCalledWith({
         revokedAt: expect.any(Date),
@@ -351,7 +351,7 @@ describe('AuthService', () => {
     it("ne doit pas lever d'erreur si le token n'existe pas (idempotent)", async () => {
       mockUpdateQuery.where.mockResolvedValue(undefined);
 
-      await expect(service.logout('token-inexistant')).resolves.toBeUndefined();
+      await expect(service.logout('token-inexistant', 'jti-test-999')).resolves.toBeUndefined();
     });
   });
 

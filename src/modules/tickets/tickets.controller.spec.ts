@@ -339,7 +339,7 @@ describe('TicketsController', () => {
 
       const result = await controller.update(ticketId, updateDto, mockAdmin);
 
-      expect(ticketsService.update).toHaveBeenCalledWith(ticketId, updateDto, mockAdmin.sub);
+      expect(ticketsService.update).toHaveBeenCalledWith(ticketId, updateDto, mockAdmin);
       expect(result).toEqual(updateResponse);
     });
 
@@ -348,7 +348,7 @@ describe('TicketsController', () => {
 
       await controller.update(ticketId, updateDto, mockAdmin);
 
-      expect(ticketsService.update).toHaveBeenCalledWith(ticketId, updateDto, 'admin-001');
+      expect(ticketsService.update).toHaveBeenCalledWith(ticketId, updateDto, mockAdmin);
     });
 
     it('doit propager les erreurs du service (not found, invalid data)', async () => {
@@ -375,7 +375,7 @@ describe('TicketsController', () => {
 
       const result = await controller.assign(ticketId, assignDto, mockAdmin);
 
-      expect(ticketsService.assign).toHaveBeenCalledWith(ticketId, assignDto.userId, mockAdmin.sub, assignDto.reason);
+      expect(ticketsService.assign).toHaveBeenCalledWith(ticketId, assignDto.userId, mockAdmin, assignDto.reason);
       expect(result).toEqual(assignResponse);
     });
 
@@ -384,7 +384,7 @@ describe('TicketsController', () => {
 
       await controller.assign(ticketId, assignDto, mockAdmin);
 
-      expect(ticketsService.assign).toHaveBeenCalledWith(ticketId, assignDto.userId, 'admin-001', assignDto.reason);
+      expect(ticketsService.assign).toHaveBeenCalledWith(ticketId, assignDto.userId, mockAdmin, assignDto.reason);
     });
 
     it('doit accepter une assignation sans raison', async () => {
@@ -393,7 +393,7 @@ describe('TicketsController', () => {
 
       await controller.assign(ticketId, dtoSansRaison, mockAdmin);
 
-      expect(ticketsService.assign).toHaveBeenCalledWith(ticketId, 'agent-002', 'admin-001', undefined);
+      expect(ticketsService.assign).toHaveBeenCalledWith(ticketId, 'agent-002', mockAdmin, undefined);
     });
 
     it('doit propager les erreurs du service', async () => {
@@ -416,7 +416,7 @@ describe('TicketsController', () => {
         ticketId,
         escalateDto.userId,
         escalateDto.departmentId,
-        mockAdmin.sub,
+        mockAdmin,
         escalateDto.reason,
       );
       expect(result).toEqual(escalateResponse);
@@ -431,7 +431,7 @@ describe('TicketsController', () => {
         ticketId,
         escalateDto.userId,
         escalateDto.departmentId,
-        'admin-001',
+        mockAdmin,
         escalateDto.reason,
       );
     });
@@ -442,7 +442,7 @@ describe('TicketsController', () => {
 
       await controller.escalate(ticketId, dtoSansRaison, mockAdmin);
 
-      expect(ticketsService.escalate).toHaveBeenCalledWith(ticketId, 'senior-001', 'dept-002', 'admin-001', undefined);
+      expect(ticketsService.escalate).toHaveBeenCalledWith(ticketId, 'senior-001', 'dept-002', mockAdmin, undefined);
     });
 
     it('doit propager les erreurs du service', async () => {
@@ -461,7 +461,7 @@ describe('TicketsController', () => {
 
       const result = await controller.start(ticketId, mockUser);
 
-      expect(ticketsService.changeStatus).toHaveBeenCalledWith(ticketId, 'IN_PROGRESS', mockUser.sub);
+      expect(ticketsService.changeStatus).toHaveBeenCalledWith(ticketId, 'IN_PROGRESS', mockUser);
       expect(result).toEqual(statusChangeResponse);
     });
 
@@ -470,7 +470,7 @@ describe('TicketsController', () => {
 
       await controller.start(ticketId, mockUser);
 
-      expect(ticketsService.changeStatus).toHaveBeenCalledWith(ticketId, 'IN_PROGRESS', 'user-001');
+      expect(ticketsService.changeStatus).toHaveBeenCalledWith(ticketId, 'IN_PROGRESS', mockUser);
     });
 
     it('doit propager les erreurs de transition invalide', async () => {
@@ -487,24 +487,24 @@ describe('TicketsController', () => {
     it('doit marquer un ticket comme resolu', async () => {
       ticketsService.changeStatus.mockResolvedValue(resolvedResponse as any);
 
-      const result = await controller.resolve(ticketId, mockUser);
+      const result = await controller.resolve(ticketId, {}, mockUser);
 
-      expect(ticketsService.changeStatus).toHaveBeenCalledWith(ticketId, 'RESOLVED', mockUser.sub);
+      expect(ticketsService.changeStatus).toHaveBeenCalledWith(ticketId, 'RESOLVED', mockUser, undefined);
       expect(result).toEqual(resolvedResponse);
     });
 
     it('doit utiliser le sub du JWT', async () => {
       ticketsService.changeStatus.mockResolvedValue(resolvedResponse as any);
 
-      await controller.resolve(ticketId, mockUser);
+      await controller.resolve(ticketId, {}, mockUser);
 
-      expect(ticketsService.changeStatus).toHaveBeenCalledWith(ticketId, 'RESOLVED', 'user-001');
+      expect(ticketsService.changeStatus).toHaveBeenCalledWith(ticketId, 'RESOLVED', mockUser, undefined);
     });
 
     it('doit propager les erreurs du service', async () => {
       ticketsService.changeStatus.mockRejectedValue(new Error('Transition invalide.'));
 
-      await expect(controller.resolve(ticketId, mockUser)).rejects.toThrow('Transition invalide.');
+      await expect(controller.resolve(ticketId, {}, mockUser)).rejects.toThrow('Transition invalide.');
     });
   });
 
@@ -517,7 +517,7 @@ describe('TicketsController', () => {
 
       const result = await controller.close(ticketId, mockAdmin);
 
-      expect(ticketsService.changeStatus).toHaveBeenCalledWith(ticketId, 'CLOSED', mockAdmin.sub);
+      expect(ticketsService.changeStatus).toHaveBeenCalledWith(ticketId, 'CLOSED', mockAdmin);
       expect(result).toEqual(closedResponse);
     });
 
@@ -526,7 +526,7 @@ describe('TicketsController', () => {
 
       await controller.close(ticketId, mockAdmin);
 
-      expect(ticketsService.changeStatus).toHaveBeenCalledWith(ticketId, 'CLOSED', 'admin-001');
+      expect(ticketsService.changeStatus).toHaveBeenCalledWith(ticketId, 'CLOSED', mockAdmin);
     });
 
     it('doit propager les erreurs du service', async () => {
@@ -543,24 +543,36 @@ describe('TicketsController', () => {
     it('doit reouvrir un ticket clos', async () => {
       ticketsService.changeStatus.mockResolvedValue(reopenedResponse as any);
 
-      const result = await controller.reopen(ticketId, mockAdmin);
+      const result = await controller.reopen(ticketId, { reason: 'Raison de reouverture test' }, mockAdmin);
 
-      expect(ticketsService.changeStatus).toHaveBeenCalledWith(ticketId, 'REOPENED', mockAdmin.sub);
+      expect(ticketsService.changeStatus).toHaveBeenCalledWith(
+        ticketId,
+        'REOPENED',
+        mockAdmin,
+        'Raison de reouverture test',
+      );
       expect(result).toEqual(reopenedResponse);
     });
 
     it('doit utiliser le sub du JWT', async () => {
       ticketsService.changeStatus.mockResolvedValue(reopenedResponse as any);
 
-      await controller.reopen(ticketId, mockAdmin);
+      await controller.reopen(ticketId, { reason: 'Raison de reouverture test' }, mockAdmin);
 
-      expect(ticketsService.changeStatus).toHaveBeenCalledWith(ticketId, 'REOPENED', 'admin-001');
+      expect(ticketsService.changeStatus).toHaveBeenCalledWith(
+        ticketId,
+        'REOPENED',
+        mockAdmin,
+        'Raison de reouverture test',
+      );
     });
 
     it('doit propager les erreurs du service', async () => {
       ticketsService.changeStatus.mockRejectedValue(new Error('Impossible de reouvrir.'));
 
-      await expect(controller.reopen(ticketId, mockAdmin)).rejects.toThrow('Impossible de reouvrir.');
+      await expect(controller.reopen(ticketId, { reason: 'Raison de reouverture test' }, mockAdmin)).rejects.toThrow(
+        'Impossible de reouvrir.',
+      );
     });
   });
 
