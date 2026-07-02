@@ -5,7 +5,7 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql)
 ![Redis](https://img.shields.io/badge/Redis-7-DC382D?logo=redis)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker)
-![Tests](https://img.shields.io/badge/Tests-166%20passed-success)
+![Tests](https://img.shields.io/badge/Tests-499%20passed-success)
 ![License](https://img.shields.io/badge/License-UNLICENSED-lightgrey)
 
 Backend **NestJS** pour la plateforme de gestion des tickets d'incidents télécoms.
@@ -27,6 +27,32 @@ pnpm run db:push && pnpm run db:seed
 
 # Démarrer l'API
 pnpm run start:dev
+```
+
+### Tests
+
+```bash
+# Tests unitaires (446 tests)
+pnpm run test:unit
+
+# Tests end-to-end (43 tests)
+pnpm run test:e2e
+
+# Tests d'intégration (10 tests)
+pnpm run test:integration
+
+# Tous les tests (499 tests)
+pnpm run test:all
+```
+
+### Services Docker
+
+```bash
+# Services essentiels seulement (PostgreSQL, Redis, Mailpit)
+docker compose up -d postgres redis mailpit
+
+# Tous les services (monitoring complet)
+docker compose up -d
 ```
 
 | URL                                                                     | Description               |
@@ -52,7 +78,7 @@ pnpm run start:dev
 ## 🏗️ Architecture
 
 ```
-16 modules NestJS · 12 tables PostgreSQL · 45+ routes REST · 5 workers BullMQ
+14 modules NestJS · 12 tables PostgreSQL · 48 routes REST · 5 workers BullMQ
 ```
 
 | Module           | Responsabilité                                                                  |
@@ -145,10 +171,11 @@ make down      # Tout arrêter
 | --------------------------- | ---------------------------- |
 | `pnpm run start:dev`        | Développement hot-reload     |
 | `pnpm run build`            | Compilation TypeScript       |
-| `pnpm run test`             | Tests unitaires (113 tests)  |
+| `pnpm run test`             | Tests unitaires (446 tests)  |
+| `pnpm run test:unit`       | Tests unitaires (446 tests, chemin src/) |
 | `pnpm run test:e2e`         | Tests end-to-end (43 tests)  |
 | `pnpm run test:integration` | Tests intégration (10 tests) |
-| `pnpm run test:all`         | Tous les tests (166 tests)   |
+| `pnpm run test:all`         | Tous les tests (499 tests)   |
 | `pnpm run test:cov`         | Tests avec couverture        |
 | `pnpm run db:push`          | Pousser schéma Drizzle       |
 | `pnpm run db:seed`          | Données de test              |
@@ -162,7 +189,7 @@ make down      # Tout arrêter
 | Fichier                         | Contenu                                   |
 | ------------------------------- | ----------------------------------------- |
 | `CHANGELOG.md`                  | Historique complet des versions           |
-| `docs/routes.md`                | Catalogue complet des 45+ routes          |
+| `docs/routes.md`                | Catalogue complet des 48 routes          |
 | `docs/architecture-flows.md`    | 9 diagrammes Mermaid                      |
 | `docs/deployment.md`            | Guide de déploiement production           |
 | `docs/emails.md`                | Architecture email, templates, flux       |

@@ -1,6 +1,6 @@
 # État d'Implémentation — Production Readiness
 
-Dernière mise à jour: 2026-07-01
+Dernière mise à jour: 2026-07-02
 
 ## ✅ Prod-Ready
 
@@ -42,8 +42,8 @@ Dernière mise à jour: 2026-07-01
 | Makefile          | 20 commandes                                                                                    |
 | BullBoard         | Interface de supervision des 5 queues BullMQ à /admin/queues                                    |
 | Token Cleanup     | Cron quotidien 3h — supprime refresh_tokens expirés + révoqués >30j                             |
-| Documentation     | 9 fichiers docs/, CHANGELOG v1.1.0, README à jour, .env.example 60+ variables                   |
-| Tests             | **468 tests** (unitaire) + 43 E2E + 10 intégration = **521 total**, 34 suites                   |
+| Documentation     | 9 fichiers docs/, CHANGELOG v1.1.0, README à jour, .env.example 70+ variables                   |
+| Tests             | **446 unitaires** + 43 E2E + 10 intégration = **499 tests**, 38 suites                         |
 | Build             | TypeScript strict, zéro erreur                                                                  |
 
 ## 🔶 Reste à faire
@@ -52,4 +52,3 @@ Dernière mise à jour: 2026-07-01
 | ---------------- | --------------------------------------------------------- |
 | S3/MinIO Storage | Interface IStorageService prête, implémentation à ajouter |
 | Auto-escalade    | Si SLA breach + auto_escalate → escalader au supervisor   |
-| Nettoyage tokens | Cron quotidien pour supprimer les refresh_tokens expirés  |

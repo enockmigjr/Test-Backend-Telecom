@@ -55,6 +55,7 @@
 | `POST`   | `/tickets/:id/assign`   | Bearer | SUPERVISOR, ADMIN          | Assigner un ticket à un agent                         |
 | `POST`   | `/tickets/:id/escalate` | Bearer | SUPERVISOR, ADMIN          | Escalader un ticket (changer agent + département)     |
 | `POST`   | `/tickets/:id/resolve`  | Bearer | Tous                       | Marquer comme résolu                                  |
+| `POST`   | `/tickets/:id/start`    | Bearer | Tous (assigné)             | Commencer le traitement (NEW/ASSIGNED → IN_PROGRESS)  |
 | `POST`   | `/tickets/:id/close`    | Bearer | SUPERVISOR, ADMIN          | Clôturer un ticket résolu                             |
 | `POST`   | `/tickets/:id/reopen`   | Bearer | SUPERVISOR, ADMIN          | Réouvrir un ticket clôturé                            |
 | `GET`    | `/tickets/:id/history`  | Bearer | Tous (selon visibilité)    | Historique complet du ticket                          |
@@ -154,8 +155,9 @@
 
 | Méthode | Route                 | Auth   | Rôles             | Description                                    |
 | ------- | --------------------- | ------ | ----------------- | ---------------------------------------------- |
-| `POST`  | `/reports/ticket/:id` | Bearer | SUPERVISOR, ADMIN | Générer un rapport détaillé pour un ticket     |
-| `GET`   | `/reports/sla`        | Bearer | SUPERVISOR, ADMIN | Rapport SLA sur une période (params: from, to) |
+| `POST`  | `/reports/ticket/:id` | Bearer | SUPERVISOR, ADMIN | Générer un rapport détaillé (async, notification) |
+| `GET`   | `/reports/sla`        | Bearer | SUPERVISOR, ADMIN | Rapport SLA synchrone (params: from, to)          |
+| `POST`  | `/reports/sla`        | Bearer | SUPERVISOR, ADMIN | Générer un rapport SLA complet en arrière-plan   |
 
 ---
 
@@ -180,6 +182,6 @@ En production, protéger avec `BULLBOARD_USER` et `BULLBOARD_PASSWORD` dans `.en
 
 ---
 
-**Total: 46 routes sur 13 contrôleurs (dont 1 route admin BullBoard)**
+**Total: 49 routes sur 14 contrôleurs (dont 1 route admin BullBoard)**
 
 ---

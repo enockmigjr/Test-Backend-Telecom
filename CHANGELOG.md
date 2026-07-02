@@ -18,6 +18,7 @@ Tous les changements notables sont documentés ici. Format basé sur [Keep a Cha
 - **5ème worker BullMQ** : `ReportWorker` avec notification + email intégrés
 - **Variables d'environnement** sur tous les fichiers : `${VAR:-default}` pour chaque URL, host, port, credential
 - **Tests exhaustifs** : 446 tests unitaires (31 suites) + 43 E2E + 10 intégration = **499 tests**, couvrant tous les modules
+- **REPORT_READY** : nouveau type de notification dans `notification_type_enum` pour les rapports générés en arrière-plan (BullMQ → REPORT_READY) avec WebSocket émis vers le demandeur
 - **BullBoard** : interface de supervision des 5 queues BullMQ à `/admin/queues`, protégée par Basic Auth en production
 - **Token Cleanup** : cron quotidien à 3h — nettoie `refresh_tokens` expirés + révoqués >30 jours
 - **`.env.example`** complet : 70+ variables documentées avec leurs valeurs par défaut
