@@ -5,7 +5,7 @@ Dernière mise à jour: 2026-07-02
 ## ✅ Prod-Ready
 
 | Composant         | Notes                                                                                           |
-| ----------------- | ----------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| ----------------- | ----------------------------------------------------------------------------------------------- | 
 | Auth JWT          | Login, refresh rotation, logout, logout-all, change-password, Argon2id, Redis JTI blacklist     |
 | RBAC 7 rôles      | JwtAuthGuard + RolesGuard + @Roles() decorator                                                  |
 | Rate Limiting     | Redis distribué (ThrottlerStorageRedisService), 100 req/15min, 10 login/heure                   |
@@ -34,7 +34,7 @@ Dernière mise à jour: 2026-07-02
 | Docker Compose    | 13 services, toutes les URLs/credentials en variables d'environnement                           |
 | Health Checks     | /health (liveness), /health/ready (PostgreSQL + Redis)                                          |
 | Idempotence       | @Idempotent() + header Idempotency-Key, cache Redis 24h                                         |
-| Field Projection  | ?detail=summary                                                                                 | full sur GET /tickets, /users, /dashboard |
+| Field Projection  | ?detail=summary || full sur GET /tickets, /users, /dashboard                                    |
 | UUID v7           | Partout (generateUuid)                                                                          |
 | Soft Delete       | departments, users, tickets                                                                     |
 | CI/CD             | GitHub Actions: 6 jobs (lint, test, build, e2e, security, docker)                               |
@@ -43,7 +43,7 @@ Dernière mise à jour: 2026-07-02
 | BullBoard         | Interface de supervision des 5 queues BullMQ à /admin/queues                                    |
 | Token Cleanup     | Cron quotidien 3h — supprime refresh_tokens expirés + révoqués >30j                             |
 | Documentation     | 9 fichiers docs/, CHANGELOG v1.1.0, README à jour, .env.example 70+ variables                   |
-| Tests             | **446 unitaires** + 43 E2E + 10 intégration = **499 tests**, 38 suites                         |
+| Tests             | **446 unitaires** + 43 E2E + 10 intégration = **499 tests**, 38 suites                          |
 | Build             | TypeScript strict, zéro erreur                                                                  |
 
 ## 🔶 Reste à faire

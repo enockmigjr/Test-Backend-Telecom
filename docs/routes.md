@@ -153,11 +153,11 @@
 
 ## Rapports (`/reports`)
 
-| Méthode | Route                 | Auth   | Rôles             | Description                                    |
-| ------- | --------------------- | ------ | ----------------- | ---------------------------------------------- |
+| Méthode | Route                 | Auth   | Rôles             | Description                                       |
+| ------- | --------------------- | ------ | ----------------- | ------------------------------------------------- |
 | `POST`  | `/reports/ticket/:id` | Bearer | SUPERVISOR, ADMIN | Générer un rapport détaillé (async, notification) |
 | `GET`   | `/reports/sla`        | Bearer | SUPERVISOR, ADMIN | Rapport SLA synchrone (params: from, to)          |
-| `POST`  | `/reports/sla`        | Bearer | SUPERVISOR, ADMIN | Générer un rapport SLA complet en arrière-plan   |
+| `POST`  | `/reports/sla`        | Bearer | SUPERVISOR, ADMIN | Générer un rapport SLA complet en arrière-plan    |
 
 ---
 

@@ -167,29 +167,29 @@ make down      # Tout arrêter
 
 ## 📋 Scripts
 
-| Commande                    | Description                  |
-| --------------------------- | ---------------------------- |
-| `pnpm run start:dev`        | Développement hot-reload     |
-| `pnpm run build`            | Compilation TypeScript       |
-| `pnpm run test`             | Tests unitaires (446 tests)  |
-| `pnpm run test:unit`       | Tests unitaires (446 tests, chemin src/) |
-| `pnpm run test:e2e`         | Tests end-to-end (43 tests)  |
-| `pnpm run test:integration` | Tests intégration (10 tests) |
-| `pnpm run test:all`         | Tous les tests (499 tests)   |
-| `pnpm run test:cov`         | Tests avec couverture        |
-| `pnpm run db:push`          | Pousser schéma Drizzle       |
-| `pnpm run db:seed`          | Données de test              |
-| `pnpm run db:reset`         | db:push + db:seed            |
-| `make up`                   | Démarrer services essentiels |
-| `make up-full`              | Tous les services Docker     |
-| `make help`                 | Aide Makefile                |
+| Commande                    | Description                              |
+| --------------------------- | ---------------------------------------- |
+| `pnpm run start:dev`        | Développement hot-reload                 |
+| `pnpm run build`            | Compilation TypeScript                   |
+| `pnpm run test`             | Tests unitaires (446 tests)              |
+| `pnpm run test:unit`        | Tests unitaires (446 tests, chemin src/) |
+| `pnpm run test:e2e`         | Tests end-to-end (43 tests)              |
+| `pnpm run test:integration` | Tests intégration (10 tests)             |
+| `pnpm run test:all`         | Tous les tests (499 tests)               |
+| `pnpm run test:cov`         | Tests avec couverture                    |
+| `pnpm run db:push`          | Pousser schéma Drizzle                   |
+| `pnpm run db:seed`          | Données de test                          |
+| `pnpm run db:reset`         | db:push + db:seed                        |
+| `make up`                   | Démarrer services essentiels             |
+| `make up-full`              | Tous les services Docker                 |
+| `make help`                 | Aide Makefile                            |
 
 ## 📚 Documentation
 
 | Fichier                         | Contenu                                   |
 | ------------------------------- | ----------------------------------------- |
 | `CHANGELOG.md`                  | Historique complet des versions           |
-| `docs/routes.md`                | Catalogue complet des 48 routes          |
+| `docs/routes.md`                | Catalogue complet des 48 routes           |
 | `docs/architecture-flows.md`    | 9 diagrammes Mermaid                      |
 | `docs/deployment.md`            | Guide de déploiement production           |
 | `docs/emails.md`                | Architecture email, templates, flux       |
