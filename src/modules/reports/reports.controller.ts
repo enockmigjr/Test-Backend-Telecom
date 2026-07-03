@@ -120,6 +120,35 @@ export class ReportsController {
     };
   }
 
+  @Post('weekly/generate')
+  @HttpCode(HttpStatus.ACCEPTED)
+  @ApiOperation({
+    summary: 'Generer un rapport hebdomadaire PDF (asynchrone)',
+    description:
+      'Lance la generation en arriere-plan du rapport hebdomadaire PDF.\n\n**Rôles autorises :** ADMINISTRATOR, SUPERVISOR',
+  })
+  @ApiResponse({ status: 202, description: 'Rapport hebdomadaire en cours de generation.' })
+  async weeklyReportAsync(@CurrentUser() user: JwtPayload) {
+    const reportId = generateUuid();
+    await this.reportsService.createReport({
+      id: reportId,
+      type: 'weekly-report',
+      status: 'pending',
+      requestedBy: user.sub,
+      metadata: { manual: true },
+    });
+
+    await this.queues.report.add('generate-report', {
+      type: 'weekly-report',
+      data: { reportId, requestedBy: user.sub },
+    });
+
+    return {
+      message: 'Rapport hebdomadaire en cours de generation. Vous recevrez une notification.',
+      reportId,
+    };
+  }
+
   @Get()
   @Roles('ADMINISTRATOR')
   @ApiOperation({

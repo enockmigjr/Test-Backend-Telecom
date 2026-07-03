@@ -109,7 +109,11 @@ describe('ReportsService', () => {
     });
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [ReportsService, { provide: DrizzleProvider, useValue: drizzle }],
+      providers: [
+        ReportsService,
+        { provide: DrizzleProvider, useValue: drizzle },
+        { provide: 'BullMQ_Queues', useValue: { report: { add: jest.fn().mockResolvedValue(undefined) } } },
+      ],
     }).compile();
 
     service = module.get<ReportsService>(ReportsService);

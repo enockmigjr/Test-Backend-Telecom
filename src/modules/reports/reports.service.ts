@@ -1,9 +1,12 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, Inject } from '@nestjs/common';
 import { DrizzleProvider } from '../../database/drizzle.provider';
-import { tickets, departments, reports, NewReport, Report } from '../../database/schemas';
+import { tickets, departments, reports, users, NewReport, Report } from '../../database/schemas';
 import { eq, and, gte, lte, isNull, count, sql } from 'drizzle-orm';
 import PDFDocument from 'pdfkit';
 import { Writable } from 'stream';
+import { Queue } from 'bullmq';
+import { Cron } from '@nestjs/schedule';
+import { generateUuid } from '../../common/helpers/uuidv7.helper';
 
 export interface TicketReportData {
   ticketNumber?: string | null;
@@ -37,7 +40,50 @@ export interface SlaPriorityReportData {
 export class ReportsService {
   private readonly logger = new Logger(ReportsService.name);
 
-  constructor(private readonly drizzle: DrizzleProvider) {}
+  constructor(
+    private readonly drizzle: DrizzleProvider,
+    @Inject('BullMQ_Queues') private readonly queues: { report: Queue },
+  ) {}
+
+  /**
+   * Cron hebdomadaire exécuté tous les lundis à 6h00 du matin.
+   * Génère automatiquement le rapport hebdomadaire pour le premier administrateur actif.
+   */
+  @Cron('0 6 * * 1')
+  async handleWeeklyReportCron(): Promise<void> {
+    this.logger.log('Déclenchement automatique du rapport hebdomadaire...');
+    try {
+      // Trouver le premier administrateur actif
+      const [admin] = await this.drizzle.db
+        .select({ id: users.id, email: users.email })
+        .from(users)
+        .where(and(eq(users.role, 'ADMINISTRATOR'), isNull(users.deletedAt)))
+        .limit(1);
+
+      if (!admin) {
+        this.logger.warn('Aucun administrateur actif trouvé pour recevoir le rapport hebdomadaire.');
+        return;
+      }
+
+      const reportId = generateUuid();
+      await this.createReport({
+        id: reportId,
+        type: 'weekly-report',
+        status: 'pending',
+        requestedBy: admin.id,
+        metadata: { automated: true },
+      });
+
+      await this.queues.report.add('generate-report', {
+        type: 'weekly-report',
+        data: { reportId, requestedBy: admin.id },
+      });
+
+      this.logger.log(`Job de rapport hebdomadaire automatique créé avec succès (ID: ${reportId}) pour ${admin.email}`);
+    } catch (err) {
+      this.logger.error(`Erreur lors du déclenchement du rapport hebdomadaire automatique: ${String(err)}`);
+    }
+  }
 
   /**
    * Génère les données pour un rapport détaillé d'un ticket.

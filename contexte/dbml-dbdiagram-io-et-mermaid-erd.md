@@ -59,6 +59,8 @@ TICKET_RESOLVED
 COMMENT_ADDED
 SLA_WARNING
 SLA_BREACHED
+REPORT_READY
+REPORT_FAILED
 }
 
 Table departments {
@@ -205,6 +207,17 @@ ip_address varchar(45)
 user_agent text  
 created_at timestamp
 }
+Table reports {
+id uuid [pk]
+type varchar(50) [not null]
+status varchar(50) [not null]
+requested_by uuid [not null, ref: > users.id]
+object_key text
+error_message text
+metadata json
+completed_at timestamp
+created_at timestamp
+}
 
 # Mermaid ERD
 
@@ -236,6 +249,8 @@ USERS ||--o{ REFRESH_TOKENS : owns
 USERS ||--o{ AUDIT_LOGS : performs
 
 USERS ||--o{ TICKET_HISTORY : performs
+
+USERS ||--o{ REPORTS : requests
 
 TICKETS ||--o{ TICKET_ASSIGNMENTS : assignment_history
 
@@ -284,6 +299,8 @@ SLA[SLA Policies]
 
 AL[Audit Logs]
 
+RP[Reports]
+
 D --> U
 
 D --> T
@@ -305,6 +322,8 @@ U --> RT
 U --> NT
 
 U --> AL
+
+U --> RP
 
 SLA --> T
 

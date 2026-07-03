@@ -768,7 +768,15 @@ On utilise `@nestjs-modules/mailer` avec Nodemailer en transport. Les templates 
 On ne bloque jamais une requête HTTP pour envoyer un email. La requête se termine, l'événement Domain est émis, un listener l'intercepte et ajoute un job dans la queue Bull. Le worker process le job en arrière-plan.  
 Le SLA Engine tourne comme un job planifié via `@nestjs/schedule` (qui utilise node-cron). Toutes les 5 minutes, il exécute une query SQL ciblée sur les tickets actifs dont `sla\_due\_at` est dans le futur proche ou passé.  
 La query récupère tous les tickets avec `status NOT IN ('RESOLVED', 'CLOSED', 'CANCELLED')` et `sla\_due\_at <= NOW() + INTERVAL '30 minutes'`. Pour chaque ticket en warning (20% du temps restant), il émet un event `ticket.sla\_warning`. Pour chaque ticket en breach (sla_due_at dépassé et sla_breached = false), il met à jour `sla\_breached = true`, insère un enregistrement dans `ticket\_history` avec l'action `SLA\_BREACHED`, émet une notification WebSocket et un email au supervisor, et selon la configuration, peut déclencher une escalation automatique.  
-L'escalation automatique consulte la table `sla\_policies` pour savoir si cette priorité a une escalation automatique configurée, puis appelle le même `AssignmentsService` qu'un humain utiliserait pour escalader.
+L'escalation automatique consulte la table `sla\_policies` pour savoir si cette priorité a une escalation accumulation configurée, puis appelle le même `AssignmentsService` qu'un humain utiliserait pour escalader.
+
+### Pipeline de Génération de Rapports Asynchrones
+
+Pour les rapports complexes ou lourds (rapport détaillé de ticket, rapport de conformité SLA, ou rapport hebdomadaire des directeurs), le système met en place un pipeline asynchrone robuste piloté par BullMQ (`report-queue`) :
+1. **Requête & Enregistrement** : L'utilisateur initie une demande via `POST /reports/...`. L'API insère instantanément une ligne dans la table `reports` avec le statut `pending` et un UUID, puis retourne un code `202 Accepted` avec le `reportId`.
+2. **Worker & Stockage local** : Le `ReportWorker` traite la demande en tâche de fond. Le fichier PDF final est dessiné à l'aide de **PDFKit** et téléversé localement via le service d'abstraction `LocalStorageService` sous l'arborescence `reports/YYYY/MM/{reportId}.pdf`. Le statut en base passe à `completed` (ou `failed` en cas d'erreur bloquante).
+3. **Notification & Emailing sécurisé** : À la fin du travail (réussite comme échec), le worker déclenche l'envoi obligatoire d'un e-mail d'alerte et d'un job dans la file de notifications. Les emails de rapports réussis ne contiennent pas de pièce jointe physique (PJ lourde) mais un bouton pointant vers un lien de téléchargement sécurisé expirable (`GET /reports/:id/download`).
+4. **Déclenchement automatique (Cron)** : En plus de la génération manuelle à la demande, une tâche récurrente `@Cron('0 6 * * 1')` programmée au démarrage du serveur génère automatiquement le rapport hebdomadaire tous les lundis matin à 06h00 et l'adresse aux administrateurs.
 
 ---
 

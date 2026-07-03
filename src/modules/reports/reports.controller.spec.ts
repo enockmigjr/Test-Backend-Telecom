@@ -192,6 +192,33 @@ describe('ReportsController', () => {
   });
 
   // =========================================================================
+  // weeklyReportAsync() — POST
+  // =========================================================================
+  describe('POST /reports/weekly/generate', () => {
+    it('doit dispatcher un job de rapport hebdomadaire et retourner 202', async () => {
+      const result = await controller.weeklyReportAsync(mockUser);
+
+      expect(reportQueue.add).toHaveBeenCalledWith('generate-report', {
+        type: 'weekly-report',
+        data: {
+          reportId: expect.any(String),
+          requestedBy: mockUser.sub,
+        },
+      });
+      expect(result).toEqual({
+        message: 'Rapport hebdomadaire en cours de generation. Vous recevrez une notification.',
+        reportId: expect.any(String),
+      });
+    });
+
+    it('doit propager les erreurs de BullMQ', async () => {
+      (reportQueue.add as any).mockRejectedValue(new Error('Erreur file'));
+
+      await expect(controller.weeklyReportAsync(mockUser)).rejects.toThrow('Erreur file');
+    });
+  });
+
+  // =========================================================================
   // listReports() — GET
   // =========================================================================
   describe('GET /reports', () => {

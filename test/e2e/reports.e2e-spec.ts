@@ -95,6 +95,15 @@ describe('Reports — E2E', () => {
 
       expect(res.body.data.message).toContain('en cours de generation');
     });
+
+    it('POST /reports/weekly/generate — doit enqueuer le job hebdomadaire PDF -> 202', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/api/v1/reports/weekly/generate')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(202);
+
+      expect(res.body.data.message).toContain('en cours de generation');
+    });
   });
 
   describe('Permissions d acces aux rapports', () => {
