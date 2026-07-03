@@ -12,6 +12,9 @@ env:
   # Désactiver Husky en CI (pas de hooks git nécessaires)
   HUSKY: '0'
 
+permissions:
+  contents: read
+
 jobs:
   # ─── Qualité de code ────────────────────────────────────
   lint:

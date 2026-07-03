@@ -12,8 +12,21 @@ export class LocalStorageService implements IStorageService {
     this.basePath = process.env['STORAGE_LOCAL_PATH'] || './uploads';
   }
 
+  private validatePath(objectKey: string): string {
+    // Supprimer les octets nuls (\0) pour éviter les contournements d'extension ou de chemin
+    const safeKey = objectKey.replace(/\0/g, '');
+    const absoluteBase = path.resolve(this.basePath);
+    const resolvedPath = path.resolve(path.join(absoluteBase, safeKey));
+
+    // S'assurer que le chemin résolu commence par le chemin de base absolu
+    if (!resolvedPath.startsWith(absoluteBase)) {
+      throw new Error('Access Denied: Path Traversal Detected');
+    }
+    return resolvedPath;
+  }
+
   async upload(file: Express.Multer.File, objectKey: string): Promise<string> {
-    const fullPath = path.join(this.basePath, objectKey);
+    const fullPath = this.validatePath(objectKey);
     await fs.mkdir(path.dirname(fullPath), { recursive: true });
     await fs.writeFile(fullPath, file.buffer);
     this.logger.log(`Fichier sauvegardé: ${objectKey}`);
@@ -21,11 +34,12 @@ export class LocalStorageService implements IStorageService {
   }
 
   async download(objectKey: string): Promise<Buffer> {
-    return fs.readFile(path.join(this.basePath, objectKey));
+    const fullPath = this.validatePath(objectKey);
+    return fs.readFile(fullPath);
   }
 
   async delete(objectKey: string): Promise<void> {
-    const fullPath = path.join(this.basePath, objectKey);
+    const fullPath = this.validatePath(objectKey);
     try {
       await fs.unlink(fullPath);
     } catch {
