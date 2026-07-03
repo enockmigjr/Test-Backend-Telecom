@@ -151,6 +151,7 @@ export class AuthService {
         template: 'passwordChanged',
         data: {
           firstName: firstName || 'Utilisateur',
+          email: to,
           changeDate: new Date().toLocaleDateString('fr-FR', {
             day: 'numeric',
             month: 'long',

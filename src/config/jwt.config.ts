@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import type { StringValue } from 'ms';
 
 /**
  * Configuration JWT.
@@ -13,12 +14,12 @@ export class JwtConfigService {
     return process.env['JWT_REFRESH_SECRET'] || 'dev-refresh-secret-change-in-production';
   }
 
-  get accessExpiration(): string {
-    return process.env['JWT_ACCESS_EXPIRATION'] || '15m';
+  get accessExpiration(): StringValue {
+    return (process.env['JWT_ACCESS_EXPIRATION'] as StringValue) || ('15m' as StringValue);
   }
 
-  get refreshExpiration(): string {
-    return process.env['JWT_REFRESH_EXPIRATION'] || '7d';
+  get refreshExpiration(): StringValue {
+    return (process.env['JWT_REFRESH_EXPIRATION'] as StringValue) || ('7d' as StringValue);
   }
 
   /**

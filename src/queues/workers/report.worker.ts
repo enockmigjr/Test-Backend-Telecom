@@ -239,6 +239,7 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
     // Envoyer l'email
     const email = await this.getUserEmail(requestedBy);
     if (email) {
+      const dashboardUrl = process.env['DASHBOARD_URL'] || 'http://localhost:3001';
       await this.sendEmail(
         email,
         '📊 Rapport SLA',
@@ -248,6 +249,7 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
           periodEnd: toDate.toLocaleDateString('fr-FR'),
           totalCreated: total,
           slaBreaches: breached,
+          dashboardUrl,
         },
         [{ filename: `Rapport-SLA-${from || 'debut'}-${to || 'fin'}.pdf`, content: pdfBase64 }],
       );

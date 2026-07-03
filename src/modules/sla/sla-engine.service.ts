@@ -3,7 +3,7 @@ import { Cron } from '@nestjs/schedule';
 import { and, lt, gte, eq, notInArray, isNull } from 'drizzle-orm';
 import { Queue } from 'bullmq';
 import { DrizzleProvider } from '../../database/drizzle.provider';
-import { tickets, users, ticketHistory } from '../../database/schemas';
+import { departments, tickets, users, ticketHistory } from '../../database/schemas';
 import { MetricsService } from '../../common/metrics/metrics.service';
 import { TelecomWebSocketGateway } from '../../websocket/websocket.gateway';
 import { EMAIL_QUEUE, NOTIFICATION_QUEUE } from '../../queues/queues.module';
@@ -46,6 +46,18 @@ export class SlaEngineService {
     return this.queues[NOTIFICATION_QUEUE] ?? this.queues['notification'];
   }
 
+  private formatDateTime(value: Date | null): string {
+    return (
+      value?.toLocaleString('fr-FR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      }) ?? 'Non renseigne'
+    );
+  }
+
   /**
    * Cron toutes les 5 minutes — SLA + Auto-cloture.
    */
@@ -71,6 +83,9 @@ export class SlaEngineService {
         title: tickets.title,
         priority: tickets.priority,
         status: tickets.status,
+        severity: tickets.severity,
+        category: tickets.category,
+        departmentName: departments.name,
         assignedTo: tickets.assignedTo,
         resolutionDueAt: tickets.resolutionDueAt,
         assigneeEmail: users.email,
@@ -79,6 +94,7 @@ export class SlaEngineService {
       })
       .from(tickets)
       .leftJoin(users, eq(tickets.assignedTo, users.id))
+      .leftJoin(departments, eq(tickets.departmentId, departments.id))
       .where(
         and(
           lt(tickets.resolutionDueAt, now),
@@ -110,7 +126,7 @@ export class SlaEngineService {
         await this.notificationQueue.add('create-notification', {
           userId: ticket.assignedTo,
           type: 'SLA_BREACHED',
-          title: `⚠️ SLA Depasse — ${ticket.ticketNumber}`,
+          title: `⚠�? SLA Depasse — ${ticket.ticketNumber}`,
           message: `Le SLA du ticket ${ticket.ticketNumber} a ete depasse. Action urgente requise.`,
           referenceType: 'ticket',
           referenceId: ticket.id,
@@ -137,6 +153,9 @@ export class SlaEngineService {
               ticketTitle: ticket.title,
               priority: ticket.priority,
               status: ticket.status,
+              severity: ticket.severity,
+              category: ticket.category,
+              department: ticket.departmentName ?? 'Non renseigne',
               assigneeName,
               slaExpiredAt,
               overdueBy,
@@ -152,11 +171,21 @@ export class SlaEngineService {
       .select({
         id: tickets.id,
         ticketNumber: tickets.ticketNumber,
+        title: tickets.title,
         priority: tickets.priority,
+        severity: tickets.severity,
+        category: tickets.category,
+        status: tickets.status,
         assignedTo: tickets.assignedTo,
         resolutionDueAt: tickets.resolutionDueAt,
+        departmentName: departments.name,
+        assigneeEmail: users.email,
+        assigneeFirstName: users.firstName,
+        assigneeLastName: users.lastName,
       })
       .from(tickets)
+      .leftJoin(users, eq(tickets.assignedTo, users.id))
+      .leftJoin(departments, eq(tickets.departmentId, departments.id))
       .where(
         and(
           gte(tickets.resolutionDueAt, now),
@@ -187,11 +216,39 @@ export class SlaEngineService {
         await this.notificationQueue.add('create-notification', {
           userId: ticket.assignedTo,
           type: 'SLA_WARNING',
-          title: `⏰ SLA Warning — ${ticket.ticketNumber}`,
+          title: `�?� SLA Warning — ${ticket.ticketNumber}`,
           message: `Moins de 30 minutes avant l'echeance SLA du ticket ${ticket.ticketNumber}.`,
           referenceType: 'ticket',
           referenceId: ticket.id,
         });
+
+        if (ticket.assigneeEmail) {
+          const appUrl = process.env['APP_URL'] || 'http://localhost:3000';
+          const remainingMinutes = ticket.resolutionDueAt
+            ? Math.round((ticket.resolutionDueAt.getTime() - now.getTime()) / 60000)
+            : 0;
+          const assigneeName =
+            `${ticket.assigneeFirstName ?? ''} ${ticket.assigneeLastName ?? ''}`.trim() || ticket.assigneeEmail;
+
+          await this.emailQueue.add('send-email', {
+            to: ticket.assigneeEmail,
+            subject: `SLA proche - ${ticket.ticketNumber}`,
+            template: 'slaWarning',
+            data: {
+              recipientName: assigneeName,
+              ticketNumber: ticket.ticketNumber,
+              ticketTitle: ticket.title,
+              priority: ticket.priority,
+              severity: ticket.severity,
+              category: ticket.category,
+              status: ticket.status,
+              department: ticket.departmentName ?? 'Non renseigne',
+              slaDueAt: this.formatDateTime(ticket.resolutionDueAt),
+              remainingMinutes,
+              ticketUrl: `${appUrl}/tickets/${ticket.id}`,
+            },
+          });
+        }
       }
 
       this.wsGateway.emitToRole('SUPERVISOR', 'ticket.sla_warning', warningPayload);

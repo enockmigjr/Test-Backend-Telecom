@@ -111,8 +111,8 @@ flowchart LR
 | `sla`            | Politiques SLA, cron engine \*/5 min, breach/warning detection                               |
 | `dashboard`      | 7 endpoints: overview, status, priority, departments, SLA, workload, resolution              |
 | `audit-logs`     | Immutable write-only, recherche multi-filtres                                                |
-| `email`          | Nodemailer dev/prod, 9 templates Handlebars + layout global unifié base.hbs |
-| `reports`        | Génération PDF premium (PDFKit) envoyés en pièces jointes, rapports asynchrones via BullMQ |
+| `email`          | Nodemailer dev/prod, 9 templates Handlebars + layout global unifié base.hbs                  |
+| `reports`        | Génération PDF premium (PDFKit) envoyés en pièces jointes, rapports asynchrones via BullMQ   |
 
 ## 🔄 Flux Asynchrone (BullMQ)
 
@@ -196,21 +196,21 @@ make down      # Tout arrêter
 
 ## 📋 Scripts
 
-| Commande                    | Description                              |
-| --------------------------- | ---------------------------------------- |
-| `pnpm run start:dev`        | Développement hot-reload                 |
-| `pnpm run build`            | Compilation TypeScript                   |
-| `pnpm run test`             | Tests unitaires (443 tests)              |
-| `pnpm run test:unit`        | Tests unitaires (443 tests, chemin src/) |
-| `pnpm run test:e2e`         | Tests end-to-end (102 tests)             |
-| `pnpm run test:all`         | Tous les tests (545 tests)               |
-| `pnpm run test:cov`         | Tests avec couverture                    |
-| `pnpm run db:push`          | Pousser schéma Drizzle                   |
-| `pnpm run db:seed`          | Données de test                          |
-| `pnpm run db:reset`         | db:push + db:seed                        |
-| `make up`                   | Démarrer services essentiels             |
-| `make up-full`              | Tous les services Docker                 |
-| `make help`                 | Aide Makefile                            |
+| Commande             | Description                              |
+| -------------------- | ---------------------------------------- |
+| `pnpm run start:dev` | Développement hot-reload                 |
+| `pnpm run build`     | Compilation TypeScript                   |
+| `pnpm run test`      | Tests unitaires (443 tests)              |
+| `pnpm run test:unit` | Tests unitaires (443 tests, chemin src/) |
+| `pnpm run test:e2e`  | Tests end-to-end (102 tests)             |
+| `pnpm run test:all`  | Tous les tests (545 tests)               |
+| `pnpm run test:cov`  | Tests avec couverture                    |
+| `pnpm run db:push`   | Pousser schéma Drizzle                   |
+| `pnpm run db:seed`   | Données de test                          |
+| `pnpm run db:reset`  | db:push + db:seed                        |
+| `make up`            | Démarrer services essentiels             |
+| `make up-full`       | Tous les services Docker                 |
+| `make help`          | Aide Makefile                            |
 
 ## 📚 Documentation
 

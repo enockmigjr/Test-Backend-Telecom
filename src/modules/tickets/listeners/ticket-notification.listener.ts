@@ -12,13 +12,24 @@ import {
   TicketReopenedEvent,
 } from '../domain/ticket.events';
 import { DrizzleProvider } from '../../../database/drizzle.provider';
-import { users, tickets } from '../../../database/schemas';
+import { departments, users, tickets } from '../../../database/schemas';
 import { TelecomWebSocketGateway } from '../../../websocket/websocket.gateway';
 
 interface BullMqQueues {
   email: Queue;
   notification: Queue;
   [key: string]: Queue;
+}
+
+interface TicketEmailContext {
+  ticketNumber: string;
+  title: string;
+  description: string | null;
+  priority: string;
+  severity: string;
+  category: string;
+  department: string;
+  slaDueAt: string;
 }
 
 /**
@@ -75,18 +86,46 @@ export class TicketNotificationListener {
     return info?.email ?? null;
   }
 
-  /** Récupère le numéro et le titre d'un ticket */
-  private async getTicketSummary(ticketId: string): Promise<{ ticketNumber: string; title: string } | null> {
+  private formatDateTime(value: Date | null): string {
+    return (
+      value?.toLocaleString('fr-FR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      }) ?? 'Non renseigne'
+    );
+  }
+
+  /** Récupère les champs utilises par les templates email de ticket */
+  private async getTicketEmailContext(ticketId: string): Promise<TicketEmailContext | null> {
     try {
       const [ticket] = await this.drizzle.db
-        .select({ ticketNumber: tickets.ticketNumber, title: tickets.title })
+        .select({
+          ticketNumber: tickets.ticketNumber,
+          title: tickets.title,
+          description: tickets.description,
+          priority: tickets.priority,
+          severity: tickets.severity,
+          category: tickets.category,
+          department: departments.name,
+          resolutionDueAt: tickets.resolutionDueAt,
+        })
         .from(tickets)
+        .leftJoin(departments, eq(tickets.departmentId, departments.id))
         .where(and(eq(tickets.id, ticketId), isNull(tickets.deletedAt)))
         .limit(1);
       if (!ticket) return null;
       return {
         ticketNumber: ticket.ticketNumber as string,
         title: ticket.title as string,
+        description: ticket.description as string | null,
+        priority: ticket.priority as string,
+        severity: ticket.severity as string,
+        category: ticket.category as string,
+        department: (ticket.department as string | null) ?? 'Non renseigne',
+        slaDueAt: this.formatDateTime(ticket.resolutionDueAt as Date | null),
       };
     } catch {
       return null;
@@ -116,6 +155,7 @@ export class TicketNotificationListener {
     const ticketNumber = event.ticket['ticketNumber'] as string;
     const title = event.ticket['title'] as string;
     const priority = event.ticket['priority'] as string;
+    const category = event.ticket['category'] as string;
     const departmentId = event.ticket['departmentId'] as string;
     const creatorId = event.userId;
 
@@ -151,6 +191,7 @@ export class TicketNotificationListener {
           ticketNumber,
           title,
           priority,
+          category,
           creatorName: creatorInfo.fullName,
           ticketUrl: `${appUrl}/tickets/${ticketId}`,
         },
@@ -181,7 +222,7 @@ export class TicketNotificationListener {
     // Email à l'assigné
     const assigneeInfo = await this.getUserInfo(event.assignedTo);
     if (assigneeInfo) {
-      const ticket = await this.getTicketSummary(event.ticketId);
+      const ticket = await this.getTicketEmailContext(event.ticketId);
       const supervisorInfo = await this.getUserInfo(event.assignedBy);
       const appUrl = process.env['APP_URL'] || 'http://localhost:3000';
       await this.sendEmail({
@@ -193,6 +234,12 @@ export class TicketNotificationListener {
           supervisorName: supervisorInfo?.fullName ?? 'Un superviseur',
           ticketNumber: ticket?.ticketNumber ?? event.ticketId,
           ticketTitle: ticket?.title ?? 'Sans titre',
+          category: ticket?.category ?? 'Non renseigne',
+          severity: ticket?.severity ?? 'Non renseigne',
+          priority: ticket?.priority ?? 'Non renseigne',
+          department: ticket?.department ?? 'Non renseigne',
+          slaDueAt: ticket?.slaDueAt ?? 'Non renseigne',
+          description: ticket?.description ?? null,
           ticketUrl: `${appUrl}/tickets/${event.ticketId}`,
         },
       });
@@ -229,18 +276,24 @@ export class TicketNotificationListener {
     // Email
     const escalatedToInfo = await this.getUserInfo(event.escalatedTo);
     if (escalatedToInfo) {
-      const ticket = await this.getTicketSummary(event.ticketId);
+      const ticket = await this.getTicketEmailContext(event.ticketId);
       const escalatedByInfo = await this.getUserInfo(event.escalatedBy);
       const appUrl = process.env['APP_URL'] || 'http://localhost:3000';
       await this.sendEmail({
         to: escalatedToInfo.email,
-        subject: `⚠️ Ticket escaladé — ${ticket?.ticketNumber ?? event.ticketId}`,
+        subject: `⚠�? Ticket escaladé — ${ticket?.ticketNumber ?? event.ticketId}`,
         template: 'ticketAssigned',
         data: {
           assigneeName: escalatedToInfo.fullName,
           supervisorName: escalatedByInfo?.fullName ?? 'Un superviseur',
           ticketNumber: ticket?.ticketNumber ?? event.ticketId,
           ticketTitle: ticket?.title ?? 'Sans titre',
+          category: ticket?.category ?? 'Non renseigne',
+          severity: ticket?.severity ?? 'Non renseigne',
+          priority: ticket?.priority ?? 'Non renseigne',
+          department: ticket?.department ?? 'Non renseigne',
+          slaDueAt: ticket?.slaDueAt ?? 'Non renseigne',
+          description: ticket?.description ?? null,
           ticketUrl: `${appUrl}/tickets/${event.ticketId}`,
         },
       });
@@ -283,8 +336,15 @@ export class TicketNotificationListener {
         assignedTo: tickets.assignedTo,
         departmentId: tickets.departmentId,
         title: tickets.title,
+        description: tickets.description,
+        priority: tickets.priority,
+        severity: tickets.severity,
+        category: tickets.category,
+        department: departments.name,
+        resolutionDueAt: tickets.resolutionDueAt,
       })
       .from(tickets)
+      .leftJoin(departments, eq(tickets.departmentId, departments.id))
       .where(eq(tickets.id, event.ticketId))
       .limit(1)
       .then((rows) => rows[0]);
@@ -319,13 +379,19 @@ export class TicketNotificationListener {
       if (assigneeInfo) {
         await this.sendEmail({
           to: assigneeInfo.email,
-          subject: `⚠️ Ticket réouvert — ${ticket.ticketNumber}`,
+          subject: `⚠�? Ticket réouvert — ${ticket.ticketNumber}`,
           template: 'ticketAssigned',
           data: {
             assigneeName: assigneeInfo.fullName,
             supervisorName: reopenerInfo?.fullName ?? 'Un agent',
             ticketNumber: ticket.ticketNumber,
             ticketTitle: ticket.title ?? 'Sans titre',
+            category: ticket.category ?? 'Non renseigne',
+            severity: ticket.severity ?? 'Non renseigne',
+            priority: ticket.priority ?? 'Non renseigne',
+            department: ticket.department ?? 'Non renseigne',
+            slaDueAt: this.formatDateTime(ticket.resolutionDueAt),
+            description: ticket.description ?? null,
             ticketUrl: `${appUrl}/tickets/${event.ticketId}`,
           },
         });

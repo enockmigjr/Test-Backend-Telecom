@@ -143,31 +143,67 @@ export class EmailService {
 
   /** Templates inline (fallback si Handlebars pas trouvé) */
   templates = {
-    ticketCreated: (data: { ticketNumber: string; title: string; priority: string }) => `
+    ticketCreated: (data: { ticketNumber: string; title: string; priority: string; category?: string }) => `
       <h2>Ticket créé — ${data.ticketNumber}</h2>
       <p><strong>Titre:</strong> ${data.title}</p>
+      <p><strong>Catégorie:</strong> ${data.category ?? 'Non renseigne'}</p>
       <p><strong>Priorité:</strong> ${data.priority}</p>
       <p>Votre ticket a été enregistré et sera traité dans les plus brefs délais.</p>
       <hr><small>Telecom Ticket Management — Ne pas répondre à cet email</small>
     `,
 
-    ticketAssigned: (data: { ticketNumber: string; title: string; assignedBy: string }) => `
+    ticketAssigned: (data: {
+      ticketNumber: string;
+      ticketTitle?: string;
+      title?: string;
+      supervisorName?: string;
+      category?: string;
+      severity?: string;
+      priority?: string;
+      department?: string;
+      slaDueAt?: string;
+    }) => `
       <h2>Ticket assigné — ${data.ticketNumber}</h2>
-      <p><strong>Titre:</strong> ${data.title}</p>
-      <p><strong>Assigné par:</strong> ${data.assignedBy}</p>
+      <p><strong>Titre:</strong> ${data.ticketTitle ?? data.title ?? 'Sans titre'}</p>
+      <p><strong>Assigné par:</strong> ${data.supervisorName ?? 'Un superviseur'}</p>
+      <p><strong>Catégorie:</strong> ${data.category ?? 'Non renseigne'}</p>
+      <p><strong>Sévérité/Priorité:</strong> ${data.severity ?? data.priority ?? 'Non renseigne'}</p>
+      <p><strong>Département:</strong> ${data.department ?? 'Non renseigne'}</p>
+      <p><strong>SLA résolution:</strong> ${data.slaDueAt ?? 'Non renseigne'}</p>
       <p>Ce ticket vous a été assigné. Veuillez en prendre connaissance.</p>
       <hr><small>Telecom Ticket Management — Ne pas répondre à cet email</small>
     `,
 
-    slaBreach: (data: { ticketNumber: string; title: string; dueDate: string }) => `
-      <h2>⚠️ Alerte SLA — ${data.ticketNumber}</h2>
-      <p><strong>Titre:</strong> ${data.title}</p>
-      <p><strong>Échéance dépassée:</strong> ${data.dueDate}</p>
+    slaBreach: (data: {
+      ticketNumber: string;
+      ticketTitle?: string;
+      title?: string;
+      slaExpiredAt?: string;
+      overdueBy?: string;
+    }) => `
+      <h2>⚠�? Alerte SLA — ${data.ticketNumber}</h2>
+      <p><strong>Titre:</strong> ${data.ticketTitle ?? data.title ?? 'Sans titre'}</p>
+      <p><strong>Échéance dépassée:</strong> ${data.slaExpiredAt ?? 'Non renseigne'}</p>
+      <p><strong>Retard:</strong> ${data.overdueBy ?? 'Non renseigne'}</p>
       <p style="color:red;">Le SLA de ce ticket a été dépassé. Action immédiate requise.</p>
       <hr><small>Telecom Ticket Management — Alerte automatique</small>
     `,
 
-    passwordChanged: (data: { firstName: string; changeDate: string }) => `
+    slaWarning: (data: {
+      ticketNumber: string;
+      ticketTitle?: string;
+      slaDueAt?: string;
+      remainingMinutes?: number;
+    }) => `
+      <h2>Alerte SLA proche � ${data.ticketNumber}</h2>
+      <p><strong>Titre:</strong> ${data.ticketTitle ?? 'Sans titre'}</p>
+      <p><strong>�ch�ance:</strong> ${data.slaDueAt ?? 'Non renseigne'}</p>
+      <p><strong>Temps restant:</strong> ${data.remainingMinutes ?? 'N/A'} minutes</p>
+      <p>Veuillez traiter ce ticket rapidement pour �viter une violation SLA.</p>
+      <hr><small>Telecom Ticket Management � Alerte automatique</small>
+    `,
+
+    passwordChanged: (data: { firstName: string; email?: string; changeDate: string }) => `
       <h2>🔒 Mot de passe modifié</h2>
       <p>Bonjour <strong>${data.firstName}</strong>,</p>
       <p>Votre mot de passe a été modifié le ${data.changeDate}.</p>
@@ -179,13 +215,17 @@ export class EmailService {
       firstName: string;
       lastName: string;
       email: string;
-      tempPassword: string;
+      temporaryPassword: string;
+      role?: string;
+      departmentName?: string;
       loginUrl: string;
     }) => `
       <h2>👤 Compte créé — Bienvenue</h2>
       <p>Bonjour <strong>${data.firstName} ${data.lastName}</strong>,</p>
       <p>Votre compte a été créé: <strong>${data.email}</strong></p>
-      <p>Mot de passe temporaire: <code>${data.tempPassword}</code></p>
+      <p>Rôle: <strong>${data.role ?? 'Non renseigne'}</strong></p>
+      <p>Departement: <strong>${data.departmentName ?? 'Non renseigne'}</strong></p>
+      <p>Mot de passe temporaire: <code>${data.temporaryPassword}</code></p>
       <p><a href="${data.loginUrl}">Se connecter</a></p>
       <hr><small>Telecom Ticket Management — Ne pas répondre à cet email</small>
     `,

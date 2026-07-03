@@ -180,7 +180,7 @@ export class UsersService {
     this.logger.log(`Utilisateur créé: ${dto.email} (${id}), département: ${dept.name}`);
 
     // Envoyer l'email de bienvenue avec le mot de passe temporaire (asynchrone, non-bloquant)
-    this.sendWelcomeEmail(dto.email, dto.firstName, dto.lastName, tempPassword).catch((err) => {
+    this.sendWelcomeEmail(dto.email, dto.firstName, dto.lastName, tempPassword, dto.role, dept.name).catch((err) => {
       this.logger.warn(`Échec envoi email de bienvenue à ${dto.email}: ${(err as Error).message}`);
     });
 
@@ -251,7 +251,14 @@ export class UsersService {
    * Envoie l'email de bienvenue avec le mot de passe temporaire
    * via la file d'attente BullMQ (non-bloquant).
    */
-  private async sendWelcomeEmail(to: string, firstName: string, lastName: string, tempPassword: string): Promise<void> {
+  private async sendWelcomeEmail(
+    to: string,
+    firstName: string,
+    lastName: string,
+    tempPassword: string,
+    role: string,
+    departmentName: string,
+  ): Promise<void> {
     const loginUrl = process.env['LOGIN_URL'] || 'http://localhost:3000/login';
     try {
       await this.queues.email.add('send-email', {
@@ -262,6 +269,8 @@ export class UsersService {
           firstName,
           lastName,
           email: to,
+          role,
+          departmentName,
           temporaryPassword: tempPassword,
           loginUrl,
         },

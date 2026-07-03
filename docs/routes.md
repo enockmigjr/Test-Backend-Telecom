@@ -157,11 +157,11 @@
 
 ## Rapports (`/reports`)
 
-| Méthode | Route                          | Auth   | Rôles             | Description                                                                                     |
-| ------- | ------------------------------ | ------ | ----------------- | ----------------------------------------------------------------------------------------------- |
-| `GET`   | `/reports/ticket/:id`          | Bearer | SUPERVISOR, ADMIN | Détails du rapport d'un ticket (synchrone — données JSON)                                       |
+| Méthode | Route                          | Auth   | Rôles             | Description                                                                                       |
+| ------- | ------------------------------ | ------ | ----------------- | ------------------------------------------------------------------------------------------------- |
+| `GET`   | `/reports/ticket/:id`          | Bearer | SUPERVISOR, ADMIN | Détails du rapport d'un ticket (synchrone — données JSON)                                         |
 | `POST`  | `/reports/ticket/:id/generate` | Bearer | SUPERVISOR, ADMIN | Générer un rapport d'incident PDF premium joint par email (async, notification + email avec PDF)  |
-| `GET`   | `/reports/sla`                 | Bearer | SUPERVISOR, ADMIN | Rapport SLA synchrone (params: from, to — données JSON)                                         |
+| `GET`   | `/reports/sla`                 | Bearer | SUPERVISOR, ADMIN | Rapport SLA synchrone (params: from, to — données JSON)                                           |
 | `POST`  | `/reports/sla/generate`        | Bearer | SUPERVISOR, ADMIN | Générer un rapport SLA complet PDF premium joint par email (async, notification + email avec PDF) |
 
 ---
