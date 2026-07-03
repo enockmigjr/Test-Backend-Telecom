@@ -379,7 +379,7 @@ export class TicketNotificationListener {
       if (assigneeInfo) {
         await this.sendEmail({
           to: assigneeInfo.email,
-          subject: `⚠�? Ticket réouvert — ${ticket.ticketNumber}`,
+          subject: `⚠ Ticket réouvert — ${ticket.ticketNumber}`,
           template: 'ticketAssigned',
           data: {
             assigneeName: assigneeInfo.fullName,
