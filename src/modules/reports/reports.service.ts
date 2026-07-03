@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { DrizzleProvider } from '../../database/drizzle.provider';
-import { tickets, departments } from '../../database/schemas';
+import { tickets, departments, reports, NewReport, Report } from '../../database/schemas';
 import { eq, and, gte, lte, isNull, count, sql } from 'drizzle-orm';
 import PDFDocument from 'pdfkit';
 import { Writable } from 'stream';
@@ -464,5 +464,69 @@ export class ReportsService {
       writable.on('finish', () => resolve(Buffer.concat(chunks)));
       writable.on('error', reject);
     });
+  }
+
+  /**
+   * Crée un enregistrement de rapport en base de données.
+   */
+  async createReport(data: NewReport): Promise<void> {
+    await this.drizzle.db.insert(reports).values(data);
+  }
+
+  /**
+   * Récupère un rapport par son UUID.
+   */
+  async getReport(id: string): Promise<Report> {
+    const [report] = await this.drizzle.db.select().from(reports).where(eq(reports.id, id)).limit(1);
+    if (!report) throw new NotFoundException('Rapport introuvable.');
+    return report;
+  }
+
+  /**
+   * Modifie le statut et le résultat d'un rapport.
+   */
+  async updateReportStatus(
+    id: string,
+    status: 'completed' | 'failed',
+    objectKey?: string,
+    errorMessage?: string,
+  ): Promise<void> {
+    await this.drizzle.db
+      .update(reports)
+      .set({
+        status,
+        objectKey: objectKey || null,
+        errorMessage: errorMessage || null,
+        completedAt: new Date(),
+      })
+      .where(eq(reports.id, id));
+  }
+
+  /**
+   * Liste paginée de tous les rapports (rôle ADMINISTRATOR uniquement).
+   */
+  async listReports(
+    page = 1,
+    limit = 10,
+  ): Promise<{ success: boolean; data: Report[]; total: number; page: number; limit: number }> {
+    const offset = (page - 1) * limit;
+
+    const [totalRes] = await this.drizzle.db.select({ count: count() }).from(reports);
+    const total = totalRes?.count || 0;
+
+    const data = await this.drizzle.db
+      .select()
+      .from(reports)
+      .orderBy(sql`${reports.createdAt} DESC`)
+      .limit(limit)
+      .offset(offset);
+
+    return {
+      success: true,
+      data,
+      total,
+      page,
+      limit,
+    };
   }
 }

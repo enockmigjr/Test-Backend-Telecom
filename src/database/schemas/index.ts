@@ -11,3 +11,4 @@ export * from './ticket-history';
 export * from './refresh-tokens';
 export * from './notifications';
 export * from './audit-logs';
+export * from './reports';

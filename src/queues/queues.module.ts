@@ -13,10 +13,11 @@ export const SLA_QUEUE = 'sla-queue';
 export const AUDIT_QUEUE = 'audit-queue';
 export const REPORT_QUEUE = 'report-queue';
 import { ReportsModule } from '../modules/reports/reports.module';
+import { AttachmentsModule } from '../modules/attachments/attachments.module';
 
 @Global()
 @Module({
-  imports: [forwardRef(() => ReportsModule)],
+  imports: [forwardRef(() => ReportsModule), AttachmentsModule],
   providers: [
     {
       provide: 'BullMQ_Queues',
@@ -31,7 +32,16 @@ import { ReportsModule } from '../modules/reports/reports.module';
           notification: new Queue(NOTIFICATION_QUEUE, { connection }),
           sla: new Queue(SLA_QUEUE, { connection }),
           audit: new Queue(AUDIT_QUEUE, { connection }),
-          report: new Queue(REPORT_QUEUE, { connection }),
+          report: new Queue(REPORT_QUEUE, {
+            connection,
+            defaultJobOptions: {
+              attempts: 3,
+              backoff: {
+                type: 'exponential',
+                delay: 5000,
+              },
+            },
+          }),
         };
       },
     },

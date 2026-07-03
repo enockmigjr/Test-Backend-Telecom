@@ -79,11 +79,11 @@ describe('ReportsController', () => {
 
       expect(reportQueue.add).toHaveBeenCalledWith('generate-report', {
         type: 'ticket-report',
-        data: { ticketId: 'ticket-001', requestedBy: mockUser.sub },
+        data: { reportId: expect.any(String), ticketId: 'ticket-001', requestedBy: mockUser.sub },
       });
       expect(result).toEqual({
         message: 'Rapport en cours de generation. Vous recevrez une notification.',
-        ticketId: 'ticket-001',
+        reportId: expect.any(String),
       });
     });
 
@@ -92,7 +92,7 @@ describe('ReportsController', () => {
 
       expect(reportQueue.add).toHaveBeenCalledWith('generate-report', {
         type: 'ticket-report',
-        data: { ticketId: 'ticket-002', requestedBy: mockAdmin.sub },
+        data: { reportId: expect.any(String), ticketId: 'ticket-002', requestedBy: mockAdmin.sub },
       });
     });
 
@@ -142,14 +142,15 @@ describe('ReportsController', () => {
       expect(reportQueue.add).toHaveBeenCalledWith('generate-report', {
         type: 'sla-report',
         data: {
+          reportId: expect.any(String),
           from: defaultRange.from,
           to: defaultRange.to,
           requestedBy: mockUser.sub,
         },
       });
       expect(result).toEqual({
-        message: 'Rapport SLA en cours de generation.',
-        period: { from: defaultRange.from, to: defaultRange.to },
+        message: 'Rapport SLA en cours de generation. Vous recevrez une notification.',
+        reportId: expect.any(String),
       });
     });
 
@@ -161,6 +162,7 @@ describe('ReportsController', () => {
       expect(reportQueue.add).toHaveBeenCalledWith('generate-report', {
         type: 'sla-report',
         data: {
+          reportId: expect.any(String),
           from: undefined,
           to: undefined,
           requestedBy: mockUser.sub,
@@ -180,11 +182,60 @@ describe('ReportsController', () => {
       expect(reportQueue.add).toHaveBeenCalledWith('generate-report', {
         type: 'sla-report',
         data: {
+          reportId: expect.any(String),
           from: defaultRange.from,
           to: defaultRange.to,
           requestedBy: mockAdmin.sub,
         },
       });
+    });
+  });
+
+  // =========================================================================
+  // listReports() — GET
+  // =========================================================================
+  describe('GET /reports', () => {
+    it('doit lister les rapports générés via le service', async () => {
+      const mockResult = { success: true, data: [], total: 0, page: 1, limit: 10 };
+      reportsService.listReports.mockResolvedValue(mockResult);
+
+      const result = await controller.listReports(1, 10);
+
+      expect(reportsService.listReports).toHaveBeenCalledWith(1, 10);
+      expect(result).toEqual(mockResult);
+    });
+  });
+
+  // =========================================================================
+  // downloadReport() — GET
+  // =========================================================================
+  describe('GET /reports/:id/download', () => {
+    it('doit rejeter si le demandeur est différent et pas admin', async () => {
+      reportsService.getReport.mockResolvedValue({
+        id: 'report-001',
+        type: 'ticket-report',
+        status: 'completed',
+        objectKey: 'key-001',
+        requestedBy: 'user-other',
+      } as any);
+
+      await expect(
+        controller.downloadReport('report-001', mockUser, {} as any),
+      ).rejects.toThrow("Vous n'avez pas l'autorisation de telecharger ce rapport.");
+    });
+
+    it('doit rejeter si le rapport est en cours ou en échec', async () => {
+      reportsService.getReport.mockResolvedValue({
+        id: 'report-001',
+        type: 'ticket-report',
+        status: 'pending',
+        objectKey: null,
+        requestedBy: mockUser.sub,
+      } as any);
+
+      await expect(
+        controller.downloadReport('report-001', mockUser, {} as any),
+      ).rejects.toThrow("Le rapport n'est pas encore prêt ou a echoue.");
     });
   });
 });

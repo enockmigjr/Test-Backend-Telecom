@@ -1218,7 +1218,7 @@ POST /api/v1/reports/ticket/:id/generate
 Authorization: SUPERVISOR, ADMINISTRATOR
 ```
 
-Lance la génération en arrière-plan d'un rapport PDF détaillé. Une fois le document généré, une notification et un email sont envoyés au demandeur. Réponse: `202 Accepted`. Erreurs: `404` (ticket introuvable), `403`.
+Lance la génération en arrière-plan d'un rapport PDF détaillé. Crée un enregistrement avec le statut `pending` en base de données et retourne un identifiant unique. Réponse: `202 Accepted` avec `{ success: true, message: '...', reportId: 'uuid-rapport' }`. Erreurs: `404` (ticket introuvable), `403`.
 
 ### Rapport Global SLA (Synchrone)
 
@@ -1246,7 +1246,26 @@ Authorization: SUPERVISOR, ADMINISTRATOR
 - `?from=...` (ISO Date, optionnel)
 - `?to=...` (ISO Date, optionnel)
 
-Déclenche la génération en arrière-plan du rapport SLA PDF pour la période spécifiée. Réponse: `202 Accepted`. Erreurs: `403`.
+Déclenche la génération en arrière-plan du rapport SLA PDF pour la période spécifiée. Crée un enregistrement avec le statut `pending` en base de données et retourne un identifiant unique. Réponse: `202 Accepted` avec `{ success: true, message: '...', reportId: 'uuid-rapport' }`. Erreurs: `403`.
+
+### Listing des rapports générés (Admin uniquement)
+
+```
+GET /api/v1/reports
+Authorization: ADMINISTRATOR
+```
+
+Retourne la liste paginée de tous les rapports générés de manière asynchrone (tickets, SLA, hebdomadaires) et leur statut (`pending`, `completed`, `failed`). Réponse: `200 OK` avec les métadonnées de pagination. Erreurs: `403` (accès refusé).
+
+### Télécharger le PDF d'un rapport
+
+```
+GET /api/v1/reports/:id/download
+Authorization: SUPERVISOR, ADMINISTRATOR
+```
+
+Télécharge le fichier PDF du rapport s'il est prêt (`status: completed`). Un SUPERVISOR ne peut télécharger que les rapports qu'il a lui-même demandés.
+Réponse: `200 OK` (binary stream). Erreurs: `404` (rapport ou fichier physique non trouvé), `400` (rapport non prêt ou échoué), `403` (accès refusé).
 
 ---
 

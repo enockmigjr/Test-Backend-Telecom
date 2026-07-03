@@ -141,8 +141,19 @@ export class EmailService {
     }
   }
 
-  /** Templates inline (fallback si Handlebars pas trouvé) */
   templates = {
+    reportFailed: (data: { reportId: string; errorMessage: string }) => `
+      <h2>❌ Échec de génération de rapport</h2>
+      <p>Bonjour,</p>
+      <p>La génération du rapport (ID : <strong>${data.reportId}</strong>) a échoué.</p>
+      <p><strong>Détails de l'erreur :</strong></p>
+      <blockquote style="background:#f9f9f9;border-left:5px solid #dc2626;padding:10px;margin:10px 0;">
+        ${data.errorMessage}
+      </blockquote>
+      <p>Veuillez réessayer ultérieurement ou contacter l'équipe support.</p>
+      <hr><small>Telecom Ticket Management — Message automatique d'erreur</small>
+    `,
+
     ticketCreated: (data: { ticketNumber: string; title: string; priority: string; category?: string }) => `
       <h2>Ticket créé — ${data.ticketNumber}</h2>
       <p><strong>Titre:</strong> ${data.title}</p>

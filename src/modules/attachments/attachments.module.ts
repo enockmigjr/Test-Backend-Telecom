@@ -6,6 +6,6 @@ import { LocalStorageService } from './storage/local-storage.service';
 @Module({
   controllers: [AttachmentsController],
   providers: [AttachmentsService, LocalStorageService],
-  exports: [AttachmentsService],
+  exports: [AttachmentsService, LocalStorageService],
 })
 export class AttachmentsModule {}

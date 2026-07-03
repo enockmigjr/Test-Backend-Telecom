@@ -24,8 +24,9 @@ opérations lentes ou non-critiques du flux HTTP principal.
 2. Listener/Contrôleur ajoute le job dans la queue BullMQ appropriée
 3. Worker traite le job
 4. Pour les rapports : ReportWorker génère un document PDFKit élégant (en-têtes sombres, grilles)
-5. ReportWorker soumet l'envoi d'e-mail avec le PDF en pièce jointe (encodé base64) à l'EMAIL_QUEUE
-6. EmailWorker consomme le job, décode le PDF, et l'envoie en pièce jointe au destinataire
+5. ReportWorker stocke le PDF localement et soumet l'envoi d'e-mail avec le lien sécurisé de téléchargement à l'EMAIL_QUEUE
+6. EmailWorker consomme le job et envoie l'e-mail de succès au destinataire contenant le lien de téléchargement unique
+
 ```
 
 ### Pourquoi Asynchrone ?

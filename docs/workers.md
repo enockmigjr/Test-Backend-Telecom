@@ -47,7 +47,7 @@ ReportsController                   REPORT_QUEUE          ReportWorker          
 | NotificationWorker | `src/queues/workers/notification.worker.ts` | `notification-queue` | 10          | Persiste en DB + émet WS si user connecté        |
 | SlaWorker          | `src/queues/workers/sla.worker.ts`          | `sla-queue`          | 5           | Vérifie les breaches SLA à l'échéance            |
 | AuditWorker        | `src/queues/workers/audit.worker.ts`        | `audit-queue`        | 20          | Persiste les actions en `audit_logs` (immuables) |
-| ReportWorker       | `src/queues/workers/report.worker.ts`       | `report-queue`       | 3           | Génère des rapports PDF et les envoie par email  |
+| ReportWorker       | `src/queues/workers/report.worker.ts`       | `report-queue`       | 3           | Génère des rapports PDF, les stocke localement et envoie un e-mail avec un lien de téléchargement |
 
 ### Où sont-ils instanciés ?
 
@@ -140,13 +140,11 @@ Le `SlaEngineService` tourne en cron `*/5 min` pour rattraper les breaches manqu
 
 **Fichier** : `src/queues/workers/report.worker.ts`
 
-**Rôle** : Génération asynchrone de rapports PDF volumineux et envoi par e-mail en pièce jointe.
+**Rôle** : Génération asynchrone de rapports PDF, stockage local persistant (LocalStorageService) et envoi par e-mail d'un lien de téléchargement sécurisé.
 
-**Types de rapports** :
-
-- `ticket-report` — rapport d'incident complet dessiné via PDFKit (en-tête de marque sombre, grilles, métadonnées, dates et résumé de résolution) envoyé par email sous le template `ticket-report.hbs`.
-- `sla-report` — rapport de conformité SLA dessiné via PDFKit (en-tête rouge, cartes d'indicateurs de volume, violations, conformité, tableau détaillé par priorités et temps moyen) envoyé sous le template `sla-report.hbs`.
-- `weekly-report` — rapport hebdomadaire récapitulant les KPI et métriques SLA de la semaine écoulée envoyé sous le template `admin-weekly-report.hbs` avec le PDF de la période en pièce jointe.
+- `ticket-report` — rapport d'incident complet dessiné via PDFKit (en-tête de marque sombre, grilles, métadonnées, dates et résumé de résolution) envoyé par email sous le template `ticket-report.hbs` (avec bouton de téléchargement).
+- `sla-report` — rapport de conformité SLA dessiné via PDFKit (en-tête rouge, cartes d'indicateurs de volume, violations, conformité, tableau détaillé par priorités et temps moyen) envoyé sous le template `sla-report.hbs` (avec bouton de téléchargement).
+- `weekly-report` — rapport hebdomadaire récapitulant les KPI et métriques SLA de la semaine écoulée envoyé sous le template `admin-weekly-report.hbs` (avec bouton de téléchargement).
 
 **Déclencheurs** :
 
@@ -154,7 +152,7 @@ Le `SlaEngineService` tourne en cron `*/5 min` pour rattraper les breaches manqu
 - `POST /api/v1/reports/sla/generate` (Admin, Supervisor)
 - `ReportWorker.generateWeeklyReport` (Automatique / Événement)
 
-Le rapport PDF est généré avec **PDFKit** en mémoire, encodé en base64 pour être acheminé via `EMAIL_QUEUE` à `EmailWorker` qui l'envoie en pièce jointe réelle au demandeur.
+Le rapport PDF est généré avec **PDFKit**, écrit sur le disque local via `LocalStorageService` (associé à la table de suivi `reports` en base de données), puis notifié par email et notification in-app au demandeur sous forme de lien de téléchargement sécurisé `/api/v1/reports/:id/download`. En cas d'échec de la génération, le statut est mis à jour à `failed` et un e-mail d'erreur contenant les détails techniques est envoyé obligatoirement au demandeur.
 
 ## Cycle de Vie d'un Job BullMQ
 

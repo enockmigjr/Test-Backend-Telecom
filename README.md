@@ -75,7 +75,7 @@ docker compose up -d
 ## 🏗️ Architecture
 
 ```
-14 modules NestJS · 12 tables PostgreSQL · 52 routes REST · 5 workers BullMQ
+14 modules NestJS · 12 tables PostgreSQL · 54 routes REST · 5 workers BullMQ
 ```
 
 ### Schéma Entité-Relation (ERD Simplifié)
@@ -217,7 +217,7 @@ make down      # Tout arrêter
 | Fichier                         | Contenu                                   |
 | ------------------------------- | ----------------------------------------- |
 | `CHANGELOG.md`                  | Historique complet des versions (v1.2.0)  |
-| `docs/routes.md`                | Catalogue complet des 52 routes           |
+| `docs/routes.md`                | Catalogue complet des 54 routes           |
 | `docs/architecture-flows.md`    | 9 diagrammes Mermaid                      |
 | `docs/deployment.md`            | Guide de déploiement production           |
 | `docs/emails.md`                | Architecture email, templates, flux       |

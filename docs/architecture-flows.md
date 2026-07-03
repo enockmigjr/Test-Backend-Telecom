@@ -46,19 +46,19 @@ sequenceDiagram
         API-->>Client: 401 Unauthorized
     end
 
-    Note over Client,Redis: Rafraîchissement (rotation)
+    Note over Client,Redis: Rafraîchissement (Sans Rotation du Refresh Token)
 
     Client->>API: POST /auth/refresh {refreshToken}
-    API->>PostgreSQL: SELECT refresh_token WHERE hash
-    API->>PostgreSQL: UPDATE revoked_at (ancien token)
-    API->>PostgreSQL: INSERT nouveau refresh_token
+    API->>PostgreSQL: SELECT refresh_token WHERE hash AND valid
+    PostgreSQL-->>API: token_valid_status
+    API->>API: Générer nouveau accessToken (JWT, 15min)
     API->>Redis: SADD jwt_blacklist (jti de l'ancien access token)
-    API-->>Client: {accessToken, refreshToken}
+    API-->>Client: {accessToken, refreshToken (ancien)}
 
     Note over Client,Redis: Déconnexion
 
     Client->>API: POST /auth/logout {refreshToken}
-    API->>PostgreSQL: UPDATE revoked_at
+    API->>PostgreSQL: UPDATE revoked_at (Invalider le refresh token)
     API->>Redis: SADD jwt_blacklist (jti access token courant)
     API-->>Client: 204 No Content
 ```
@@ -213,7 +213,7 @@ flowchart LR
 
     subgraph "Visualisation & Alertes"
         Grafana[Grafana Dashboards]
-        Alerts[Alertes PagerDuty/Slack]
+        Alerts[Alertes Grafana/Uptime Kuma]
     end
 
     API --> Pino
@@ -239,18 +239,18 @@ flowchart TB
     end
 
     subgraph "Docker Host"
-        Nginx[Nginx Reverse Proxy<br/>:${NGINX_PORT:-80}, :443]
-        API[NestJS API<br/>:${API_PORT:-3000}]
+        Nginx["Nginx Reverse Proxy<br/>${NGINX_PORT:-80}, :443"]
+        API["NestJS API<br/>${API_PORT:-3000}"]
         Worker[BullMQ Workers<br/>Processus séparé]
-        PG[(PostgreSQL 16<br/>:${DATABASE_PORT:-5432})]
-        RD[(Redis 7<br/>:${REDIS_PORT:-6379})]
-        Mailpit[Mailpit<br/>SMTP :${SMTP_PORT:-1025}, Web :${MAILPIT_WEB_PORT:-8025}]
+        PG[("PostgreSQL 16<br/>${DATABASE_PORT:-5432}")]
+        RD[("Redis 7<br/>${REDIS_PORT:-6379}")]
+        Mailpit["Mailpit<br/>SMTP ${SMTP_PORT:-1025}, Web ${MAILPIT_WEB_PORT:-8025}"]
 
         subgraph "Observabilité (optionnel)"
-            Prom[Prometheus :${PROMETHEUS_PORT:-9090}]
-            LokiS[Loki :${LOKI_PORT:-3100}]
-            TempoS[Tempo :${TEMPO_PORT:-3200}]
-            Graf[Grafana :${GRAFANA_PORT:-3001}]
+            Prom["Prometheus ${PROMETHEUS_PORT:-9090}"]
+            LokiS["Loki ${LOKI_PORT:-3100}"]
+            TempoS["Tempo ${TEMPO_PORT:-3200}"]
+            Graf["Grafana ${GRAFANA_PORT:-3001}"]
         end
     end
 
@@ -282,8 +282,8 @@ flowchart TD
     UserCheck -->|Non| Reject3[401 Désactivé]
     UserCheck -->|Oui| RolesGuard{RolesGuard}
 
-    RolesGuard -->|Pas de @Roles| Pass[Accès autorisé]
-    RolesGuard -->|@Roles requis| RoleCheck{Rôle dans<br/>la liste?}
+    RolesGuard -->|"Pas de @Roles"| Pass[Accès autorisé]
+    RolesGuard -->|"@Roles requis"| RoleCheck{Rôle dans<br/>la liste?}
     RoleCheck -->|Oui| Pass
     RoleCheck -->|Non| Reject4[403 Forbidden]
 
