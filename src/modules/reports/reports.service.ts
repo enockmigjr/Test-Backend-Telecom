@@ -2,7 +2,7 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { DrizzleProvider } from '../../database/drizzle.provider';
 import { tickets, departments } from '../../database/schemas';
 import { eq, and, gte, lte, isNull, count, sql } from 'drizzle-orm';
-import * as PDFDocument from 'pdfkit';
+import PDFDocument from 'pdfkit';
 import { Writable } from 'stream';
 
 export interface TicketReportData {
