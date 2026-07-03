@@ -12,8 +12,10 @@ export class NotificationsService {
   constructor(private readonly drizzle: DrizzleProvider) {}
 
   async findAll(userId: string, page = 1, limit = 20) {
+    const pageNum = Number(page ?? 1);
+    const limitNum = Number(limit ?? 20);
     const where = eq(notifications.userId, userId);
-    const offset = PaginationHelper.getOffset(page, limit);
+    const offset = PaginationHelper.getOffset(pageNum, limitNum);
 
     const [total] = await this.drizzle.db
       .select({ count: sql<number>`count(*)` })
@@ -25,10 +27,10 @@ export class NotificationsService {
       .from(notifications)
       .where(where)
       .orderBy(sql`${notifications.createdAt} desc`)
-      .limit(limit)
+      .limit(limitNum)
       .offset(offset);
 
-    return PaginationHelper.paginate(data, Number(total?.count ?? 0), page, limit);
+    return PaginationHelper.paginate(data, Number(total?.count ?? 0), pageNum, limitNum);
   }
 
   async getUnread(userId: string) {

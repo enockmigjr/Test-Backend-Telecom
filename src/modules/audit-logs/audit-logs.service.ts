@@ -47,8 +47,9 @@ export class AuditLogsService {
     page?: number;
     limit?: number;
   }) {
-    const { page = 1, limit = 20 } = filters;
-    const offset = PaginationHelper.getOffset(page, limit);
+    const pageNum = Number(filters.page ?? 1);
+    const limitNum = Number(filters.limit ?? 20);
+    const offset = PaginationHelper.getOffset(pageNum, limitNum);
     const conditions: SQL<unknown>[] = [];
 
     if (filters.userId) conditions.push(eq(auditLogs.userId, filters.userId));
@@ -69,10 +70,10 @@ export class AuditLogsService {
       .from(auditLogs)
       .where(where)
       .orderBy(sql`${auditLogs.createdAt} desc`)
-      .limit(limit)
+      .limit(limitNum)
       .offset(offset);
 
-    return PaginationHelper.paginate(data, Number(total?.count ?? 0), page, limit);
+    return PaginationHelper.paginate(data, Number(total?.count ?? 0), pageNum, limitNum);
   }
 
   async findOne(id: string) {

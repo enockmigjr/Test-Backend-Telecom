@@ -12,8 +12,10 @@ export class InternalNotesService {
   constructor(private readonly drizzle: DrizzleProvider) {}
 
   async findAll(ticketId: string, page = 1, limit = 20) {
+    const pageNum = Number(page ?? 1);
+    const limitNum = Number(limit ?? 20);
     const where = eq(ticketInternalNotes.ticketId, ticketId);
-    const offset = PaginationHelper.getOffset(page, limit);
+    const offset = PaginationHelper.getOffset(pageNum, limitNum);
 
     const [total] = await this.drizzle.db
       .select({ count: sql<number>`count(*)` })
@@ -33,10 +35,10 @@ export class InternalNotesService {
       .leftJoin(users, eq(ticketInternalNotes.authorId, users.id))
       .where(where)
       .orderBy(ticketInternalNotes.createdAt)
-      .limit(limit)
+      .limit(limitNum)
       .offset(offset);
 
-    return PaginationHelper.paginate(data, Number(total?.count ?? 0), page, limit);
+    return PaginationHelper.paginate(data, Number(total?.count ?? 0), pageNum, limitNum);
   }
 
   async create(ticketId: string, authorId: string, content: string, role: string) {
