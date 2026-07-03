@@ -19,17 +19,24 @@ export class EmailWorker implements OnModuleInit, OnModuleDestroy {
     this.worker = new Worker(
       EMAIL_QUEUE,
       async (job: Job) => {
-        const { to, subject, template, data } = job.data;
+        const { to, subject, template, data, attachments } = job.data;
+
+        // Reconstruire les attachments base64 en Buffers pour nodemailer
+        const mailAttachments = attachments?.map((att: { filename: string; content: string }) => ({
+          filename: att.filename,
+          content: Buffer.from(att.content, 'base64'),
+        }));
 
         // Essayer d'abord le template Handlebars du système de fichiers
         try {
-          await this.emailService.sendTemplate(to, subject, template, data);
-        } catch {
+          await this.emailService.sendTemplate(to, subject, template, data, mailAttachments);
+        } catch (err) {
+          this.logger.warn(`Échec de l'envoi via template, passage au fallback: ${(err as Error).message}`);
           // Fallback: utiliser les templates inline si le fichier .hbs n'existe pas
           const html =
             this.emailService.templates[template as keyof typeof this.emailService.templates]?.(data) ||
             `<p>Template "${template}" non trouvé. Données: ${JSON.stringify(data)}</p>`;
-          await this.emailService.send(to, subject, html);
+          await this.emailService.send(to, subject, html, mailAttachments);
         }
       },
       {

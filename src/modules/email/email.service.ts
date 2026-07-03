@@ -74,7 +74,13 @@ export class EmailService {
   /**
    * Envoie un email en utilisant un template Handlebars.
    */
-  async sendTemplate(to: string, subject: string, templateName: string, data: Record<string, unknown>): Promise<void> {
+  async sendTemplate(
+    to: string,
+    subject: string,
+    templateName: string,
+    data: Record<string, unknown>,
+    attachments?: Array<{ filename: string; content: Buffer }>,
+  ): Promise<void> {
     const template = this.compileTemplate(templateName);
 
     // Déterminer la couleur de l'accent et le texte de pied de page selon le type de template
@@ -114,15 +120,20 @@ export class EmailService {
     };
 
     const html = template(mergedContext);
-    await this.send(to, subject, html);
+    await this.send(to, subject, html, attachments);
   }
 
   /**
    * Envoie un email avec HTML brut.
    */
-  async send(to: string, subject: string, html: string): Promise<void> {
+  async send(
+    to: string,
+    subject: string,
+    html: string,
+    attachments?: Array<{ filename: string; content: Buffer }>,
+  ): Promise<void> {
     try {
-      const info = await this.transporter.sendMail({ from: this.from, to, subject, html });
+      const info = await this.transporter.sendMail({ from: this.from, to, subject, html, attachments });
       this.logger.log(`Email envoyé à ${to}: ${info.messageId}`);
     } catch (error) {
       this.logger.error(`Échec envoi email à ${to}: ${(error as Error).message}`);

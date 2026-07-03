@@ -1,4 +1,4 @@
-import { Module, Global, OnModuleInit, Logger } from '@nestjs/common';
+import { Module, Global, OnModuleInit, Logger, forwardRef } from '@nestjs/common';
 import { Queue } from 'bullmq';
 import { redisConfig } from '../common/providers/redis.config';
 import { EmailWorker } from './workers/email.worker';
@@ -12,9 +12,11 @@ export const NOTIFICATION_QUEUE = 'notification-queue';
 export const SLA_QUEUE = 'sla-queue';
 export const AUDIT_QUEUE = 'audit-queue';
 export const REPORT_QUEUE = 'report-queue';
+import { ReportsModule } from '../modules/reports/reports.module';
 
 @Global()
 @Module({
+  imports: [forwardRef(() => ReportsModule)],
   providers: [
     {
       provide: 'BullMQ_Queues',

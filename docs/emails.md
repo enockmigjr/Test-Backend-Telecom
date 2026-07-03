@@ -42,25 +42,28 @@ Avec BullMQ, la requête HTTP retourne immédiatement et l'email est envoyé en 
 | SLA warning         | `sla-warning.hbs`         | `SlaEngineService` cron        | Assigné              | ✅ Actif |
 | Compte créé         | `account-created.hbs`     | `UsersService.create()`        | Nouvel utilisateur   | ✅ Actif |
 | Mot de passe changé | `password-changed.hbs`    | `AuthService.changePassword()` | Utilisateur          | ✅ Actif |
-| Rapport ticket      | `ticket-created.hbs`      | `ReportWorker` (async)         | Demandeur            | ✅ Actif |
-| Rapport SLA         | `sla-breach.hbs`          | `ReportWorker` (async)         | Demandeur            | ✅ Actif |
+| Rapport ticket      | `ticket-report.hbs`       | `ReportWorker` (async)         | Demandeur            | ✅ Actif |
+| Rapport SLA         | `sla-report.hbs`          | `ReportWorker` (async)         | Demandeur            | ✅ Actif |
 | Rapport hebdo       | `admin-weekly-report.hbs` | `ReportWorker` (async)         | Admin + Supervisor   | ✅ Actif |
 
 ## Templates Handlebars
 
 **Dossier**: `src/modules/email/templates/*.hbs`
 
-7 templates HTML responsifs :
+9 templates HTML responsifs structurés avec un layout global parent :
 
+- `base.hbs` — Layout global partagé (CSS inline, en-tête noir moderne, accents de couleur par type, footer unifié)
 - `ticket-created.hbs` — Confirmation création
 - `ticket-assigned.hbs` — Notification assignation
 - `sla-breach.hbs` — Alerte critique (rouge)
 - `sla-warning.hbs` — Avertissement (orange)
 - `account-created.hbs` — Bienvenue + mot de passe temporaire
 - `password-changed.hbs` — Confirmation changement
-- `admin-weekly-report.hbs` — Rapport hebdomadaire avec stats
+- `ticket-report.hbs` — E-mail de notification de rapport de ticket avec PDF joint
+- `sla-report.hbs` — E-mail de notification de rapport SLA global avec PDF joint
+- `admin-weekly-report.hbs` — Rapport hebdomadaire avec stats et PDF joint
 
-Tous les templates partagent le même design : en-tête coloré, contenu, pied de page.
+Tous les templates s'abonnent dynamiquement au layout parent `base.hbs` pour un design unifié et cohérent.
 
 ## Configuration
 

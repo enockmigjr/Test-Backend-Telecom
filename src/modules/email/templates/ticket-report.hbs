@@ -1,0 +1,27 @@
+{{> base
+  subject=subject
+  accentColor=accentColor
+  footerText=footerText
+  body="
+<p class='email-eyebrow'>Rapports & Exports</p>
+<h1 class='email-title'>Votre rapport de ticket est prêt</h1>
+
+<p class='email-text'>Bonjour,</p>
+<p class='email-text'>
+  Le rapport PDF détaillé que vous avez demandé pour le ticket <strong>{{ticketNumber}}</strong> a été généré avec succès.
+</p>
+
+<div class='email-highlight'>
+  <p class='email-highlight-label'>Rapport Prêt</p>
+  <p class='email-highlight-value'>{{ticketNumber}} — {{title}}</p>
+</div>
+
+<p class='email-text'>
+  Vous trouverez le fichier PDF complet contenant l'ensemble des détails techniques et opérationnels du ticket en pièce jointe de cet e-mail.
+</p>
+
+<div class='btn-wrap'>
+  <a href='{{ticketUrl}}' class='btn-primary'>Consulter en ligne</a>
+</div>
+"
+}}

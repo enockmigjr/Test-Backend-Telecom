@@ -5,7 +5,7 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql)
 ![Redis](https://img.shields.io/badge/Redis-7-DC382D?logo=redis)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker)
-![Tests](https://img.shields.io/badge/Tests-558%20passed-success)
+![Tests](https://img.shields.io/badge/Tests-545%20passed-success)
 ![License](https://img.shields.io/badge/License-UNLICENSED-lightgrey)
 
 Backend **NestJS** pour la plateforme de gestion des tickets d'incidents télécoms.
@@ -32,16 +32,13 @@ pnpm run start:dev
 ### Tests
 
 ```bash
-# Tests unitaires (446 tests)
+# Tests unitaires (443 tests)
 pnpm run test:unit
 
 # Tests end-to-end (102 tests)
 pnpm run test:e2e
 
-# Tests d'intégration (10 tests)
-pnpm run test:integration
-
-# Tous les tests (558 tests)
+# Tous les tests (545 tests)
 pnpm run test:all
 ```
 
@@ -94,8 +91,8 @@ docker compose up -d
 | `sla`            | Politiques SLA, cron engine \*/5 min, breach/warning detection                               |
 | `dashboard`      | 7 endpoints: overview, status, priority, departments, SLA, workload, resolution              |
 | `audit-logs`     | Immutable write-only, recherche multi-filtres                                                |
-| `email`          | Nodemailer dev/prod, 7 templates Handlebars                                                  |
-| `reports`        | Génération PDF (PDFKit), rapports asynchrones via BullMQ                                     |
+| `email`          | Nodemailer dev/prod, 9 templates Handlebars + layout global unifié base.hbs |
+| `reports`        | Génération PDF premium (PDFKit) envoyés en pièces jointes, rapports asynchrones via BullMQ |
 
 ## 🔄 Flux Asynchrone (BullMQ)
 

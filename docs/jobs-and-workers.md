@@ -15,16 +15,17 @@ opérations lentes ou non-critiques du flux HTTP principal.
 | `notification-queue` | `NOTIFICATION_QUEUE` | TicketNotificationListener, SlaEngineService, ReportWorker                            | `NotificationWorker`  | Création notifications + émission WebSocket     |
 | `sla-queue`          | `SLA_QUEUE`          | TicketSlaListener                                                                     | `SlaWorker`           | Vérification SLA différée (delayed job)         |
 | `audit-queue`        | `AUDIT_QUEUE`        | TicketAuditListener                                                                   | `AuditWorker`         | Écriture asynchrone des logs d'audit            |
-| `report-queue`       | `REPORT_QUEUE`       | ReportsController                                                                     | `ReportWorker`        | Génération rapports + notification + email      |
+| `report-queue`       | `REPORT_QUEUE`       | ReportsController                                                                     | `ReportWorker`        | Génération rapports PDF premium + envoi email   |
 
 ### Flux de Traitement
 
 ```
-1. Service émet un Domain Event (via EventEmitter2)
-2. Listener asynchrone capture l'event
-3. Listener ajoute un job dans la queue BullMQ appropriée
-4. Worker traite le job
-5. Résultat: email envoyé, notification créée, SLA vérifié, audit log écrit, rapport généré
+1. Service émet un Domain Event ou le contrôleur soumet une demande de rapport (asynchrone)
+2. Listener/Contrôleur ajoute le job dans la queue BullMQ appropriée
+3. Worker traite le job
+4. Pour les rapports : ReportWorker génère un document PDFKit élégant (en-têtes sombres, grilles)
+5. ReportWorker soumet l'envoi d'e-mail avec le PDF en pièce jointe (encodé base64) à l'EMAIL_QUEUE
+6. EmailWorker consomme le job, décode le PDF, et l'envoie en pièce jointe au destinataire
 ```
 
 ### Pourquoi Asynchrone ?

@@ -1,0 +1,27 @@
+{{> base
+  subject=subject
+  accentColor=accentColor
+  footerText=footerText
+  body="
+<p class='email-eyebrow'>Rapports & Exports</p>
+<h1 class='email-title'>Votre rapport SLA est prêt</h1>
+
+<p class='email-text'>Bonjour,</p>
+<p class='email-text'>
+  Le rapport de conformité SLA demandé pour la période du <strong>{{periodStart}}</strong> au <strong>{{periodEnd}}</strong> a été généré avec succès.
+</p>
+
+<div class='email-highlight' style='border-left-color:#dc2626'>
+  <p class='email-highlight-label'>Indicateurs Période</p>
+  <p class='email-highlight-value'>{{totalCreated}} tickets · {{slaBreaches}} violations SLA</p>
+</div>
+
+<p class='email-text'>
+  Vous trouverez l'analyse statistique détaillée et le taux global de conformité de vos équipes dans le document PDF joint à cet e-mail.
+</p>
+
+<div class='btn-wrap'>
+  <a href='{{appUrl}}/dashboard' class='btn-primary'>Dashboard Observabilité</a>
+</div>
+"
+}}

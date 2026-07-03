@@ -4,7 +4,8 @@ import { eq, and, isNull, gte, lte, count, sql } from 'drizzle-orm';
 import { redisConfig } from '../../common/providers/redis.config';
 import { REPORT_QUEUE } from '../queues.module';
 import { DrizzleProvider } from '../../database/drizzle.provider';
-import { tickets, users } from '../../database/schemas';
+import { tickets, users, departments } from '../../database/schemas';
+import { ReportsService } from '../../modules/reports/reports.service';
 
 interface BullMqQueues {
   email: Queue;
@@ -29,6 +30,7 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
   constructor(
     private readonly drizzle: DrizzleProvider,
     @Inject('BullMQ_Queues') private readonly queues: BullMqQueues,
+    private readonly reportsService: ReportsService,
   ) {}
 
   onModuleInit(): void {
@@ -112,9 +114,15 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
   }
 
   /** Envoie un email au demandeur (non-bloquant) */
-  private async sendEmail(to: string, subject: string, template: string, data: Record<string, unknown>): Promise<void> {
+  private async sendEmail(
+    to: string,
+    subject: string,
+    template: string,
+    data: Record<string, unknown>,
+    attachments?: Array<{ filename: string; content: string }>,
+  ): Promise<void> {
     try {
-      await this.queues.email.add('send-email', { to, subject, template, data });
+      await this.queues.email.add('send-email', { to, subject, template, data, attachments });
     } catch (err) {
       this.logger.warn(`Email queue indisponible: ${String(err)}`);
     }
@@ -138,8 +146,10 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
         closedAt: tickets.closedAt,
         customerName: tickets.customerName,
         resolutionSummary: tickets.resolutionSummary,
+        departmentName: departments.name,
       })
       .from(tickets)
+      .leftJoin(departments, eq(tickets.departmentId, departments.id))
       .where(and(eq(tickets.id, ticketId), isNull(tickets.deletedAt)))
       .limit(1);
 
@@ -149,6 +159,10 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
     }
 
     const ticketNumber = ticket.ticketNumber as string;
+
+    // Générer le PDF
+    const pdfBuffer = await this.reportsService.generateTicketPdf(ticket);
+    const pdfBase64 = pdfBuffer.toString('base64');
 
     // Notifier le demandeur
     await this.notifyUser(
@@ -162,11 +176,17 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
     // Envoyer l'email
     const email = await this.getUserEmail(requestedBy);
     if (email) {
-      await this.sendEmail(email, `📄 Rapport ticket — ${ticketNumber}`, 'ticketCreated', {
-        ticketNumber,
-        title: ticket.title,
-        priority: ticket.priority,
-      });
+      await this.sendEmail(
+        email,
+        `📄 Rapport ticket — ${ticketNumber}`,
+        'ticketReport',
+        {
+          ticketNumber,
+          title: ticket.title,
+          ticketUrl: `${process.env['APP_URL'] || 'https://helpdesk.telecom.com'}/tickets/${ticket.id}`,
+        },
+        [{ filename: `Rapport-Ticket-${ticketNumber}.pdf`, content: pdfBase64 }],
+      );
     }
 
     this.logger.log(`Rapport ticket généré et notifié: ${ticketNumber} → ${requestedBy}`);
@@ -186,9 +206,27 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
       .from(tickets)
       .where(where);
 
+    const byPriority = await this.drizzle.db
+      .select({
+        priority: tickets.priority,
+        count: count(),
+        breached: sql<number>`COUNT(*) FILTER (WHERE ${tickets.slaBreached} = true)`,
+      })
+      .from(tickets)
+      .where(where)
+      .groupBy(tickets.priority);
+
     const total = Number(stats?.total || 0);
     const breached = Number(stats?.breached || 0);
     const avgMin = Math.round(Number(stats?.avgResolutionMinutes || 0));
+
+    // Générer le PDF
+    const pdfBuffer = await this.reportsService.generateSlaPdf(
+      { total, breached, avgResolutionMinutes: avgMin },
+      byPriority,
+      { from: fromDate, to: toDate },
+    );
+    const pdfBase64 = pdfBuffer.toString('base64');
 
     // Notifier le demandeur
     await this.notifyUser(
@@ -201,11 +239,18 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
     // Envoyer l'email
     const email = await this.getUserEmail(requestedBy);
     if (email) {
-      await this.sendEmail(email, '📊 Rapport SLA', 'slaBreach', {
-        ticketNumber: `SLA-${from || 'debut'}-${to || 'fin'}`,
-        title: `Rapport SLA: ${total} tickets, ${breached} violations`,
-        dueDate: new Date().toISOString(),
-      });
+      await this.sendEmail(
+        email,
+        '📊 Rapport SLA',
+        'slaReport',
+        {
+          periodStart: fromDate.toLocaleDateString('fr-FR'),
+          periodEnd: toDate.toLocaleDateString('fr-FR'),
+          totalCreated: total,
+          slaBreaches: breached,
+        },
+        [{ filename: `Rapport-SLA-${from || 'debut'}-${to || 'fin'}.pdf`, content: pdfBase64 }],
+      );
     }
 
     this.logger.log(`Rapport SLA généré et notifié: ${total} tickets, ${breached} breaches → ${requestedBy}`);
@@ -240,6 +285,16 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
       .from(tickets)
       .where(and(where, sql`${tickets.resolvedAt} IS NOT NULL`));
 
+    const byPriority = await this.drizzle.db
+      .select({
+        priority: tickets.priority,
+        count: count(),
+        breached: sql<number>`COUNT(*) FILTER (WHERE ${tickets.slaBreached} = true)`,
+      })
+      .from(tickets)
+      .where(where)
+      .groupBy(tickets.priority);
+
     const totalCreated = Number(totals?.count || 0);
     const totalResolved = Number(resolved?.count || 0);
     const totalOpen = Number(openCount?.count || 0);
@@ -251,6 +306,14 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
       Math.ceil((now.getTime() - new Date(now.getFullYear(), 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000)),
     );
 
+    // Générer le PDF
+    const pdfBuffer = await this.reportsService.generateSlaPdf(
+      { total: totalCreated, breached: slaBreaches, avgResolutionMinutes: avgMin },
+      byPriority,
+      { from: weekAgo, to: now },
+    );
+    const pdfBase64 = pdfBuffer.toString('base64');
+
     // Notifier le demandeur
     await this.notifyUser(
       requestedBy,
@@ -259,24 +322,30 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
       `Rapport S${weekNumber}: ${totalCreated} tickets, ${totalResolved} résolus, ${slaBreaches} violations SLA.`,
     );
 
-    // Envoyer l'email avec le template adminWeeklyReport
+    // Envoyer l'email avec le template adminWeeklyReport et la pièce jointe PDF
     const email = await this.getUserEmail(requestedBy);
     if (email) {
       const dashboardUrl = process.env['DASHBOARD_URL'] || 'http://localhost:3001';
-      await this.sendEmail(email, `📈 Rapport Hebdomadaire — Semaine ${weekNumber}`, 'adminWeeklyReport', {
-        weekNumber,
-        periodStart: weekAgo.toLocaleDateString('fr-FR'),
-        periodEnd: now.toLocaleDateString('fr-FR'),
-        totalCreated,
-        totalResolved,
-        totalOpen,
-        slaBreaches,
-        complianceRate,
-        avgResolutionMinutes: avgMin,
-        dashboardUrl,
-        generatedAt: now.toLocaleString('fr-FR'),
-        year: String(now.getFullYear()),
-      });
+      await this.sendEmail(
+        email,
+        `📈 Rapport Hebdomadaire — Semaine ${weekNumber}`,
+        'adminWeeklyReport',
+        {
+          weekNumber,
+          periodStart: weekAgo.toLocaleDateString('fr-FR'),
+          periodEnd: now.toLocaleDateString('fr-FR'),
+          totalCreated,
+          totalResolved,
+          totalOpen,
+          slaBreaches,
+          complianceRate,
+          avgResolutionMinutes: avgMin,
+          dashboardUrl,
+          generatedAt: now.toLocaleString('fr-FR'),
+          year: String(now.getFullYear()),
+        },
+        [{ filename: `Rapport-Hebdomadaire-S${weekNumber}.pdf`, content: pdfBase64 }],
+      );
     }
 
     this.logger.log(`Rapport hebdomadaire S${weekNumber} généré et notifié → ${requestedBy}`);

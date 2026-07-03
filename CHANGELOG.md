@@ -4,6 +4,21 @@ Tous les changements notables sont documentés ici. Format basé sur [Keep a Cha
 
 ---
 
+## [1.3.0] — 2026-07-03
+
+### Added
+
+- **Génération de PDF Premium (PDFKit)** : implémentation de méthodes de dessin de documents haut de gamme pour les rapports d'incidents (grilles, résumés) et les rapports SLA (indicateurs graphiques, structures de tableaux).
+- **Rapports par E-mail avec PDF joint** : modification de `EmailService`, `EmailWorker` et `ReportWorker` pour automatiser l'envoi de rapports sous forme de fichiers PDF attachés aux e-mails.
+- **Templates de Rapports Uniformisés** : ajout des templates Handlebars enfants `ticket-report.hbs` et `sla-report.hbs` s'appuyant tous les deux sur le layout global unifié `base.hbs`.
+
+### Fixed
+
+- **Pagination Numérique ORM** : correction du bug de pagination dans les query parameters `page` et `limit` convertis explicitement en `Number` pour Drizzle ORM afin de respecter le limitateur de pagination sur l'ensemble des routes paginées.
+- **Dépendance Circulaire NestJS** : correction de la dépendance circulaire entre `QueuesModule` et `ReportsModule` via l'usage propre de `forwardRef(() => Module)`.
+
+---
+
 ## [1.2.0] — 2026-07-02
 
 ### Added

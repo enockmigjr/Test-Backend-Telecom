@@ -1,6 +1,6 @@
 # État d'Implémentation — Production Readiness
 
-Dernière mise à jour: 2026-07-02 (v1.2.0)
+Dernière mise à jour: 2026-07-03 (v1.3.0)
 
 ## ✅ Prod-Ready
 
@@ -29,8 +29,8 @@ Dernière mise à jour: 2026-07-02 (v1.2.0)
 | Grafana           | 2 dashboards JSON + 3 datasources (Prometheus, Loki, Tempo)                                                                |
 | Alerting          | 6 règles Prometheus: API down, 5xx, latence, SLA, DB, heap                                                                 |
 | OpenTelemetry     | SDK auto-instrumentation (HTTP, Express, NestJS, PostgreSQL, Redis)                                                        |
-| Email             | Nodemailer dev/prod auto-switch, 10 flux email actifs, 7 templates Handlebars + fallback inline                            |
-| PDF Reports       | PDFKit avec tableaux, rapports asynchrones via BullMQ                                                                      |
+| Email             | Nodemailer dev/prod auto-switch, 10 flux email actifs, 9 templates Handlebars + layout global unifié base.hbs et fallback inline |
+| PDF Reports       | PDFKit premium stylisé avec grilles et en-têtes de marque, rapports asynchrones et envoi automatique en pièce jointe d'e-mail |
 | Docker Compose    | 13 services, toutes les URLs/credentials en variables d'environnement                                                      |
 | Health Checks     | /health (liveness), /health/ready (PostgreSQL + Redis)                                                                     |
 | Idempotence       | @Idempotent() + header Idempotency-Key, cache Redis 24h                                                                    |
@@ -42,8 +42,8 @@ Dernière mise à jour: 2026-07-02 (v1.2.0)
 | Makefile          | 20 commandes                                                                                                               |
 | BullBoard         | Interface de supervision des 5 queues BullMQ à /admin/queues                                                               |
 | Token Cleanup     | Cron quotidien 3h — supprime refresh_tokens expirés + révoqués >30j                                                        |
-| Documentation     | 9 fichiers docs/, CHANGELOG v1.2.0, README à jour, .env.example 70+ variables                                              |
-| Tests             | **446 unitaires** + **102 E2E** + 10 intégration = **558 tests**, 52 suites                                                |
+| Documentation     | 9 fichiers docs/, CHANGELOG v1.3.0, README à jour, .env.example 70+ variables                                              |
+| Tests             | **443 unitaires** + **102 E2E** = **545 tests**, 31 suites                                                                 |
 | Build             | TypeScript strict, zéro erreur                                                                                             |
 
 ## 🔶 Reste à faire

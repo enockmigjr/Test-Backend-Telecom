@@ -140,19 +140,21 @@ Le `SlaEngineService` tourne en cron `*/5 min` pour rattraper les breaches manqu
 
 **Fichier** : `src/queues/workers/report.worker.ts`
 
-**Rôle** : Génération asynchrone de rapports PDF volumineux.
+**Rôle** : Génération asynchrone de rapports PDF volumineux et envoi par e-mail en pièce jointe.
 
 **Types de rapports** :
 
-- `generate-ticket-report` — rapport détaillé d'un ticket (commentaires, historique, SLA)
-- `generate-sla-report` — rapport de conformité SLA sur une période
+- `ticket-report` — rapport d'incident complet dessiné via PDFKit (en-tête de marque sombre, grilles, métadonnées, dates et résumé de résolution) envoyé par email sous le template `ticket-report.hbs`.
+- `sla-report` — rapport de conformité SLA dessiné via PDFKit (en-tête rouge, cartes d'indicateurs de volume, violations, conformité, tableau détaillé par priorités et temps moyen) envoyé sous le template `sla-report.hbs`.
+- `weekly-report` — rapport hebdomadaire récapitulant les KPI et métriques SLA de la semaine écoulée envoyé sous le template `admin-weekly-report.hbs` avec le PDF de la période en pièce jointe.
 
 **Déclencheurs** :
 
-- `POST /api/v1/reports/ticket/:id` (Admin, Supervisor)
-- `POST /api/v1/reports/sla` (Admin, Supervisor)
+- `POST /api/v1/reports/ticket/:id/generate` (Admin, Supervisor)
+- `POST /api/v1/reports/sla/generate` (Admin, Supervisor)
+- `ReportWorker.generateWeeklyReport` (Automatique / Événement)
 
-Le rapport est généré avec **PDFKit** et peut être envoyé par email via `EmailWorker`.
+Le rapport PDF est généré avec **PDFKit** en mémoire, encodé en base64 pour être acheminé via `EMAIL_QUEUE` à `EmailWorker` qui l'envoie en pièce jointe réelle au demandeur.
 
 ## Cycle de Vie d'un Job BullMQ
 
