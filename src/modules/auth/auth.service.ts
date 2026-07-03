@@ -193,10 +193,7 @@ export class AuthService {
       jti,
     };
 
-    const accessToken = this.jwtService.sign(payload, {
-      secret: this.jwtConfig.accessSecret,
-      expiresIn: this.jwtConfig.accessExpiration,
-    });
+    const accessToken = this.jwtService.sign(payload);
 
     return { accessToken, jti };
   }
