@@ -204,7 +204,7 @@ export class ReportsService {
           callback();
         },
       });
-      const doc = new PDFDocument({ size: 'A4', margins: { top: 40, bottom: 25, left: 40, right: 40 } });
+      const doc = new PDFDocument({ size: 'A4', margin: 40 });
       doc.pipe(writable);
 
       // En-tête sombre stylé
@@ -227,7 +227,7 @@ export class ReportsService {
         .moveTo(40, doc.y + 5)
         .lineTo(doc.page.width - 40, doc.y + 5)
         .stroke();
-      doc.moveDown(0.8);
+      doc.moveDown(1.5);
 
       const startY = doc.y;
       doc.fontSize(10).font('Helvetica-Bold').text('Titre :', 40, startY);
@@ -236,7 +236,7 @@ export class ReportsService {
       doc.font('Helvetica-Bold').text('Description :', 40, doc.y + 10);
       doc.font('Helvetica').text(ticket.description || 'Aucune description', 150, doc.y, { width: 350 });
 
-      const nextY = doc.y + 8;
+      const nextY = doc.y + 15;
       doc
         .strokeColor('#e5e7eb')
         .lineWidth(1)
@@ -255,7 +255,7 @@ export class ReportsService {
         .moveTo(40, doc.y + 5)
         .lineTo(doc.page.width - 40, doc.y + 5)
         .stroke();
-      doc.moveDown(0.8);
+      doc.moveDown(1.5);
 
       const tableY = doc.y;
 
@@ -279,7 +279,7 @@ export class ReportsService {
       doc.font('Helvetica-Bold').text('Client :', 300, tableY + 40);
       doc.font('Helvetica').text(ticket.customerName || 'N/A', 410, tableY + 40);
 
-      const nextY2 = tableY + 60;
+      const nextY2 = tableY + 70;
       doc
         .strokeColor('#e5e7eb')
         .lineWidth(1)
@@ -298,7 +298,7 @@ export class ReportsService {
         .moveTo(40, doc.y + 5)
         .lineTo(doc.page.width - 40, doc.y + 5)
         .stroke();
-      doc.moveDown(0.8);
+      doc.moveDown(1.5);
 
       const datesY = doc.y;
       doc.fontSize(10).font('Helvetica-Bold').text('Créé le :', 40, datesY);
@@ -317,7 +317,7 @@ export class ReportsService {
         .text(ticket.closedAt ? new Date(ticket.closedAt).toLocaleString('fr-FR') : 'Non clôturé', 150, datesY + 40);
 
       if (ticket.resolutionSummary) {
-        const resY = datesY + 60;
+        const resY = datesY + 75;
         doc
           .strokeColor('#e5e7eb')
           .lineWidth(1)
@@ -334,7 +334,7 @@ export class ReportsService {
           .moveTo(40, doc.y + 5)
           .lineTo(doc.page.width - 40, doc.y + 5)
           .stroke();
-        doc.moveDown(0.8);
+        doc.moveDown(1.5);
         doc
           .fontSize(10)
           .font('Helvetica')
@@ -345,7 +345,7 @@ export class ReportsService {
       doc
         .fontSize(8)
         .fillColor('#999999')
-        .text('Platform Trouble Ticket Management — Telecom Inc.', 40, doc.page.height - 30, { align: 'center' });
+        .text('Platform Trouble Ticket Management — Telecom Inc.', 40, doc.page.height - 45, { align: 'center' });
 
       doc.end();
       writable.on('finish', () => resolve(Buffer.concat(chunks)));
@@ -386,10 +386,10 @@ export class ReportsService {
       doc.text(`Généré le : ${new Date().toLocaleString('fr-FR')}`, 40, 72);
 
       // Contenu
-      doc.fillColor('#111111').moveDown(2);
+      doc.fillColor('#111111').moveDown(4);
 
       // Section Indicateurs
-      doc.fontSize(13).font('Helvetica-Bold').text('Indicateurs Clés de Performance', 40, doc.y);
+      doc.fontSize(14).font('Helvetica-Bold').text('Indicateurs Clés de Performance', 40, doc.y);
       doc
         .strokeColor('#e5e7eb')
         .lineWidth(1)
@@ -441,10 +441,10 @@ export class ReportsService {
         .font('Helvetica-Bold')
         .text(`${compliance}%`, 390, statsY + 28);
 
-      doc.fillColor('#111111').moveDown(1.5);
+      doc.fillColor('#111111').moveDown(4.5);
 
       // Tableau par Priorité
-      doc.fontSize(13).font('Helvetica-Bold').text('Performance par Niveau de Priorité', 40, doc.y);
+      doc.fontSize(14).font('Helvetica-Bold').text('Performance par Niveau de Priorité', 40, doc.y);
       doc
         .strokeColor('#e5e7eb')
         .lineWidth(1)
@@ -494,9 +494,9 @@ export class ReportsService {
         .stroke();
 
       // Temps moyen de résolution
-      doc.moveDown(1);
+      doc.moveDown(2);
       doc
-        .fontSize(10)
+        .fontSize(11)
         .font('Helvetica-Bold')
         .text(`Temps moyen de résolution de la période : ${stats.avgResolutionMinutes} minutes`, 40, doc.y);
 
@@ -504,7 +504,7 @@ export class ReportsService {
       doc
         .fontSize(8)
         .fillColor('#999999')
-        .text("Moteur SLA d'observabilité — Telecom Inc.", 40, doc.page.height - 30, { align: 'center' });
+        .text("Moteur SLA d'observabilité — Telecom Inc.", 40, doc.page.height - 45, { align: 'center' });
 
       doc.end();
       writable.on('finish', () => resolve(Buffer.concat(chunks)));
