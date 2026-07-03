@@ -121,10 +121,12 @@ export class SlaEngineService {
           const slaExpiredAt = ticket.resolutionDueAt?.toLocaleString('fr-FR') ?? 'N/A';
           const overdueMs = now.getTime() - (ticket.resolutionDueAt?.getTime() ?? now.getTime());
           const overdueMinutes = Math.round(overdueMs / 60000);
-          const overdueBy = overdueMinutes > 60
-            ? `${Math.floor(overdueMinutes / 60)}h${overdueMinutes % 60}min`
-            : `${overdueMinutes} min`;
-          const assigneeName = `${ticket.assigneeFirstName ?? ''} ${ticket.assigneeLastName ?? ''}`.trim() || ticket.assigneeEmail;
+          const overdueBy =
+            overdueMinutes > 60
+              ? `${Math.floor(overdueMinutes / 60)}h${overdueMinutes % 60}min`
+              : `${overdueMinutes} min`;
+          const assigneeName =
+            `${ticket.assigneeFirstName ?? ''} ${ticket.assigneeLastName ?? ''}`.trim() || ticket.assigneeEmail;
           await this.emailQueue.add('send-email', {
             to: ticket.assigneeEmail,
             subject: `🔴 SLA Dépassé — ${ticket.ticketNumber}`,
