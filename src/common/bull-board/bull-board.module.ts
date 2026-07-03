@@ -56,8 +56,12 @@ export class BullBoardModule implements NestModule {
       new BullMQAdapter(this.queues['report'] as never),
     ];
 
+    const apiPrefix = process.env['API_PREFIX'] || 'api/v1';
+    const formattedPrefix = apiPrefix.startsWith('/') ? apiPrefix : `/${apiPrefix}`;
+    const basePath = `${formattedPrefix}/admin/queues`;
+
     const serverAdapter = new ExpressAdapter();
-    serverAdapter.setBasePath('/admin/queues');
+    serverAdapter.setBasePath(basePath);
 
     createBullBoard({ queues: queueInstances, serverAdapter });
 
@@ -70,7 +74,7 @@ export class BullBoardModule implements NestModule {
       .forRoutes('/admin/queues');
 
     this.logger.log(
-      'BullBoard disponible sur /admin/queues' +
+      `BullBoard disponible sur ${basePath}` +
         (process.env['NODE_ENV'] === 'production' ? ' (protégé par Basic Auth)' : ' (dev — accès libre)'),
     );
   }
