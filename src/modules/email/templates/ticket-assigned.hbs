@@ -1,25 +1,53 @@
-<html lang='fr'>
-  <head><meta charset='UTF-8' /><meta name='viewport' content='width=device-width, initial-scale=1.0' /><title>Ticket
-      assigné</title></head>
-  <body style='font-family:Arial,sans-serif;background:#f4f4f4;padding:20px'>
-    <table
-      width='100%'
-      cellpadding='0'
-      cellspacing='0'
-      style='max-width:600px;margin:0 auto;background:#fff;border-radius:8px;overflow:hidden'
-    >
-      <tr style='background:#4caf50;color:#fff'><td style='padding:24px'><h1 style='margin:0;font-size:20px'>🔔 Ticket
-            assigné —
-            {{ticketNumber}}</h1></td></tr>
-      <tr><td style='padding:24px'>
-          <p><strong>Titre :</strong> {{title}}</p>
-          <p><strong>Assigné par :</strong> {{assignedBy}}</p>
-          <p>Ce ticket vous a été assigné. Veuillez en prendre connaissance et commencer le traitement.</p>
-          <p style='color:#666;font-size:13px;margin-top:32px'>Cet email est généré automatiquement. Merci de ne pas y
-            répondre.</p>
-        </td></tr>
-      <tr style='background:#fafafa;color:#999;font-size:12px'><td style='padding:16px;text-align:center'>Telecom Ticket
-          Management ©
-          {{year}}</td></tr>
-    </table>
-  </body></html>
+{{> base
+  subject=subject
+  accentColor=accentColor
+  footerText=footerText
+  body="
+<p class='email-eyebrow'>Assignation</p>
+<h1 class='email-title'>Un ticket vous a été assigné</h1>
+
+<p class='email-text'>Bonjour <strong>{{assigneeName}}</strong>,</p>
+<p class='email-text'>
+  <strong>{{supervisorName}}</strong> vous a assigné le ticket ci-dessous.
+  Merci de le traiter dans les délais SLA impartis.
+</p>
+
+<div class='email-highlight'>
+  <p class='email-highlight-label'>Ticket assigné</p>
+  <p class='email-highlight-value'>{{ticketNumber}} — {{ticketTitle}}</p>
+</div>
+
+<table class='info-table' role='presentation' cellpadding='0' cellspacing='8'>
+  <tr>
+    <td class='info-cell'>
+      <p class='info-cell-label'>Catégorie</p>
+      <p class='info-cell-value'>{{category}}</p>
+    </td>
+    <td class='info-cell'>
+      <p class='info-cell-label'>Sévérité/Priorité</p>
+      <p class='info-cell-value'>{{severity}}</p>
+    </td>
+  </tr>
+  <tr>
+    <td class='info-cell'>
+      <p class='info-cell-label'>Département</p>
+      <p class='info-cell-value'>{{department}}</p>
+    </td>
+    <td class='info-cell'>
+      <p class='info-cell-label'>SLA résolution</p>
+      <p class='info-cell-value'>{{slaDueAt}}</p>
+    </td>
+  </tr>
+</table>
+
+{{#if description}}
+<p class='email-text' style='font-size:13px;color:#666'>
+  <strong>Description :</strong><br>{{description}}
+</p>
+{{/if}}
+
+<div class='btn-wrap'>
+  <a href='{{ticketUrl}}' class='btn-primary'>Prendre en charge</a>
+</div>
+"
+}}

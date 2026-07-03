@@ -1,28 +1,41 @@
-<html lang='fr'>
-  <head><meta charset='UTF-8' /><meta name='viewport' content='width=device-width, initial-scale=1.0' /><title
-    >Avertissement SLA</title></head>
-  <body style='font-family:Arial,sans-serif;background:#f4f4f4;padding:20px'>
-    <table
-      width='100%'
-      cellpadding='0'
-      cellspacing='0'
-      style='max-width:600px;margin:0 auto;background:#fff;border-radius:8px;overflow:hidden;border-top:4px solid #ff9800'
-    >
-      <tr style='background:#ff9800;color:#fff'><td style='padding:24px'><h1 style='margin:0;font-size:20px'>⚠️
-            Avertissement SLA —
-            {{ticketNumber}}</h1></td></tr>
-      <tr><td style='padding:24px'>
-          <p style='color:#ff9800;font-weight:bold;font-size:16px'>Le délai SLA approche — moins de 30 minutes
-            restantes.</p>
-          <p><strong>Titre :</strong> {{title}}</p>
-          <p><strong>Échéance :</strong> {{dueDate}}</p>
-          <p><strong>Temps restant :</strong> {{remainingMinutes}} minutes</p>
-          <p style='margin-top:16px'>Veuillez accélérer le traitement pour éviter un dépassement SLA.</p>
-          <p style='color:#666;font-size:13px;margin-top:32px'>Cet email est généré automatiquement. Merci de ne pas y
-            répondre.</p>
-        </td></tr>
-      <tr style='background:#fafafa;color:#999;font-size:12px'><td style='padding:16px;text-align:center'>Telecom Ticket
-          Management ©
-          {{year}}</td></tr>
-    </table>
-  </body></html>
+{{> base
+  subject=subject
+  accentColor=accentColor
+  footerText=footerText
+  body="
+<p class='email-eyebrow' style='color:#b45309'>⚠️ Attention SLA</p>
+<h1 class='email-title'>Échéance SLA proche · {{ticketNumber}}</h1>
+
+<p class='email-text'>Bonjour <strong>{{recipientName}}</strong>,</p>
+<p class='email-text'>
+  Le délai de résolution pour le ticket ci-dessous arrive à échéance très prochainement.
+</p>
+
+<div class='email-alert alert-warn'>
+  <p><strong>Délai imminent : moins de {{remainingMinutes}} minutes restantes</strong>
+  Veuillez intervenir rapidement pour éviter une violation SLA.</p>
+</div>
+
+<div class='email-highlight' style='border-left-color:#f59e0b'>
+  <p class='email-highlight-label'>Ticket concerné</p>
+  <p class='email-highlight-value'>{{ticketNumber}} — {{ticketTitle}}</p>
+</div>
+
+<table class='info-table' role='presentation' cellpadding='0' cellspacing='8'>
+  <tr>
+    <td class='info-cell'>
+      <p class='info-cell-label'>Échéance de résolution</p>
+      <p class='info-cell-value' style='color:#d97706'>{{slaDueAt}}</p>
+    </td>
+    <td class='info-cell'>
+      <p class='info-cell-label'>Temps restant</p>
+      <p class='info-cell-value'>{{remainingMinutes}} minutes</p>
+    </td>
+  </tr>
+</table>
+
+<div class='btn-wrap'>
+  <a href='{{ticketUrl}}' class='btn-primary'>Traiter le ticket</a>
+</div>
+"
+}}

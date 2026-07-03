@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="color-scheme" content="light" />
+  <meta name="supported-color-schemes" content="light" />
+  <title>{{subject}}</title>
+  <!--[if mso]>
+  <noscript>
+    <xml><o:OfficeDocumentSettings>
+      <o:PixelsPerInch>96</o:PixelsPerInch>
+    </o:OfficeDocumentSettings></xml>
+  </noscript>
+  <![endif]-->
+  <style>
+    /* Reset */
+    *, *::before, *::after { box-sizing: border-box; }
+    body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+    table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+    img { -ms-interpolation-mode: bicubic; border: 0; display: block; outline: none; text-decoration: none; }
+    body { margin: 0 !important; padding: 0 !important; background-color: #f4f4f2; }
+
+    /* Layout */
+    .email-wrapper   { width: 100%; background-color: #f4f4f2; padding: 32px 0; }
+    .email-container { max-width: 560px; margin: 0 auto; background-color: #ffffff; border-radius: 10px; overflow: hidden; border: 1px solid #e5e5e3; }
+
+    /* Header */
+    .email-header      { background-color: #111111; padding: 24px 36px; }
+    .email-logo-wrap   { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; }
+    .email-logo-mark   { width: 30px; height: 30px; background-color: rgba(255,255,255,.15); border-radius: 7px; display: inline-flex; align-items: center; justify-content: center; }
+    .email-logo-text   { font-family: Arial, Helvetica, sans-serif; font-size: 15px; font-weight: 700; color: #ffffff; letter-spacing: -0.2px; }
+
+    /* Accent bar */
+    .email-accent      { height: 3px; }
+
+    /* Body */
+    .email-body        { padding: 36px; }
+    .email-eyebrow     { font-family: Arial, Helvetica, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 1.4px; text-transform: uppercase; color: #888888; margin-bottom: 10px; }
+    .email-title       { font-family: Arial, Helvetica, sans-serif; font-size: 22px; font-weight: 700; color: #111111; line-height: 1.3; margin-bottom: 16px; }
+    .email-text        { font-family: Arial, Helvetica, sans-serif; font-size: 15px; color: #444444; line-height: 1.75; margin-bottom: 14px; }
+    .email-text strong { color: #111111; }
+    .email-divider     { height: 1px; background-color: #eeeeee; margin: 24px 0; border: none; }
+
+    /* Info block */
+    .email-highlight         { background-color: #f5f5f5; border-left: 3px solid #111111; padding: 14px 18px; border-radius: 0 5px 5px 0; margin: 20px 0; }
+    .email-highlight-label   { font-family: Arial, Helvetica, sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #888888; margin-bottom: 4px; }
+    .email-highlight-value   { font-family: Arial, Helvetica, sans-serif; font-size: 14px; color: #111111; font-weight: 600; }
+
+    /* Info grid */
+    .info-table      { width: 100%; border-collapse: separate; border-spacing: 8px; margin: 16px -8px; }
+    .info-cell       { background-color: #f9f9f9; border-radius: 5px; padding: 12px 14px; vertical-align: top; width: 50%; }
+    .info-cell-label { font-family: Arial, Helvetica, sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; color: #888888; margin-bottom: 3px; }
+    .info-cell-value { font-family: Arial, Helvetica, sans-serif; font-size: 14px; color: #111111; font-weight: 500; }
+
+    /* Code OTP */
+    .otp-wrap  { background-color: #f0f0f0; border-radius: 7px; padding: 24px; text-align: center; margin: 20px 0; }
+    .otp-code  { font-family: 'Courier New', Courier, monospace; font-size: 32px; font-weight: 700; letter-spacing: 10px; color: #111111; }
+    .otp-hint  { font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #888888; margin-top: 8px; }
+
+    /* Alert */
+    .email-alert       { padding: 14px 16px; border-radius: 6px; margin: 20px 0; }
+    .email-alert p     { font-family: Arial, Helvetica, sans-serif; font-size: 14px; line-height: 1.6; margin: 0; }
+    .email-alert p strong { display: block; margin-bottom: 2px; font-size: 13px; }
+    .alert-warn        { background-color: #fff8ec; border: 1px solid #ffd880; }
+    .alert-danger      { background-color: #fff0f0; border: 1px solid #ffb3b3; }
+    .alert-success     { background-color: #f0fff4; border: 1px solid #86efac; }
+    .alert-info        { background-color: #eff6ff; border: 1px solid #93c5fd; }
+    .alert-warn p      { color: #92400e; }
+    .alert-danger p    { color: #991b1b; }
+    .alert-success p   { color: #15803d; }
+    .alert-info p      { color: #1e40af; }
+
+    /* Badge statut */
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-family: Arial, sans-serif; font-size: 11px; font-weight: 700; }
+    .badge-green  { background-color: #dcfce7; color: #15803d; }
+    .badge-amber  { background-color: #fef3c7; color: #92400e; }
+    .badge-red    { background-color: #fee2e2; color: #991b1b; }
+    .badge-gray   { background-color: #f3f4f6; color: #374151; }
+    .badge-blue   { background-color: #eff6ff; color: #1e40af; }
+
+    /* CTA Boutons */
+    .btn-wrap      { text-align: center; margin: 28px 0 16px; }
+    .btn-primary   { display: inline-block; background-color: #111111; color: #ffffff !important; text-decoration: none; padding: 13px 32px; border-radius: 6px; font-family: Arial, Helvetica, sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 0.2px; text-align: center; }
+    .btn-secondary { display: inline-block; background-color: #ffffff; color: #111111 !important; text-decoration: none; padding: 11px 28px; border-radius: 6px; font-family: Arial, Helvetica, sans-serif; font-size: 14px; font-weight: 500; border: 1px solid #cccccc; margin-top: 10px; text-align: center; }
+    .btn-danger    { display: inline-block; background-color: #dc2626; color: #ffffff !important; text-decoration: none; padding: 13px 32px; border-radius: 6px; font-family: Arial, Helvetica, sans-serif; font-size: 14px; font-weight: 700; text-align: center; }
+
+    /* Footer */
+    .email-footer       { background-color: #f5f5f5; padding: 24px 36px; border-top: 1px solid #eeeeee; text-align: center; }
+    .footer-links       { margin-bottom: 12px; }
+    .footer-links a     { font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #666666; text-decoration: none; margin: 0 10px; }
+    .footer-copy        { font-family: Arial, Helvetica, sans-serif; font-size: 11px; color: #999999; line-height: 1.7; }
+    .footer-addr        { font-family: Arial, Helvetica, sans-serif; font-size: 11px; color: #bbbbbb; margin-top: 4px; }
+
+    /* Responsive */
+    @media only screen and (max-width: 600px) {
+      .email-body    { padding: 24px 20px !important; }
+      .email-header  { padding: 20px !important; }
+      .email-footer  { padding: 20px !important; }
+      .email-title   { font-size: 18px !important; }
+      .info-table, .info-table tbody, .info-table tr, .info-cell { display: block !important; width: 100% !important; }
+      .info-cell     { margin-bottom: 8px; }
+    }
+  </style>
+</head>
+<body>
+<div class="email-wrapper">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+    <tr>
+      <td align="center">
+        <div class="email-container">
+
+          <!-- HEADER -->
+          <div class="email-header">
+            <a href="{{appUrl}}" class="email-logo-wrap" style="text-decoration:none">
+              <span class="email-logo-text">{{appName}}</span>
+            </a>
+          </div>
+
+          <!-- ACCENT BAR (couleur selon type d'email) -->
+          <div class="email-accent" style="background-color: {{accentColor}};"></div>
+
+          <!-- BODY -->
+          <div class="email-body">
+            {{{body}}}
+          </div>
+
+          <!-- FOOTER -->
+          <div class="email-footer">
+            <div class="footer-links">
+              <a href="{{settingsUrl}}">Paramètres</a>
+              <a href="{{supportUrl}}">Support</a>
+              {{#if unsubscribeUrl}}
+              <a href="{{unsubscribeUrl}}">Se désabonner</a>
+              {{/if}}
+            </div>
+            <p class="footer-copy">{{footerText}}</p>
+            <p class="footer-addr">{{companyName}} &middot; {{companyAddress}}</p>
+          </div>
+
+        </div>
+      </td>
+    </tr>
+  </table>
+</div>
+</body>
+</html>

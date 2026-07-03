@@ -1,0 +1,25 @@
+{{> base
+  subject=subject
+  accentColor=accentColor
+  footerText=footerText
+  body="
+<p class='email-eyebrow'>Vérification</p>
+<h1 class='email-title'>Votre code de connexion unique</h1>
+
+<p class='email-text'>Bonjour,</p>
+<p class='email-text'>
+  Voici votre code de vérification unique (OTP) requis pour finaliser votre authentification sur <strong>{{appName}}</strong>.
+</p>
+
+<div class='otp-wrap'>
+  <div class='otp-code'>{{otpCode}}</div>
+  <div class='otp-hint'>Ce code est valide pendant {{expiresIn}} et ne doit pas être partagé.</div>
+</div>
+
+<hr class='email-divider' />
+
+<p class='email-text' style='font-size:13px;color:#888'>
+  Si vous n'êtes pas à l'origine de cette demande de code, veuillez ignorer cet email ou contacter le support.
+</p>
+"
+}}

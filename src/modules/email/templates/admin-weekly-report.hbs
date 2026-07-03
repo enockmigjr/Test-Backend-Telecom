@@ -1,45 +1,54 @@
-<html lang='fr'>
-  <head><meta charset='UTF-8' /><meta name='viewport' content='width=device-width, initial-scale=1.0' /><title>Rapport
-      Hebdomadaire</title></head>
-  <body style='font-family:Arial,sans-serif;background:#f4f4f4;padding:20px'>
-    <table
-      width='100%'
-      cellpadding='0'
-      cellspacing='0'
-      style='max-width:600px;margin:0 auto;background:#fff;border-radius:8px;overflow:hidden'
-    >
-      <tr style='background:#1a73e8;color:#fff'><td style='padding:24px'><h1 style='margin:0;font-size:20px'>📊 Rapport
-            Hebdomadaire — Semaine
-            {{weekNumber}}</h1></td></tr>
-      <tr><td style='padding:24px'>
-          <h2 style='color:#333'>Résumé de la période : {{periodStart}} → {{periodEnd}}</h2>
-          <table width='100%' cellpadding='8' cellspacing='0' style='border-collapse:collapse'>
-            <tr style='background:#f5f5f5'><td><strong>Tickets créés</strong></td><td
-                style='text-align:right'
-              >{{totalCreated}}</td></tr>
-            <tr><td><strong>Tickets résolus</strong></td><td
-                style='text-align:right;color:#4caf50'
-              >{{totalResolved}}</td></tr>
-            <tr style='background:#f5f5f5'><td><strong>Tickets en cours</strong></td><td
-                style='text-align:right;color:#ff9800'
-              >{{totalOpen}}</td></tr>
-            <tr><td><strong>Violations SLA</strong></td><td
-                style='text-align:right;color:#d32f2f'
-              >{{slaBreaches}}</td></tr>
-            <tr style='background:#f5f5f5'><td><strong>Taux de conformité SLA</strong></td><td
-                style='text-align:right;font-weight:bold'
-              >{{complianceRate}}%</td></tr>
-            <tr><td><strong>Temps moyen de résolution</strong></td><td style='text-align:right'>{{avgResolutionMinutes}}
-                min</td></tr>
-          </table>
-          <p style='margin-top:24px'><a
-              href='{{dashboardUrl}}'
-              style='background:#1a73e8;color:#fff;padding:12px 24px;border-radius:4px;text-decoration:none;display:inline-block'
-            >Voir le dashboard complet</a></p>
-          <p style='color:#666;font-size:13px;margin-top:32px'>Rapport généré automatiquement le {{generatedAt}}.</p>
-        </td></tr>
-      <tr style='background:#fafafa;color:#999;font-size:12px'><td style='padding:16px;text-align:center'>Telecom Ticket
-          Management ©
-          {{year}}</td></tr>
-    </table>
-  </body></html>
+{{> base
+  subject=subject
+  accentColor=accentColor
+  footerText=footerText
+  body="
+<p class='email-eyebrow'>Rapports & Statistiques</p>
+<h1 class='email-title'>Rapport Hebdomadaire · Semaine {{weekNumber}}</h1>
+
+<p class='email-text'>
+  Voici le résumé opérationnel des indicateurs de performance (KPI) pour la période du <strong>{{periodStart}}</strong> au <strong>{{periodEnd}}</strong>.
+</p>
+
+<table class='info-table' role='presentation' cellpadding='0' cellspacing='8'>
+  <tr>
+    <td class='info-cell'>
+      <p class='info-cell-label'>Tickets créés</p>
+      <p class='info-cell-value'>{{totalCreated}}</p>
+    </td>
+    <td class='info-cell'>
+      <p class='info-cell-label'>Tickets résolus</p>
+      <p class='info-cell-value' style='color:#16a34a'>{{totalResolved}}</p>
+    </td>
+  </tr>
+  <tr>
+    <td class='info-cell'>
+      <p class='info-cell-label'>Tickets en cours</p>
+      <p class='info-cell-value' style='color:#d97706'>{{totalOpen}}</p>
+    </td>
+    <td class='info-cell'>
+      <p class='info-cell-label'>Violations SLA</p>
+      <p class='info-cell-value' style='color:#dc2626'>{{slaBreaches}}</p>
+    </td>
+  </tr>
+  <tr>
+    <td class='info-cell'>
+      <p class='info-cell-label'>Conformité SLA</p>
+      <p class='info-cell-value' style='font-weight:bold'>{{complianceRate}}%</p>
+    </td>
+    <td class='info-cell'>
+      <p class='info-cell-label'>Moyenne de résolution</p>
+      <p class='info-cell-value'>{{avgResolutionMinutes}} min</p>
+    </td>
+  </tr>
+</table>
+
+<div class='btn-wrap'>
+  <a href='{{dashboardUrl}}' class='btn-primary'>Consulter le Dashboard</a>
+</div>
+
+<p class='email-text' style='font-size:12px;color:#888;margin-top:20px'>
+  Rapport généré automatiquement le {{generatedAt}}.
+</p>
+"
+}}

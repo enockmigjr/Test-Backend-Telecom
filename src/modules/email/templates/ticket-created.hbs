@@ -1,40 +1,40 @@
-<html lang='fr'>
-  <head>
-    <meta charset='UTF-8' />
-    <meta name='viewport' content='width=device-width, initial-scale=1.0' />
-    <title>Ticket créé</title>
-  </head>
-  <body style='font-family:Arial,sans-serif;background:#f4f4f4;padding:20px'>
-    <table
-      width='100%'
-      cellpadding='0'
-      cellspacing='0'
-      style='max-width:600px;margin:0 auto;background:#fff;border-radius:8px;overflow:hidden'
-    >
-      <tr style='background:#1a73e8;color:#fff'>
-        <td style='padding:24px'><h1 style='margin:0;font-size:20px'>📋 Ticket créé — {{ticketNumber}}</h1></td>
-      </tr>
-      <tr>
-        <td style='padding:24px'>
-          <p><strong>Titre :</strong> {{title}}</p>
+{{> base
+  subject=subject
+  accentColor=accentColor
+  footerText=footerText
+  body="
+<p class='email-eyebrow'>Nouveau Ticket</p>
+<h1 class='email-title'>Votre ticket a été créé avec succès</h1>
 
-          <p>
-            <strong>Priorité :</strong>
-            {{#if (eq priority 'CRITICAL')}}
-              <span style='color:#d32f2f;font-weight:bold'>{{priority}}</span>
-            {{else}}
-              <span style='color:#333;font-weight:bold'>{{priority}}</span>
-            {{/if}}
-          </p>
+<p class='email-text'>Bonjour,</p>
+<p class='email-text'>
+  Votre ticket a été enregistré sous le numéro de suivi unique <strong>{{ticketNumber}}</strong>.
+</p>
 
-          <p>Votre ticket a été enregistré et sera traité dans les plus brefs délais.</p>
-          <p style='color:#666;font-size:13px;margin-top:32px'>Cet email est généré automatiquement. Merci de ne pas y
-            répondre.</p>
-        </td>
-      </tr>
-      <tr style='background:#fafafa;color:#999;font-size:12px'>
-        <td style='padding:16px;text-align:center'>Telecom Ticket Management © {{year}}</td>
-      </tr>
-    </table>
-  </body>
-</html>
+<div class='email-highlight'>
+  <p class='email-highlight-label'>Détails du ticket</p>
+  <p class='email-highlight-value'>{{ticketNumber}} — {{title}}</p>
+</div>
+
+<table class='info-table' role='presentation' cellpadding='0' cellspacing='8'>
+  <tr>
+    <td class='info-cell'>
+      <p class='info-cell-label'>Catégorie</p>
+      <p class='info-cell-value'>{{category}}</p>
+    </td>
+    <td class='info-cell'>
+      <p class='info-cell-label'>Priorité</p>
+      <p class='info-cell-value'><span class='badge badge-blue'>{{priority}}</span></p>
+    </td>
+  </tr>
+</table>
+
+<p class='email-text'>
+  Nos équipes de support technique ont été notifiées et prennent en charge votre demande. Vous recevrez une notification par email dès qu'un agent mettra à jour ce ticket.
+</p>
+
+<div class='btn-wrap'>
+  <a href='{{ticketUrl}}' class='btn-primary'>Suivre mon ticket</a>
+</div>
+"
+}}
