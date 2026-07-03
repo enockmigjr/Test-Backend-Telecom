@@ -1,4 +1,4 @@
-﻿import { Injectable, UnauthorizedException, Logger, Inject } from '@nestjs/common';
+import { Injectable, UnauthorizedException, Logger, Inject } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
 import { generateUuid } from '../../common/helpers/uuidv7.helper';
@@ -63,7 +63,7 @@ export class AuthService {
     };
   }
 
-  async refresh(refreshToken: string, ipAddress: string, userAgent: string): Promise<TokenPair> {
+  async refresh(refreshToken: string, _ipAddress: string, _userAgent: string): Promise<TokenPair> {
     const tokenHash = this.hashToken(refreshToken);
 
     const [storedToken] = await this.drizzle.db
@@ -75,11 +75,6 @@ export class AuthService {
     if (!storedToken || storedToken.revokedAt) throw new UnauthorizedException('Refresh token invalide ou revoque.');
     if (new Date() > storedToken.expiresAt) throw new UnauthorizedException('Refresh token expire.');
 
-    await this.drizzle.db
-      .update(refreshTokens)
-      .set({ revokedAt: new Date() })
-      .where(eq(refreshTokens.id, storedToken.id));
-
     const [user] = await this.drizzle.db
       .select()
       .from(users)
@@ -88,7 +83,10 @@ export class AuthService {
 
     if (!user || !user.isActive) throw new UnauthorizedException('Utilisateur non trouve ou desactive.');
 
-    return this.generateTokens(user, ipAddress, userAgent);
+    // Générer uniquement un nouvel Access Token (pas de rotation du refresh token d'origine)
+    const { accessToken } = this.generateAccessToken(user);
+
+    return { accessToken, refreshToken };
   }
 
   /**
@@ -107,13 +105,17 @@ export class AuthService {
 
   /**
    * Deconnecte toutes les sessions : revoque tous les refresh tokens.
-   * Les access tokens actifs expirent naturellement (TTL 15 min max).
+   * L'access token actif de la session courante (jti) est immédiatement blacklisté.
    */
-  async logoutAll(userId: string): Promise<void> {
+  async logoutAll(userId: string, jti?: string): Promise<void> {
     await this.drizzle.db
       .update(refreshTokens)
       .set({ revokedAt: new Date() })
       .where(and(eq(refreshTokens.userId, userId), isNull(refreshTokens.revokedAt)));
+
+    if (jti) {
+      await this.blacklistJti(jti);
+    }
   }
 
   async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
@@ -178,16 +180,14 @@ export class AuthService {
     }
   }
 
-  private async generateTokens(
-    user: typeof users.$inferSelect,
-    ipAddress: string,
-    userAgent: string,
-  ): Promise<TokenPair> {
+  private generateAccessToken(
+    user: typeof users.$inferSelect | { id: string; email: string; role: string; departmentId: string },
+  ): { accessToken: string; jti: string } {
     const jti = generateUuid();
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
-      role: user.role,
+      role: user.role as typeof users.$inferSelect.role,
       departmentId: user.departmentId,
       jti,
     };
@@ -196,6 +196,16 @@ export class AuthService {
       secret: this.jwtConfig.accessSecret,
       expiresIn: this.jwtConfig.accessExpiration,
     });
+
+    return { accessToken, jti };
+  }
+
+  private async generateTokens(
+    user: typeof users.$inferSelect,
+    ipAddress: string,
+    userAgent: string,
+  ): Promise<TokenPair> {
+    const { accessToken } = this.generateAccessToken(user);
 
     const rawRefreshToken = randomBytes(48).toString('hex');
     const tokenHash = this.hashToken(rawRefreshToken);

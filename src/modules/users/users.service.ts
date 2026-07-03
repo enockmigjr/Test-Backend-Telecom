@@ -50,7 +50,7 @@ export class UsersService {
       .limit(limit)
       .offset(offset);
 
-    return PaginationHelper.paginate(data, total?.count || 0, page, limit);
+    return PaginationHelper.paginate(data, Number(total?.count ?? 0), page, limit);
   }
 
   /**

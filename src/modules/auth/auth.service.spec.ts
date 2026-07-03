@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Test, TestingModule } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
 import { UnauthorizedException } from '@nestjs/common';
@@ -124,9 +125,19 @@ describe('AuthService', () => {
       get: jest.fn(() => '15m'),
       configurable: true,
     });
+    Object.defineProperty(jwtConfig, 'accessExpirationSeconds', {
+      get: jest.fn(() => 900),
+      configurable: true,
+    });
 
     // Mock RedisProvider
+    const mockRedisClient = {
+      setex: jest.fn().mockResolvedValue('OK'),
+      exists: jest.fn().mockResolvedValue(0),
+      sismember: jest.fn().mockResolvedValue(0),
+    };
     redisProvider = mock<RedisProvider>();
+    redisProvider.getClient.mockReturnValue(mockRedisClient as any);
 
     const mockQueues = { email: { add: jest.fn().mockResolvedValue(undefined) } };
 
@@ -268,13 +279,7 @@ describe('AuthService', () => {
 
       expect(result).toBeDefined();
       expect(result.accessToken).toBe('mock-access-token-value');
-      expect(result.refreshToken).toBeDefined();
-      expect(result.refreshToken).not.toBe(validRefreshToken);
-
-      // Verifier que l'ancien token a ete revoque
-      expect(mockUpdateQuery.set).toHaveBeenCalledWith({
-        revokedAt: expect.any(Date),
-      });
+      expect(result.refreshToken).toBe(validRefreshToken); // Renvoie le même refresh token
     });
 
     it('doit lever UnauthorizedException pour un refresh token revoque', async () => {
@@ -340,12 +345,14 @@ describe('AuthService', () => {
   // =========================================================================
   describe('logout() — Deconnexion', () => {
     it('doit revoquer le refresh token et retourner void', async () => {
+      const redisClient = redisProvider.getClient();
       await service.logout('some-refresh-token', 'jti-test-123');
 
       expect(mockUpdateQuery.set).toHaveBeenCalledWith({
         revokedAt: expect.any(Date),
       });
       expect(mockUpdateQuery.where).toHaveBeenCalled();
+      expect(redisClient.setex).toHaveBeenCalledWith('jwt_bl:jti-test-123', expect.any(Number), '1');
     });
 
     it("ne doit pas lever d'erreur si le token n'existe pas (idempotent)", async () => {
@@ -365,6 +372,16 @@ describe('AuthService', () => {
       expect(mockUpdateQuery.set).toHaveBeenCalledWith({
         revokedAt: expect.any(Date),
       });
+    });
+
+    it('doit revoquer les tokens et blacklister le JTI courant si fourni', async () => {
+      const redisClient = redisProvider.getClient();
+      await service.logoutAll(mockUser.id, 'jti-logout-all-123');
+
+      expect(mockUpdateQuery.set).toHaveBeenCalledWith({
+        revokedAt: expect.any(Date),
+      });
+      expect(redisClient.setex).toHaveBeenCalledWith('jwt_bl:jti-logout-all-123', expect.any(Number), '1');
     });
   });
 

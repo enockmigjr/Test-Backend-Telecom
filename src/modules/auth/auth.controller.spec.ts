@@ -179,7 +179,7 @@ describe('AuthController', () => {
 
       const result = await controller.logoutAll(mockUser);
 
-      expect(authService.logoutAll).toHaveBeenCalledWith(mockUser.sub);
+      expect(authService.logoutAll).toHaveBeenCalledWith(mockUser.sub, mockUser.jti);
       expect(result).toBeUndefined();
     });
 
@@ -188,7 +188,7 @@ describe('AuthController', () => {
 
       await controller.logoutAll(mockUser);
 
-      expect(authService.logoutAll).toHaveBeenCalledWith('user-001');
+      expect(authService.logoutAll).toHaveBeenCalledWith('user-001', 'jti-001');
     });
   });
 

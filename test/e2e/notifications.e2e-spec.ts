@@ -18,7 +18,7 @@ describe('Notifications — E2E', () => {
 
     const drizzle = app.get(DrizzleProvider);
     const allUsers = await drizzle.db.select().from(users);
-    const csAgent = allUsers.find((u) => u.role === 'CUSTOMER_SERVICE_AGENT');
+    const csAgent = allUsers.find((u) => u.email === 'agent-cc1@telecom.local');
 
     if (!csAgent) {
       throw new Error('CS Agent requis non trouve dans le seed.');

@@ -58,7 +58,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Déconnexion de toutes les sessions actives' })
   @ApiResponse({ status: 204, description: 'Toutes les sessions sont révoquées.' })
   async logoutAll(@CurrentUser() user: JwtPayload) {
-    await this.authService.logoutAll(user.sub);
+    await this.authService.logoutAll(user.sub, user.jti);
   }
 
   @Get('me')

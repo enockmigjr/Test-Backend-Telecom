@@ -26,9 +26,9 @@ describe('Users — E2E', () => {
     // Charger les utilisateurs
     const { users } = await import('../../src/database/schemas');
     const allUsers = await drizzle.db.select().from(users);
-    const admin = allUsers.find((u) => u.role === 'ADMINISTRATOR');
-    const csAgent = allUsers.find((u) => u.role === 'CUSTOMER_SERVICE_AGENT');
-    const supervisor = allUsers.find((u) => u.role === 'SUPERVISOR');
+    const admin = allUsers.find((u) => u.email === 'admin@telecom.local');
+    const csAgent = allUsers.find((u) => u.email === 'agent-cc1@telecom.local');
+    const supervisor = allUsers.find((u) => u.email === 'supervisor@telecom.local');
 
     if (!admin || !csAgent || !supervisor) {
       throw new Error('Utilisateurs requis non trouves.');

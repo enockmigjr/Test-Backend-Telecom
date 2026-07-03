@@ -25,8 +25,8 @@ describe('Comments — E2E', () => {
     // Charger dynamiquement les utilisateurs
     const { users } = await import('../../src/database/schemas');
     const allUsers = await drizzle.db.select().from(users);
-    const csAgent = allUsers.find((u) => u.role === 'CUSTOMER_SERVICE_AGENT');
-    const otherAgent = allUsers.find((u) => u.role === 'NOC_ENGINEER' || u.role === 'BILLING_AGENT');
+    const csAgent = allUsers.find((u) => u.email === 'agent-cc1@telecom.local');
+    const otherAgent = allUsers.find((u) => u.email === 'noc1@telecom.local');
 
     if (!csAgent || !otherAgent) {
       throw new Error('Utilisateurs requis non trouves.');

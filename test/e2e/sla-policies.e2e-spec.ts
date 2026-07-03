@@ -19,8 +19,8 @@ describe('SLA Policies — E2E', () => {
 
     const drizzle = app.get(DrizzleProvider);
     const allUsers = await drizzle.db.select().from(users);
-    const admin = allUsers.find((u) => u.role === 'ADMINISTRATOR');
-    const csAgent = allUsers.find((u) => u.role === 'CUSTOMER_SERVICE_AGENT');
+    const admin = allUsers.find((u) => u.email === 'admin@telecom.local');
+    const csAgent = allUsers.find((u) => u.email === 'agent-cc1@telecom.local');
 
     if (!admin || !csAgent) {
       throw new Error('Utilisateurs requis non trouves.');

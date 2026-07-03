@@ -26,10 +26,8 @@ describe('Tickets — Workflow E2E complet', () => {
 
     // Charger les utilisateurs
     const allUsers = await drizzle.db.select().from(users);
-    const agent =
-      allUsers.find((u) => u.role === 'CUSTOMER_SERVICE_AGENT') ||
-      allUsers.find((u) => u.role === 'TECHNICAL_SUPPORT_ENGINEER');
-    const admin = allUsers.find((u) => u.role === 'ADMINISTRATOR');
+    const agent = allUsers.find((u) => u.email === 'agent-cc1@telecom.local');
+    const admin = allUsers.find((u) => u.email === 'admin@telecom.local');
 
     if (!agent || !admin) {
       throw new Error('Utilisateurs requis non trouves.');

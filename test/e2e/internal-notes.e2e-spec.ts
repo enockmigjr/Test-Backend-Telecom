@@ -30,11 +30,8 @@ describe('Internal Notes — E2E', () => {
 
     // Trouver un field tech dans le seed
     const allUsers = await drizzle.db.select().from(users);
-    const tech = allUsers.find((u) => u.role === 'FIELD_TECHNICIAN');
-    let techEmail = tech?.email;
-    if (!techEmail) {
-      techEmail = 'field1@telecom.local';
-    }
+    const tech = allUsers.find((u) => u.email === 'field1@telecom.local');
+    const techEmail = tech?.email || 'field1@telecom.local';
 
     const techLogin = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
