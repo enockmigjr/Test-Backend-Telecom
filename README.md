@@ -81,21 +81,21 @@ docker compose up -d
 14 modules NestJS · 12 tables PostgreSQL · 52 routes REST · 5 workers BullMQ
 ```
 
-| Module           | Responsabilité                                                                  |
-| ---------------- | ------------------------------------------------------------------------------- |
-| `auth`           | JWT (access 15min + refresh 7j rotation), Argon2id, Redis JTI blacklist         |
-| `users`          | CRUD 7 rôles, activation/désactivation, mot de passe temporaire                 |
-| `departments`    | 6 départements, soft delete                                                     |
+| Module           | Responsabilité                                                                               |
+| ---------------- | -------------------------------------------------------------------------------------------- |
+| `auth`           | JWT (access 15min + refresh 7j rotation), Argon2id, Redis JTI blacklist                      |
+| `users`          | CRUD 7 rôles, activation/désactivation, mot de passe temporaire                              |
+| `departments`    | 6 départements, soft delete                                                                  |
 | `tickets`        | State machine 9 statuts + 2 pending, ownership-based RBAC, INC-AAAA-NNNNNN, auto-clôture 48h |
-| `comments`       | Commentaires publics (auteur/supervisor/admin)                                  |
-| `internal-notes` | Notes internes (restriction FIELD_TECHNICIAN)                                   |
-| `attachments`    | Upload/download streaming, interface abstraite IStorageService                  |
-| `notifications`  | Inbox pattern, WebSocket temps réel                                             |
-| `sla`            | Politiques SLA, cron engine \*/5 min, breach/warning detection                  |
-| `dashboard`      | 7 endpoints: overview, status, priority, departments, SLA, workload, resolution |
-| `audit-logs`     | Immutable write-only, recherche multi-filtres                                   |
-| `email`          | Nodemailer dev/prod, 7 templates Handlebars                                     |
-| `reports`        | Génération PDF (PDFKit), rapports asynchrones via BullMQ                        |
+| `comments`       | Commentaires publics (auteur/supervisor/admin)                                               |
+| `internal-notes` | Notes internes (restriction FIELD_TECHNICIAN)                                                |
+| `attachments`    | Upload/download streaming, interface abstraite IStorageService                               |
+| `notifications`  | Inbox pattern, WebSocket temps réel                                                          |
+| `sla`            | Politiques SLA, cron engine \*/5 min, breach/warning detection                               |
+| `dashboard`      | 7 endpoints: overview, status, priority, departments, SLA, workload, resolution              |
+| `audit-logs`     | Immutable write-only, recherche multi-filtres                                                |
+| `email`          | Nodemailer dev/prod, 7 templates Handlebars                                                  |
+| `reports`        | Génération PDF (PDFKit), rapports asynchrones via BullMQ                                     |
 
 ## 🔄 Flux Asynchrone (BullMQ)
 

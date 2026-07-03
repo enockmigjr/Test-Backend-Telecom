@@ -41,18 +41,18 @@ if (this.wsGateway.isUserConnected(userId)) {
 
 ### 2. Événements émis
 
-| Événement               | Room                                  | Déclencheur                                 |
-| ----------------------- | ------------------------------------- | ------------------------------------------- |
-| `notification.created`  | `user:{id}`                           | NotificationWorker (via NOTIFICATION_QUEUE) |
-| `ticket.created`        | `department:{id}` + `role:SUPERVISOR` | TicketNotificationListener                  |
-| `ticket.assigned`       | `user:{id}`                           | TicketNotificationListener                  |
-| `ticket.escalated`      | `user:{id}` + `role:SUPERVISOR`       | TicketNotificationListener                  |
-| `ticket.resolved`       | `role:SUPERVISOR`                     | TicketNotificationListener                  |
+| Événement               | Room                                  | Déclencheur                                                      |
+| ----------------------- | ------------------------------------- | ---------------------------------------------------------------- |
+| `notification.created`  | `user:{id}`                           | NotificationWorker (via NOTIFICATION_QUEUE)                      |
+| `ticket.created`        | `department:{id}` + `role:SUPERVISOR` | TicketNotificationListener                                       |
+| `ticket.assigned`       | `user:{id}`                           | TicketNotificationListener                                       |
+| `ticket.escalated`      | `user:{id}` + `role:SUPERVISOR`       | TicketNotificationListener                                       |
+| `ticket.resolved`       | `role:SUPERVISOR`                     | TicketNotificationListener                                       |
 | `ticket.closed`         | `role:SUPERVISOR`                     | TicketNotificationListener + SlaEngineService (auto-clôture 48h) |
-| `ticket.reopened`       | `role:SUPERVISOR`                     | TicketNotificationListener                  |
-| `ticket.status_changed` | `role:SUPERVISOR`                     | TicketNotificationListener                  |
-| `ticket.sla_breached`   | `user:{id}` + `role:SUPERVISOR`       | SlaEngineService (cron)                     |
-| `ticket.sla_warning`    | `user:{id}` + `role:SUPERVISOR`       | SlaEngineService (cron)                     |
+| `ticket.reopened`       | `role:SUPERVISOR`                     | TicketNotificationListener                                       |
+| `ticket.status_changed` | `role:SUPERVISOR`                     | TicketNotificationListener                                       |
+| `ticket.sla_breached`   | `user:{id}` + `role:SUPERVISOR`       | SlaEngineService (cron)                                          |
+| `ticket.sla_warning`    | `user:{id}` + `role:SUPERVISOR`       | SlaEngineService (cron)                                          |
 
 ### 3. Rooms
 

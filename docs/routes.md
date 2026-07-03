@@ -7,14 +7,14 @@
 
 ## Authentification (`/auth`)
 
-| Méthode | Route                   | Auth   | Rôles | Description                                                                     |
-| ------- | ----------------------- | ------ | ----- | ------------------------------------------------------------------------------- |
-| `POST`  | `/auth/login`           | Public | -     | Connexion utilisateur (rate limit: 10/heure/IP)                                 |
-| `POST`  | `/auth/refresh`         | Public | -     | Rafraîchir la paire de tokens (rotation)                                        |
-| `POST`  | `/auth/logout`          | Bearer | Tous  | Déconnexion — révoque le refresh token fourni + blacklist JTI access token      |
-| `POST`  | `/auth/logout-all`      | Bearer | Tous  | Déconnexion de toutes les sessions actives                                      |
-| `GET`   | `/auth/me`              | Bearer | Tous  | Profil de l'utilisateur connecté                                                |
-| `PUT`   | `/auth/change-password` | Bearer | Tous  | Changer le mot de passe                                                         |
+| Méthode | Route                   | Auth   | Rôles | Description                                                                |
+| ------- | ----------------------- | ------ | ----- | -------------------------------------------------------------------------- |
+| `POST`  | `/auth/login`           | Public | -     | Connexion utilisateur (rate limit: 10/heure/IP)                            |
+| `POST`  | `/auth/refresh`         | Public | -     | Rafraîchir la paire de tokens (rotation)                                   |
+| `POST`  | `/auth/logout`          | Bearer | Tous  | Déconnexion — révoque le refresh token fourni + blacklist JTI access token |
+| `POST`  | `/auth/logout-all`      | Bearer | Tous  | Déconnexion de toutes les sessions actives                                 |
+| `GET`   | `/auth/me`              | Bearer | Tous  | Profil de l'utilisateur connecté                                           |
+| `PUT`   | `/auth/change-password` | Bearer | Tous  | Changer le mot de passe                                                    |
 
 ---
 
