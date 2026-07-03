@@ -72,6 +72,9 @@ services:
       REDIS_URL: ${DOCKER_REDIS_URL:-redis://redis:6379}
       SMTP_HOST: ${DOCKER_SMTP_HOST:-mailpit}
       SMTP_PORT: ${DOCKER_SMTP_PORT:-1025}
+      APP_NAME: ${APP_NAME:-"Helpdesk Telecom"}
+      APP_URL: ${APP_URL:-http://localhost:3000}
+      LOGO_URL: ${LOGO_URL:-http://localhost:3000/logo.png}
       OTEL_ENABLED: 'true'
       OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4318/v1/traces
     volumes:

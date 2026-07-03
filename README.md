@@ -78,6 +78,26 @@ docker compose up -d
 14 modules NestJS · 12 tables PostgreSQL · 52 routes REST · 5 workers BullMQ
 ```
 
+### Schéma Entité-Relation (ERD Simplifié)
+
+```mermaid
+flowchart LR
+    D[Départements] --> U[Utilisateurs]
+    D --> T[Tickets]
+    U --> T
+    T --> TA[Affectations]
+    T --> TC[Commentaires]
+    T --> TN[Notes Internes]
+    T --> TH[Historique]
+    T --> AT[Pièces Jointes]
+    U --> RT[Refresh Tokens]
+    U --> NT[Notifications]
+    U --> AL[Audit Logs]
+    SLA[Politiques SLA] --> T
+```
+
+![Modèle de Données Simplifié](contexte/mermaid-diagram%20relation%20table%20simplifier.png)
+
 | Module           | Responsabilité                                                                               |
 | ---------------- | -------------------------------------------------------------------------------------------- |
 | `auth`           | JWT (access 15min + refresh 7j rotation), Argon2id, Redis JTI blacklist                      |
@@ -128,6 +148,14 @@ SlaEngineService (@Cron */5 min)
 - **Idempotence**: `@Idempotent()` + header `Idempotency-Key` (cache Redis 24h)
 - **Soft Delete**: users, tickets, departments — aucune suppression physique
 
+### Cycle de vie d'une Requête (Request Lifecycle)
+
+![Cycle de vie d'une Requête](contexte/request_lifecycle_full.svg)
+
+### Rôle Reverse Proxy Nginx
+
+![Détail rôle Nginx](contexte/nginx_role_detail.svg)
+
 ## 📈 Observabilité
 
 ```
@@ -136,6 +164,10 @@ NestJS (Pino JSON)
   ├── /metrics → Prometheus → Grafana → Alerting (Slack/Email)
   └── Traces → OpenTelemetry → Tempo → Grafana
 ```
+
+### Architecture de la Stack d'Observabilité
+
+![Architecture Observabilité](contexte/observability_stack.svg)
 
 **Métriques exposées**: HTTP requests, duration P95, tickets created, active, SLA breaches, DB pool, WebSocket connections, heap memory.
 
@@ -168,11 +200,10 @@ make down      # Tout arrêter
 | --------------------------- | ---------------------------------------- |
 | `pnpm run start:dev`        | Développement hot-reload                 |
 | `pnpm run build`            | Compilation TypeScript                   |
-| `pnpm run test`             | Tests unitaires (446 tests)              |
-| `pnpm run test:unit`        | Tests unitaires (446 tests, chemin src/) |
+| `pnpm run test`             | Tests unitaires (443 tests)              |
+| `pnpm run test:unit`        | Tests unitaires (443 tests, chemin src/) |
 | `pnpm run test:e2e`         | Tests end-to-end (102 tests)             |
-| `pnpm run test:integration` | Tests intégration (10 tests)             |
-| `pnpm run test:all`         | Tous les tests (558 tests)               |
+| `pnpm run test:all`         | Tous les tests (545 tests)               |
 | `pnpm run test:cov`         | Tests avec couverture                    |
 | `pnpm run db:push`          | Pousser schéma Drizzle                   |
 | `pnpm run db:seed`          | Données de test                          |

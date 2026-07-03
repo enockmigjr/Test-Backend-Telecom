@@ -12,40 +12,206 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alerte Observabilité Telecom</title>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background: #f5f5f5; }
-    .container { max-width: 640px; margin: 20px auto; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-    .header { padding: 24px; text-align: center; }
-    .header.critical { background: #dc3545; color: #fff; }
-    .header.warning { background: #ffc107; color: #333; }
-    .header.info { background: #17a2b8; color: #fff; }
-    .header h1 { margin: 0; font-size: 20px; }
-    .header .count { font-size: 14px; opacity: 0.9; margin-top: 4px; }
-    .body { padding: 24px; }
-    .alert-card { border: 1px solid #e0e0e0; border-radius: 6px; padding: 16px; margin-bottom: 12px; }
-    .alert-card:last-child { margin-bottom: 0; }
-    .alert-title { font-weight: 600; font-size: 16px; margin-bottom: 4px; }
-    .alert-desc { color: #555; font-size: 14px; margin-bottom: 8px; }
-    .alert-labels { display: flex; flex-wrap: wrap; gap: 6px; }
-    .label { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; }
-    .label.severity-critical { background: #fde8e8; color: #dc3545; }
-    .label.severity-warning { background: #fff8e1; color: #f0ad4e; }
-    .footer { padding: 16px 24px; background: #fafafa; border-top: 1px solid #e0e0e0; font-size: 12px; color: #888; text-align: center; }
-    .footer a { color: #007bff; text-decoration: none; }
-    .meta { font-size: 12px; color: #888; margin-top: 8px; }
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+    
+    body {
+      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f9fafb;
+      color: #1f2937;
+      -webkit-font-smoothing: antialiased;
+    }
+    
+    .container {
+      max-width: 600px;
+      margin: 40px auto;
+      background: #ffffff;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+      border: 1px solid #f3f4f6;
+    }
+    
+    .header {
+      background-color: #111111;
+      padding: 32px 24px;
+      text-align: center;
+      position: relative;
+    }
+
+    /* Ligne d'accent de sévérité */
+    .severity-bar {
+      height: 4px;
+      width: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+    .severity-bar.critical { background: #dc2626; }
+    .severity-bar.warning { background: #f59e0b; }
+    .severity-bar.info { background: #0d9488; }
+    
+    .header h1 {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: -0.025em;
+    }
+    
+    .header .count {
+      font-size: 13px;
+      color: #9ca3af;
+      margin-top: 8px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    .body {
+      padding: 32px 24px;
+    }
+    
+    .alert-card {
+      border: 1px solid #f3f4f6;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+      background-color: #ffffff;
+      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.01), 0 1px 2px -1px rgba(0, 0, 0, 0.01);
+      transition: transform 0.2s ease;
+    }
+    
+    .alert-card.critical {
+      border-left: 4px solid #dc2626;
+    }
+    .alert-card.warning {
+      border-left: 4px solid #f59e0b;
+    }
+    .alert-card.info {
+      border-left: 4px solid #0d9488;
+    }
+    
+    .alert-title {
+      font-weight: 600;
+      font-size: 15px;
+      color: #111827;
+      margin-bottom: 6px;
+      line-height: 1.4;
+    }
+    
+    .alert-desc {
+      color: #4b5563;
+      font-size: 13.5px;
+      line-height: 1.5;
+      margin-bottom: 16px;
+    }
+    
+    .alert-labels {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+    
+    .label {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 500;
+      background-color: #f3f4f6;
+      color: #4b5563;
+      border: 1px solid #e5e7eb;
+    }
+    
+    .label.severity-critical {
+      background-color: #fef2f2;
+      color: #991b1b;
+      border: 1px solid #fee2e2;
+    }
+    
+    .label.severity-warning {
+      background-color: #fffbeb;
+      color: #92400e;
+      border: 1px solid #fef3c7;
+    }
+
+    .label.severity-info {
+      background-color: #f0fdfa;
+      color: #115e59;
+      border: 1px solid #ccfbf1;
+    }
+    
+    .meta {
+      font-size: 11px;
+      color: #9ca3af;
+      border-top: 1px solid #f3f4f6;
+      padding-top: 12px;
+      margin-top: 8px;
+    }
+    
+    .footer {
+      padding: 24px;
+      background-color: #fafafa;
+      border-top: 1px solid #f3f4f6;
+      font-size: 12px;
+      color: #6b7280;
+      text-align: center;
+      line-height: 1.6;
+    }
+    
+    .footer a {
+      color: #111111;
+      text-decoration: none;
+      font-weight: 600;
+      border-bottom: 1px solid #111111;
+    }
+
+    .footer a:hover {
+      color: #4b5563;
+      border-bottom-color: #4b5563;
+    }
+
+    .btn-wrap {
+      text-align: center;
+      margin-top: 24px;
+    }
+
+    .btn-primary {
+      display: inline-block;
+      background-color: #111111;
+      color: #ffffff !important;
+      padding: 10px 20px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 13px;
+      transition: background-color 0.2s;
+    }
+
+    .btn-primary:hover {
+      background-color: #1f2937;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="header {{ .GroupLabels.severity }}">
-      <h1>🚨 {{ .GroupLabels.alertname }}</h1>
-      <div class="count">{{ .Alerts | len }} alerte(s) — Sévérité {{ .GroupLabels.severity | toUpper }}</div>
+    <div class="header">
+      <div class="severity-bar {{ .GroupLabels.severity }}"></div>
+      <h1>🚨 Alerte Système : {{ .GroupLabels.alertname }}</h1>
+      <div class="count">{{ .Alerts | len }} alerte(s) active(s) · Sévérité {{ .GroupLabels.severity | toUpper }}</div>
     </div>
+    
     <div class="body">
       {{ range .Alerts }}
-      <div class="alert-card">
+      <div class="alert-card {{ .Labels.severity }}">
         <div class="alert-title">{{ .Annotations.summary }}</div>
         <div class="alert-desc">{{ .Annotations.description }}</div>
+        
         <div class="alert-labels">
           <span class="label severity-{{ .Labels.severity }}">{{ .Labels.severity | toUpper }}</span>
           {{ range $key, $value := .Labels }}
@@ -54,17 +220,29 @@
             {{ end }}
           {{ end }}
         </div>
+        
         <div class="meta">
-          Début : {{ .StartsAt.Format "02/01/2006 15:04:05 MST" }}
-          {{ if not .EndsAt.IsZero }} | Fin : {{ .EndsAt.Format "02/01/2006 15:04:05 MST" }}{{ end }}
+          Début du signalement : {{ .StartsAt.Format "02/01/2006 15:04:05 MST" }}
+          {{ if not .EndsAt.IsZero }} · Résolution : {{ .EndsAt.Format "02/01/2006 15:04:05 MST" }}{{ end }}
         </div>
       </div>
       {{ end }}
+
+      <div class="btn-wrap">
+        <a href="http://localhost:3001" class="btn-primary">Accéder au Console Grafana</a>
+      </div>
     </div>
+    
     <div class="footer">
-      {{/* Prod: remplacer localhost:3001 et localhost:9090 par vos URLs réelles */}}
-      <p>Telecom Ticket Management System — <a href="http://localhost:3001">Grafana</a> | <a href="http://localhost:9090">Prometheus</a></p>
-      <p>Pour modifier les règles d'alerte : <code>prometheus/alert.rules.yml</code></p>
+      <p>Moteur d'Observabilité & d'Alerte · Telecom Ticket Management</p>
+      <p>
+        Outils de Diagnostic : 
+        <a href="http://localhost:3001">Grafana Dashboard</a> · 
+        <a href="http://localhost:9090">Prometheus Rules</a>
+      </p>
+      <p style="font-size: 11px; margin-top: 12px; color: #9ca3af;">
+        Pour modifier les politiques d'alerte, éditez le fichier <code>prometheus/alert.rules.yml</code>.
+      </p>
     </div>
   </div>
 </body>
