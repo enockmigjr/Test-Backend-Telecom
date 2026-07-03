@@ -9,13 +9,19 @@ Tous les changements notables sont documentés ici. Format basé sur [Keep a Cha
 ### Added
 
 - **Génération de PDF Premium (PDFKit)** : implémentation de méthodes de dessin de documents haut de gamme pour les rapports d'incidents (grilles, résumés) et les rapports SLA (indicateurs graphiques, structures de tableaux).
-- **Rapports par E-mail avec PDF joint** : modification de `EmailService`, `EmailWorker` et `ReportWorker` pour automatiser l'envoi de rapports sous forme de fichiers PDF attachés aux e-mails.
+- **Rapports par E-mail avec lien sécurisé** : modification de `EmailService`, `EmailWorker` et `ReportWorker` pour automatiser l'envoi de rapports sous forme de lien de téléchargement sécurisé expirable au lieu d'une pièce jointe PDF lourde.
 - **Templates de Rapports Uniformisés** : ajout des templates Handlebars enfants `ticket-report.hbs` et `sla-report.hbs` s'appuyant tous les deux sur le layout global unifié `base.hbs`.
+- **Table de suivi de rapports `reports`** : implémentation d'une table Drizzle autonome `reports` pour persister l'historique et le statut (`pending`, `completed`, `failed`) de chaque demande sans être contraint par les checks de `attachments`.
+- **Nouveau type de notification `REPORT_FAILED`** : ajout à l'énumération en base de données.
+- **Nouvelles routes REST de rapports** : ajout de la route d'administration paginée `GET /reports` (Admin uniquement) et de la route de téléchargement de fichier `GET /reports/:id/download` (Admin ou demandeur).
 
 ### Fixed
 
-- **Pagination Numérique ORM** : correction du bug de pagination dans les query parameters `page` et `limit` convertis explicitement en `Number` pour Drizzle ORM afin de respecter le limitateur de pagination sur l'ensemble des routes paginées.
+- **Robustesse du cycle de vie des rapports** : traitement global try/catch dans `ReportWorker`, retry exponentiel automatique (3 essais), envoi obligatoire d'email et émission WebSocket/in-app pour les succès comme les échecs.
+- **Pagination Numérique ORM** : correction du bug de pagination dans les query parameters `page` et `limit` convertis explicitement en `Number` pour Drizzle ORM.
 - **Dépendance Circulaire NestJS** : correction de la dépendance circulaire entre `QueuesModule` et `ReportsModule` via l'usage propre de `forwardRef(() => Module)`.
+- **Correctif d'importation PDFKit** : correction de l'import PDFKit (`import PDFDocument from 'pdfkit'`).
+- **Correction des types dans les tests unitaires** : résolution des alertes de types TypeScript Jest dans `reports.controller.spec.ts` par le biais de casts sur les fonctions mockées.
 
 ---
 

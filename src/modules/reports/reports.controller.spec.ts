@@ -53,7 +53,7 @@ describe('ReportsController', () => {
   beforeEach(async () => {
     reportsService = mock<ReportsService>();
     reportQueue = mock<Queue>();
-    reportQueue.add.mockResolvedValue({ id: 'job-001', name: 'generate-report', data: {} } as any);
+    (reportQueue.add as any).mockResolvedValue({ id: 'job-001', name: 'generate-report', data: {} } as any);
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [ReportsController],
@@ -97,7 +97,7 @@ describe('ReportsController', () => {
     });
 
     it('doit propager les erreurs de BullMQ', async () => {
-      reportQueue.add.mockRejectedValue(new Error('Queue indisponible'));
+      (reportQueue.add as any).mockRejectedValue(new Error('Queue indisponible'));
 
       await expect(controller.ticketReport('ticket-001', mockUser)).rejects.toThrow('Queue indisponible');
     });
@@ -108,7 +108,7 @@ describe('ReportsController', () => {
   // =========================================================================
   describe('GET /reports/sla', () => {
     it('doit retourner le rapport SLA avec les dates fournies', async () => {
-      reportsService.slaReport.mockResolvedValue(slaReportResult);
+      (reportsService.slaReport as any).mockResolvedValue(slaReportResult);
 
       const result = await controller.slaReport(defaultRange);
 
@@ -117,7 +117,7 @@ describe('ReportsController', () => {
     });
 
     it('doit appeler le service sans dates (valeurs par défaut)', async () => {
-      reportsService.slaReport.mockResolvedValue(slaReportResult);
+      (reportsService.slaReport as any).mockResolvedValue(slaReportResult);
       const emptyRange: DateRangeDto = {};
 
       await controller.slaReport(emptyRange);
@@ -126,7 +126,7 @@ describe('ReportsController', () => {
     });
 
     it('doit propager les erreurs du service', async () => {
-      reportsService.slaReport.mockRejectedValue(new Error('Erreur rapport SLA'));
+      (reportsService.slaReport as any).mockRejectedValue(new Error('Erreur rapport SLA'));
 
       await expect(controller.slaReport(defaultRange)).rejects.toThrow('Erreur rapport SLA');
     });
@@ -171,7 +171,7 @@ describe('ReportsController', () => {
     });
 
     it('doit propager les erreurs de BullMQ', async () => {
-      reportQueue.add.mockRejectedValue(new Error('Erreur file'));
+      (reportQueue.add as any).mockRejectedValue(new Error('Erreur file'));
 
       await expect(controller.slaReportAsync(defaultRange, mockUser)).rejects.toThrow('Erreur file');
     });
@@ -197,7 +197,7 @@ describe('ReportsController', () => {
   describe('GET /reports', () => {
     it('doit lister les rapports générés via le service', async () => {
       const mockResult = { success: true, data: [], total: 0, page: 1, limit: 10 };
-      reportsService.listReports.mockResolvedValue(mockResult);
+      (reportsService.listReports as any).mockResolvedValue(mockResult);
 
       const result = await controller.listReports(1, 10);
 
@@ -211,7 +211,7 @@ describe('ReportsController', () => {
   // =========================================================================
   describe('GET /reports/:id/download', () => {
     it('doit rejeter si le demandeur est différent et pas admin', async () => {
-      reportsService.getReport.mockResolvedValue({
+      (reportsService.getReport as any).mockResolvedValue({
         id: 'report-001',
         type: 'ticket-report',
         status: 'completed',
@@ -219,13 +219,13 @@ describe('ReportsController', () => {
         requestedBy: 'user-other',
       } as any);
 
-      await expect(
-        controller.downloadReport('report-001', mockUser, {} as any),
-      ).rejects.toThrow("Vous n'avez pas l'autorisation de telecharger ce rapport.");
+      await expect(controller.downloadReport('report-001', mockUser, {} as any)).rejects.toThrow(
+        "Vous n'avez pas l'autorisation de telecharger ce rapport.",
+      );
     });
 
     it('doit rejeter si le rapport est en cours ou en échec', async () => {
-      reportsService.getReport.mockResolvedValue({
+      (reportsService.getReport as any).mockResolvedValue({
         id: 'report-001',
         type: 'ticket-report',
         status: 'pending',
@@ -233,9 +233,9 @@ describe('ReportsController', () => {
         requestedBy: mockUser.sub,
       } as any);
 
-      await expect(
-        controller.downloadReport('report-001', mockUser, {} as any),
-      ).rejects.toThrow("Le rapport n'est pas encore prêt ou a echoue.");
+      await expect(controller.downloadReport('report-001', mockUser, {} as any)).rejects.toThrow(
+        "Le rapport n'est pas encore prêt ou a echoue.",
+      );
     });
   });
 });
