@@ -204,7 +204,7 @@ export class ReportsService {
           callback();
         },
       });
-      const doc = new PDFDocument({ size: 'A4', margin: 40 });
+      const doc = new PDFDocument({ size: 'A4', margins: { top: 40, bottom: 25, left: 40, right: 40 } });
       doc.pipe(writable);
 
       // En-tête sombre stylé
@@ -345,7 +345,7 @@ export class ReportsService {
       doc
         .fontSize(8)
         .fillColor('#999999')
-        .text('Platform Trouble Ticket Management — Telecom Inc.', 40, doc.page.height - 40, { align: 'center' });
+        .text('Platform Trouble Ticket Management — Telecom Inc.', 40, doc.page.height - 30, { align: 'center' });
 
       doc.end();
       writable.on('finish', () => resolve(Buffer.concat(chunks)));
@@ -369,7 +369,7 @@ export class ReportsService {
           callback();
         },
       });
-      const doc = new PDFDocument({ size: 'A4', margin: 40 });
+      const doc = new PDFDocument({ size: 'A4', margins: { top: 40, bottom: 25, left: 40, right: 40 } });
       doc.pipe(writable);
 
       // En-tête rouge SLA
@@ -504,7 +504,7 @@ export class ReportsService {
       doc
         .fontSize(8)
         .fillColor('#999999')
-        .text("Moteur SLA d'observabilité — Telecom Inc.", 40, doc.page.height - 40, { align: 'center' });
+        .text("Moteur SLA d'observabilité — Telecom Inc.", 40, doc.page.height - 30, { align: 'center' });
 
       doc.end();
       writable.on('finish', () => resolve(Buffer.concat(chunks)));

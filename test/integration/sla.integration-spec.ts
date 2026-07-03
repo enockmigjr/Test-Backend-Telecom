@@ -6,6 +6,7 @@ import { GlobalExceptionFilter } from '../../src/common/filters/global-exception
 import { TransformInterceptor } from '../../src/common/interceptors/transform.interceptor';
 
 describe('SLA — Intégration (DB réelle)', () => {
+  jest.setTimeout(60000);
   let app: INestApplication;
   let adminToken: string;
 

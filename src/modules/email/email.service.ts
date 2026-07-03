@@ -42,6 +42,8 @@ export class EmailService {
         port: parseInt(process.env['SMTP_PORT'] || '1025', 10),
         secure: false,
         ignoreTLS: true,
+        connectionTimeout: 2000,
+        greetingTimeout: 2000,
       });
       this.logger.log('Email configuré pour développement (Mailpit)');
     } else {
@@ -50,6 +52,8 @@ export class EmailService {
         port: parseInt(process.env['SMTP_PORT'] || '587', 10),
         secure: process.env['SMTP_SECURE'] === 'true',
         auth: { user: process.env['SMTP_USER'] || '', pass: process.env['SMTP_PASSWORD'] || '' },
+        connectionTimeout: 5000,
+        greetingTimeout: 5000,
       });
       this.logger.log('Email configuré pour production (SMTP)');
     }

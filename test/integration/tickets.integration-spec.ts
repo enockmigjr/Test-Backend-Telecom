@@ -18,6 +18,7 @@ import { generateUuid } from '../../src/common/helpers/uuidv7.helper';
  * Setup: pnpm run db:push (sur la DB test)
  */
 describe('Tickets — Workflow Intégration (DB réelle)', () => {
+  jest.setTimeout(60000);
   let app: INestApplication;
   let adminToken: string;
   let deptId: string;

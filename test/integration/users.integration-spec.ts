@@ -10,6 +10,7 @@ import { TransformInterceptor } from '../../src/common/interceptors/transform.in
  * Nécessite: PostgreSQL test + seed (admin@telecom.local / Admin@1234)
  */
 describe('Users — CRUD Intégration (DB réelle)', () => {
+  jest.setTimeout(60000);
   let app: INestApplication;
   let adminToken: string;
 
