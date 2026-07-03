@@ -1,8 +1,4 @@
-{{> base
-  subject=subject
-  accentColor=accentColor
-  footerText=footerText
-  body="
+{{#> base subject=subject accentColor=accentColor footerText=footerText}}
 <p class='email-eyebrow'>Bienvenue</p>
 <h1 class='email-title'>Votre compte a été créé</h1>
 
@@ -46,5 +42,4 @@
   Si vous n'êtes pas à l'origine de cette demande ou si vous pensez avoir reçu
   cet email par erreur, contactez immédiatement votre administrateur.
 </p>
-"
-}}
+{{/base}}

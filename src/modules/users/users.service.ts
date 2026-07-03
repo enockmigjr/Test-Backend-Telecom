@@ -262,7 +262,7 @@ export class UsersService {
           firstName,
           lastName,
           email: to,
-          tempPassword,
+          temporaryPassword: tempPassword,
           loginUrl,
         },
       });

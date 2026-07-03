@@ -1,8 +1,4 @@
-{{> base
-  subject=subject
-  accentColor=accentColor
-  footerText=footerText
-  body="
+{{#> base subject=subject accentColor=accentColor footerText=footerText}}
 <p class='email-eyebrow'>Rapports & Statistiques</p>
 <h1 class='email-title'>Rapport Hebdomadaire · Semaine {{weekNumber}}</h1>
 
@@ -50,5 +46,4 @@
 <p class='email-text' style='font-size:12px;color:#888;margin-top:20px'>
   Rapport généré automatiquement le {{generatedAt}}.
 </p>
-"
-}}
+{{/base}}

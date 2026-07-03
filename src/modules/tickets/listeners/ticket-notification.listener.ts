@@ -51,18 +51,28 @@ export class TicketNotificationListener {
     return this.queues[NOTIFICATION_QUEUE] ?? this.queues['notification'];
   }
 
-  /** Récupère l'email d'un utilisateur depuis la DB */
-  private async getUserEmail(userId: string): Promise<string | null> {
+  /** Récupère l'email ET le nom complet d'un utilisateur */
+  private async getUserInfo(userId: string): Promise<{ email: string; fullName: string } | null> {
     try {
       const [user] = await this.drizzle.db
-        .select({ email: users.email })
+        .select({ email: users.email, firstName: users.firstName, lastName: users.lastName })
         .from(users)
         .where(and(eq(users.id, userId), isNull(users.deletedAt)))
         .limit(1);
-      return user?.email ?? null;
+      if (!user) return null;
+      return {
+        email: user.email as string,
+        fullName: `${user.firstName as string} ${user.lastName as string}`.trim(),
+      };
     } catch {
       return null;
     }
+  }
+
+  /** Récupère uniquement l'email (rétrocompatibilité interne) */
+  private async getUserEmail(userId: string): Promise<string | null> {
+    const info = await this.getUserInfo(userId);
+    return info?.email ?? null;
   }
 
   /** Récupère le numéro et le titre d'un ticket */
@@ -129,13 +139,21 @@ export class TicketNotificationListener {
     });
 
     // Email de confirmation au créateur
-    const creatorEmail = await this.getUserEmail(creatorId);
-    if (creatorEmail) {
+    const appUrl = process.env['APP_URL'] || 'http://localhost:3000';
+    const ticketId = event.ticket['id'] as string;
+    const creatorInfo = await this.getUserInfo(creatorId);
+    if (creatorInfo) {
       await this.sendEmail({
-        to: creatorEmail,
+        to: creatorInfo.email,
         subject: `✅ Ticket créé — ${ticketNumber}`,
         template: 'ticketCreated',
-        data: { ticketNumber, title, priority },
+        data: {
+          ticketNumber,
+          title,
+          priority,
+          creatorName: creatorInfo.fullName,
+          ticketUrl: `${appUrl}/tickets/${ticketId}`,
+        },
       });
     }
   }
@@ -161,17 +179,21 @@ export class TicketNotificationListener {
     });
 
     // Email à l'assigné
-    const assigneeEmail = await this.getUserEmail(event.assignedTo);
-    if (assigneeEmail) {
+    const assigneeInfo = await this.getUserInfo(event.assignedTo);
+    if (assigneeInfo) {
       const ticket = await this.getTicketSummary(event.ticketId);
+      const supervisorInfo = await this.getUserInfo(event.assignedBy);
+      const appUrl = process.env['APP_URL'] || 'http://localhost:3000';
       await this.sendEmail({
-        to: assigneeEmail,
+        to: assigneeInfo.email,
         subject: `📋 Ticket assigné — ${ticket?.ticketNumber ?? event.ticketId}`,
         template: 'ticketAssigned',
         data: {
+          assigneeName: assigneeInfo.fullName,
+          supervisorName: supervisorInfo?.fullName ?? 'Un superviseur',
           ticketNumber: ticket?.ticketNumber ?? event.ticketId,
-          title: ticket?.title ?? 'Sans titre',
-          assignedBy: event.assignedBy,
+          ticketTitle: ticket?.title ?? 'Sans titre',
+          ticketUrl: `${appUrl}/tickets/${event.ticketId}`,
         },
       });
     }
@@ -205,17 +227,21 @@ export class TicketNotificationListener {
     });
 
     // Email
-    const escalatedToEmail = await this.getUserEmail(event.escalatedTo);
-    if (escalatedToEmail) {
+    const escalatedToInfo = await this.getUserInfo(event.escalatedTo);
+    if (escalatedToInfo) {
       const ticket = await this.getTicketSummary(event.ticketId);
+      const escalatedByInfo = await this.getUserInfo(event.escalatedBy);
+      const appUrl = process.env['APP_URL'] || 'http://localhost:3000';
       await this.sendEmail({
-        to: escalatedToEmail,
+        to: escalatedToInfo.email,
         subject: `⚠️ Ticket escaladé — ${ticket?.ticketNumber ?? event.ticketId}`,
         template: 'ticketAssigned',
         data: {
+          assigneeName: escalatedToInfo.fullName,
+          supervisorName: escalatedByInfo?.fullName ?? 'Un superviseur',
           ticketNumber: ticket?.ticketNumber ?? event.ticketId,
-          title: ticket?.title ?? 'Sans titre',
-          assignedBy: event.escalatedBy,
+          ticketTitle: ticket?.title ?? 'Sans titre',
+          ticketUrl: `${appUrl}/tickets/${event.ticketId}`,
         },
       });
     }
@@ -287,16 +313,20 @@ export class TicketNotificationListener {
         referenceId: event.ticketId,
       });
 
-      const assigneeEmail = await this.getUserEmail(ticket.assignedTo);
-      if (assigneeEmail) {
+      const assigneeInfo = await this.getUserInfo(ticket.assignedTo);
+      const reopenerInfo = await this.getUserInfo(event.reopenedBy);
+      const appUrl = process.env['APP_URL'] || 'http://localhost:3000';
+      if (assigneeInfo) {
         await this.sendEmail({
-          to: assigneeEmail,
-          subject: `⚠️ Ticket reouvert — ${ticket.ticketNumber}`,
+          to: assigneeInfo.email,
+          subject: `⚠️ Ticket réouvert — ${ticket.ticketNumber}`,
           template: 'ticketAssigned',
           data: {
+            assigneeName: assigneeInfo.fullName,
+            supervisorName: reopenerInfo?.fullName ?? 'Un agent',
             ticketNumber: ticket.ticketNumber,
-            title: ticket.title ?? 'Sans titre',
-            assignedBy: event.reopenedBy,
+            ticketTitle: ticket.title ?? 'Sans titre',
+            ticketUrl: `${appUrl}/tickets/${event.ticketId}`,
           },
         });
       }

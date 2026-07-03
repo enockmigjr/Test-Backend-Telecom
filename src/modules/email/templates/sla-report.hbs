@@ -1,8 +1,4 @@
-{{> base
-  subject=subject
-  accentColor=accentColor
-  footerText=footerText
-  body="
+{{#> base subject=subject accentColor=accentColor footerText=footerText}}
 <p class='email-eyebrow'>Rapports & Exports</p>
 <h1 class='email-title'>Votre rapport SLA est prêt</h1>
 
@@ -21,7 +17,6 @@
 </p>
 
 <div class='btn-wrap'>
-  <a href='{{appUrl}}/dashboard' class='btn-primary'>Dashboard Observabilité</a>
+  <a href='{{dashboardUrl}}' class='btn-primary'>Dashboard Observabilité</a>
 </div>
-"
-}}
+{{/base}}

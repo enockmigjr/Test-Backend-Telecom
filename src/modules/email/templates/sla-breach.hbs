@@ -1,8 +1,4 @@
-{{> base
-  subject=subject
-  accentColor=accentColor
-  footerText=footerText
-  body="
+{{#> base subject=subject accentColor=accentColor footerText=footerText}}
 <p class='email-eyebrow' style='color:#991b1b'>⚠ Alerte SLA</p>
 <h1 class='email-title'>SLA expiré — Intervention requise</h1>
 
@@ -46,8 +42,7 @@
 </table>
 
 <div class='btn-wrap'>
-  <a href='{{escalateUrl}}' class='btn-danger'>Escalader maintenant</a><br>
-  <a href='{{ticketUrl}}' class='btn-secondary'>Voir le ticket</a>
+  <a href='{{ticketUrl}}' class='btn-danger'>Escalader maintenant</a><br>
+  <a href='{{ticketUrl}}' class='btn-secondary' style='margin-top:10px;display:inline-block'>Voir le ticket</a>
 </div>
-"
-}}
+{{/base}}

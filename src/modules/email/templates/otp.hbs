@@ -1,8 +1,4 @@
-{{> base
-  subject=subject
-  accentColor=accentColor
-  footerText=footerText
-  body="
+{{#> base subject=subject accentColor=accentColor footerText=footerText}}
 <p class='email-eyebrow'>Vérification</p>
 <h1 class='email-title'>Votre code de connexion unique</h1>
 
@@ -21,5 +17,4 @@
 <p class='email-text' style='font-size:13px;color:#888'>
   Si vous n'êtes pas à l'origine de cette demande de code, veuillez ignorer cet email ou contacter le support.
 </p>
-"
-}}
+{{/base}}

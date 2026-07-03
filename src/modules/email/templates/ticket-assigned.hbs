@@ -1,8 +1,4 @@
-{{> base
-  subject=subject
-  accentColor=accentColor
-  footerText=footerText
-  body="
+{{#> base subject=subject accentColor=accentColor footerText=footerText}}
 <p class='email-eyebrow'>Assignation</p>
 <h1 class='email-title'>Un ticket vous a été assigné</h1>
 
@@ -49,5 +45,4 @@
 <div class='btn-wrap'>
   <a href='{{ticketUrl}}' class='btn-primary'>Prendre en charge</a>
 </div>
-"
-}}
+{{/base}}

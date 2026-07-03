@@ -1,8 +1,4 @@
-{{> base
-  subject=subject
-  accentColor=accentColor
-  footerText=footerText
-  body="
+{{#> base subject=subject accentColor=accentColor footerText=footerText}}
 <p class='email-eyebrow' style='color:#b45309'>⚠️ Attention SLA</p>
 <h1 class='email-title'>Échéance SLA proche · {{ticketNumber}}</h1>
 
@@ -37,5 +33,4 @@
 <div class='btn-wrap'>
   <a href='{{ticketUrl}}' class='btn-primary'>Traiter le ticket</a>
 </div>
-"
-}}
+{{/base}}

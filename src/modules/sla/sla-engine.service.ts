@@ -1,4 +1,4 @@
-﻿import { Injectable, Logger, Inject } from '@nestjs/common';
+import { Injectable, Logger, Inject } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { and, lt, gte, eq, notInArray, isNull } from 'drizzle-orm';
 import { Queue } from 'bullmq';
@@ -70,10 +70,12 @@ export class SlaEngineService {
         ticketNumber: tickets.ticketNumber,
         title: tickets.title,
         priority: tickets.priority,
+        status: tickets.status,
         assignedTo: tickets.assignedTo,
         resolutionDueAt: tickets.resolutionDueAt,
         assigneeEmail: users.email,
         assigneeFirstName: users.firstName,
+        assigneeLastName: users.lastName,
       })
       .from(tickets)
       .leftJoin(users, eq(tickets.assignedTo, users.id))
@@ -115,15 +117,28 @@ export class SlaEngineService {
         });
 
         if (ticket.assigneeEmail) {
+          const appUrl = process.env['APP_URL'] || 'http://localhost:3000';
+          const slaExpiredAt = ticket.resolutionDueAt?.toLocaleString('fr-FR') ?? 'N/A';
+          const overdueMs = now.getTime() - (ticket.resolutionDueAt?.getTime() ?? now.getTime());
+          const overdueMinutes = Math.round(overdueMs / 60000);
+          const overdueBy = overdueMinutes > 60
+            ? `${Math.floor(overdueMinutes / 60)}h${overdueMinutes % 60}min`
+            : `${overdueMinutes} min`;
+          const assigneeName = `${ticket.assigneeFirstName ?? ''} ${ticket.assigneeLastName ?? ''}`.trim() || ticket.assigneeEmail;
           await this.emailQueue.add('send-email', {
             to: ticket.assigneeEmail,
-            subject: `🔴 SLA Depasse — ${ticket.ticketNumber}`,
+            subject: `🔴 SLA Dépassé — ${ticket.ticketNumber}`,
             template: 'slaBreach',
             data: {
+              recipientName: assigneeName,
               ticketNumber: ticket.ticketNumber,
-              title: ticket.title,
+              ticketTitle: ticket.title,
               priority: ticket.priority,
-              dueDate: ticket.resolutionDueAt?.toISOString() ?? 'N/A',
+              status: ticket.status,
+              assigneeName,
+              slaExpiredAt,
+              overdueBy,
+              ticketUrl: `${appUrl}/tickets/${ticket.id}`,
             },
           });
         }

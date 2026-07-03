@@ -1,12 +1,8 @@
-{{> base
-  subject=subject
-  accentColor=accentColor
-  footerText=footerText
-  body="
+{{#> base subject=subject accentColor=accentColor footerText=footerText}}
 <p class='email-eyebrow'>Nouveau Ticket</p>
 <h1 class='email-title'>Votre ticket a été créé avec succès</h1>
 
-<p class='email-text'>Bonjour,</p>
+<p class='email-text'>Bonjour <strong>{{creatorName}}</strong>,</p>
 <p class='email-text'>
   Votre ticket a été enregistré sous le numéro de suivi unique <strong>{{ticketNumber}}</strong>.
 </p>
@@ -36,5 +32,4 @@
 <div class='btn-wrap'>
   <a href='{{ticketUrl}}' class='btn-primary'>Suivre mon ticket</a>
 </div>
-"
-}}
+{{/base}}
