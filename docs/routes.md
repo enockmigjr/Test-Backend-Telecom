@@ -157,15 +157,15 @@
 
 ## Rapports (`/reports`)
 
-| Méthode | Route                          | Auth   | Rôles             | Description                                                                                          |
-| ------- | ------------------------------ | ------ | ----------------- | ---------------------------------------------------------------------------------------------------- |
-| `GET`   | `/reports/ticket/:id`          | Bearer | SUPERVISOR, ADMIN | Détails du rapport d'un ticket (synchrone — données JSON)                                            |
-| `POST`  | `/reports/ticket/:id/generate` | Bearer | SUPERVISOR, ADMIN | Générer un rapport d'incident PDF (async, répond 202 avec `reportId`, envoie email avec lien de téléchargement) |
-| `GET`   | `/reports/sla`                 | Bearer | SUPERVISOR, ADMIN | Rapport SLA synchrone (params: from, to — données JSON)                                              |
-| `POST`  | `/reports/sla/generate`        | Bearer | SUPERVISOR, ADMIN | Générer un rapport SLA PDF (async, répond 202 avec `reportId`, envoie email avec lien de téléchargement)     |
+| Méthode | Route                          | Auth   | Rôles             | Description                                                                                                       |
+| ------- | ------------------------------ | ------ | ----------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `GET`   | `/reports/ticket/:id`          | Bearer | SUPERVISOR, ADMIN | Détails du rapport d'un ticket (synchrone — données JSON)                                                         |
+| `POST`  | `/reports/ticket/:id/generate` | Bearer | SUPERVISOR, ADMIN | Générer un rapport d'incident PDF (async, répond 202 avec `reportId`, envoie email avec lien de téléchargement)   |
+| `GET`   | `/reports/sla`                 | Bearer | SUPERVISOR, ADMIN | Rapport SLA synchrone (params: from, to — données JSON)                                                           |
+| `POST`  | `/reports/sla/generate`        | Bearer | SUPERVISOR, ADMIN | Générer un rapport SLA PDF (async, répond 202 avec `reportId`, envoie email avec lien de téléchargement)          |
 | `POST`  | `/reports/weekly/generate`     | Bearer | SUPERVISOR, ADMIN | Générer un rapport hebdomadaire PDF (async, répond 202 avec `reportId`, envoie email avec lien de téléchargement) |
-| `GET`   | `/reports`                     | Bearer | ADMINISTRATOR     | Lister l'ensemble des rapports générés en asynchrone (paginé)                                        |
-| `GET`   | `/reports/:id/download`        | Bearer | SUPERVISOR, ADMIN | Télécharger le fichier PDF physique d'un rapport généré (si prêt, restreint à l'admin/demandeur)     |
+| `GET`   | `/reports`                     | Bearer | ADMINISTRATOR     | Lister l'ensemble des rapports générés en asynchrone (paginé)                                                     |
+| `GET`   | `/reports/:id/download`        | Bearer | SUPERVISOR, ADMIN | Télécharger le fichier PDF physique d'un rapport généré (si prêt, restreint à l'admin/demandeur)                  |
 
 ---
 

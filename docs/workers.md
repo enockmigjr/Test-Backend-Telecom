@@ -41,12 +41,12 @@ ReportsController                   REPORT_QUEUE          ReportWorker          
 
 ## Les 5 Workers — Fichiers et Responsabilités
 
-| Worker             | Fichier                                     | Queue                | Concurrence | Rôle                                             |
-| ------------------ | ------------------------------------------- | -------------------- | ----------- | ------------------------------------------------ |
-| EmailWorker        | `src/queues/workers/email.worker.ts`        | `email-queue`        | 5           | Envoi d'emails via Nodemailer (7 templates)      |
-| NotificationWorker | `src/queues/workers/notification.worker.ts` | `notification-queue` | 10          | Persiste en DB + émet WS si user connecté        |
-| SlaWorker          | `src/queues/workers/sla.worker.ts`          | `sla-queue`          | 5           | Vérifie les breaches SLA à l'échéance            |
-| AuditWorker        | `src/queues/workers/audit.worker.ts`        | `audit-queue`        | 20          | Persiste les actions en `audit_logs` (immuables) |
+| Worker             | Fichier                                     | Queue                | Concurrence | Rôle                                                                                              |
+| ------------------ | ------------------------------------------- | -------------------- | ----------- | ------------------------------------------------------------------------------------------------- |
+| EmailWorker        | `src/queues/workers/email.worker.ts`        | `email-queue`        | 5           | Envoi d'emails via Nodemailer (7 templates)                                                       |
+| NotificationWorker | `src/queues/workers/notification.worker.ts` | `notification-queue` | 10          | Persiste en DB + émet WS si user connecté                                                         |
+| SlaWorker          | `src/queues/workers/sla.worker.ts`          | `sla-queue`          | 5           | Vérifie les breaches SLA à l'échéance                                                             |
+| AuditWorker        | `src/queues/workers/audit.worker.ts`        | `audit-queue`        | 20          | Persiste les actions en `audit_logs` (immuables)                                                  |
 | ReportWorker       | `src/queues/workers/report.worker.ts`       | `report-queue`       | 3           | Génère des rapports PDF, les stocke localement et envoie un e-mail avec un lien de téléchargement |
 
 ### Où sont-ils instanciés ?

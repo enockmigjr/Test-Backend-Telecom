@@ -773,6 +773,7 @@ L'escalation automatique consulte la table `sla\_policies` pour savoir si cette 
 ### Pipeline de Génération de Rapports Asynchrones
 
 Pour les rapports complexes ou lourds (rapport détaillé de ticket, rapport de conformité SLA, ou rapport hebdomadaire des directeurs), le système met en place un pipeline asynchrone robuste piloté par BullMQ (`report-queue`) :
+
 1. **Requête & Enregistrement** : L'utilisateur initie une demande via `POST /reports/...`. L'API insère instantanément une ligne dans la table `reports` avec le statut `pending` et un UUID, puis retourne un code `202 Accepted` avec le `reportId`.
 2. **Worker & Stockage local** : Le `ReportWorker` traite la demande en tâche de fond. Le fichier PDF final est dessiné à l'aide de **PDFKit** et téléversé localement via le service d'abstraction `LocalStorageService` sous l'arborescence `reports/YYYY/MM/{reportId}.pdf`. Le statut en base passe à `completed` (ou `failed` en cas d'erreur bloquante).
 3. **Notification & Emailing sécurisé** : À la fin du travail (réussite comme échec), le worker déclenche l'envoi obligatoire d'un e-mail d'alerte et d'un job dans la file de notifications. Les emails de rapports réussis ne contiennent pas de pièce jointe physique (PJ lourde) mais un bouton pointant vers un lien de téléchargement sécurisé expirable (`GET /reports/:id/download`).

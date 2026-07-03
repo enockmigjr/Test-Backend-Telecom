@@ -603,17 +603,17 @@ Permet le stockage, le suivi de cycle de vie et le téléchargement des rapports
 
 ### Colonnes
 
-| Colonne <br>      | Type <br>           |
-| :---------------- | :------------------ |
-| id <br>           | UUIDv7 <br>         |
-| type <br>         | VARCHAR(50) <br>    |
-| status <br>       | VARCHAR(50) <br>    |
-| requested_by <br> | UUID <br>           |
-| object_key <br>   | TEXT NULL <br>      |
-| error_message <br>| TEXT NULL <br>      |
-| metadata <br>     | JSONB NULL <br>     |
-| completed_at <br> | TIMESTAMP NULL <br> |
-| created_at <br>   | TIMESTAMP <br>      |
+| Colonne <br>       | Type <br>           |
+| :----------------- | :------------------ |
+| id <br>            | UUIDv7 <br>         |
+| type <br>          | VARCHAR(50) <br>    |
+| status <br>        | VARCHAR(50) <br>    |
+| requested_by <br>  | UUID <br>           |
+| object_key <br>    | TEXT NULL <br>      |
+| error_message <br> | TEXT NULL <br>      |
+| metadata <br>      | JSONB NULL <br>     |
+| completed_at <br>  | TIMESTAMP NULL <br> |
+| created_at <br>    | TIMESTAMP <br>      |
 
 ---
 
