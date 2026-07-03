@@ -163,6 +163,7 @@
 | `POST`  | `/reports/ticket/:id/generate` | Bearer | SUPERVISOR, ADMIN | Générer un rapport d'incident PDF (async, répond 202 avec `reportId`, envoie email avec lien de téléchargement) |
 | `GET`   | `/reports/sla`                 | Bearer | SUPERVISOR, ADMIN | Rapport SLA synchrone (params: from, to — données JSON)                                              |
 | `POST`  | `/reports/sla/generate`        | Bearer | SUPERVISOR, ADMIN | Générer un rapport SLA PDF (async, répond 202 avec `reportId`, envoie email avec lien de téléchargement)     |
+| `POST`  | `/reports/weekly/generate`     | Bearer | SUPERVISOR, ADMIN | Générer un rapport hebdomadaire PDF (async, répond 202 avec `reportId`, envoie email avec lien de téléchargement) |
 | `GET`   | `/reports`                     | Bearer | ADMINISTRATOR     | Lister l'ensemble des rapports générés en asynchrone (paginé)                                        |
 | `GET`   | `/reports/:id/download`        | Bearer | SUPERVISOR, ADMIN | Télécharger le fichier PDF physique d'un rapport généré (si prêt, restreint à l'admin/demandeur)     |
 
@@ -189,6 +190,6 @@ En production, protéger avec `BULLBOARD_USER` et `BULLBOARD_PASSWORD` dans `.en
 
 ---
 
-**Total: 54 routes sur 14 contrôleurs (dont 1 route admin BullBoard)**
+**Total: 55 routes sur 14 contrôleurs (dont 1 route admin BullBoard)**
 
 ---

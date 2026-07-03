@@ -150,7 +150,8 @@ Le `SlaEngineService` tourne en cron `*/5 min` pour rattraper les breaches manqu
 
 - `POST /api/v1/reports/ticket/:id/generate` (Admin, Supervisor)
 - `POST /api/v1/reports/sla/generate` (Admin, Supervisor)
-- `ReportWorker.generateWeeklyReport` (Automatique / Événement)
+- `POST /api/v1/reports/weekly/generate` (Admin, Supervisor - Déclenchement manuel)
+- Tâche planifiée automatique `@Cron('0 6 * * 1')` (tous les lundis matin à 06h00 dans `ReportsService` pour le premier administrateur actif)
 
 Le rapport PDF est généré avec **PDFKit**, écrit sur le disque local via `LocalStorageService` (associé à la table de suivi `reports` en base de données), puis notifié par email et notification in-app au demandeur sous forme de lien de téléchargement sécurisé `/api/v1/reports/:id/download`. En cas d'échec de la génération, le statut est mis à jour à `failed` et un e-mail d'erreur contenant les détails techniques est envoyé obligatoirement au demandeur.
 

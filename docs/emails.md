@@ -59,9 +59,9 @@ Avec BullMQ, la requête HTTP retourne immédiatement et l'email est envoyé en 
 - `sla-warning.hbs` — Avertissement (orange)
 - `account-created.hbs` — Bienvenue + mot de passe temporaire
 - `password-changed.hbs` — Confirmation changement
-- `ticket-report.hbs` — E-mail de notification de rapport de ticket avec PDF joint
-- `sla-report.hbs` — E-mail de notification de rapport SLA global avec PDF joint
-- `admin-weekly-report.hbs` — Rapport hebdomadaire avec stats et PDF joint
+- `ticket-report.hbs` — E-mail de notification de rapport de ticket avec lien de téléchargement sécurisé
+- `sla-report.hbs` — E-mail de notification de rapport SLA global avec lien de téléchargement sécurisé
+- `admin-weekly-report.hbs` — Rapport hebdomadaire avec stats et lien de téléchargement sécurisé
 
 Tous les templates s'abonnent dynamiquement au layout parent `base.hbs` pour un design unifié et cohérent.
 

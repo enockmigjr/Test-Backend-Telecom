@@ -51,6 +51,16 @@ opérations lentes ou non-critiques du flux HTTP principal.
 - **Actions**: DB update + métrique Prometheus + WebSocket + notification + email
 - **Impact**: ~10-50ms par exécution (requête SQL avec index)
 
+### Rapport Hebdomadaire Automatique (`ReportsService.handleWeeklyReportCron()`)
+
+- **Fréquence**: Tous les lundis matin à 06h00 (`0 6 * * 1`)
+- **Fonctionnement**:
+  1. Identifie le premier administrateur actif dans le système.
+  2. Crée un enregistrement de rapport de type `weekly-report` avec le statut `pending` en base de données.
+  3. Pousse un job de génération dans la file `report-queue`.
+  4. Le worker traite la demande en tâche de fond (calcul des KPI de la semaine écoulée, conformité SLA, grilles graphiques).
+- **Actions**: Persistance DB (table `reports`) + Stockage PDF + WebSocket + Notification + E-mail au demandeur.
+
 ## Observabilité des Jobs
 
 Chaque job BullMQ expose:

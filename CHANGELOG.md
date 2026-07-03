@@ -13,7 +13,8 @@ Tous les changements notables sont documentés ici. Format basé sur [Keep a Cha
 - **Templates de Rapports Uniformisés** : ajout des templates Handlebars enfants `ticket-report.hbs` et `sla-report.hbs` s'appuyant tous les deux sur le layout global unifié `base.hbs`.
 - **Table de suivi de rapports `reports`** : implémentation d'une table Drizzle autonome `reports` pour persister l'historique et le statut (`pending`, `completed`, `failed`) de chaque demande sans être contraint par les checks de `attachments`.
 - **Nouveau type de notification `REPORT_FAILED`** : ajout à l'énumération en base de données.
-- **Nouvelles routes REST de rapports** : ajout de la route d'administration paginée `GET /reports` (Admin uniquement) et de la route de téléchargement de fichier `GET /reports/:id/download` (Admin ou demandeur).
+- **Nouvelles routes REST de rapports** : ajout de la route d'administration paginée `GET /reports` (Admin uniquement), de la route de téléchargement de fichier `GET /reports/:id/download` (Admin ou demandeur) et de la route de génération manuelle du rapport hebdomadaire `POST /reports/weekly/generate`.
+- **Tâche automatique récurrente (Cron)** : planification automatique de la génération et de l'envoi du rapport hebdomadaire tous les lundis matin à 06h00 via le planificateur `@Cron` dans `ReportsService`.
 
 ### Fixed
 

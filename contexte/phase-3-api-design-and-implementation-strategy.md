@@ -1248,6 +1248,15 @@ Authorization: SUPERVISOR, ADMINISTRATOR
 
 Déclenche la génération en arrière-plan du rapport SLA PDF pour la période spécifiée. Crée un enregistrement avec le statut `pending` en base de données et retourne un identifiant unique. Réponse: `202 Accepted` avec `{ success: true, message: '...', reportId: 'uuid-rapport' }`. Erreurs: `403`.
 
+### Génération Rapport Hebdomadaire PDF (Asynchrone)
+
+```
+POST /api/v1/reports/weekly/generate
+Authorization: SUPERVISOR, ADMINISTRATOR
+```
+
+Déclenche la génération en arrière-plan du rapport hebdomadaire PDF pour les KPI de la semaine écoulée. Crée un enregistrement avec le statut `pending` en base de données et retourne un identifiant unique. Réponse: `202 Accepted` avec `{ success: true, message: '...', reportId: 'uuid-rapport' }`. Erreurs: `403`.
+
 ### Listing des rapports générés (Admin uniquement)
 
 ```

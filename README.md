@@ -75,7 +75,7 @@ docker compose up -d
 ## 🏗️ Architecture
 
 ```
-14 modules NestJS · 12 tables PostgreSQL · 54 routes REST · 5 workers BullMQ
+14 modules NestJS · 13 tables PostgreSQL · 55 routes REST · 5 workers BullMQ
 ```
 
 ### Schéma Entité-Relation (ERD Simplifié)
@@ -93,6 +93,7 @@ flowchart LR
     U --> RT[Refresh Tokens]
     U --> NT[Notifications]
     U --> AL[Audit Logs]
+    U --> RP[Rapports]
     SLA[Politiques SLA] --> T
 ```
 
