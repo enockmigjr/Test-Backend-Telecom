@@ -1,3 +1,4 @@
+/* eslint-disable security/detect-non-literal-fs-filename */
 import { Injectable, Logger } from '@nestjs/common';
 import { promises as fs } from 'fs';
 import * as path from 'path';
@@ -13,8 +14,10 @@ export class LocalStorageService implements IStorageService {
   }
 
   private validatePath(objectKey: string): string {
+    // Normaliser les antislashs (\) en slashs (/) pour compatibilité multiplateforme
+    const normalizedKey = objectKey.replace(/\\/g, '/');
     // Supprimer les octets nuls (\0) pour éviter les contournements d'extension ou de chemin
-    const safeKey = objectKey.replace(/\0/g, '');
+    const safeKey = normalizedKey.replace(/\0/g, '');
     const absoluteBase = path.resolve(this.basePath);
     const resolvedPath = path.resolve(path.join(absoluteBase, safeKey));
 

@@ -287,3 +287,15 @@ jobs:
 
       - name: Build Docker image
         run: docker build -t telecom-api .
+
+  # ─── Analyse SAST Semgrep ────────────────────────────────
+  semgrep:
+    name: 🛡️ Semgrep Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Semgrep CI
+        uses: semgrep/semgrep-action@v1
+        with:
+          config: auto
