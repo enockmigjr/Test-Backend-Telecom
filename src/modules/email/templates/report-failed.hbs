@@ -1,0 +1,31 @@
+{{#> base subject=subject accentColor="#dc2626" footerText=footerText}}
+<p class='email-eyebrow' style='color:#dc2626'>❌ Échec de génération</p>
+<h1 class='email-title'>Votre rapport n'a pas pu être généré</h1>
+
+<p class='email-text'>Bonjour,</p>
+<p class='email-text'>
+  Nous sommes désolés, mais le traitement du rapport que vous avez demandé a rencontré une erreur technique et a dû être interrompu.
+</p>
+
+<div class='email-alert alert-danger'>
+  <p><strong>Détails de l'erreur</strong>
+  {{errorMessage}}</p>
+</div>
+
+<table class='info-table' role='presentation' cellpadding='0' cellspacing='8'>
+  <tr>
+    <td class='info-cell' colspan='2'>
+      <p class='info-cell-label'>Identifiant de rapport</p>
+      <p class='info-cell-value' style='font-family:monospace;font-size:13px'>{{reportId}}</p>
+    </td>
+  </tr>
+</table>
+
+<p class='email-text'>
+  Veuillez vérifier les paramètres temporels ou filtres de votre demande dans votre tableau de bord, puis réessayez. Si le problème persiste, veuillez contacter votre administrateur système ou le support technique.
+</p>
+
+<div class='btn-wrap'>
+  <a href='{{dashboardUrl}}' class='btn-primary'>Retour au Dashboard</a>
+</div>
+{{/base}}

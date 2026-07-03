@@ -99,6 +99,9 @@ export class EmailService {
       footerText = `E-mail de confirmation envoyé suite à la création.`;
     } else if (templateName.toLowerCase().includes('password')) {
       footerText = `Notification de sécurité liée à votre compte.`;
+    } else if (templateName.toLowerCase().includes('failed')) {
+      accentColor = '#dc2626';
+      footerText = `Notification système faisant suite à un incident de traitement.`;
     }
 
     const appName = process.env['APP_NAME'] || 'Helpdesk Telecom';

@@ -217,7 +217,7 @@ export class ReportsService {
       doc.text(`Généré le : ${new Date().toLocaleString('fr-FR')}`, 40, 72);
 
       // Contenu
-      doc.fillColor('#111111').moveDown(4);
+      doc.fillColor('#111111').moveDown(2);
 
       // Section titre & description
       doc.fontSize(14).font('Helvetica-Bold').text('Informations Générales', 40, doc.y);
@@ -227,7 +227,7 @@ export class ReportsService {
         .moveTo(40, doc.y + 5)
         .lineTo(doc.page.width - 40, doc.y + 5)
         .stroke();
-      doc.moveDown(1.5);
+      doc.moveDown(0.8);
 
       const startY = doc.y;
       doc.fontSize(10).font('Helvetica-Bold').text('Titre :', 40, startY);
@@ -236,7 +236,7 @@ export class ReportsService {
       doc.font('Helvetica-Bold').text('Description :', 40, doc.y + 10);
       doc.font('Helvetica').text(ticket.description || 'Aucune description', 150, doc.y, { width: 350 });
 
-      const nextY = doc.y + 15;
+      const nextY = doc.y + 8;
       doc
         .strokeColor('#e5e7eb')
         .lineWidth(1)
@@ -255,7 +255,7 @@ export class ReportsService {
         .moveTo(40, doc.y + 5)
         .lineTo(doc.page.width - 40, doc.y + 5)
         .stroke();
-      doc.moveDown(1.5);
+      doc.moveDown(0.8);
 
       const tableY = doc.y;
 
@@ -279,7 +279,7 @@ export class ReportsService {
       doc.font('Helvetica-Bold').text('Client :', 300, tableY + 40);
       doc.font('Helvetica').text(ticket.customerName || 'N/A', 410, tableY + 40);
 
-      const nextY2 = tableY + 70;
+      const nextY2 = tableY + 60;
       doc
         .strokeColor('#e5e7eb')
         .lineWidth(1)
@@ -298,7 +298,7 @@ export class ReportsService {
         .moveTo(40, doc.y + 5)
         .lineTo(doc.page.width - 40, doc.y + 5)
         .stroke();
-      doc.moveDown(1.5);
+      doc.moveDown(0.8);
 
       const datesY = doc.y;
       doc.fontSize(10).font('Helvetica-Bold').text('Créé le :', 40, datesY);
@@ -317,7 +317,7 @@ export class ReportsService {
         .text(ticket.closedAt ? new Date(ticket.closedAt).toLocaleString('fr-FR') : 'Non clôturé', 150, datesY + 40);
 
       if (ticket.resolutionSummary) {
-        const resY = datesY + 75;
+        const resY = datesY + 60;
         doc
           .strokeColor('#e5e7eb')
           .lineWidth(1)
@@ -334,7 +334,7 @@ export class ReportsService {
           .moveTo(40, doc.y + 5)
           .lineTo(doc.page.width - 40, doc.y + 5)
           .stroke();
-        doc.moveDown(1.5);
+        doc.moveDown(0.8);
         doc
           .fontSize(10)
           .font('Helvetica')
@@ -386,10 +386,10 @@ export class ReportsService {
       doc.text(`Généré le : ${new Date().toLocaleString('fr-FR')}`, 40, 72);
 
       // Contenu
-      doc.fillColor('#111111').moveDown(4);
+      doc.fillColor('#111111').moveDown(2);
 
       // Section Indicateurs
-      doc.fontSize(14).font('Helvetica-Bold').text('Indicateurs Clés de Performance', 40, doc.y);
+      doc.fontSize(13).font('Helvetica-Bold').text('Indicateurs Clés de Performance', 40, doc.y);
       doc
         .strokeColor('#e5e7eb')
         .lineWidth(1)
@@ -441,17 +441,17 @@ export class ReportsService {
         .font('Helvetica-Bold')
         .text(`${compliance}%`, 390, statsY + 28);
 
-      doc.fillColor('#111111').moveDown(4.5);
+      doc.fillColor('#111111').moveDown(1.5);
 
       // Tableau par Priorité
-      doc.fontSize(14).font('Helvetica-Bold').text('Performance par Niveau de Priorité', 40, doc.y);
+      doc.fontSize(13).font('Helvetica-Bold').text('Performance par Niveau de Priorité', 40, doc.y);
       doc
         .strokeColor('#e5e7eb')
         .lineWidth(1)
         .moveTo(40, doc.y + 5)
         .lineTo(doc.page.width - 40, doc.y + 5)
         .stroke();
-      doc.moveDown(1.5);
+      doc.moveDown(0.8);
 
       const tableHeaderY = doc.y;
       doc.fontSize(10).font('Helvetica-Bold');
@@ -494,9 +494,9 @@ export class ReportsService {
         .stroke();
 
       // Temps moyen de résolution
-      doc.moveDown(2);
+      doc.moveDown(1);
       doc
-        .fontSize(11)
+        .fontSize(10)
         .font('Helvetica-Bold')
         .text(`Temps moyen de résolution de la période : ${stats.avgResolutionMinutes} minutes`, 40, doc.y);
 

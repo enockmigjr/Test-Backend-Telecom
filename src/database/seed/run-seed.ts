@@ -25,6 +25,7 @@ async function seed() {
 
   console.log('🧹 Nettoyage des anciennes données...');
   await db.delete(schema.auditLogs);
+  await db.delete(schema.reports);
   await db.delete(schema.notifications);
   await db.delete(schema.attachments);
   await db.delete(schema.ticketComments);

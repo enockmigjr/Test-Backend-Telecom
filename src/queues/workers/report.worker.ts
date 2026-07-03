@@ -255,10 +255,27 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  private async generateSlaReport(reportId: string, from: string, to: string, requestedBy: string): Promise<void> {
+  private async generateSlaReport(
+    reportId: string,
+    from: string | undefined,
+    to: string | undefined,
+    requestedBy: string,
+  ): Promise<void> {
+    // Gérer les valeurs par défaut si non spécifiées ou invalides
+    let fromDate = from ? new Date(from) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    let toDate = to ? new Date(to) : new Date();
+
+    if (isNaN(fromDate.getTime())) {
+      fromDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    }
+    if (isNaN(toDate.getTime())) {
+      toDate = new Date();
+    }
+
+    const fromStr = fromDate.toLocaleDateString('fr-FR');
+    const toStr = toDate.toLocaleDateString('fr-FR');
+
     try {
-      const fromDate = new Date(from);
-      const toDate = new Date(to);
       const where = and(gte(tickets.createdAt, fromDate), lte(tickets.createdAt, toDate), isNull(tickets.deletedAt));
 
       const [stats] = await this.drizzle.db
@@ -339,7 +356,7 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
       this.logger.log(`Rapport SLA genere, stocke et notifie: ${total} tickets (ID: ${reportId}) → ${requestedBy}`);
     } catch (err) {
       const errorMessage = (err as Error).message || String(err);
-      this.logger.error(`Echec de generation du rapport SLA (${from} à ${to}): ${errorMessage}`);
+      this.logger.error(`Echec de generation du rapport SLA (${fromStr} à ${toStr}): ${errorMessage}`);
 
       try {
         // Enregistrer l'échec
@@ -350,7 +367,7 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
           requestedBy,
           'REPORT_FAILED',
           '❌ Echec du rapport SLA',
-          `La generation du rapport SLA (${from} à ${to}) a echoue : ${errorMessage}`,
+          `La generation du rapport SLA (${fromStr} à ${toStr}) a echoue : ${errorMessage}`,
           reportId,
         );
 
@@ -359,7 +376,7 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
         if (email) {
           await this.sendEmail(
             email,
-            `❌ Echec de generation du rapport SLA — Periode ${from} - ${to}`,
+            `❌ Echec de generation du rapport SLA — Periode ${fromStr} - ${toStr}`,
             'reportFailed',
             {
               reportId,

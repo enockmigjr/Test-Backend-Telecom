@@ -1,6 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
+import { Request } from 'express';
 import { JwtConfigService } from '../../../config/jwt.config';
 import { JwtPayload } from '../interfaces/jwt-payload.interface';
 import { DrizzleProvider } from '../../../database/drizzle.provider';
@@ -16,7 +17,15 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     private readonly redisProvider: RedisProvider,
   ) {
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        ExtractJwt.fromAuthHeaderAsBearerToken(),
+        (req: Request) => {
+          if (req && req.query && req.query['token']) {
+            return req.query['token'] as string;
+          }
+          return null;
+        },
+      ]),
       ignoreExpiration: false,
       secretOrKey: jwtConfig.accessSecret,
     });
