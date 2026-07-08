@@ -26,7 +26,7 @@ Dernière mise à jour: 2026-07-03 (v1.3.0)
 | Domain Events     | 10 événements + 3 listeners @OnEvent (notification, audit, SLA)                                                                  |
 | Swagger           | 14 tags, @ApiOperation/@ApiResponse/@ApiParam/@ApiQuery/@ApiBody sur tous les endpoints                                          |
 | Prometheus        | 9 métriques custom + defaults Node.js, /metrics OpenMetrics                                                                      |
-| Grafana           | 2 dashboards JSON + 3 datasources (Prometheus, Loki, Tempo)                                                                      |
+| Grafana           | 3 dashboards JSON + 3 datasources (Prometheus, Loki, Tempo)                                                                      |
 | Alerting          | 6 règles Prometheus: API down, 5xx, latence, SLA, DB, heap                                                                       |
 | OpenTelemetry     | SDK auto-instrumentation (HTTP, Express, NestJS, PostgreSQL, Redis)                                                              |
 | Email             | Nodemailer dev/prod auto-switch, 10 flux email actifs, 9 templates Handlebars + layout global unifié base.hbs et fallback inline |
@@ -37,7 +37,7 @@ Dernière mise à jour: 2026-07-03 (v1.3.0)
 | Field Projection  | ?detail=summary full sur GET /tickets, /users, /dashboard                                                                        |
 | UUID v7           | Partout (generateUuid)                                                                                                           |
 | Soft Delete       | departments, users, tickets                                                                                                      |
-| CI/CD             | GitHub Actions: 6 jobs (lint, test, build, e2e, security, docker)                                                                |
+| CI/CD             | GitHub Actions: 7 jobs (lint, test, build, e2e, security, docker , semgrep)                                                                |
 | CD                | GitHub Actions: build & push Docker vers GHCR                                                                                    |
 | Makefile          | 20 commandes                                                                                                                     |
 | BullBoard         | Interface de supervision des 5 queues BullMQ à /admin/queues                                                                     |

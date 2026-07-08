@@ -11,7 +11,7 @@ opérations lentes ou non-critiques du flux HTTP principal.
 
 | Queue                | Clé                  | Producteurs                                                                           | Consommateur (Worker) | Description                                     |
 | -------------------- | -------------------- | ------------------------------------------------------------------------------------- | --------------------- | ----------------------------------------------- |
-| `email-queue`        | `EMAIL_QUEUE`        | TicketNotificationListener, UsersService, AuthService, ReportWorker, SlaEngineService | `EmailWorker`         | Envoi d'emails transactionnels (10 flux actifs) |
+| `email-queue`        | `EMAIL_QUEUE`        | TicketNotificationListener, UsersService, AuthService, ReportWorker, SlaEngineService | `EmailWorker`         | Envoi d'emails transactionnels (+10 flux actifs) |
 | `notification-queue` | `NOTIFICATION_QUEUE` | TicketNotificationListener, SlaEngineService, ReportWorker                            | `NotificationWorker`  | Création notifications + émission WebSocket     |
 | `sla-queue`          | `SLA_QUEUE`          | TicketSlaListener                                                                     | `SlaWorker`           | Vérification SLA différée (delayed job)         |
 | `audit-queue`        | `AUDIT_QUEUE`        | TicketAuditListener                                                                   | `AuditWorker`         | Écriture asynchrone des logs d'audit            |

@@ -517,16 +517,16 @@ Queue --> Notification
 ## Diagramme de Résolution d'un Ticket
 
 sequenceDiagram  
-participant Engineer  
-participant API  
-participant DB  
-participant Queue  
-Engineer->>API: Resolve Ticket  
-API->>DB: Update status  
-API->>DB: Insert History  
-API->>DB: Insert Audit  
-API->>Queue: Notification  
-API⟶>Engineer: Success
+  participant Engineer  
+  participant API  
+  participant DB  
+  participant Queue  
+  Engineer->>API: Resolve Ticket  
+  API->>DB: Update status  
+  API->>DB: Insert History  
+  API->>DB: Insert Audit  
+  API->>Queue: Notification  
+  API⟶>Engineer: Success
 
 ## Diagramme d'Affectation d'un Ticket
 

@@ -204,8 +204,8 @@ docker logs telecom-tempo | grep "traces"
 
 | Nom          | Type    | URL                                                                              | Intervalle |
 | ------------ | ------- | -------------------------------------------------------------------------------- | ---------- |
-| API Health   | HTTP(s) | `http://${API_HOST:-api}:${API_PORT:-3000}/api/v1/health`                        | 60s        |
-| API Ready    | HTTP(s) | `http://${API_HOST:-api}:${API_PORT:-3000}/api/v1/health/ready`                  | 60s        |
+| API Health   | HTTP(s) | `http://${API_HOST:-api}:${API_PORT:-3000}/api/v1/health`                        | 120s        |
+| API Ready    | HTTP(s) | `http://${API_HOST:-api}:${API_PORT:-3000}/api/v1/health/ready`                  | 120s        |
 | Grafana      | HTTP(s) | `http://${GRAFANA_HOST:-grafana}:3000/api/health`                                | 120s       |
 | Prometheus   | HTTP(s) | `http://${PROMETHEUS_HOST:-prometheus}:${PROMETHEUS_PORT:-9090}/-/healthy`       | 120s       |
 | Alertmanager | HTTP(s) | `http://${ALERTMANAGER_HOST:-alertmanager}:${ALERTMANAGER_PORT:-9093}/-/healthy` | 120s       |

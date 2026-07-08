@@ -176,7 +176,7 @@ docker compose up -d --scale api=3
 - **Rate Limiting**: Redis partagé (fonctionne avec N instances)
 - **Cache**: Redis partagé
 - **Files d'attente**: BullMQ via Redis partagé
-- **WebSocket**: Nécessite un adapter Redis pour multi-instance (à configurer)
+- **WebSocket**: Nécessite un adapter Redis pour multi-instance (déjà configurer)
 
 ## 10. Backup
 
