@@ -91,3 +91,41 @@ Le moteur d'assignation a été conçu pour gérer des centaines de milliers de 
 * **Désassignation d'Urgence** : Si un agent passe en statut inactif (déconnexion ou absence prolongée), le système identifie ses tickets actifs. Si un ticket présente un risque de dépassement de SLA de premier contact ou de résolution, le ticket est automatiquement désassigné (`assignedTo = null`, statut remis à `NEW` ou `ASSIGNED`).
 * **Notification Handlebars & Emails** : Lors d'une désassignation d'urgence, un événement `ticket.deassigned` est émis. Un email utilisant le template Handlebars `ticket-deassigned.hbs` ainsi qu'une notification in-app sont immédiatement envoyés à l'agent concerné et aux superviseurs de son département.
 * **Retour d'Absence** : Quand l'agent se reconnecte ou revient d'absence, son statut passe à disponible et il redevient éligible à la réception de nouveaux tickets par le moteur d'auto-assignation.
+
+---
+
+## 6. Analyse Complète des Questions d'Architecture (F.A.Q.)
+
+### 6.1. Comment est déterminé le Département à la création du Ticket ?
+Lors de la soumission du formulaire de création de ticket (`POST /tickets`), l'API valide la requête via `CreateTicketDto`. Ce DTO impose deux champs obligatoires de type UUID :
+1. `departmentId` : Le département initiateur ou client.
+2. `assignedTeamId` : Le **département technique cible** (ex: NOC, Support Technique, Facturation).
+Le ticket possède donc **toujours** un département technique de destination défini dès sa création en base de données. L'auto-assignation n'est jamais confrontée à un ticket sans département ; elle utilise `assignedTeamId` pour filtrer les agents éligibles appartenant à ce département.
+
+### 6.2. À quoi sert la table `ticket_assignments` ?
+La table `ticket_assignments` (définie dans [ticket-assignments.ts](file:///d:/Projet-KAMGOKO/Test%20Backend%20Telecom/src/database/schemas/ticket-assignments.ts)) sert d'**historique d'audit immuable et complet** de toutes les affectations et transferts du ticket.
+Chaque fois qu'un ticket change d'agent assigné (`toUserId`) ou de département technique (`toDepartmentId`), une ligne est insérée pour conserver :
+* L'ancien agent (`fromUserId`) et l'ancien département (`fromDepartmentId`).
+* Le nouvel agent (`toUserId`) et le nouveau département (`toDepartmentId`).
+* L'auteur de la décision (`assignedBy`) : l'utilisateur physique (Superviseur/Admin/Agent) ou le compte système (l'Admin par défaut pour les jobs auto).
+* Le motif du changement (`reason`) et la date exacte de l'action (`createdAt`).
+
+### 6.3. Comment sont gérées les Pauses SLA et les prolongations de délais ?
+Le calcul du SLA de résolution s'arrête et reprend en fonction du statut du ticket :
+* **Mise en Pause** : Si le statut passe à `PENDING_CUSTOMER` ou `PENDING_THIRD_PARTY`, le système enregistre l'instant T dans la colonne `slaPausedAt`.
+* **Prolongation & Reprise (Resume)** : Lorsque le ticket repasse à un statut actif (`ASSIGNED` ou `IN_PROGRESS`), le système calcule le temps écoulé en pause (`now() - slaPausedAt`), l'ajoute au cumul des pauses (`accumulatedPauseMs`), réinitialise `slaPausedAt` à `null` et **décale l'échéance de résolution (`resolutionDueAt`) de la durée exacte de la pause** pour préserver la marge de traitement de l'agent.
+
+### 6.4. À quel moment un utilisateur est-il considéré actif, inactif ou absent ?
+Le statut de l'agent repose sur 3 colonnes de la table `users` :
+1. `isActive` (booléen) : État du compte. Si `false` (désactivé par l'admin), l'agent est immédiatement exclu de l'assignation et tous ses tickets actifs lui sont retirés par le Cron.
+2. `isAvailable` (booléen) : Statut de présence en temps réel. Si `false` (déconnecté ou absent temporaire), il ne reçoit plus de nouveaux tickets. Le Cron conserve ses tickets assignés en cours, **sauf** si l'échéance du SLA approche à moins d'une heure (risque de breach), auquel cas ses tickets sont désassignés d'urgence.
+3. `absenceEndsAt` (date) : Fin d'une absence programmée (congés). Si la date est dans le futur, l'agent est considéré absent. Si l'absence est supérieure à 24h, ses tickets actifs lui sont retirés. Dès que cette date est dépassée, le Cron le remet automatiquement en disponibilité (`isAvailable = true`, `absenceEndsAt = null`).
+
+### 6.5. Différence vulgarisée entre Queue et Worker
+* **La Queue (la File d'attente)** : C'est la boîte aux lettres stockée dans **Redis**. Lorsqu'un événement survient (ex: création de ticket), l'API y dépose une fiche d'instructions très rapide (le "job" contenant l'ID du ticket) et répond immédiatement à l'utilisateur. L'API ne perd pas de temps à faire le travail.
+* **Le Worker (le Travailleur)** : C'est l'employé de bureau qui s'exécute en arrière-plan. Il surveille la Queue, récupère les fiches une par une (ou par paquets), effectue les requêtes en base de données, envoie les emails réels et met à jour les statuts. Cela assure que l'application reste rapide, fluide, et tolère de très grosses charges de requêtes.
+
+### 6.6. Les actions d'auto-assignation sont-elles en DB ou Redis ?
+* **Redis** stocke uniquement la file d'attente (`assignment-queue`) et orchestre les tâches asynchrones à la milliseconde pour garantir que l'application NestJS réponde immédiatement.
+* **PostgreSQL (la DB)** gère toutes les données métier (vérification des capacités, chargement des rôles de catégories, exclusion des inactifs, affectation finale). Le calcul d'assignation s'effectue dans une transaction SQL sécurisée par un verrou exclusif (`SELECT FOR UPDATE`) pour empêcher le chevauchement ou la double assignation d'un ticket.
+
