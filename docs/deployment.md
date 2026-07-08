@@ -25,6 +25,10 @@ SMTP_PASSWORD=<mot de passe SMTP>
 SMTP_FROM=noreply@telecom-tickets.com
 SMTP_SECURE=true
 CORS_ORIGIN=https://votre-domaine.com
+
+# Configuration Heures de bureau SLA (SLA Business Hours)
+BUSINESS_HOURS_START=8
+BUSINESS_HOURS_END=18
 ```
 
 **Génération de secrets**:

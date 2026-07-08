@@ -1,8 +1,9 @@
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
+import { eq } from 'drizzle-orm';
 import { createTestApp } from '../setup';
 import { DrizzleProvider } from '../../src/database/drizzle.provider';
-import { departments, users } from '../../src/database/schemas';
+import { users } from '../../src/database/schemas';
 
 describe('Tickets Permissions — E2E fine checks', () => {
   let app: INestApplication;
@@ -15,6 +16,7 @@ describe('Tickets Permissions — E2E fine checks', () => {
   let departmentId: string;
   let assignedTeamId: string;
   let ticketId: string;
+  let categoryId: string;
 
   jest.setTimeout(60000);
 
@@ -24,9 +26,35 @@ describe('Tickets Permissions — E2E fine checks', () => {
     app = testApp;
 
     const drizzle = app.get(DrizzleProvider);
-    const depts = await drizzle.db.select().from(departments).limit(2);
-    departmentId = depts[0]?.id;
-    assignedTeamId = depts[1]?.id || depts[0]?.id;
+    const { categories, slaPolicies } = await import('../../src/database/schemas');
+    const { generateUuid } = await import('../../src/common/helpers/uuidv7.helper');
+
+    const testCatName = 'Test Permission Cat';
+    const [existing] = await drizzle.db.select().from(categories).where(eq(categories.name, testCatName)).limit(1);
+
+    if (existing) {
+      categoryId = existing.id;
+    } else {
+      const testCatId = generateUuid();
+      await drizzle.db.insert(categories).values({
+        id: testCatId,
+        name: testCatName,
+        description: 'Categorie de test pour les permissions',
+        targetRole: null,
+      });
+      categoryId = testCatId;
+
+      const priorities = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] as const;
+      for (const p of priorities) {
+        await drizzle.db.insert(slaPolicies).values({
+          id: generateUuid(),
+          categoryId: testCatId,
+          priority: p,
+          firstResponseMinutes: 60,
+          resolutionMinutes: 480,
+        });
+      }
+    }
 
     // Récupérer les identifiants
     const allUsers = await drizzle.db.select().from(users);
@@ -39,6 +67,9 @@ describe('Tickets Permissions — E2E fine checks', () => {
     if (!admin || !supervisor || !csAgent || !nocAgent) {
       throw new Error('Utilisateurs requis du seed introuvables.');
     }
+
+    departmentId = csAgent.departmentId!;
+    assignedTeamId = nocAgent.departmentId!;
 
     csAgentUserId = csAgent.id;
     nocAgentUserId = nocAgent.id;
@@ -80,7 +111,7 @@ describe('Tickets Permissions — E2E fine checks', () => {
           description: 'Ceci est une description.',
           priority: 'MEDIUM',
           severity: 'S3',
-          category: 'TECHNICAL',
+          categoryId: categoryId,
           departmentId,
           assignedTeamId,
         })

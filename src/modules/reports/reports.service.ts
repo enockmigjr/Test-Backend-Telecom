@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException, Inject } from '@nestjs/common';
 import { DrizzleProvider } from '../../database/drizzle.provider';
-import { tickets, departments, reports, users, NewReport, Report } from '../../database/schemas';
+import { tickets, departments, reports, users, NewReport, Report, categories } from '../../database/schemas';
 import { eq, and, gte, lte, isNull, count, sql } from 'drizzle-orm';
 import PDFDocument from 'pdfkit';
 import { Writable } from 'stream';
@@ -98,7 +98,7 @@ export class ReportsService {
         status: tickets.status,
         priority: tickets.priority,
         severity: tickets.severity,
-        category: tickets.category,
+        category: categories.name,
         createdAt: tickets.createdAt,
         resolvedAt: tickets.resolvedAt,
         closedAt: tickets.closedAt,
@@ -108,6 +108,7 @@ export class ReportsService {
       })
       .from(tickets)
       .leftJoin(departments, eq(tickets.departmentId, departments.id))
+      .leftJoin(categories, eq(tickets.categoryId, categories.id))
       .where(and(eq(tickets.id, ticketId), isNull(tickets.deletedAt)))
       .limit(1);
 

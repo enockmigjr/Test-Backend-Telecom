@@ -290,6 +290,31 @@ idx_users_role
 
 ---
 
+# 5.bis Gestion des catégories
+
+## categories
+
+Table dynamique permettant de définir les catégories de tickets ainsi que le rôle ciblé pour l'auto-assignation automatique.
+
+### Colonnes
+
+| Colonne <br>    | Type <br>          |
+| :-------------- | :----------------- |
+| id <br>         | UUIDv7 <br>        |
+| name <br>       | VARCHAR(100) <br>  |
+| description <br>| TEXT NULL <br>     |
+| target_role <br>| VARCHAR(100) <br>  |
+| created_at <br> | TIMESTAMP <br>     |
+| updated_at <br> | TIMESTAMP <br>     |
+
+### Contraintes
+
+```
+UNIQUE(name)
+```
+
+---
+
 # 6. Gestion des incidents
 
 ## tickets
@@ -308,7 +333,7 @@ Chaque enregistrement représente un incident.
 | status <br>                  | ticket_status_enum <br>   |
 | priority <br>                | ticket_priority_enum <br> |
 | severity <br>                | ticket_severity_enum <br> |
-| category <br>                | ticket_category_enum <br> |
+| category_id <br>             | UUID NOT NULL <br>        |
 | sla_policy_id <br>           | UUID NOT NULL <br>        |
 | customer_account_number <br> | VARCHAR(100) <br>         |
 | customer_name <br>           | VARCHAR(255) <br>         |
@@ -629,7 +654,7 @@ Le SLA dépend à la fois de la catégorie et de la priorité.
 | Colonne <br>                | Type <br>                 |
 | :-------------------------- | :------------------------ |
 | id <br>                     | UUIDv7 <br>               |
-| category <br>               | ticket_category_enum <br> |
+| category_id <br>            | UUID NOT NULL <br>        |
 | priority <br>               | ticket_priority_enum <br> |
 | first_response_minutes <br> | INTEGER <br>              |
 | resolution_minutes <br>     | INTEGER <br>              |

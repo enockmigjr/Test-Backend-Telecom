@@ -3,7 +3,6 @@ import { IsString, IsUUID, IsIn, MaxLength, IsOptional } from 'class-validator';
 
 const PRIORITIES = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] as const;
 const SEVERITIES = ['S1', 'S2', 'S3', 'S4'] as const;
-const CATEGORIES = ['NETWORK', 'BILLING', 'TECHNICAL', 'HARDWARE', 'SOFTWARE', 'OTHER'] as const;
 
 export class CreateTicketDto {
   @ApiProperty({ description: 'Titre du ticket', example: 'Coupure fibre optique secteur Nord' })
@@ -25,10 +24,9 @@ export class CreateTicketDto {
   @IsIn(SEVERITIES, { message: 'Sévérité invalide.' })
   severity: string;
 
-  @ApiProperty({ description: 'Catégorie du ticket', enum: CATEGORIES, example: 'NETWORK' })
-  @IsString()
-  @IsIn(CATEGORIES, { message: 'Catégorie invalide.' })
-  category: string;
+  @ApiProperty({ description: 'ID de la catégorie', example: '550e8400-e29b-41d4-a716-446655440000' })
+  @IsUUID('all', { message: "L'ID de la catégorie doit être un UUID valide." })
+  categoryId: string;
 
   @ApiProperty({ description: 'ID du département propriétaire', example: '550e8400-e29b-41d4-a716-446655440000' })
   @IsUUID('all')

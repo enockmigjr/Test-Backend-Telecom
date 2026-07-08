@@ -126,22 +126,27 @@ flowchart LR
     subgraph "Traitement Asynchrone"
         EventEmitter -->|ticket.created| HistoryListener
         EventEmitter -->|ticket.assigned| NotificationListener
+        EventEmitter -->|ticket.deassigned| NotificationListener
         EventEmitter -->|ticket.status_changed| AuditListener
         EventEmitter -->|ticket.resolved| SlaListener
+        EventEmitter -->|ticket.unassigned| AssignmentListener
 
         HistoryListener --> PostgreSQL
         NotificationListener --> BullMQ[BullMQ Queue]
         AuditListener --> PostgreSQL
         SlaListener --> BullMQ
+        AssignmentListener --> BullMQ
 
         BullMQ --> EmailWorker[Email Worker]
         BullMQ --> NotificationWorker[Notification Worker]
         BullMQ --> SlaWorker[SLA Worker]
+        BullMQ --> AssignmentWorker[Assignment Worker]
 
         EmailWorker --> SMTP[SMTP/Mailpit]
         NotificationWorker --> PostgreSQL
         NotificationWorker --> WebSocket
         SlaWorker --> PostgreSQL
+        AssignmentWorker --> PostgreSQL
     end
 ```
 
@@ -153,6 +158,7 @@ flowchart TB
         TicketService[TicketService]
         AuthService[AuthService]
         SlaEngine[SlaEngineService]
+        AssignmentListener[TicketAssignmentListener]
     end
 
     subgraph "Redis (Message Broker)"
@@ -164,6 +170,7 @@ flowchart TB
         Q2[notification-queue<br/>Notifications in-app]
         Q3[sla-queue<br/>Vérifications SLA]
         Q4[audit-queue<br/>Logs d'audit asynchrones]
+        Q5[assignment-queue<br/>Auto-assignation et aiguillage]
     end
 
     subgraph "Workers (Processus séparés)"
@@ -171,27 +178,32 @@ flowchart TB
         W2[NotificationWorker<br/>Insert DB + WebSocket emit]
         W3[SlaWorker<br/>Breach detection + escalation]
         W4[AuditWorker<br/>Écriture audit_logs]
+        W5[AssignmentWorker<br/>Moteur d'auto-assignation]
     end
 
     TicketService -->|job| Q1
     TicketService -->|job| Q2
     SlaEngine -->|job| Q3
     TicketService -->|job| Q4
+    AssignmentListener -->|job| Q5
 
     Q1 --> Redis
     Q2 --> Redis
     Q3 --> Redis
     Q4 --> Redis
+    Q5 --> Redis
 
     Redis --> W1
     Redis --> W2
     Redis --> W3
     Redis --> W4
+    Redis --> W5
 
     W1 --> SMTP[SMTP Server]
     W2 --> PostgreSQL[(PostgreSQL)]
     W3 --> PostgreSQL
     W4 --> PostgreSQL
+    W5 --> PostgreSQL
 ```
 
 ## 6. Stack d'Observabilité

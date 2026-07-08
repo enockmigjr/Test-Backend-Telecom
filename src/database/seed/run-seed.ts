@@ -37,6 +37,8 @@ async function seed() {
   await db.delete(schema.users);
   await db.delete(schema.departments);
   await db.delete(schema.slaPolicies);
+  await db.delete(schema.categories);
+  await db.delete(schema.settings);
   console.log('🧹 Nettoyage terminé.');
 
   // ─── Séquence ticket_number ──────────────────────────────────────
@@ -57,9 +59,44 @@ async function seed() {
   for (const d of deptData) {
     const id = generateUuid();
     deptIds[d.name] = id;
-    await db.insert(schema.departments).values({ id, name: d.name, description: d.description }).onConflictDoNothing();
+    await db
+      .insert(schema.departments)
+      .values({
+        id,
+        name: d.name,
+        description: d.description,
+        autoAssignmentEnabled: true,
+        assignmentStrategy: d.name === 'NOC' ? 'LEAST_LOADED' : 'ROUND_ROBIN',
+        maxWorkloadPerAgent: 100,
+      })
+      .onConflictDoNothing();
   }
   console.log('✅ Départements créés');
+
+  // ─── Catégories ──────────────────────────────────────────────────
+  const categoryNames = [
+    { name: 'NETWORK', targetRole: 'NOC_ENGINEER' },
+    { name: 'BILLING', targetRole: 'BILLING_AGENT' },
+    { name: 'TECHNICAL', targetRole: 'TECHNICAL_SUPPORT_ENGINEER' },
+    { name: 'HARDWARE', targetRole: 'FIELD_TECHNICIAN' },
+    { name: 'SOFTWARE', targetRole: 'TECHNICAL_SUPPORT_ENGINEER' },
+    { name: 'OTHER', targetRole: 'CUSTOMER_SERVICE_AGENT' },
+  ];
+  const categoryIds: Record<string, string> = {};
+  for (const cat of categoryNames) {
+    const id = generateUuid();
+    categoryIds[cat.name] = id;
+    await db
+      .insert(schema.categories)
+      .values({
+        id,
+        name: cat.name,
+        description: `Description pour la catégorie ${cat.name}`,
+        targetRole: cat.targetRole,
+      })
+      .onConflictDoNothing();
+  }
+  console.log('✅ Catégories créées');
 
   // ─── Politiques SLA ──────────────────────────────────────────────
   type SlaCategory = 'NETWORK' | 'BILLING' | 'TECHNICAL' | 'HARDWARE' | 'SOFTWARE' | 'OTHER';
@@ -103,7 +140,13 @@ async function seed() {
     slaIds[`${sla.category}_${sla.priority}`] = id;
     await db
       .insert(schema.slaPolicies)
-      .values({ id, ...sla })
+      .values({
+        id,
+        categoryId: categoryIds[sla.category],
+        priority: sla.priority,
+        firstResponseMinutes: sla.firstResponseMinutes,
+        resolutionMinutes: sla.resolutionMinutes,
+      })
       .onConflictDoNothing();
   }
   console.log('✅ Politiques SLA créées (24 entrées)');
@@ -635,7 +678,7 @@ async function seed() {
         status: t.status,
         priority: t.priority,
         severity: t.severity,
-        category: t.category,
+        categoryId: categoryIds[t.category],
         slaPolicyId: slaId,
         customerName: t.customerName || null,
         customerAccountNumber: t.customerAccount || null,
@@ -975,6 +1018,35 @@ async function seed() {
       .onConflictDoNothing();
   }
   console.log(`✅ Audit logs créés (${auditEntries.length} entrées)`);
+
+  // ─── Paramètres Système Globaux ─────────────────────────────────
+  const settingsData = [
+    { key: 'BUSINESS_HOURS_START', value: '8', description: 'Heure de debut ouvrable par defaut (SLA)' },
+    { key: 'BUSINESS_HOURS_END', value: '18', description: 'Heure de fin ouvrable par defaut (SLA)' },
+    {
+      key: 'MAX_CONCURRENT_TICKETS',
+      value: '5',
+      description: 'Nombre maximum de tickets actifs assignes par defaut pour un agent',
+    },
+    {
+      key: 'BUSINESS_DAYS',
+      value: '1,2,3,4,5',
+      description: 'Jours de la semaine ouvrables (1=Lundi, ..., 5=Vendredi, 6=Samedi, 0=Dimanche)',
+    },
+  ];
+
+  for (const s of settingsData) {
+    await db
+      .insert(schema.settings)
+      .values({
+        id: generateUuid(),
+        key: s.key,
+        value: s.value,
+        description: s.description,
+      })
+      .onConflictDoNothing();
+  }
+  console.log(`✅ Paramètres systeme crees (${settingsData.length} entrees)`);
 
   // ─── Résumé ──────────────────────────────────────────────────────
   console.log('\n🎉 Seed complet terminé avec succès !\n');

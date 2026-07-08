@@ -44,14 +44,14 @@ S2
 S3
 S4
 }  
-Enum ticket_category_enum {
-NETWORK
-BILLING
-TECHNICAL
-HARDWARE
-SOFTWARE
-OTHER
-}  
+Table categories {
+id uuid [pk]
+name varchar(100) [unique, not null]
+description text
+target_role varchar(100)
+created_at timestamp
+updated_at timestamp
+}
 Enum notification_type_enum {
 TICKET_ASSIGNED
 TICKET_ESCALATED
@@ -93,7 +93,7 @@ description text [not null]
 status ticket_status_enum
 priority ticket_priority_enum
 severity ticket_severity_enum
-category ticket_category_enum  
+category_id uuid [not null, ref: > categories.id]  
 sla_policy_id uuid [not null, ref: > sla\_policies.id]  
 customer_account_number varchar(100)
 customer_name varchar(255)
@@ -188,7 +188,7 @@ created_at timestamp
 }  
 Table sla_policies {  
 id uuid [pk]  
-category ticket_category_enum  
+category_id uuid [not null, ref: > categories.id]  
 priority ticket_priority_enum  
 first_response_minutes int [not null]  
 resolution_minutes int [not null]  
@@ -231,6 +231,10 @@ DEPARTMENTS ||--o{ USERS : contains
 DEPARTMENTS ||--o{ TICKETS : owns
 
 DEPARTMENTS ||--o{ TICKETS : assigned_team
+
+CATEGORIES ||--o{ TICKETS : classifies
+
+CATEGORIES ||--o{ SLA_POLICIES : configures
 
 USERS ||--o{ TICKETS : creates
 
@@ -517,16 +521,16 @@ Queue --> Notification
 ## Diagramme de Résolution d'un Ticket
 
 sequenceDiagram  
-  participant Engineer  
-  participant API  
-  participant DB  
-  participant Queue  
-  Engineer->>API: Resolve Ticket  
-  API->>DB: Update status  
-  API->>DB: Insert History  
-  API->>DB: Insert Audit  
-  API->>Queue: Notification  
-  API⟶>Engineer: Success
+ participant Engineer  
+ participant API  
+ participant DB  
+ participant Queue  
+ Engineer->>API: Resolve Ticket  
+ API->>DB: Update status  
+ API->>DB: Insert History  
+ API->>DB: Insert Audit  
+ API->>Queue: Notification  
+ API⟶>Engineer: Success
 
 ## Diagramme d'Affectation d'un Ticket
 

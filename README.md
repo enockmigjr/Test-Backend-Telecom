@@ -5,7 +5,7 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql)
 ![Redis](https://img.shields.io/badge/Redis-7-DC382D?logo=redis)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker)
-![Tests](https://img.shields.io/badge/Tests-545%20passed-success)
+![Tests](https://img.shields.io/badge/Tests-546%20passed-success)
 ![License](https://img.shields.io/badge/License-UNLICENSED-lightgrey)
 
 Backend **NestJS** pour la plateforme de gestion des tickets d'incidents télécoms.
@@ -35,10 +35,10 @@ pnpm run start:dev
 # Tests unitaires (443 tests)
 pnpm run test:unit
 
-# Tests end-to-end (102 tests)
+# Tests end-to-end (103 tests)
 pnpm run test:e2e
 
-# Tous les tests (545 tests)
+# Tous les tests (546 tests)
 pnpm run test:all
 ```
 
@@ -75,7 +75,7 @@ docker compose up -d
 ## 🏗️ Architecture
 
 ```
-14 modules NestJS · 13 tables PostgreSQL · 55 routes REST · 5 workers BullMQ
+15 modules NestJS · 14 tables PostgreSQL · 60 routes REST · 6 workers BullMQ
 ```
 
 ### Schéma Entité-Relation (ERD Simplifié)
@@ -114,6 +114,7 @@ flowchart LR
 | `audit-logs`     | Immutable write-only, recherche multi-filtres                                                |
 | `email`          | Nodemailer dev/prod, 9 templates Handlebars + layout global unifié base.hbs                  |
 | `reports`        | Génération PDF premium (PDFKit) envoyés en pièces jointes, rapports asynchrones via BullMQ   |
+| `settings`       | Paramètres système globaux dynamiques (heures et jours ouvrables, limite de tickets actifs)  |
 
 ## 🔄 Flux Asynchrone (BullMQ)
 

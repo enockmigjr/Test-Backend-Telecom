@@ -402,6 +402,40 @@ DELETE /api/v1/departments/:id — ADMINISTRATOR uniquement. Suppression logique
 
 ---
 
+## 8.bis Gestion des catégories
+
+### Liste
+
+```
+GET /api/v1/categories — Tout utilisateur authentifié. Retourne la liste des catégories. Réponse : liste de catégories. Erreurs : 401.
+```
+
+### Détail
+
+```
+GET /api/v1/categories/:id — Tout utilisateur authentifié. Retourne les détails d'une catégorie. Réponse : catégorie. Erreurs : 404.
+```
+
+### Création
+
+```
+POST /api/v1/categories — ADMINISTRATOR uniquement. Body : { name, description, targetRole }. Crée une nouvelle catégorie. Réponse : 201 Created. Erreurs : 400, 409.
+```
+
+### Modification
+
+```
+PATCH /api/v1/categories/:id — ADMINISTRATOR uniquement. Body : { name, description, targetRole }. Modifie une catégorie. Réponse : 200 OK. Erreurs : 400, 404.
+```
+
+### Suppression
+
+```
+DELETE /api/v1/categories/:id — ADMINISTRATOR uniquement. Supprime une catégorie si elle n'est pas liée à des tickets. Réponse : 204 No Content. Erreurs : 409, 404.
+```
+
+---
+
 ## 9. Gestion des tickets
 
 ### Création
@@ -426,7 +460,7 @@ Filtres :
 ```
 ?status=
 ?priority=
-?category=
+?categoryId=
 ?assignedTo=
 ?assignedTeam=
 
@@ -444,7 +478,7 @@ GET /api/v1/tickets/:id — Utilisateur autorisé sur le ticket. Retourne les d�
 ### Modification
 
 ```
-PATCH /api/v1/tickets/:id — Authentifié. Body : { title, description, priority, severity, category, tags }. Met à jour sélectivement les champs du ticket. Les permissions d'édition sont validées au niveau du service selon l'ownership du champ par rapport à l'utilisateur courant. Réponse : Ticket mis à jour. Erreurs : 400 (validation), 403 (permission refusée), 404 (non trouvé).
+PATCH /api/v1/tickets/:id — Authentifié. Body : { title, description, priority, severity, categoryId, tags }. Met à jour sélectivement les champs du ticket. Les permissions d'édition sont validées au niveau du service selon l'ownership du champ par rapport à l'utilisateur courant. Réponse : Ticket mis à jour. Erreurs : 400 (validation), 403 (permission refusée), 404 (non trouvé).
 ```
 
 ### Assignation

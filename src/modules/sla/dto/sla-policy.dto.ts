@@ -1,18 +1,15 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsIn, IsInt, IsOptional, IsString, Min } from 'class-validator';
+import { IsUUID, IsInt, IsOptional, IsString, IsIn, Min } from 'class-validator';
 
-const CATEGORIES = ['NETWORK', 'BILLING', 'TECHNICAL', 'HARDWARE', 'SOFTWARE', 'OTHER'] as const;
 const PRIORITIES = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] as const;
 
 export class CreateSlaPolicyDto {
   @ApiProperty({
-    description: 'Catégorie de tickets couverte par cette politique',
-    enum: CATEGORIES,
-    example: 'NETWORK',
+    description: 'UUID de la catégorie couverte par cette politique',
+    example: '550e8400-e29b-41d4-a716-446655440000',
   })
-  @IsString()
-  @IsIn(CATEGORIES, { message: 'Catégorie invalide.' })
-  category: string;
+  @IsUUID('all', { message: "L'ID de la catégorie doit être un UUID valide." })
+  categoryId: string;
 
   @ApiProperty({
     description: 'Priorité couverte par cette politique',

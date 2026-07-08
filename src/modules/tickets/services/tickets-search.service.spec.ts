@@ -14,6 +14,7 @@ describe('TicketsSearchService', () => {
     const chain: any = {
       select: () => chain,
       from: () => chain,
+      leftJoin: () => chain,
       where: () => chain,
       orderBy: () => chain,
       limit: () => chain,
@@ -45,7 +46,7 @@ describe('TicketsSearchService', () => {
     const result = await service.search({
       status: 'IN_PROGRESS',
       priority: 'HIGH',
-      category: 'NETWORK',
+      categoryId: '019f28ea-9e12-7cc0-a0ea-3d4de79e7a95',
       page: 1,
       limit: 20,
     });

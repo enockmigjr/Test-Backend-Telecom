@@ -5,7 +5,7 @@ import { AppModule } from '../../src/app.module';
 import { GlobalExceptionFilter } from '../../src/common/filters/global-exception.filter';
 import { TransformInterceptor } from '../../src/common/interceptors/transform.interceptor';
 import { DrizzleProvider } from '../../src/database/drizzle.provider';
-import { departments, users, slaPolicies } from '../../src/database/schemas';
+import { departments, users } from '../../src/database/schemas';
 import { generateUuid } from '../../src/common/helpers/uuidv7.helper';
 
 /**
@@ -23,6 +23,7 @@ describe('Tickets — Workflow Intégration (DB réelle)', () => {
   let adminToken: string;
   let deptId: string;
   let userId: string;
+  let categoryId: string;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -37,7 +38,8 @@ describe('Tickets — Workflow Intégration (DB réelle)', () => {
     await app.init();
 
     // Seed minimal ou chargement existant
-    const drizzle = app.get(DrizzleProvider);
+    const drizzle = moduleFixture.get(DrizzleProvider);
+    const { categories } = await import('../../src/database/schemas/categories');
 
     // Récupérer un département existant
     const [existingDept] = await drizzle.db.select().from(departments).limit(1);
@@ -46,6 +48,15 @@ describe('Tickets — Workflow Intégration (DB réelle)', () => {
     } else {
       deptId = generateUuid();
       await drizzle.db.insert(departments).values({ id: deptId, name: 'Test Dept' });
+    }
+
+    // Récupérer une catégorie existante
+    const [existingCategory] = await drizzle.db.select().from(categories).limit(1);
+    if (existingCategory) {
+      categoryId = existingCategory.id;
+    } else {
+      categoryId = generateUuid();
+      await drizzle.db.insert(categories).values({ id: categoryId, name: 'NETWORK', description: 'Réseau' });
     }
 
     userId = generateUuid();
@@ -63,18 +74,6 @@ describe('Tickets — Workflow Intégration (DB réelle)', () => {
       });
     } catch {
       /* Déjà seedé ou utilisateur existant */
-    }
-
-    try {
-      await drizzle.db.insert(slaPolicies).values({
-        id: generateUuid(),
-        category: 'TECHNICAL',
-        priority: 'MEDIUM',
-        firstResponseMinutes: 60,
-        resolutionMinutes: 480,
-      });
-    } catch {
-      /* Déjà seedé */
     }
 
     // Login
@@ -98,7 +97,7 @@ describe('Tickets — Workflow Intégration (DB réelle)', () => {
         description: 'Description du ticket de test',
         priority: 'HIGH',
         severity: 'S2',
-        category: 'NETWORK',
+        categoryId: categoryId,
         departmentId: deptId,
         assignedTeamId: deptId,
         customerName: 'Client Test',

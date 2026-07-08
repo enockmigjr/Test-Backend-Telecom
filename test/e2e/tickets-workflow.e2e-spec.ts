@@ -11,6 +11,7 @@ describe('Tickets — Workflow E2E complet', () => {
   let departmentId: string;
   let assignedTeamId: string;
   let agentUserId: string;
+  let categoryId: string;
 
   jest.setTimeout(60000);
 
@@ -20,6 +21,10 @@ describe('Tickets — Workflow E2E complet', () => {
     app = testApp;
 
     const drizzle = app.get(DrizzleProvider);
+    const { categories } = await import('../../src/database/schemas');
+    const [existingCategory] = await drizzle.db.select().from(categories).limit(1);
+    categoryId = existingCategory ? existingCategory.id : '';
+
     const depts = await drizzle.db.select().from(departments).limit(2);
     departmentId = depts[0]?.id;
     assignedTeamId = depts[1]?.id || depts[0]?.id;
@@ -56,7 +61,7 @@ describe('Tickets — Workflow E2E complet', () => {
           description: 'Les clients du secteur Nord signalent une perte de connectivite totale depuis 14h30.',
           priority: 'HIGH',
           severity: 'S2',
-          category: 'NETWORK',
+          categoryId: categoryId,
           departmentId,
           assignedTeamId,
           customerAccountNumber: 'CUST-12345',

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { and, gte, lte, eq, sql, isNull, count } from 'drizzle-orm';
 import { DrizzleProvider } from '../../database/drizzle.provider';
-import { tickets, departments } from '../../database/schemas';
+import { tickets, departments, categories } from '../../database/schemas';
 
 @Injectable()
 export class DashboardService {
@@ -172,13 +172,13 @@ export class DashboardService {
   }
 
   /** Conformité SLA */
-  async slaCompliance(from?: string, to?: string, departmentId?: string, priority?: string, category?: string) {
+  async slaCompliance(from?: string, to?: string, departmentId?: string, priority?: string, categoryId?: string) {
     const fromDate = from ? new Date(from) : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
     const toDate = to ? new Date(to) : new Date();
     const conditions = [gte(tickets.createdAt, fromDate), lte(tickets.createdAt, toDate), isNull(tickets.deletedAt)];
     if (departmentId) conditions.push(eq(tickets.departmentId, departmentId));
     if (priority) conditions.push(eq(tickets.priority, priority as typeof tickets.$inferSelect.priority));
-    if (category) conditions.push(eq(tickets.category, category as typeof tickets.$inferSelect.category));
+    if (categoryId) conditions.push(eq(tickets.categoryId, categoryId));
     const where = and(...conditions);
 
     const [[totals], [breached], byPriority, byCategory] = await Promise.all([
@@ -199,14 +199,15 @@ export class DashboardService {
         .groupBy(tickets.priority),
       this.drizzle.db
         .select({
-          category: tickets.category,
+          category: categories.name,
           totalTracked: count(),
           compliant: sql<number>`COUNT(*) FILTER (WHERE ${tickets.slaBreached} = false)`,
           breached: sql<number>`COUNT(*) FILTER (WHERE ${tickets.slaBreached} = true)`,
         })
         .from(tickets)
+        .leftJoin(categories, eq(tickets.categoryId, categories.id))
         .where(where)
-        .groupBy(tickets.category),
+        .groupBy(categories.name),
     ]);
 
     const total = Number(totals?.count || 0);

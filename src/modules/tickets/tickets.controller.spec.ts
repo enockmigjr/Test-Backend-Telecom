@@ -10,6 +10,7 @@ import { SearchTicketsDto } from './dto/search-tickets.dto';
 import { AssignTicketDto } from './dto/assign-ticket.dto';
 import { EscalateTicketDto } from './dto/escalate-ticket.dto';
 import { UpdateTicketDto } from './dto/update-ticket.dto';
+import { DepartmentAbacGuard } from '../../common/guards/department-abac.guard';
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -37,7 +38,7 @@ const createDto: CreateTicketDto = {
   description: 'Les clients du secteur Nord signalent une perte de connexion.',
   priority: 'HIGH',
   severity: 'S2',
-  category: 'NETWORK',
+  categoryId: '019f28ea-9e12-7cc0-a0ea-3d4de79e7a95',
   departmentId: 'dept-001',
   assignedTeamId: 'team-001',
   customerAccountNumber: 'ACC-001',
@@ -66,7 +67,7 @@ const escalateDto: EscalateTicketDto = {
 const searchFilters: SearchTicketsDto = {
   status: 'IN_PROGRESS',
   priority: 'HIGH',
-  category: 'NETWORK',
+  categoryId: '019f28ea-9e12-7cc0-a0ea-3d4de79e7a95',
   page: 1,
   limit: 20,
 };
@@ -81,7 +82,8 @@ function buildFullTicket(overrides: Record<string, any> = {}): any {
     status: 'NEW' as const,
     priority: 'HIGH' as const,
     severity: 'S2' as const,
-    category: 'NETWORK' as const,
+    categoryId: '019f28ea-9e12-7cc0-a0ea-3d4de79e7a95',
+    categoryName: 'NETWORK',
     slaPolicyId: 'sla-001',
     customerAccountNumber: 'ACC-001',
     customerName: 'Client Test',
@@ -98,6 +100,8 @@ function buildFullTicket(overrides: Record<string, any> = {}): any {
     closedAt: null,
     tags: 'fibre,urgent',
     metadata: null,
+    slaPausedAt: null,
+    accumulatedPauseMs: 0,
     createdAt: new Date('2026-01-01'),
     updatedAt: new Date('2026-01-01'),
     creatorName: 'Jean Dupont',
@@ -192,7 +196,10 @@ describe('TicketsController', () => {
         { provide: TicketsService, useValue: ticketsService },
         { provide: TicketsSearchService, useValue: searchService },
       ],
-    }).compile();
+    })
+      .overrideGuard(DepartmentAbacGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<TicketsController>(TicketsController);
   });
@@ -261,7 +268,7 @@ describe('TicketsController', () => {
       expect(searchService.search).toHaveBeenCalledWith({
         status: 'IN_PROGRESS',
         priority: 'HIGH',
-        category: 'NETWORK',
+        categoryId: '019f28ea-9e12-7cc0-a0ea-3d4de79e7a95',
         page: 1,
         limit: 20,
       });

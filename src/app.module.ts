@@ -16,6 +16,7 @@ import { DatabaseModule } from './database/database.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { DepartmentsModule } from './modules/departments/departments.module';
+import { CategoriesModule } from './modules/categories/categories.module';
 import { UsersModule } from './modules/users/users.module';
 import { TicketsModule } from './modules/tickets/tickets.module';
 import { CommentsModule } from './modules/comments/comments.module';
@@ -34,6 +35,7 @@ import { ObservabilityModule } from './common/observability/observability.module
 import { EmailModule } from './modules/email/email.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { BullBoardModule } from './common/bull-board/bull-board.module';
+import { SettingsModule } from './modules/settings/settings.module';
 
 @Module({
   imports: [
@@ -108,6 +110,7 @@ import { BullBoardModule } from './common/bull-board/bull-board.module';
     ReportsModule,
     AuthModule,
     DepartmentsModule,
+    CategoriesModule,
     UsersModule,
     TicketsModule,
     CommentsModule,
@@ -120,6 +123,7 @@ import { BullBoardModule } from './common/bull-board/bull-board.module';
     WebSocketModule,
     QueuesModule,
     BullBoardModule,
+    SettingsModule,
   ],
   providers: [
     {

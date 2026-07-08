@@ -29,12 +29,13 @@ import { Idempotent } from '../../common/decorators/idempotent.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { DepartmentAbacGuard } from '../../common/guards/department-abac.guard';
 import { FieldProjectionInterceptor } from '../../common/interceptors/field-projection.interceptor';
 
 @ApiTags('tickets')
 @ApiBearerAuth()
 @Controller('tickets')
-@UseGuards(RolesGuard)
+@UseGuards(RolesGuard, DepartmentAbacGuard)
 export class TicketsController {
   constructor(
     private readonly ticketsService: TicketsService,

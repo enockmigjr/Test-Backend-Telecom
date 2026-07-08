@@ -98,6 +98,9 @@ export class EmailService {
     } else if (templateName.toLowerCase().includes('warning')) {
       accentColor = '#f59e0b'; // Orange/Ambre pour les avertissements SLA imminent
       footerText = `Notification préventive générée par le moteur SLA.`;
+    } else if (templateName.toLowerCase().includes('deassigned') || templateName.toLowerCase().includes('deassign')) {
+      accentColor = '#dc2626'; // Rouge pour les désassignations d'urgence
+      footerText = `Notification de désassignation générée par le moteur d'auto-assignation.`;
     } else if (templateName.toLowerCase().includes('assign')) {
       footerText = `Vous recevez cet e-mail car vous êtes assigné à ce ticket.`;
     } else if (templateName.toLowerCase().includes('create')) {
@@ -190,6 +193,14 @@ export class EmailService {
       <p><strong>Département:</strong> ${data.department ?? 'Non renseigne'}</p>
       <p><strong>SLA résolution:</strong> ${data.slaDueAt ?? 'Non renseigne'}</p>
       <p>Ce ticket vous a été assigné. Veuillez en prendre connaissance.</p>
+      <hr><small>Telecom Ticket Management — Ne pas répondre à cet email</small>
+    `,
+
+    ticketDeassigned: (data: { ticketNumber: string; ticketTitle?: string; title?: string; reason: string }) => `
+      <h2>📋 Ticket désassigné d'urgence — ${data.ticketNumber}</h2>
+      <p><strong>Titre:</strong> ${data.ticketTitle ?? data.title ?? 'Sans titre'}</p>
+      <p><strong>Motif:</strong> ${data.reason}</p>
+      <p>Le ticket a été désassigné automatiquement pour cause d'indisponibilité afin d'éviter une violation de SLA.</p>
       <hr><small>Telecom Ticket Management — Ne pas répondre à cet email</small>
     `,
 

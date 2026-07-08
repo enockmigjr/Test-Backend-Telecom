@@ -5,7 +5,7 @@ import { eq, and, isNull, gte, lte, count, sql } from 'drizzle-orm';
 import { redisConfig } from '../../common/providers/redis.config';
 import { REPORT_QUEUE } from '../queues.module';
 import { DrizzleProvider } from '../../database/drizzle.provider';
-import { tickets, users, departments } from '../../database/schemas';
+import { tickets, users, departments, categories } from '../../database/schemas';
 import { ReportsService } from '../../modules/reports/reports.service';
 import { LocalStorageService } from '../../modules/attachments/storage/local-storage.service';
 
@@ -159,7 +159,7 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
           status: tickets.status,
           priority: tickets.priority,
           severity: tickets.severity,
-          category: tickets.category,
+          category: categories.name,
           createdAt: tickets.createdAt,
           resolvedAt: tickets.resolvedAt,
           closedAt: tickets.closedAt,
@@ -169,6 +169,7 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
         })
         .from(tickets)
         .leftJoin(departments, eq(tickets.departmentId, departments.id))
+        .leftJoin(categories, eq(tickets.categoryId, categories.id))
         .where(and(eq(tickets.id, ticketId), isNull(tickets.deletedAt)))
         .limit(1);
 

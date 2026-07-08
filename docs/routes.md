@@ -30,6 +30,18 @@
 
 ---
 
+## Catégories (`/categories`)
+
+| Méthode  | Route             | Auth   | Rôles         | Description                                                      |
+| -------- | ----------------- | ------ | ------------- | ---------------------------------------------------------------- |
+| `GET`    | `/categories`     | Bearer | Tous          | Liste de toutes les catégories                                   |
+| `GET`    | `/categories/:id` | Bearer | Tous          | Détails d'une catégorie                                          |
+| `POST`   | `/categories`     | Bearer | ADMINISTRATOR | Créer une catégorie (définit le rôle cible pour auto-assignation) |
+| `PATCH`  | `/categories/:id` | Bearer | ADMINISTRATOR | Modifier une catégorie (nom, description, targetRole)            |
+| `DELETE` | `/categories/:id` | Bearer | ADMINISTRATOR | Supprimer une catégorie (si non liée)                            |
+
+---
+
 ## Utilisateurs (`/users`)
 
 | Méthode | Route                   | Auth   | Rôles                                  | Description                                           |
@@ -165,7 +177,16 @@
 | `POST`  | `/reports/sla/generate`        | Bearer | SUPERVISOR, ADMIN | Générer un rapport SLA PDF (async, répond 202 avec `reportId`, envoie email avec lien de téléchargement)          |
 | `POST`  | `/reports/weekly/generate`     | Bearer | SUPERVISOR, ADMIN | Générer un rapport hebdomadaire PDF (async, répond 202 avec `reportId`, envoie email avec lien de téléchargement) |
 | `GET`   | `/reports`                     | Bearer | ADMINISTRATOR     | Lister l'ensemble des rapports générés en asynchrone (paginé)                                                     |
-| `GET`   | `/reports/:id/download`        | Bearer | SUPERVISOR, ADMIN | Télécharger le fichier PDF physique d'un rapport généré (si prêt, restreint à l'admin/demandeur)                  |
+| `GET`    | `/reports/:id/download`        | Bearer | SUPERVISOR, ADMIN | Télécharger le fichier PDF physique d'un rapport généré (si prêt, restreint à l'admin/demandeur)                  |
+
+---
+
+## Paramètres Système Globaux (`/settings`)
+
+| Méthode | Route             | Auth   | Rôles                 | Description                                                 |
+| ------- | ----------------- | ------ | --------------------- | ----------------------------------------------------------- |
+| `GET`   | `/settings`       | Bearer | SUPERVISOR, ADMIN     | Lister l'ensemble des paramètres système globaux            |
+| `PATCH` | `/settings/:key`  | Bearer | ADMINISTRATOR         | Mettre à jour la valeur d'un paramètre système par sa clé   |
 
 ---
 
@@ -184,12 +205,12 @@
 
 | Méthode | Route           | Auth                             | Description                                     |
 | ------- | --------------- | -------------------------------- | ----------------------------------------------- |
-| `GET`   | `/admin/queues` | Basic Auth (prod) / Public (dev) | Interface BullBoard de supervision des 5 queues |
+| `GET`   | `/admin/queues` | Basic Auth (prod) / Public (dev) | Interface BullBoard de supervision des 6 queues |
 
 En production, protéger avec `BULLBOARD_USER` et `BULLBOARD_PASSWORD` dans `.env`.
 
 ---
 
-**Total: 55 routes sur 14 contrôleurs (dont 1 route admin BullBoard)**
+**Total: 60 routes sur 15 contrôleurs (dont 1 route admin BullBoard)**
 
 ---

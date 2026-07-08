@@ -1,6 +1,7 @@
 export * from './enums';
 export * from './departments';
 export * from './users';
+export * from './categories';
 export * from './sla-policies';
 export * from './tickets';
 export * from './ticket-assignments';
@@ -12,3 +13,4 @@ export * from './refresh-tokens';
 export * from './notifications';
 export * from './audit-logs';
 export * from './reports';
+export * from './settings';

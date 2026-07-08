@@ -1,10 +1,18 @@
-﻿import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { eq, and, isNull, sql, count } from 'drizzle-orm';
 import { generateUuid } from '../../../common/helpers/uuidv7.helper';
 
 import { DrizzleProvider } from '../../../database/drizzle.provider';
-import { tickets, ticketAssignments, slaPolicies, users, departments, ticketComments } from '../../../database/schemas';
+import {
+  tickets,
+  ticketAssignments,
+  slaPolicies,
+  users,
+  departments,
+  ticketComments,
+  categories,
+} from '../../../database/schemas';
 import { TicketStateMachine, TicketStatus } from '../domain/ticket-status-transitions';
 import { TicketPermissions } from '../domain/ticket-permissions';
 import { TicketNumberService } from './ticket-number.service';
@@ -12,6 +20,8 @@ import { TicketHistoryService } from './ticket-history.service';
 import { TicketNotFoundException } from '../domain/exceptions/ticket-not-found.exception';
 import { MetricsService } from '../../../common/metrics/metrics.service';
 import { JwtPayload } from '../../auth/interfaces/jwt-payload.interface';
+import { SettingsService } from '../../settings/settings.service';
+import { calculateSlaDueDate } from '../../../common/helpers/sla.helper';
 import {
   TicketCreatedEvent,
   TicketStatusChangedEvent,
@@ -35,6 +45,7 @@ export class TicketsService {
     private readonly ticketHistory: TicketHistoryService,
     private readonly eventEmitter: EventEmitter2,
     private readonly metricsService: MetricsService,
+    private readonly settingsService: SettingsService,
   ) {}
 
   /**
@@ -46,7 +57,7 @@ export class TicketsService {
       description: string;
       priority: string;
       severity: string;
-      category: string;
+      categoryId: string;
       departmentId: string;
       assignedTeamId: string;
       customerAccountNumber?: string;
@@ -62,7 +73,7 @@ export class TicketsService {
       .from(slaPolicies)
       .where(
         and(
-          eq(slaPolicies.category, dto.category as typeof slaPolicies.$inferSelect.category),
+          eq(slaPolicies.categoryId, dto.categoryId),
           eq(slaPolicies.priority, dto.priority as typeof slaPolicies.$inferSelect.priority),
         ),
       )
@@ -70,15 +81,32 @@ export class TicketsService {
 
     if (!policy) {
       throw new BadRequestException(
-        `Aucune politique SLA trouvee pour la combinaison category='${dto.category}' / priority='${dto.priority}'. Verifiez les politiques SLA disponibles.`,
+        `Aucune politique SLA trouvee pour cette categorie et cette priorite. Verifiez les politiques SLA disponibles.`,
       );
     }
+
+    const [cat] = await this.drizzle.db.select().from(categories).where(eq(categories.id, dto.categoryId)).limit(1);
+    const categoryName = cat?.name || 'UNKNOWN';
 
     const ticketNumber = await this.ticketNumber.generate();
     const id = generateUuid();
     const now = new Date();
-    const firstResponseDueAt = new Date(now.getTime() + policy.firstResponseMinutes * 60 * 1000);
-    const resolutionDueAt = new Date(now.getTime() + policy.resolutionMinutes * 60 * 1000);
+
+    // Le premier contact commence dès la création (START)
+    const calendarType = dto.priority === 'CRITICAL' || dto.priority === 'HIGH' ? '24_7' : 'BUSINESS_HOURS';
+    const businessHours = await this.settingsService.getBusinessHours();
+    const businessDays = await this.settingsService.getBusinessDays();
+    const firstResponseDueAt = calculateSlaDueDate(
+      now,
+      policy.firstResponseMinutes,
+      calendarType,
+      businessHours,
+      businessDays,
+    );
+
+    // Le SLA de résolution ne démarre qu'au passage en statut ASSIGNED/IN_PROGRESS.
+    // On initialise ici resolutionDueAt de façon lâche à 7 jours par défaut.
+    const resolutionDueAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
     await this.drizzle.db.insert(tickets).values({
       id,
@@ -88,7 +116,7 @@ export class TicketsService {
       status: 'NEW' as const,
       priority: dto.priority as typeof tickets.$inferSelect.priority,
       severity: dto.severity as typeof tickets.$inferSelect.severity,
-      category: dto.category as typeof tickets.$inferSelect.category,
+      categoryId: dto.categoryId,
       slaPolicyId: policy.id,
       customerAccountNumber: dto.customerAccountNumber || null,
       customerName: dto.customerName || null,
@@ -110,7 +138,7 @@ export class TicketsService {
     this.eventEmitter.emit('ticket.created', new TicketCreatedEvent(created, createdBy));
 
     // Métriques Prometheus
-    this.metricsService.ticketsCreatedTotal.inc({ priority: dto.priority, category: dto.category });
+    this.metricsService.ticketsCreatedTotal.inc({ priority: dto.priority, category: categoryName });
     this.metricsService.ticketsActive.inc();
 
     this.logger.log(`Ticket créé: ${ticketNumber} (${id}) par ${createdBy}`);
@@ -173,7 +201,7 @@ export class TicketsService {
       description?: string;
       priority?: string;
       severity?: string;
-      category?: string;
+      categoryId?: string;
       tags?: string;
     },
     user: JwtPayload,
@@ -189,7 +217,7 @@ export class TicketsService {
     if (dto.description !== undefined) updateData['description'] = dto.description;
     if (dto.priority !== undefined) updateData['priority'] = dto.priority;
     if (dto.severity !== undefined) updateData['severity'] = dto.severity;
-    if (dto.category !== undefined) updateData['category'] = dto.category;
+    if (dto.categoryId !== undefined) updateData['categoryId'] = dto.categoryId;
     if (dto.tags !== undefined) updateData['tags'] = dto.tags;
 
     await this.drizzle.db.update(tickets).set(updateData).where(eq(tickets.id, id));
@@ -251,27 +279,81 @@ export class TicketsService {
     }
 
     const updateFields: Record<string, unknown> = { status: newStatus };
+    const now = new Date();
 
-    // Actions spécifiques selon le statut cible
+    // Gestion du cycle de vie SLA (START / PAUSE / RESUME / STOP)
+
+    // 1. Passage à PENDING (PAUSE)
+    if (newStatus === 'PENDING_CUSTOMER' || newStatus === 'PENDING_THIRD_PARTY') {
+      updateFields['slaPausedAt'] = now;
+    }
+
+    // 2. Retour de PENDING à ASSIGNED ou IN_PROGRESS (RESUME)
+    if (
+      (oldStatus === 'PENDING_CUSTOMER' || oldStatus === 'PENDING_THIRD_PARTY') &&
+      (newStatus === 'ASSIGNED' || newStatus === 'IN_PROGRESS')
+    ) {
+      if (ticket.slaPausedAt) {
+        const pauseDuration = now.getTime() - new Date(ticket.slaPausedAt).getTime();
+        updateFields['accumulatedPauseMs'] = ticket.accumulatedPauseMs + pauseDuration;
+        updateFields['slaPausedAt'] = null;
+        if (ticket.resolutionDueAt) {
+          updateFields['resolutionDueAt'] = new Date(new Date(ticket.resolutionDueAt).getTime() + pauseDuration);
+        }
+      }
+    }
+
+    // 3. Premier démarrage de la résolution (START du SLA de Résolution)
+    if (
+      (oldStatus === 'NEW' || oldStatus === 'REOPENED') &&
+      (newStatus === 'ASSIGNED' || newStatus === 'IN_PROGRESS')
+    ) {
+      const [policy] = await this.drizzle.db
+        .select()
+        .from(slaPolicies)
+        .where(and(eq(slaPolicies.categoryId, ticket.categoryId), eq(slaPolicies.priority, ticket.priority)))
+        .limit(1);
+
+      if (policy) {
+        const calendarType = ticket.priority === 'CRITICAL' || ticket.priority === 'HIGH' ? '24_7' : 'BUSINESS_HOURS';
+        const businessHours = await this.settingsService.getBusinessHours();
+        const businessDays = await this.settingsService.getBusinessDays();
+        const resolutionDueAt = calculateSlaDueDate(
+          now,
+          policy.resolutionMinutes,
+          calendarType,
+          businessHours,
+          businessDays,
+        );
+        updateFields['resolutionDueAt'] = resolutionDueAt;
+      }
+    }
+
+    // 4. Arrêt ou nettoyage de pause sur Clôture (STOP / CLEANUP)
+    if (newStatus === 'RESOLVED' || newStatus === 'CLOSED' || newStatus === 'CANCELLED') {
+      updateFields['slaPausedAt'] = null;
+    }
+
+    // Actions spécifiques d'origine selon le statut cible
     if (newStatus === 'IN_PROGRESS' && !ticket.firstResponseAt) {
-      updateFields['firstResponseAt'] = new Date();
+      updateFields['firstResponseAt'] = now;
     }
     if (newStatus === 'RESOLVED') {
-      updateFields['resolvedAt'] = new Date();
+      updateFields['resolvedAt'] = now;
       if (reason) {
         updateFields['resolutionSummary'] = reason;
       }
     }
     if (newStatus === 'CLOSED') {
-      updateFields['closedAt'] = new Date();
+      updateFields['closedAt'] = now;
     }
     if (newStatus === 'REOPENED') {
-      // Re-ouvrir le ticket remet son resolvedAt et closedAt à null
       updateFields['resolvedAt'] = null;
       updateFields['closedAt'] = null;
-      // Recalculer le SLA à la réouverture (optionnel : ici on peut repousser de la durée restante ou recréer une échéance)
-      const now = new Date();
-      updateFields['resolutionDueAt'] = new Date(now.getTime() + 4 * 60 * 60 * 1000); // Ex: Rallonge de 4h
+      const businessHours = await this.settingsService.getBusinessHours();
+      const businessDays = await this.settingsService.getBusinessDays();
+      // Recalculer une rallonge sur réouverture en heures ouvrées par défaut
+      updateFields['resolutionDueAt'] = calculateSlaDueDate(now, 240, 'BUSINESS_HOURS', businessHours, businessDays); // +4h ouvrables
     }
 
     await this.drizzle.db.update(tickets).set(updateFields).where(eq(tickets.id, id));
@@ -427,7 +509,8 @@ export class TicketsService {
         status: tickets.status,
         priority: tickets.priority,
         severity: tickets.severity,
-        category: tickets.category,
+        categoryId: tickets.categoryId,
+        categoryName: categories.name,
         slaPolicyId: tickets.slaPolicyId,
         customerAccountNumber: tickets.customerAccountNumber,
         customerName: tickets.customerName,
@@ -444,6 +527,8 @@ export class TicketsService {
         closedAt: tickets.closedAt,
         tags: tickets.tags,
         metadata: tickets.metadata,
+        slaPausedAt: tickets.slaPausedAt,
+        accumulatedPauseMs: tickets.accumulatedPauseMs,
         createdAt: tickets.createdAt,
         updatedAt: tickets.updatedAt,
         creatorName: sql<string>`concat(${users.firstName}, ' ', ${users.lastName})`,
@@ -453,6 +538,7 @@ export class TicketsService {
       .from(tickets)
       .leftJoin(users, eq(tickets.createdBy, users.id))
       .leftJoin(departments, eq(tickets.departmentId, departments.id))
+      .leftJoin(categories, eq(tickets.categoryId, categories.id))
       .where(and(eq(tickets.id, id), isNull(tickets.deletedAt)))
       .limit(1);
 

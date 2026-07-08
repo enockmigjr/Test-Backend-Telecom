@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, text, boolean, timestamp, index, uniqueIndex } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, text, boolean, timestamp, index, uniqueIndex, integer } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { departments } from './departments';
 import { roleEnum } from './enums';
@@ -19,6 +19,10 @@ export const users = pgTable(
     lastName: varchar('last_name', { length: 100 }).notNull(),
     role: roleEnum('role').notNull(),
     isActive: boolean('is_active').notNull().default(true),
+    isAvailable: boolean('is_available').notNull().default(true),
+    maxConcurrentTickets: integer('max_concurrent_tickets').notNull().default(5),
+    absenceEndsAt: timestamp('absence_ends_at', { withTimezone: true }),
+    lastAssignedAt: timestamp('last_assigned_at', { withTimezone: true }),
     mustChangePassword: boolean('must_change_password').notNull().default(false),
     lastLoginAt: timestamp('last_login_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

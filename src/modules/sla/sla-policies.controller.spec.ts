@@ -13,7 +13,8 @@ const now = new Date('2026-01-01T00:00:00Z');
 const slaPoliciesList = [
   {
     id: 'sla-001',
-    category: 'NETWORK' as const,
+    categoryId: '019f28ea-9e12-7cc0-a0ea-3d4de79e7a95',
+    categoryName: 'NETWORK',
     priority: 'CRITICAL' as const,
     firstResponseMinutes: 15,
     resolutionMinutes: 120,
@@ -22,7 +23,8 @@ const slaPoliciesList = [
   },
   {
     id: 'sla-002',
-    category: 'NETWORK' as const,
+    categoryId: '019f28ea-9e12-7cc0-a0ea-3d4de79e7a95',
+    categoryName: 'NETWORK',
     priority: 'HIGH' as const,
     firstResponseMinutes: 30,
     resolutionMinutes: 240,
@@ -31,7 +33,8 @@ const slaPoliciesList = [
   },
   {
     id: 'sla-003',
-    category: 'BILLING' as const,
+    categoryId: '019f28ea-9e12-7cc0-a0ea-3d4de79e7a96',
+    categoryName: 'BILLING',
     priority: 'MEDIUM' as const,
     firstResponseMinutes: 60,
     resolutionMinutes: 1440,
@@ -42,7 +45,8 @@ const slaPoliciesList = [
 
 const singlePolicy = {
   id: 'sla-001',
-  category: 'NETWORK' as const,
+  categoryId: '019f28ea-9e12-7cc0-a0ea-3d4de79e7a95',
+  categoryName: 'NETWORK',
   priority: 'CRITICAL' as const,
   firstResponseMinutes: 15,
   resolutionMinutes: 120,
@@ -54,7 +58,8 @@ const createResult = {
   message: 'Politique SLA créée.',
   data: {
     id: 'sla-004',
-    category: 'TECHNICAL' as const,
+    categoryId: '019f28ea-9e12-7cc0-a0ea-3d4de79e7a97',
+    categoryName: 'TECHNICAL',
     priority: 'HIGH' as const,
     firstResponseMinutes: 30,
     resolutionMinutes: 480,
@@ -67,7 +72,8 @@ const updateResult = {
   message: 'Politique SLA mise à jour.',
   data: {
     id: 'sla-001',
-    category: 'NETWORK' as const,
+    categoryId: '019f28ea-9e12-7cc0-a0ea-3d4de79e7a95',
+    categoryName: 'NETWORK',
     priority: 'CRITICAL' as const,
     firstResponseMinutes: 10,
     resolutionMinutes: 90,
@@ -77,7 +83,7 @@ const updateResult = {
 };
 
 const createDto: CreateSlaPolicyDto = {
-  category: 'TECHNICAL',
+  categoryId: '019f28ea-9e12-7cc0-a0ea-3d4de79e7a97',
   priority: 'HIGH',
   firstResponseMinutes: 30,
   resolutionMinutes: 480,
@@ -150,7 +156,7 @@ describe('SlaPoliciesController', () => {
 
       expect(slaPoliciesService.findOne).toHaveBeenCalledWith('sla-001');
       expect(result).toEqual(singlePolicy);
-      expect(result.category).toBe('NETWORK');
+      expect(result.categoryName).toBe('NETWORK');
       expect(result.priority).toBe('CRITICAL');
     });
 

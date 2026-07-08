@@ -10,9 +10,10 @@ import {
   TicketResolvedEvent,
   TicketStatusChangedEvent,
   TicketReopenedEvent,
+  TicketDeassignedEvent,
 } from '../domain/ticket.events';
 import { DrizzleProvider } from '../../../database/drizzle.provider';
-import { departments, users, tickets } from '../../../database/schemas';
+import { departments, users, tickets, categories } from '../../../database/schemas';
 import { TelecomWebSocketGateway } from '../../../websocket/websocket.gateway';
 
 interface BullMqQueues {
@@ -108,12 +109,13 @@ export class TicketNotificationListener {
           description: tickets.description,
           priority: tickets.priority,
           severity: tickets.severity,
-          category: tickets.category,
+          category: categories.name,
           department: departments.name,
           resolutionDueAt: tickets.resolutionDueAt,
         })
         .from(tickets)
         .leftJoin(departments, eq(tickets.departmentId, departments.id))
+        .leftJoin(categories, eq(tickets.categoryId, categories.id))
         .where(and(eq(tickets.id, ticketId), isNull(tickets.deletedAt)))
         .limit(1);
       if (!ticket) return null;
@@ -339,12 +341,13 @@ export class TicketNotificationListener {
         description: tickets.description,
         priority: tickets.priority,
         severity: tickets.severity,
-        category: tickets.category,
+        category: categories.name,
         department: departments.name,
         resolutionDueAt: tickets.resolutionDueAt,
       })
       .from(tickets)
       .leftJoin(departments, eq(tickets.departmentId, departments.id))
+      .leftJoin(categories, eq(tickets.categoryId, categories.id))
       .where(eq(tickets.id, event.ticketId))
       .limit(1)
       .then((rows) => rows[0]);
@@ -407,5 +410,83 @@ export class TicketNotificationListener {
       oldStatus: event.oldStatus,
       newStatus: event.newStatus,
     });
+  }
+
+  @OnEvent('ticket.deassigned')
+  async handleTicketDeassigned(event: TicketDeassignedEvent): Promise<void> {
+    const ticketCtx = await this.getTicketEmailContext(event.ticketId);
+    if (!ticketCtx) return;
+
+    const payload = {
+      ticketId: event.ticketId,
+      ticketNumber: ticketCtx.ticketNumber,
+      title: ticketCtx.title,
+      reason: event.reason,
+    };
+
+    // WS aux Superviseurs
+    this.wsGateway.emitToRole('SUPERVISOR', 'ticket.deassigned', payload);
+
+    // WS à l'agent indisponible
+    this.wsGateway.emitToUser(event.deassignedAgentId, 'ticket.deassigned', payload);
+
+    // Notification persistante en DB pour l'agent indisponible
+    await this.createNotification({
+      userId: event.deassignedAgentId,
+      type: 'TICKET_ASSIGNED',
+      title: `Ticket désassigné d'urgence — ${ticketCtx.ticketNumber}`,
+      message: `Vous avez été désassigné de ce ticket. Motif: ${event.reason}`,
+      referenceType: 'ticket',
+      referenceId: event.ticketId,
+    });
+
+    // Envoyer l'email à l'agent
+    const agentInfo = await this.getUserInfo(event.deassignedAgentId);
+    if (agentInfo) {
+      await this.sendEmail({
+        to: agentInfo.email,
+        subject: `📋 Ticket désassigné d'urgence — ${ticketCtx.ticketNumber}`,
+        template: 'ticketDeassigned',
+        data: {
+          ticketId: event.ticketId,
+          ticketNumber: ticketCtx.ticketNumber,
+          ticketTitle: ticketCtx.title,
+          reason: event.reason,
+        },
+      });
+    }
+
+    // Trouver les superviseurs du département pour les notifier aussi par mail/notification
+    if (event.departmentId) {
+      const supervisors = await this.drizzle.db
+        .select()
+        .from(users)
+        .where(and(eq(users.departmentId, event.departmentId), eq(users.role, 'SUPERVISOR'), eq(users.isActive, true)));
+
+      for (const sup of supervisors) {
+        // Notification DB
+        await this.createNotification({
+          userId: sup.id,
+          type: 'TICKET_ASSIGNED',
+          title: `Alerte Désassignation — ${ticketCtx.ticketNumber}`,
+          message: `L'agent ${agentInfo?.fullName ?? 'indisponible'} a été désassigné du ticket. Motif: ${event.reason}`,
+          referenceType: 'ticket',
+          referenceId: event.ticketId,
+        });
+
+        // Email
+        await this.sendEmail({
+          to: sup.email,
+          subject: `📋 Alerte Désassignation d'urgence — ${ticketCtx.ticketNumber}`,
+          template: 'ticketDeassigned',
+          data: {
+            ticketId: event.ticketId,
+            ticketNumber: ticketCtx.ticketNumber,
+            ticketTitle: ticketCtx.title,
+            reason: `L'agent ${agentInfo?.fullName ?? 'indisponible'} a été désassigné. Motif: ${event.reason}`,
+          },
+        });
+      }
+    }
   }
 }

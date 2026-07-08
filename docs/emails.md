@@ -37,6 +37,7 @@ Avec BullMQ, la requête HTTP retourne immédiatement et l'email est envoyé en 
 | ------------------- | ------------------------- | ------------------------------ | -------------------- | -------- |
 | Ticket créé         | `ticket-created.hbs`      | `@OnEvent('ticket.created')`   | Créateur du ticket   | ✅ Actif |
 | Ticket assigné      | `ticket-assigned.hbs`     | `@OnEvent('ticket.assigned')`  | Agent assigné        | ✅ Actif |
+| Ticket désassigné   | `ticket-deassigned.hbs`   | `@OnEvent('ticket.deassigned')` | Agent + Superviseurs | ✅ Actif |
 | Ticket escaladé     | `ticket-assigned.hbs`     | `@OnEvent('ticket.escalated')` | Agent escaladé       | ✅ Actif |
 | SLA breach          | `sla-breach.hbs`          | `SlaEngineService` cron        | Supervisor + Assigné | ✅ Actif |
 | SLA warning         | `sla-warning.hbs`         | `SlaEngineService` cron        | Assigné              | ✅ Actif |
@@ -50,11 +51,12 @@ Avec BullMQ, la requête HTTP retourne immédiatement et l'email est envoyé en 
 
 **Dossier**: `src/modules/email/templates/*.hbs`
 
-9 templates HTML responsifs structurés avec un layout global parent :
+10 templates HTML responsifs structurés avec un layout global parent :
 
 - `base.hbs` — Layout global partagé (CSS inline, en-tête noir moderne, accents de couleur par type, footer unifié)
 - `ticket-created.hbs` — Confirmation création
 - `ticket-assigned.hbs` — Notification assignation
+- `ticket-deassigned.hbs` — Notification désassignation d'urgence (rouge)
 - `sla-breach.hbs` — Alerte critique (rouge)
 - `sla-warning.hbs` — Avertissement (orange)
 - `account-created.hbs` — Bienvenue + mot de passe temporaire

@@ -9,13 +9,14 @@ opérations lentes ou non-critiques du flux HTTP principal.
 
 ### Files (Queues) Définies
 
-| Queue                | Clé                  | Producteurs                                                                           | Consommateur (Worker) | Description                                     |
-| -------------------- | -------------------- | ------------------------------------------------------------------------------------- | --------------------- | ----------------------------------------------- |
+| Queue                | Clé                  | Producteurs                                                                           | Consommateur (Worker) | Description                                      |
+| -------------------- | -------------------- | ------------------------------------------------------------------------------------- | --------------------- | ------------------------------------------------ |
 | `email-queue`        | `EMAIL_QUEUE`        | TicketNotificationListener, UsersService, AuthService, ReportWorker, SlaEngineService | `EmailWorker`         | Envoi d'emails transactionnels (+10 flux actifs) |
-| `notification-queue` | `NOTIFICATION_QUEUE` | TicketNotificationListener, SlaEngineService, ReportWorker                            | `NotificationWorker`  | Création notifications + émission WebSocket     |
-| `sla-queue`          | `SLA_QUEUE`          | TicketSlaListener                                                                     | `SlaWorker`           | Vérification SLA différée (delayed job)         |
-| `audit-queue`        | `AUDIT_QUEUE`        | TicketAuditListener                                                                   | `AuditWorker`         | Écriture asynchrone des logs d'audit            |
-| `report-queue`       | `REPORT_QUEUE`       | ReportsController                                                                     | `ReportWorker`        | Génération rapports PDF premium + envoi email   |
+| `notification-queue` | `NOTIFICATION_QUEUE` | TicketNotificationListener, SlaEngineService, ReportWorker                            | `NotificationWorker`  | Création notifications + émission WebSocket      |
+| `sla-queue`          | `SLA_QUEUE`          | TicketSlaListener                                                                     | `SlaWorker`           | Vérification SLA différée (delayed job)          |
+| `audit-queue`        | `AUDIT_QUEUE`        | TicketAuditListener                                                                   | `AuditWorker`         | Écriture asynchrone des logs d'audit             |
+| `report-queue`       | `REPORT_QUEUE`       | ReportsController                                                                     | `ReportWorker`        | Génération rapports PDF premium + envoi email    |
+| `assignment-queue`   | `ASSIGNMENT_QUEUE`   | TicketAssignmentListener                                                              | `AssignmentWorker`    | Moteur d'auto-assignation et aiguillage          |
 
 ### Flux de Traitement
 
@@ -26,7 +27,6 @@ opérations lentes ou non-critiques du flux HTTP principal.
 4. Pour les rapports : ReportWorker génère un document PDFKit élégant (en-têtes sombres, grilles)
 5. ReportWorker stocke le PDF localement et soumet l'envoi d'e-mail avec le lien sécurisé de téléchargement à l'EMAIL_QUEUE
 6. EmailWorker consomme le job et envoie l'e-mail de succès au destinataire contenant le lien de téléchargement unique
-
 ```
 
 ### Pourquoi Asynchrone ?
@@ -36,6 +36,7 @@ opérations lentes ou non-critiques du flux HTTP principal.
 - **SLA**: Vérifications différées sans impacter les requêtes utilisateur
 - **Audit**: Écriture non-bloquante pour ne pas ralentir les opérations métier
 - **Rapports**: Génération PDF (lourde) en arrière-plan, notification à l'utilisateur quand c'est prêt
+- **Assignation**: Aiguillage automatique découplé de la création du ticket (évite les verrous de DB bloquants)
 
 ## Cron Jobs
 
@@ -50,6 +51,16 @@ opérations lentes ou non-critiques du flux HTTP principal.
   5. **Auto-clôture** : passe les tickets `RESOLVED` depuis plus de 48h en `CLOSED` (avec entrée d'historique système)
 - **Actions**: DB update + métrique Prometheus + WebSocket + notification + email
 - **Impact**: ~10-50ms par exécution (requête SQL avec index)
+
+### Auto-Assignation et Consolidation (`AutoAssignmentCron.runAutoAssignment()`)
+
+- **Fréquence**: Toutes les 2 minutes (`*/2 * * * *`)
+- **Fonctionnement**:
+  1. Vérifie si la vue matérialisée du workload (`materialized_workload_view`) existe dans `pg_matviews` avant de rafraîchir.
+  2. Traite le retour d'absence des agents (remet en disponibilité).
+  3. Effectue la **désassignation d'urgence** des agents inactifs ou absents (désassignation immédiate si absence de plus de 24 heures ou si l'agent est hors-ligne et que l'échéance SLA approche).
+  4. Récupère et route les tickets non assignés (NEW, REOPENED) par lots de 50 (avec traitement parallèle par groupes de 10).
+- **Actions**: DB update + émission de l'événement `ticket.deassigned` (avec envoi de notifications DB et e-mail à l'agent indisponible et aux superviseurs de son département).
 
 ### Rapport Hebdomadaire Automatique (`ReportsService.handleWeeklyReportCron()`)
 

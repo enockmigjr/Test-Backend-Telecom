@@ -1,0 +1,25 @@
+{{#> base}}
+<div style="padding: 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333333;">
+  <h2 style="color: #dc2626; margin-top: 0;">📋 Ticket désassigné d'urgence</h2>
+  <p>Bonjour,</p>
+  <p>Nous vous informons que le ticket d'incident <strong>{{ticketNumber}}</strong> ("{{ticketTitle}}") a été automatiquement désassigné.</p>
+  
+  <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; border-radius: 4px;">
+    <p style="margin: 0; font-weight: bold; color: #92400e;">Motif de la désassignation :</p>
+    <p style="margin: 5px 0 0 0; color: #78350f;">{{reason}}</p>
+  </div>
+
+  <p>Afin de garantir le respect des engagements de niveau de service (SLA) et d'assurer une prise en charge rapide par un autre agent disponible, le ticket a été replacé en attente d'aiguillage.</p>
+  
+  <p style="margin-top: 30px;">
+    <a href="{{appUrl}}/tickets/{{ticketId}}" style="background-color: #1e40af; color: #ffffff; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;">
+      Consulter le Ticket
+    </a>
+  </p>
+
+  <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+  <small style="color: #6b7280; display: block;">
+    Cet e-mail est généré automatiquement par la plateforme Telecom Ticket Management.
+  </small>
+</div>
+{{/base}}

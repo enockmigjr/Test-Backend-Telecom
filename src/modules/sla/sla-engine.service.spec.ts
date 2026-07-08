@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Test, TestingModule } from '@nestjs/testing';
 import { DrizzleProvider } from '../../database/drizzle.provider';
 
@@ -84,12 +85,28 @@ describe('SlaEngineService', () => {
     };
     const mockQueue = {
       add: jest.fn().mockResolvedValue({ id: 'job-id' }),
+      remove: jest.fn().mockResolvedValue(undefined),
     };
     const mockQueues = {
       email: mockQueue,
       notification: mockQueue,
+      sla: mockQueue,
     };
-    service = new SlaEngineService(drizzle, mockMetricsService, mockWsGateway, mockQueues);
+    const mockEventEmitter = {
+      emit: jest.fn(),
+    };
+    const mockSettingsService = {
+      getBusinessHours: jest.fn().mockResolvedValue({ start: 8, end: 18 }),
+      getBusinessDays: jest.fn().mockResolvedValue([1, 2, 3, 4, 5]),
+    };
+    service = new SlaEngineService(
+      drizzle,
+      mockMetricsService,
+      mockWsGateway,
+      mockEventEmitter as any,
+      mockSettingsService as any,
+      mockQueues as any,
+    );
   });
 
   afterEach(() => {
@@ -97,35 +114,35 @@ describe('SlaEngineService', () => {
   });
 
   describe("calculateDueDate() — Calcul de la date d'echeance SLA", () => {
-    it('doit retourner createdAt + resolutionMinutes pour un calcul simple', () => {
+    it('doit retourner createdAt + resolutionMinutes pour un calcul simple', async () => {
       const createdAt = new Date('2026-06-26T10:00:00Z');
       const resolutionMinutes = 120; // 2 heures
 
-      const dueDate = service.calculateDueDate(createdAt, resolutionMinutes);
+      const dueDate = await service.calculateDueDate(createdAt, resolutionMinutes);
 
       expect(dueDate.toISOString()).toBe('2026-06-26T12:00:00.000Z');
     });
 
-    it('doit retourner createdAt + 0 pour resolutionMinutes = 0', () => {
+    it('doit retourner createdAt + 0 pour resolutionMinutes = 0', async () => {
       const createdAt = new Date('2026-06-26T10:00:00Z');
 
-      const dueDate = service.calculateDueDate(createdAt, 0);
+      const dueDate = await service.calculateDueDate(createdAt, 0);
 
       expect(dueDate.toISOString()).toBe(createdAt.toISOString());
     });
 
-    it('doit fonctionner avec de grandes valeurs (24h = 1440 minutes)', () => {
+    it('doit fonctionner avec de grandes valeurs (24h = 1440 minutes)', async () => {
       const createdAt = new Date('2026-06-26T10:00:00Z');
 
-      const dueDate = service.calculateDueDate(createdAt, 1440);
+      const dueDate = await service.calculateDueDate(createdAt, 1440);
 
       expect(dueDate.toISOString()).toBe('2026-06-27T10:00:00.000Z');
     });
 
-    it('doit retourner une nouvelle instance Date (pas la meme reference)', () => {
+    it('doit retourner une nouvelle instance Date (pas la meme reference)', async () => {
       const createdAt = new Date('2026-06-26T10:00:00Z');
 
-      const dueDate = service.calculateDueDate(createdAt, 60);
+      const dueDate = await service.calculateDueDate(createdAt, 60);
 
       expect(dueDate).not.toBe(createdAt);
       expect(dueDate.getTime()).toBe(createdAt.getTime() + 3600000);

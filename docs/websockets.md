@@ -50,6 +50,7 @@ if (this.wsGateway.isUserConnected(userId)) {
 | `ticket.resolved`       | `role:SUPERVISOR`                     | TicketNotificationListener                                       |
 | `ticket.closed`         | `role:SUPERVISOR`                     | TicketNotificationListener + SlaEngineService (auto-clôture 48h) |
 | `ticket.reopened`       | `role:SUPERVISOR`                     | TicketNotificationListener                                       |
+| `ticket.deassigned`     | `user:{id}` + `role:SUPERVISOR`       | TicketNotificationListener                                       |
 | `ticket.status_changed` | `role:SUPERVISOR`                     | TicketNotificationListener                                       |
 | `ticket.sla_breached`   | `user:{id}` + `role:SUPERVISOR`       | SlaEngineService (cron)                                          |
 | `ticket.sla_warning`    | `user:{id}` + `role:SUPERVISOR`       | SlaEngineService (cron)                                          |

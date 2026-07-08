@@ -1,14 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { and, or, eq, gte, lte, like, isNull, sql, SQL } from 'drizzle-orm';
 import { DrizzleProvider } from '../../../database/drizzle.provider';
-import { tickets } from '../../../database/schemas';
+import { tickets, categories } from '../../../database/schemas';
 import { PaginationHelper } from '../../../common/helpers/pagination.helper';
 
 export interface TicketSearchFilters {
   status?: string;
   priority?: string;
   severity?: string;
-  category?: string;
+  categoryId?: string;
   assignedTo?: string;
   assignedTeam?: string;
   departmentId?: string;
@@ -42,8 +42,8 @@ export class TicketsSearchService {
     if (filters.severity) {
       conditions.push(eq(tickets.severity, filters.severity as typeof tickets.$inferSelect.severity));
     }
-    if (filters.category) {
-      conditions.push(eq(tickets.category, filters.category as typeof tickets.$inferSelect.category));
+    if (filters.categoryId) {
+      conditions.push(eq(tickets.categoryId, filters.categoryId));
     }
     if (filters.assignedTo) {
       conditions.push(eq(tickets.assignedTo, filters.assignedTo));
@@ -89,13 +89,15 @@ export class TicketsSearchService {
         status: tickets.status,
         priority: tickets.priority,
         severity: tickets.severity,
-        category: tickets.category,
+        categoryId: tickets.categoryId,
+        categoryName: categories.name,
         assignedTo: tickets.assignedTo,
         customerName: tickets.customerName,
         createdAt: tickets.createdAt,
         updatedAt: tickets.updatedAt,
       })
       .from(tickets)
+      .leftJoin(categories, eq(tickets.categoryId, categories.id))
       .where(where)
       .orderBy(order === 'asc' ? tickets.createdAt : sql`${tickets.createdAt} desc`)
       .limit(limit)

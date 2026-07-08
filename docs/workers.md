@@ -37,23 +37,28 @@ TicketAuditListener                 AUDIT_QUEUE           AuditWorker           
 ReportsController                   REPORT_QUEUE          ReportWorker                    PDF + Email
   POST /reports/ticket/:id          (report-queue)        concurrency: 3
   POST /reports/sla
+
+TicketAssignmentListener            ASSIGNMENT_QUEUE      AssignmentWorker                PostgreSQL
+  @OnEvent('ticket.created')        (assignment-queue)    concurrency: 1                 UPDATE assigned_to
+  @OnEvent('ticket.unassigned')
 ```
 
-## Les 5 Workers — Fichiers et Responsabilités
+## Les 6 Workers — Fichiers et Responsabilités
 
 | Worker             | Fichier                                     | Queue                | Concurrence | Rôle                                                                                              |
 | ------------------ | ------------------------------------------- | -------------------- | ----------- | ------------------------------------------------------------------------------------------------- |
-| EmailWorker        | `src/queues/workers/email.worker.ts`        | `email-queue`        | 5           | Envoi d'emails via Nodemailer (7 templates)                                                       |
+| EmailWorker        | `src/queues/workers/email.worker.ts`        | `email-queue`        | 5           | Envoi d'emails via Nodemailer (10 templates)                                                      |
 | NotificationWorker | `src/queues/workers/notification.worker.ts` | `notification-queue` | 10          | Persiste en DB + émet WS si user connecté                                                         |
 | SlaWorker          | `src/queues/workers/sla.worker.ts`          | `sla-queue`          | 5           | Vérifie les breaches SLA à l'échéance                                                             |
 | AuditWorker        | `src/queues/workers/audit.worker.ts`        | `audit-queue`        | 20          | Persiste les actions en `audit_logs` (immuables)                                                  |
 | ReportWorker       | `src/queues/workers/report.worker.ts`       | `report-queue`       | 3           | Génère des rapports PDF, les stocke localement et envoie un e-mail avec un lien de téléchargement |
+| AssignmentWorker   | `src/queues/workers/assignment.worker.ts`   | `assignment-queue`   | 1           | Exécute l'aiguillage automatique d'un ticket en tâche de fond (stratégies RR/LeastLoaded)         |
 
 ### Où sont-ils instanciés ?
 
 **Fichier** : `src/queues/queues.module.ts`
 
-Les 5 workers sont enregistrés comme `providers` dans le `QueuesModule` (module global, importé dans `AppModule`).
+Les 6 workers sont enregistrés comme `providers` dans le `QueuesModule` (module global, importé dans `AppModule`).
 Ils implémentent `OnModuleInit` → démarrent automatiquement au lancement de l'API.
 
 ## Détail de Chaque Worker
@@ -154,6 +159,25 @@ Le `SlaEngineService` tourne en cron `*/5 min` pour rattraper les breaches manqu
 - Tâche planifiée automatique `@Cron('0 6 * * 1')` (tous les lundis matin à 06h00 dans `ReportsService` pour le premier administrateur actif)
 
 Le rapport PDF est généré avec **PDFKit**, écrit sur le disque local via `LocalStorageService` (associé à la table de suivi `reports` en base de données), puis notifié par email et notification in-app au demandeur sous forme de lien de téléchargement sécurisé `/api/v1/reports/:id/download`. En cas d'échec de la génération, le statut est mis à jour à `failed` et un e-mail d'erreur contenant les détails techniques est envoyé obligatoirement au demandeur.
+
+---
+
+### 6. AssignmentWorker
+
+**Fichier** : `src/queues/workers/assignment.worker.ts`
+
+**Rôle** : Consomme la file `assignment-queue` pour router automatiquement et ré-aiguiller les tickets d'incident de façon découplée.
+
+**Fonctionnement** :
+- Reçoit le `ticketId`.
+- Invoque `AssignmentEngineService.routeTicket(ticketId)` qui applique les règles de routage (RR/LeastLoaded) au sein d'une transaction de base de données avec verrou exclusif (`SELECT FOR UPDATE`).
+- Si un agent éligible est trouvé et assigné, met à jour le statut du ticket à `ASSIGNED` et propage l'assignation.
+
+**Déclencheurs** :
+- `TicketAssignmentListener` → `@OnEvent('ticket.created')` pour tout nouveau ticket.
+- `TicketAssignmentListener` → `@OnEvent('ticket.unassigned')` lors d'une désassignation d'urgence par le Cron.
+
+---
 
 ## Cycle de Vie d'un Job BullMQ
 

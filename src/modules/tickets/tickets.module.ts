@@ -4,11 +4,14 @@ import { TicketsService } from './services/tickets.service';
 import { TicketsSearchService } from './services/tickets-search.service';
 import { TicketNumberService } from './services/ticket-number.service';
 import { TicketHistoryService } from './services/ticket-history.service';
+import { AssignmentEngineService } from './services/assignment-engine.service';
+import { AutoAssignmentCron } from './services/auto-assignment.cron';
 import { TicketStateMachine } from './domain/ticket-status-transitions';
 import { TicketPermissions } from './domain/ticket-permissions';
 import { TicketNotificationListener } from './listeners/ticket-notification.listener';
 import { TicketAuditListener } from './listeners/ticket-audit.listener';
 import { TicketSlaListener } from './listeners/ticket-sla.listener';
+import { TicketAssignmentListener } from './listeners/ticket-assignment.listener';
 import { WebSocketModule } from '../../websocket/websocket.module';
 
 /**
@@ -28,12 +31,15 @@ import { WebSocketModule } from '../../websocket/websocket.module';
     TicketsSearchService,
     TicketNumberService,
     TicketHistoryService,
+    AssignmentEngineService,
+    AutoAssignmentCron,
     TicketStateMachine,
     TicketPermissions,
     TicketNotificationListener,
     TicketAuditListener,
     TicketSlaListener,
+    TicketAssignmentListener,
   ],
-  exports: [TicketsService, TicketsSearchService, TicketHistoryService, TicketPermissions],
+  exports: [TicketsService, TicketsSearchService, TicketHistoryService, TicketPermissions, AssignmentEngineService],
 })
 export class TicketsModule {}

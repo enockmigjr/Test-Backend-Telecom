@@ -42,17 +42,29 @@ describe('SLA — Intégration (DB réelle)', () => {
   it('POST /sla-policies — doit créer une politique SLA (201)', async () => {
     if (!adminToken) return;
     const { DrizzleProvider } = await import('../../src/database/drizzle.provider');
-    const { slaPolicies } = await import('../../src/database/schemas');
+    const { slaPolicies, categories } = await import('../../src/database/schemas');
     const { and, eq } = await import('drizzle-orm');
+    const { generateUuid } = await import('../../src/common/helpers/uuidv7.helper');
     const drizzle = app.get(DrizzleProvider);
+
+    // Récupérer ou créer la catégorie HARDWARE
+    let hardwareCat = (await drizzle.db.select().from(categories).where(eq(categories.name, 'HARDWARE')).limit(1))[0];
+    if (!hardwareCat) {
+      const id = generateUuid();
+      [hardwareCat] = await drizzle.db
+        .insert(categories)
+        .values({ id, name: 'HARDWARE', description: 'Matériel' })
+        .returning();
+    }
+
     await drizzle.db
       .delete(slaPolicies)
-      .where(and(eq(slaPolicies.category, 'HARDWARE'), eq(slaPolicies.priority, 'LOW')));
+      .where(and(eq(slaPolicies.categoryId, hardwareCat.id), eq(slaPolicies.priority, 'LOW')));
 
     const res = await request(app.getHttpServer())
       .post('/api/v1/sla-policies')
       .set('Authorization', `Bearer ${adminToken}`)
-      .send({ category: 'HARDWARE', priority: 'LOW', firstResponseMinutes: 240, resolutionMinutes: 1440 })
+      .send({ categoryId: hardwareCat.id, priority: 'LOW', firstResponseMinutes: 240, resolutionMinutes: 1440 })
       .expect(201);
     expect(res.body.success).toBe(true);
   });

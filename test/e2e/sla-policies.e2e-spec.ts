@@ -9,6 +9,7 @@ describe('SLA Policies — E2E', () => {
   let adminToken: string;
   let agentToken: string;
   let createdPolicyId: string;
+  let categoryId: string;
 
   jest.setTimeout(60000);
 
@@ -18,6 +19,10 @@ describe('SLA Policies — E2E', () => {
     app = testApp;
 
     const drizzle = app.get(DrizzleProvider);
+    const { categories } = await import('../../src/database/schemas');
+    const [existingCategory] = await drizzle.db.select().from(categories).limit(1);
+    categoryId = existingCategory ? existingCategory.id : '00000000-0000-0000-0000-000000000000';
+
     const allUsers = await drizzle.db.select().from(users);
     const admin = allUsers.find((u) => u.email === 'admin@telecom.local');
     const csAgent = allUsers.find((u) => u.email === 'agent-cc1@telecom.local');
@@ -61,7 +66,7 @@ describe('SLA Policies — E2E', () => {
         .post('/api/v1/sla-policies')
         .set('Authorization', `Bearer ${agentToken}`)
         .send({
-          category: 'OTHER',
+          categoryId: categoryId,
           priority: 'LOW',
           firstResponseMinutes: 60,
           resolutionMinutes: 300,
@@ -74,7 +79,7 @@ describe('SLA Policies — E2E', () => {
         .post('/api/v1/sla-policies')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
-          category: 'HARDWARE',
+          categoryId: categoryId,
           priority: 'CRITICAL',
           firstResponseMinutes: 10,
           resolutionMinutes: 60,

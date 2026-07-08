@@ -31,10 +31,10 @@ export class SearchTicketsDto extends PaginationDto {
   @IsString()
   severity?: string;
 
-  @ApiPropertyOptional({ description: 'Filtrer par catégorie' })
+  @ApiPropertyOptional({ description: 'Filtrer par catégorie (UUID)' })
   @IsOptional()
-  @IsString()
-  category?: string;
+  @IsUUID('all')
+  categoryId?: string;
 
   @ApiPropertyOptional({ description: 'Filtrer par agent assigné (UUID)' })
   @IsOptional()

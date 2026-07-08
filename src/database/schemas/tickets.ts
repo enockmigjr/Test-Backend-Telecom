@@ -1,9 +1,21 @@
-import { pgTable, uuid, varchar, text, boolean, timestamp, index, uniqueIndex, jsonb } from 'drizzle-orm/pg-core';
+import {
+  pgTable,
+  uuid,
+  varchar,
+  text,
+  boolean,
+  timestamp,
+  index,
+  uniqueIndex,
+  jsonb,
+  integer,
+} from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { departments } from './departments';
 import { users } from './users';
 import { slaPolicies } from './sla-policies';
-import { ticketStatusEnum, ticketPriorityEnum, ticketSeverityEnum, ticketCategoryEnum } from './enums';
+import { categories } from './categories';
+import { ticketStatusEnum, ticketPriorityEnum, ticketSeverityEnum } from './enums';
 
 /**
  * Table principale des tickets d'incidents.
@@ -19,7 +31,9 @@ export const tickets = pgTable(
     status: ticketStatusEnum('status').notNull().default('NEW'),
     priority: ticketPriorityEnum('priority').notNull(),
     severity: ticketSeverityEnum('severity').notNull(),
-    category: ticketCategoryEnum('category').notNull(),
+    categoryId: uuid('category_id')
+      .notNull()
+      .references(() => categories.id),
     slaPolicyId: uuid('sla_policy_id')
       .notNull()
       .references(() => slaPolicies.id),
@@ -45,6 +59,8 @@ export const tickets = pgTable(
     closedAt: timestamp('closed_at', { withTimezone: true }),
     tags: text('tags'),
     metadata: jsonb('metadata'),
+    slaPausedAt: timestamp('sla_paused_at', { withTimezone: true }),
+    accumulatedPauseMs: integer('accumulated_pause_ms').notNull().default(0),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true })
       .notNull()
@@ -88,6 +104,10 @@ export const ticketsRelations = relations(tickets, ({ one }) => ({
   slaPolicy: one(slaPolicies, {
     fields: [tickets.slaPolicyId],
     references: [slaPolicies.id],
+  }),
+  category: one(categories, {
+    fields: [tickets.categoryId],
+    references: [categories.id],
   }),
 }));
 

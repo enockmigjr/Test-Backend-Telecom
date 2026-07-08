@@ -63,3 +63,12 @@ export class TicketCancelledEvent {
     public readonly cancelledBy: string,
   ) {}
 }
+
+export class TicketDeassignedEvent {
+  constructor(
+    public readonly ticketId: string,
+    public readonly deassignedAgentId: string,
+    public readonly reason: string,
+    public readonly departmentId: string,
+  ) {}
+}

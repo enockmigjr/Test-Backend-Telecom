@@ -6,18 +6,26 @@ import { NotificationWorker } from './workers/notification.worker';
 import { SlaWorker } from './workers/sla.worker';
 import { AuditWorker } from './workers/audit.worker';
 import { ReportWorker } from './workers/report.worker';
+import { AssignmentWorker, ASSIGNMENT_QUEUE } from './workers/assignment.worker';
 
 export const EMAIL_QUEUE = 'email-queue';
 export const NOTIFICATION_QUEUE = 'notification-queue';
 export const SLA_QUEUE = 'sla-queue';
 export const AUDIT_QUEUE = 'audit-queue';
 export const REPORT_QUEUE = 'report-queue';
+export { ASSIGNMENT_QUEUE };
+
 import { ReportsModule } from '../modules/reports/reports.module';
 import { AttachmentsModule } from '../modules/attachments/attachments.module';
+import { TicketsModule } from '../modules/tickets/tickets.module';
 
 @Global()
 @Module({
-  imports: [forwardRef(() => ReportsModule), AttachmentsModule],
+  imports: [
+    forwardRef(() => ReportsModule),
+    AttachmentsModule,
+    forwardRef(() => TicketsModule), // Requis pour injecter AssignmentEngineService dans AssignmentWorker
+  ],
   providers: [
     {
       provide: 'BullMQ_Queues',
@@ -32,6 +40,7 @@ import { AttachmentsModule } from '../modules/attachments/attachments.module';
           notification: new Queue(NOTIFICATION_QUEUE, { connection }),
           sla: new Queue(SLA_QUEUE, { connection }),
           audit: new Queue(AUDIT_QUEUE, { connection }),
+          assignment: new Queue(ASSIGNMENT_QUEUE, { connection }),
           report: new Queue(REPORT_QUEUE, {
             connection,
             defaultJobOptions: {
@@ -50,6 +59,7 @@ import { AttachmentsModule } from '../modules/attachments/attachments.module';
     SlaWorker,
     AuditWorker,
     ReportWorker,
+    AssignmentWorker,
   ],
   exports: ['BullMQ_Queues'],
 })
@@ -57,6 +67,6 @@ export class QueuesModule implements OnModuleInit {
   private readonly logger = new Logger(QueuesModule.name);
 
   onModuleInit(): void {
-    this.logger.log('Files BullMQ + 5 Workers initialisés: email, notification, sla, audit, report');
+    this.logger.log('Files BullMQ + 6 Workers initialisés: email, notification, sla, audit, report, assignment');
   }
 }

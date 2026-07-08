@@ -3,13 +3,15 @@ import { Cron } from '@nestjs/schedule';
 import { and, lt, gte, eq, notInArray, isNull } from 'drizzle-orm';
 import { Queue } from 'bullmq';
 import { DrizzleProvider } from '../../database/drizzle.provider';
-import { departments, tickets, users, ticketHistory } from '../../database/schemas';
+import { departments, tickets, users, ticketHistory, categories } from '../../database/schemas';
 import { MetricsService } from '../../common/metrics/metrics.service';
 import { TelecomWebSocketGateway } from '../../websocket/websocket.gateway';
 import { EMAIL_QUEUE, NOTIFICATION_QUEUE } from '../../queues/queues.module';
 import { generateUuid } from '../../common/helpers/uuidv7.helper';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { TicketStatusChangedEvent, TicketClosedEvent } from '../tickets/domain/ticket.events';
+import { calculateSlaDueDate } from '../../common/helpers/sla.helper';
+import { SettingsService } from '../settings/settings.service';
 
 interface BullMqQueues {
   email: Queue;
@@ -35,6 +37,7 @@ export class SlaEngineService {
     private readonly metricsService: MetricsService,
     private readonly wsGateway: TelecomWebSocketGateway,
     private readonly eventEmitter: EventEmitter2,
+    private readonly settingsService: SettingsService,
     @Inject('BullMQ_Queues') private readonly queues: BullMqQueues,
   ) {}
 
@@ -84,7 +87,7 @@ export class SlaEngineService {
         priority: tickets.priority,
         status: tickets.status,
         severity: tickets.severity,
-        category: tickets.category,
+        categoryName: categories.name,
         departmentName: departments.name,
         assignedTo: tickets.assignedTo,
         resolutionDueAt: tickets.resolutionDueAt,
@@ -95,12 +98,14 @@ export class SlaEngineService {
       .from(tickets)
       .leftJoin(users, eq(tickets.assignedTo, users.id))
       .leftJoin(departments, eq(tickets.departmentId, departments.id))
+      .leftJoin(categories, eq(tickets.categoryId, categories.id))
       .where(
         and(
           lt(tickets.resolutionDueAt, now),
           eq(tickets.slaBreached, false),
           isNull(tickets.deletedAt),
           notInArray(tickets.status, SlaEngineService.CLOSED_STATUSES),
+          isNull(tickets.slaPausedAt), // Ne pas breacher si le SLA est en pause !
         ),
       )
       .limit(100);
@@ -126,7 +131,7 @@ export class SlaEngineService {
         await this.notificationQueue.add('create-notification', {
           userId: ticket.assignedTo,
           type: 'SLA_BREACHED',
-          title: `⚠�? SLA Depasse — ${ticket.ticketNumber}`,
+          title: `⚠ SLA Depasse — ${ticket.ticketNumber}`,
           message: `Le SLA du ticket ${ticket.ticketNumber} a ete depasse. Action urgente requise.`,
           referenceType: 'ticket',
           referenceId: ticket.id,
@@ -154,7 +159,7 @@ export class SlaEngineService {
               priority: ticket.priority,
               status: ticket.status,
               severity: ticket.severity,
-              category: ticket.category,
+              category: ticket.categoryName,
               department: ticket.departmentName ?? 'Non renseigne',
               assigneeName,
               slaExpiredAt,
@@ -174,7 +179,7 @@ export class SlaEngineService {
         title: tickets.title,
         priority: tickets.priority,
         severity: tickets.severity,
-        category: tickets.category,
+        categoryName: categories.name,
         status: tickets.status,
         assignedTo: tickets.assignedTo,
         resolutionDueAt: tickets.resolutionDueAt,
@@ -186,6 +191,7 @@ export class SlaEngineService {
       .from(tickets)
       .leftJoin(users, eq(tickets.assignedTo, users.id))
       .leftJoin(departments, eq(tickets.departmentId, departments.id))
+      .leftJoin(categories, eq(tickets.categoryId, categories.id))
       .where(
         and(
           gte(tickets.resolutionDueAt, now),
@@ -193,6 +199,7 @@ export class SlaEngineService {
           isNull(tickets.deletedAt),
           notInArray(tickets.status, SlaEngineService.CLOSED_STATUSES),
           eq(tickets.slaBreached, false),
+          isNull(tickets.slaPausedAt), // Pas d'alerte SLA warning si le SLA est en pause !
         ),
       )
       .limit(100);
@@ -216,7 +223,7 @@ export class SlaEngineService {
         await this.notificationQueue.add('create-notification', {
           userId: ticket.assignedTo,
           type: 'SLA_WARNING',
-          title: `�?� SLA Warning — ${ticket.ticketNumber}`,
+          title: `⚠ SLA Warning — ${ticket.ticketNumber}`,
           message: `Moins de 30 minutes avant l'echeance SLA du ticket ${ticket.ticketNumber}.`,
           referenceType: 'ticket',
           referenceId: ticket.id,
@@ -240,7 +247,7 @@ export class SlaEngineService {
               ticketTitle: ticket.title,
               priority: ticket.priority,
               severity: ticket.severity,
-              category: ticket.category,
+              category: ticket.categoryName,
               status: ticket.status,
               department: ticket.departmentName ?? 'Non renseigne',
               slaDueAt: this.formatDateTime(ticket.resolutionDueAt),
@@ -320,7 +327,13 @@ export class SlaEngineService {
     }
   }
 
-  calculateDueDate(createdAt: Date, resolutionMinutes: number): Date {
-    return new Date(createdAt.getTime() + resolutionMinutes * 60 * 1000);
+  async calculateDueDate(
+    createdAt: Date,
+    resolutionMinutes: number,
+    calendarType: '24_7' | 'BUSINESS_HOURS' = '24_7',
+  ): Promise<Date> {
+    const businessHours = await this.settingsService.getBusinessHours();
+    const businessDays = await this.settingsService.getBusinessDays();
+    return calculateSlaDueDate(createdAt, resolutionMinutes, calendarType, businessHours, businessDays);
   }
 }
