@@ -4,6 +4,27 @@ Tous les changements notables sont documentés ici. Format basé sur [Keep a Cha
 
 ---
 
+## [1.4.0] — 2026-07-08
+
+### Added
+
+- **Paramètres Système Dynamiques (`/settings`)** : Ajout du module NestJS `settings` exposant des routes REST d'administration (`GET/PATCH /settings`) protégées, permettant la configuration en base de données des horaires de bureau (`BUSINESS_HOURS_START`/`BUSINESS_HOURS_END`), des jours de la semaine ouvrés (`BUSINESS_DAYS`, ex: `1,2,3,4,5`) et du nombre maximal de tickets actifs par défaut (`MAX_CONCURRENT_TICKETS`), avec cache en mémoire locale d'une minute.
+- **Routage Dynamique Catégorie-Rôle** : Remplacement du mappage en dur des rôles par une colonne dynamique `targetRole` dans la table `categories`. Les catégories ne sont plus figées dans un `Enum` TypeScript mais stockées en DB et modifiables.
+- **SLA différenciés par phase** : Le SLA de premier contact (`firstResponseDueAt`) s'égraine dès la création (`created_at`) alors que le SLA de résolution (`resolutionDueAt`) ne commence qu'au passage réel en statut `ASSIGNED` ou `IN_PROGRESS` (soit à la première prise en charge/assignation) pour ne pas pénaliser l'agent.
+- **Jours Ouvrés Dynamiques** : Suppression des jours de week-end en dur (`day === 6` et `day === 0`) dans `sla.helper.ts` au profit d'un ajustement basé sur le paramètre `BUSINESS_DAYS`.
+- **Cloisonnement ABAC Départemental** : Les agents et les superviseurs sont cloisonnés par leur `departmentId` pour la lecture/écriture des tickets. Seuls les administrateurs ont une portée globale.
+- **Exclusion d'Auto-Assignation** : Les administrateurs et superviseurs ne reçoivent jamais de tickets automatiquement. Les autres flux d'assignation manuelle (créateur, admin, superviseur, auto-assignation par l'agent lui-même) restent valides.
+- **Désassignation d'Urgence pour Inactivité** : Désassignation automatique si un agent devient inactif avec des tickets à risque SLA. Génération d'email Handlebars via le template `ticket-deassigned.hbs` et de notifications in-app/WebSocket pour l'agent et les superviseurs de son département.
+- **Vue Matérialisée du Workload** : Optimisation de la performance de consolidation de la charge des agents via la vue matérialisée `materialized_workload_view`, sécurisée contre les erreurs d'initialisation en cours de tests.
+
+### Fixed
+
+- **Intégration et Tests de Permissions** : Correction des conflits de clés uniques sur les catégories de tests et insertion automatique de politiques SLA de test dans `tickets-permissions.e2e-spec.ts`.
+- **Validation Globale** : Alignement de la suite de tests unitaires et E2E avec 100% de réussite (453 tests unitaires et 103 tests E2E passants).
+- **Casts any TypeScript** : Remplacement des casts `any` de la vérification de la vue matérialisée dans `auto-assignment.cron.ts` par des types d'objets ou de tableaux robustes.
+
+---
+
 ## [1.3.0] — 2026-07-03
 
 ### Added

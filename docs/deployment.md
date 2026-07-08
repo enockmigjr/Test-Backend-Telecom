@@ -26,9 +26,10 @@ SMTP_FROM=noreply@telecom-tickets.com
 SMTP_SECURE=true
 CORS_ORIGIN=https://votre-domaine.com
 
-# Configuration Heures de bureau SLA (SLA Business Hours)
+# Configuration Heures de bureau SLA par défaut (remplacées par les settings de la base de données après le premier seed)
 BUSINESS_HOURS_START=8
 BUSINESS_HOURS_END=18
+BUSINESS_DAYS=1,2,3,4,5
 ```
 
 **Génération de secrets**:

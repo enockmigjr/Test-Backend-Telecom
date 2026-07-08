@@ -325,4 +325,24 @@ sequenceDiagram
     Note over Service,Redis: Invalidation au changement
     Service->>Redis: DEL dashboard:overview:*
     Service->>Redis: DEL dashboard:departments:*
+
+---
+
+## 10. Moteur d'Auto-Assignation — Logique de Décision
+
+```mermaid
+flowchart TD
+    Start[Ticket créé / non assigné] --> Classification[Classification du Ticket]
+    Classification --> Params{Récupérer Catégorie & targetRole}
+    Params --> ActiveAgents[Récupérer Agents disponibles dans le Département]
+    ActiveAgents --> FilterRole{Agent possède targetRole?}
+    FilterRole -->|Oui| FilterCapacity{ticketsActifs < maxConcurrentTickets?}
+    FilterRole -->|Non| ExcludeAgent[Exclure Agent]
+    FilterCapacity -->|Oui| ComputeScore[Calculer Workload Score Pondéré]
+    FilterCapacity -->|Non| ExcludeAgent
+    ComputeScore --> Sort[Trier Agents par Score ascendant / Round-Robin]
+    Sort --> Assign{Sélectionner et Assigner Atomiquement}
+    Assign --> Audit[Créer Log d'Audit & Notification]
+    Assign --> SLA[Planifier job d'échéance SLA]
+```
 ```

@@ -1,6 +1,6 @@
 # Jobs et Workers — Documentation Technique
 
-Dernière mise à jour : 2026-07-02
+Dernière mise à jour : 2026-07-08
 
 ## Architecture BullMQ
 

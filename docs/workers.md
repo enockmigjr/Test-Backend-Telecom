@@ -1,6 +1,6 @@
 # Workers BullMQ — Traitement Asynchrone
 
-Dernière mise à jour : 2026-07-02
+Dernière mise à jour : 2026-07-08
 
 ## Pourquoi des Workers ?
 

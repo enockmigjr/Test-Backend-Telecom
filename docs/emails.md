@@ -95,6 +95,6 @@ SMTP_SECURE=true
 | --------------------------------------------------------------- | -------------------------------- |
 | `src/modules/email/email.service.ts`                            | Service Nodemailer + Handlebars  |
 | `src/modules/email/email.module.ts`                             | Module global                    |
-| `src/modules/email/templates/*.hbs`                             | 7 templates HTML                 |
+| `src/modules/email/templates/*.hbs`                             | 11 templates HTML                |
 | `src/queues/workers/email.worker.ts`                            | Consommateur EMAIL_QUEUE → envoi |
 | `src/modules/tickets/listeners/ticket-notification.listener.ts` | Producteur → ajoute jobs email   |
