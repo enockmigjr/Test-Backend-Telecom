@@ -1,4 +1,5 @@
 import { drizzle } from 'drizzle-orm/postgres-js';
+import { sql } from 'drizzle-orm';
 import postgres from 'postgres';
 import * as argon2 from 'argon2';
 import { generateUuid } from '../../common/helpers/uuidv7.helper';
@@ -1047,6 +1048,33 @@ async function seed() {
       .onConflictDoNothing();
   }
   console.log(`✅ Paramètres systeme crees (${settingsData.length} entrees)`);
+
+  // ─── Vue Matérialisée du Workload (Optimisation volume) ───────────
+  await db.execute(sql`
+    CREATE MATERIALIZED VIEW IF NOT EXISTS materialized_workload_view AS
+    SELECT 
+      u.id AS agent_id,
+      COUNT(t.id) AS active_tickets_count,
+      COALESCE(SUM(
+        CASE t.priority
+          WHEN 'CRITICAL' THEN 4
+          WHEN 'HIGH' THEN 3
+          WHEN 'MEDIUM' THEN 2
+          WHEN 'LOW' THEN 1
+          ELSE 0
+        END
+      ), 0) AS workload_score
+    FROM users u
+    LEFT JOIN tickets t ON t.assigned_to = u.id AND t.status IN ('ASSIGNED', 'IN_PROGRESS', 'PENDING_CUSTOMER', 'PENDING_THIRD_PARTY', 'REOPENED') AND t.deleted_at IS NULL
+    WHERE u.is_active = true
+    GROUP BY u.id;
+  `);
+
+  await db.execute(sql`
+    CREATE UNIQUE INDEX IF NOT EXISTS materialized_workload_view_agent_id_idx 
+    ON materialized_workload_view (agent_id);
+  `);
+  console.log('✅ Vue matérialisée du workload et index unique créés');
 
   // ─── Résumé ──────────────────────────────────────────────────────
   console.log('\n🎉 Seed complet terminé avec succès !\n');

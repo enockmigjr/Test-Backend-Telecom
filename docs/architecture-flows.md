@@ -325,8 +325,7 @@ sequenceDiagram
     Note over Service,Redis: Invalidation au changement
     Service->>Redis: DEL dashboard:overview:*
     Service->>Redis: DEL dashboard:departments:*
-
----
+```
 
 ## 10. Moteur d'Auto-Assignation — Logique de Décision
 
