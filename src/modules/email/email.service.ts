@@ -1,4 +1,3 @@
-/* eslint-disable security/detect-non-literal-fs-filename */
 import { Injectable, Logger } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 import type { Transporter } from 'nodemailer';
@@ -28,6 +27,7 @@ export class EmailService {
 
     // Enregistrer le layout de base global en tant que partial Handlebars
     try {
+      // eslint-disable-next-line security/detect-non-literal-fs-filename -- Chemin construit statiquement depuis __dirname + constante, sans input utilisateur
       const baseLayoutSource = readFileSync(join(this.templateDir, 'base.hbs'), 'utf-8');
       Handlebars.registerPartial('base', baseLayoutSource);
       this.logger.log('Partial layout de base e-mail enregistré avec succès');
@@ -70,6 +70,7 @@ export class EmailService {
 
     if (!this.compiledTemplates.has(kebabName)) {
       const filePath = join(this.templateDir, `${kebabName}.hbs`);
+      // eslint-disable-next-line security/detect-non-literal-fs-filename -- Chemin construit depuis templateDir (statique) + nom de template sanitisé (kebab-case)
       const source = readFileSync(filePath, 'utf-8');
       this.compiledTemplates.set(kebabName, Handlebars.compile(source));
     }

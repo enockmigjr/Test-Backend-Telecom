@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Injectable, Logger } from '@nestjs/common';
 import { eq, and, isNull, or, inArray, lte, notInArray } from 'drizzle-orm';
 import { DrizzleProvider } from '../../../database/drizzle.provider';
@@ -8,12 +7,30 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { TicketAssignedEvent } from '../domain/ticket.events';
 import { SettingsService } from '../../settings/settings.service';
 
+/**
+ * Configuration de pondération de la charge de travail par ticket.
+ * Correspond au champ JSONB `workload_weights` de la table `departments`.
+ */
+interface WorkloadWeightsConfig {
+  priority?: Record<string, number>;
+  severity?: Record<string, number>;
+}
+
+function isWorkloadWeightsConfig(value: unknown): value is WorkloadWeightsConfig {
+  if (!value || typeof value !== 'object') return false;
+  const v = value as Record<string, unknown>;
+  const isPriorityValid = v['priority'] === undefined || (typeof v['priority'] === 'object' && v['priority'] !== null);
+  const isSeverityValid = v['severity'] === undefined || (typeof v['severity'] === 'object' && v['severity'] !== null);
+  return isPriorityValid && isSeverityValid;
+}
+
 @Injectable()
 export class AssignmentEngineService {
   private readonly logger = new Logger(AssignmentEngineService.name);
 
-  // Statuts considérés comme "actifs" pour calculer la charge en cours d'un agent
-  private static readonly ACTIVE_STATUSES = [
+  // Statuts considérés comme "actifs" pour calculer la charge en cours d'un agent.
+  // Typage explicite avec le type union Drizzle inféré de la colonne `tickets.status`.
+  private static readonly ACTIVE_STATUSES: ReadonlyArray<typeof tickets.$inferSelect.status> = [
     'ASSIGNED',
     'IN_PROGRESS',
     'PENDING_CUSTOMER',
@@ -104,7 +121,7 @@ export class AssignmentEngineService {
                 tickets.assignedTo,
                 eligibleAgents.map((a) => a.id),
               ),
-              inArray(tickets.status, AssignmentEngineService.ACTIVE_STATUSES as any),
+              inArray(tickets.status, [...AssignmentEngineService.ACTIVE_STATUSES]),
               isNull(tickets.deletedAt),
             ),
           );
@@ -126,7 +143,8 @@ export class AssignmentEngineService {
           }
 
           // Calculer le score de charge pondéré
-          const workloadScore = this.calculateWorkloadScore(agentTickets, dept.workloadWeights as any);
+          const weightsConfig = isWorkloadWeightsConfig(dept.workloadWeights) ? dept.workloadWeights : undefined;
+          const workloadScore = this.calculateWorkloadScore(agentTickets, weightsConfig);
 
           // Si le score de charge dépasse la limite du département, on l'exclut
           if (workloadScore >= dept.maxWorkloadPerAgent) {
@@ -250,10 +268,7 @@ export class AssignmentEngineService {
    */
   private calculateWorkloadScore(
     agentTickets: Array<typeof tickets.$inferSelect>,
-    weightsConfig?: {
-      priority?: Record<string, number>;
-      severity?: Record<string, number>;
-    },
+    weightsConfig?: WorkloadWeightsConfig,
   ): number {
     // Poids par défaut
     const defaultPriorityWeights: Record<string, number> = {

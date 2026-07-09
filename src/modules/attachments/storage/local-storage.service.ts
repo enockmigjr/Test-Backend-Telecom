@@ -1,4 +1,3 @@
-/* eslint-disable security/detect-non-literal-fs-filename */
 import { Injectable, Logger } from '@nestjs/common';
 import { promises as fs } from 'fs';
 import * as path from 'path';
@@ -30,7 +29,9 @@ export class LocalStorageService implements IStorageService {
 
   async upload(file: Express.Multer.File, objectKey: string): Promise<string> {
     const fullPath = this.validatePath(objectKey);
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- fullPath validé par validatePath() contre le path traversal
     await fs.mkdir(path.dirname(fullPath), { recursive: true });
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- fullPath est validé par validatePath() contre le path traversal
     await fs.writeFile(fullPath, file.buffer);
     this.logger.log(`Fichier sauvegardé: ${objectKey}`);
     return objectKey;
@@ -38,12 +39,14 @@ export class LocalStorageService implements IStorageService {
 
   async download(objectKey: string): Promise<Buffer> {
     const fullPath = this.validatePath(objectKey);
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- fullPath est validé par validatePath() contre le path traversal
     return fs.readFile(fullPath);
   }
 
   async delete(objectKey: string): Promise<void> {
     const fullPath = this.validatePath(objectKey);
     try {
+      // eslint-disable-next-line security/detect-non-literal-fs-filename -- fullPath est validé par validatePath() contre le path traversal
       await fs.unlink(fullPath);
     } catch {
       this.logger.warn(`Fichier non trouvé pour suppression: ${objectKey}`);

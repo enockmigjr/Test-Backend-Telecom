@@ -1,4 +1,3 @@
-/* eslint-disable security/detect-non-literal-fs-filename */
 import {
   Controller,
   Get,
@@ -105,6 +104,7 @@ export class AttachmentsController {
     res.setHeader('Content-Disposition', `attachment; filename="${att.originalFilename}"`);
 
     // Streaming — ne charge pas le fichier entier en RAM
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- filePath construit depuis att.objectKey (stocké en DB) + STORAGE_LOCAL_PATH, pas d'input utilisateur direct
     const stream = createReadStream(filePath);
     stream.on('error', (err) => {
       // Fermer la réponse proprement en cas d erreur de lecture

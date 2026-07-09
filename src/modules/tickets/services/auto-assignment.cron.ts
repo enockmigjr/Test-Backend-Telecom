@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
-import { eq, and, isNull, or, sql, lte, gt } from 'drizzle-orm';
+import { eq, and, isNull, or, inArray, sql, lte, gt } from 'drizzle-orm';
 import { DrizzleProvider } from '../../../database/drizzle.provider';
 import { tickets, users, ticketHistory } from '../../../database/schemas';
 import { AssignmentEngineService } from './assignment-engine.service';
@@ -76,7 +76,11 @@ export class AutoAssignmentCron {
         .select({ id: tickets.id, ticketNumber: tickets.ticketNumber })
         .from(tickets)
         .where(
-          and(isNull(tickets.assignedTo), inArraySql(tickets.status, ['NEW', 'REOPENED']), isNull(tickets.deletedAt)),
+          and(
+            isNull(tickets.assignedTo),
+            inArray(tickets.status, ['NEW', 'REOPENED'] as Array<typeof tickets.$inferSelect.status>),
+            isNull(tickets.deletedAt),
+          ),
         )
         .orderBy(
           sql`case ${tickets.priority} when 'CRITICAL' then 4 when 'HIGH' then 3 when 'MEDIUM' then 2 when 'LOW' then 1 else 0 end desc`,
@@ -140,17 +144,18 @@ export class AutoAssignmentCron {
       .from(tickets)
       .where(
         and(
-          inArraySql(
+          inArray(
             tickets.assignedTo,
+            // La guard `if (inactiveAgents.length === 0) return` ci-dessus garantit que ce tableau n'est jamais vide
             inactiveAgents.map((a) => a.id),
           ),
-          inArraySql(tickets.status, [
+          inArray(tickets.status, [
             'ASSIGNED',
             'IN_PROGRESS',
             'PENDING_CUSTOMER',
             'PENDING_THIRD_PARTY',
             'REOPENED',
-          ]),
+          ] as Array<typeof tickets.$inferSelect.status>),
           isNull(tickets.deletedAt),
         ),
       );
@@ -241,13 +246,4 @@ export class AutoAssignmentCron {
       }
     }
   }
-}
-
-// Helper pour Drizzle-orm gérant inArray avec des arrays vides sans plantage
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function inArraySql<T>(column: any, values: T[]) {
-  if (values.length === 0) {
-    return sql`false`;
-  }
-  return sql`${column} in (${sql.raw(values.map((v) => `'${v}'`).join(','))})`;
 }
