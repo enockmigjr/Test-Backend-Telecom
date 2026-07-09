@@ -484,7 +484,7 @@ Après le commit, les listeners du `TicketCreatedEvent` s'exécutent de façon a
 `NotificationListener` reçoit l'event. Il appelle `NotificationsService` qui ajoute un job dans la queue BullMQ `email-queue` avec le payload `{ type: 'TICKET\_CREATED', ticketId, agentId, priority: 'CRITICAL' }`. Il appelle aussi `WebSocketGateway.emitToRoom(departmentId, 'ticket.created', ticketSummary)` pour notifier les supervisors connectés en temps réel et autre.  
 `SlaEngineListener` reçoit l'event. Pour les tickets CRITICAL, il peut programmer une alerte préventive dans BullMQ Scheduler pour envoyer une warning quand 80% du SLA est consommé.  
 **Étape 8 — Interceptors**  
-`LoggingInterceptor` calcule le `responseTime` (temps depuis le début de la requête) et loggue la sortie : `{ level: 'info', message: 'Request completed', method: 'POST', url: '/api/v1/tickets', statusCode: 201, responseTimeMs: 47, userId: '...', correlationId: '...', ticketId: '...' }`.  
+`RequestLoggerMiddleware` et Pino journalisent la requête avec ses informations contextuelles (méthode, URL, IP, user-agent, correlationId) et OpenTelemetry mesure la durée d'exécution globale.  
 `TransformInterceptor` prend ce que le Controller a retourné et le wrap dans la structure de réponse standard : `{ success: true, data: { ...ticketObject } }`.  
 **Étape 9 — Réponse HTTP**  
 NestJS sérialise la réponse en JSON. Il ajoute les headers de sécurité configurés par Helmet : `X-Content-Type-Options`, `X-Frame-Options`, `Strict-Transport-Security`, `Content-Security-Policy`. Il ajoute `X-Correlation-Id` pour que le client puisse tracer. Il envoie la réponse 201 Created avec le body JSON.  
