@@ -36,8 +36,8 @@ export class UsersController {
   @ApiResponse({ status: 200, description: 'Liste paginée des utilisateurs avec leur département.' })
   @ApiResponse({ status: 401, description: 'Token JWT manquant ou expiré.' })
   @ApiResponse({ status: 403, description: 'Rôle insuffisant — ADMINISTRATOR ou SUPERVISOR requis.' })
-  async findAll(@Query() pagination: PaginationDto) {
-    return this.usersService.findAll(pagination);
+  async findAll(@Query() pagination: PaginationDto, @CurrentUser() currentUser: JwtPayload) {
+    return this.usersService.findAll(pagination, currentUser);
   }
 
   @Get('me')
@@ -134,8 +134,8 @@ export class UsersController {
   @ApiResponse({ status: 401, description: 'Non authentifié.' })
   @ApiResponse({ status: 403, description: 'Rôle insuffisant.' })
   @ApiResponse({ status: 404, description: 'Utilisateur non trouvé.' })
-  async update(@Param('id') id: string, @Body() dto: UpdateUserDto) {
-    return this.usersService.update(id, dto);
+  async update(@Param('id') id: string, @Body() dto: UpdateUserDto, @CurrentUser() currentUser: JwtPayload) {
+    return this.usersService.update(id, dto, currentUser);
   }
 
   @Patch(':id/deactivate')

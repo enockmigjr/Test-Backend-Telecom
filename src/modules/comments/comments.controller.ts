@@ -70,7 +70,7 @@ export class CommentsController {
   @ApiResponse({ status: 403, description: "Vous n'êtes pas l'auteur du commentaire." })
   @ApiResponse({ status: 404, description: 'Commentaire non trouvé.' })
   async update(@Param('id') id: string, @Body() dto: UpdateCommentDto, @CurrentUser() user: JwtPayload) {
-    return this.commentsService.update(id, user.sub, user.role, dto.content);
+    return this.commentsService.update(id, user, dto.content);
   }
 
   @Delete('comments/:id')
@@ -86,6 +86,6 @@ export class CommentsController {
   @ApiResponse({ status: 403, description: "Vous n'êtes pas l'auteur du commentaire." })
   @ApiResponse({ status: 404, description: 'Commentaire non trouvé.' })
   async remove(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
-    await this.commentsService.remove(id, user.sub, user.role);
+    await this.commentsService.remove(id, user);
   }
 }

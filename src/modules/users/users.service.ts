@@ -1,4 +1,12 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException, Logger, Inject } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  BadRequestException,
+  ForbiddenException,
+  Logger,
+  Inject,
+} from '@nestjs/common';
 import { eq, and, isNull, sql } from 'drizzle-orm';
 import { generateUuid } from '../../common/helpers/uuidv7.helper';
 import * as argon2 from 'argon2';
@@ -9,6 +17,7 @@ import { DrizzleProvider } from '../../database/drizzle.provider';
 import { users, departments, tickets } from '../../database/schemas';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 import { PaginationHelper } from '../../common/helpers/pagination.helper';
+import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 
 @Injectable()
 export class UsersService {
@@ -19,11 +28,15 @@ export class UsersService {
     @Inject('BullMQ_Queues') private readonly queues: { email: Queue; notification: Queue; [key: string]: Queue },
   ) {}
 
-  async findAll(dto: PaginationDto) {
+  async findAll(dto: PaginationDto, currentUser?: JwtPayload) {
     const { page = 1, limit = 20, order = 'desc' } = dto;
     const offset = PaginationHelper.getOffset(page, limit);
 
-    const where = isNull(users.deletedAt);
+    const conditions = [isNull(users.deletedAt)];
+    if (currentUser?.role === 'SUPERVISOR') {
+      conditions.push(eq(users.departmentId, currentUser.departmentId));
+    }
+    const where = and(...conditions);
 
     const [total] = await this.drizzle.db
       .select({ count: sql<number>`count(*)` })
@@ -200,17 +213,37 @@ export class UsersService {
     };
   }
 
-  async update(id: string, dto: { firstName?: string; lastName?: string; role?: string; departmentId?: string }) {
-    await this.findOne(id);
+  async update(
+    id: string,
+    dto: { firstName?: string; lastName?: string; role?: string; departmentId?: string },
+    currentUser?: JwtPayload,
+  ) {
+    const userToUpdate = await this.findOne(id);
+
+    if (currentUser?.role === 'SUPERVISOR') {
+      if (userToUpdate.departmentId !== currentUser.departmentId) {
+        throw new ForbiddenException(
+          "Vous n'avez pas le droit de modifier un utilisateur en dehors de votre departement.",
+        );
+      }
+      if (dto.departmentId && dto.departmentId !== currentUser.departmentId) {
+        throw new ForbiddenException('Un superviseur ne peut pas deplacer un utilisateur vers un departement tiers.');
+      }
+      if (dto.role && ['ADMINISTRATOR', 'SUPERVISOR'].includes(dto.role)) {
+        throw new ForbiddenException(
+          "Un superviseur ne peut pas attribuer un role d'administrateur ou de superviseur.",
+        );
+      }
+    }
 
     const updateData: Record<string, unknown> = {};
-    if (dto.firstName) updateData['firstName'] = dto.firstName;
-    if (dto.lastName) updateData['lastName'] = dto.lastName;
-    if (dto.role) updateData['role'] = dto.role;
-    if (dto.departmentId) updateData['departmentId'] = dto.departmentId;
+    if (dto.firstName !== undefined) updateData['firstName'] = dto.firstName;
+    if (dto.lastName !== undefined) updateData['lastName'] = dto.lastName;
+    if (dto.role !== undefined) updateData['role'] = dto.role;
+    if (dto.departmentId !== undefined) updateData['departmentId'] = dto.departmentId;
 
     if (Object.keys(updateData).length === 0) {
-      throw new BadRequestException('Aucune donnée à mettre à jour.');
+      throw new BadRequestException('Aucune donnee a mettre a jour.');
     }
 
     await this.drizzle.db.update(users).set(updateData).where(eq(users.id, id));

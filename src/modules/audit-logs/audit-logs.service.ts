@@ -1,9 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { eq, gte, lte, sql, and, SQL } from 'drizzle-orm';
+import { eq, gte, lte, sql, and, or, inArray, SQL } from 'drizzle-orm';
 import { generateUuid } from '../../common/helpers/uuidv7.helper';
 import { DrizzleProvider } from '../../database/drizzle.provider';
-import { auditLogs } from '../../database/schemas';
+import { auditLogs, users, tickets } from '../../database/schemas';
 import { PaginationHelper } from '../../common/helpers/pagination.helper';
+import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 
 @Injectable()
 export class AuditLogsService {
@@ -37,16 +38,19 @@ export class AuditLogsService {
     });
   }
 
-  async search(filters: {
-    userId?: string;
-    action?: string;
-    entityType?: string;
-    entityId?: string;
-    from?: string;
-    to?: string;
-    page?: number;
-    limit?: number;
-  }) {
+  async search(
+    filters: {
+      userId?: string;
+      action?: string;
+      entityType?: string;
+      entityId?: string;
+      from?: string;
+      to?: string;
+      page?: number;
+      limit?: number;
+    },
+    currentUser?: JwtPayload,
+  ) {
     const pageNum = Number(filters.page ?? 1);
     const limitNum = Number(filters.limit ?? 20);
     const offset = PaginationHelper.getOffset(pageNum, limitNum);
@@ -57,6 +61,25 @@ export class AuditLogsService {
     if (filters.entityType) conditions.push(eq(auditLogs.entityType, filters.entityType));
     if (filters.from) conditions.push(gte(auditLogs.createdAt, new Date(filters.from)));
     if (filters.to) conditions.push(lte(auditLogs.createdAt, new Date(filters.to)));
+
+    // Isolation fine des logs d'audit pour les superviseurs
+    if (currentUser?.role === 'SUPERVISOR') {
+      const deptId = currentUser.departmentId;
+
+      const userSubquery = this.drizzle.db.select({ id: users.id }).from(users).where(eq(users.departmentId, deptId));
+
+      const ticketSubquery = this.drizzle.db
+        .select({ id: tickets.id })
+        .from(tickets)
+        .where(eq(tickets.assignedTeamId, deptId));
+
+      conditions.push(
+        or(
+          inArray(auditLogs.userId, userSubquery),
+          and(eq(auditLogs.entityType, 'ticket'), inArray(auditLogs.entityId, ticketSubquery)),
+        ) as SQL<unknown>,
+      );
+    }
 
     const where = conditions.length > 0 ? and(...conditions) : undefined;
 

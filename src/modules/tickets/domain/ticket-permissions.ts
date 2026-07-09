@@ -1,4 +1,4 @@
-﻿import { Injectable, ForbiddenException } from '@nestjs/common';
+import { Injectable, ForbiddenException } from '@nestjs/common';
 import { JwtPayload } from '../../auth/interfaces/jwt-payload.interface';
 
 export interface TicketPermissionData {
@@ -70,12 +70,29 @@ export class TicketPermissions {
     const isSupervisor = user.role === 'SUPERVISOR';
     const isSelfAssign = toUserId === user.sub;
 
-    // S'auto-assigner (si ticket NEW et non assigne)
-    if (isSelfAssign) {
-      const isNew = ticket.status === 'NEW';
-      const isUnassigned = !ticket.assignedTo;
-      if (isNew && isUnassigned) {
-        return { isAutoAssign: true };
+    // Restrictions départementales fines pour les agents et superviseurs
+    if (!isAdmin) {
+      // 1. S'auto-assigner (si ticket NEW et non assigne)
+      if (isSelfAssign) {
+        if (ticket.assignedTeamId !== user.departmentId) {
+          throw new ForbiddenException(
+            'Vous ne pouvez vous auto-assigner que des tickets de votre propre departement technique.',
+          );
+        }
+        const isNew = ticket.status === 'NEW';
+        const isUnassigned = !ticket.assignedTo;
+        if (isNew && isUnassigned) {
+          return { isAutoAssign: true };
+        }
+      }
+
+      // 2. Gestion pour les superviseurs sur d'autres assignations
+      if (isSupervisor) {
+        if (ticket.assignedTeamId !== user.departmentId) {
+          throw new ForbiddenException(
+            'Vous ne pouvez assigner ou gerer que des tickets de votre propre departement technique.',
+          );
+        }
       }
     }
 
@@ -121,6 +138,10 @@ export class TicketPermissions {
           `Seul un superviseur ou un administrateur peut effectuer une escalade fonctionnelle (changement de departement).`,
         );
       }
+      // Un superviseur ne peut escalader que des tickets appartenant originellement a son propre departement
+      if (isSupervisor && ticket.assignedTeamId !== user.departmentId) {
+        throw new ForbiddenException('Vous ne pouvez escalader que des tickets de votre propre departement technique.');
+      }
       return { isHierarchical: false };
     }
 
@@ -128,6 +149,13 @@ export class TicketPermissions {
     if (!isAssignee && !isSupervisor && !isAdmin) {
       throw new ForbiddenException(
         `Seul l'assigne actuel, un superviseur ou un administrateur peut effectuer une escalade hierarchique.`,
+      );
+    }
+
+    // Un superviseur ou assigne faisant une escalade hierarchique doit verifier le departement
+    if (!isAdmin && ticket.assignedTeamId !== user.departmentId) {
+      throw new ForbiddenException(
+        "Vous ne pouvez pas effectuer d'escalade sur un ticket en dehors de votre departement technique.",
       );
     }
 

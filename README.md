@@ -5,7 +5,7 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql)
 ![Redis](https://img.shields.io/badge/Redis-7-DC382D?logo=redis)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker)
-![Tests](https://img.shields.io/badge/Tests-556%20passed-success)
+![Tests](https://img.shields.io/badge/Tests-563%20passed-success)
 ![License](https://img.shields.io/badge/License-UNLICENSED-lightgrey)
 
 Backend **NestJS** pour la plateforme de gestion des tickets d'incidents télécoms.
@@ -35,10 +35,10 @@ pnpm run start:dev
 # Tests unitaires (453 tests)
 pnpm run test:unit
 
-# Tests end-to-end (103 tests)
+# Tests end-to-end (110 tests)
 pnpm run test:e2e
 
-# Tous les tests (556 tests)
+# Tous les tests (563 tests)
 pnpm run test:all
 ```
 
@@ -216,16 +216,16 @@ make down      # Tout arrêter
 
 ## 📚 Documentation
 
-| Fichier                                                    | Contenu                                                        |
-| ---------------------------------------------------------- | -------------------------------------------------------------- |
-| `CHANGELOG.md`                                             | Historique complet des versions (v1.4.0)                       |
+| Fichier                                                                             | Contenu                                                                    |
+| ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| `CHANGELOG.md`                                                                      | Historique complet des versions (v1.4.0)                                   |
 | [detailed-design-assignment-sla.md](file:///docs/detailed-design-assignment-sla.md) | **Choix d'architecture et explications détaillées SLA & Auto-Assignation** |
-| `docs/routes.md`                                           | Catalogue complet des 62 routes                                |
-| `docs/architecture-flows.md`                               | 10 diagrammes Mermaid                                          |
-| `docs/deployment.md`                                       | Guide de déploiement production                                |
-| `docs/emails.md`                                           | Architecture email, templates, flux                            |
-| `docs/observability.md`                                    | Prometheus, Loki, Tempo, Grafana, alertes                      |
-| `docs/websockets.md`                                       | WebSocket temps réel, rooms, scaling                           |
-| `docs/jobs-and-workers.md`                                 | Architecture BullMQ et 6 workers                               |
-| `docs/implementation-status.md`                            | État production-readiness                                      |
-| `.env.example`                                             | 70+ variables d'environnement documentées                      |
+| `docs/routes.md`                                                                    | Catalogue complet des 62 routes                                            |
+| `docs/architecture-flows.md`                                                        | 10 diagrammes Mermaid                                                      |
+| `docs/deployment.md`                                                                | Guide de déploiement production                                            |
+| `docs/emails.md`                                                                    | Architecture email, templates, flux                                        |
+| `docs/observability.md`                                                             | Prometheus, Loki, Tempo, Grafana, alertes                                  |
+| `docs/websockets.md`                                                                | WebSocket temps réel, rooms, scaling                                       |
+| `docs/jobs-and-workers.md`                                                          | Architecture BullMQ et 6 workers                                           |
+| `docs/implementation-status.md`                                                     | État production-readiness                                                  |
+| `.env.example`                                                                      | 70+ variables d'environnement documentées                                  |

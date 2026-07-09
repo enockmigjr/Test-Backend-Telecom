@@ -5,6 +5,8 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { DateRangeDto } from '../../common/dto/date-range.dto';
 import { FieldProjectionInterceptor } from '../../common/interceptors/field-projection.interceptor';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 
 @ApiTags('dashboard')
 @ApiBearerAuth()
@@ -24,8 +26,8 @@ export class DashboardController {
   @ApiResponse({ status: 200, description: 'Vue globale avec ticketVolume, byStatus, byPriority, bySeverity, sla.' })
   @ApiResponse({ status: 401, description: 'Token JWT manquant ou expiré.' })
   @ApiResponse({ status: 403, description: 'Rôle insuffisant — ADMINISTRATOR ou SUPERVISOR requis.' })
-  async overview(@Query() range: DateRangeDto) {
-    return this.dashboardService.overview(range.from, range.to);
+  async overview(@Query() range: DateRangeDto, @CurrentUser() currentUser: JwtPayload) {
+    return this.dashboardService.overview(range.from, range.to, currentUser);
   }
 
   @Get('tickets-by-status')
@@ -44,8 +46,12 @@ export class DashboardController {
   @ApiResponse({ status: 200, description: 'Répartition par statut avec avgAgeMinutes et percentage.' })
   @ApiResponse({ status: 401, description: 'Non authentifié.' })
   @ApiResponse({ status: 403, description: 'Rôle insuffisant.' })
-  async ticketsByStatus(@Query() range: DateRangeDto, @Query('departmentId') departmentId?: string) {
-    return this.dashboardService.ticketsByStatus(range.from, range.to, departmentId);
+  async ticketsByStatus(
+    @Query() range: DateRangeDto,
+    @CurrentUser() currentUser: JwtPayload,
+    @Query('departmentId') departmentId?: string,
+  ) {
+    return this.dashboardService.ticketsByStatus(range.from, range.to, departmentId, currentUser);
   }
 
   @Get('tickets-by-priority')
@@ -64,12 +70,16 @@ export class DashboardController {
   @ApiResponse({ status: 200, description: 'Répartition par priorité avec slaBreaches et percentage.' })
   @ApiResponse({ status: 401, description: 'Non authentifié.' })
   @ApiResponse({ status: 403, description: 'Rôle insuffisant.' })
-  async ticketsByPriority(@Query() range: DateRangeDto, @Query('status') status?: string) {
-    return this.dashboardService.ticketsByPriority(range.from, range.to, status);
+  async ticketsByPriority(
+    @Query() range: DateRangeDto,
+    @CurrentUser() currentUser: JwtPayload,
+    @Query('status') status?: string,
+  ) {
+    return this.dashboardService.ticketsByPriority(range.from, range.to, status, currentUser);
   }
 
   @Get('departments')
-  @Roles('ADMINISTRATOR', 'SUPERVISOR')
+  @Roles('ADMINISTRATOR')
   @ApiOperation({
     summary: 'Performance par département',
     description:
@@ -110,11 +120,12 @@ export class DashboardController {
   @ApiResponse({ status: 403, description: 'Rôle insuffisant.' })
   async slaCompliance(
     @Query() range: DateRangeDto,
+    @CurrentUser() currentUser: JwtPayload,
     @Query('departmentId') departmentId?: string,
     @Query('priority') priority?: string,
     @Query('category') category?: string,
   ) {
-    return this.dashboardService.slaCompliance(range.from, range.to, departmentId, priority, category);
+    return this.dashboardService.slaCompliance(range.from, range.to, departmentId, priority, category, currentUser);
   }
 
   @Get('workload')
@@ -132,8 +143,8 @@ export class DashboardController {
   })
   @ApiResponse({ status: 401, description: 'Non authentifié.' })
   @ApiResponse({ status: 403, description: 'Rôle insuffisant.' })
-  async workload(@Query('departmentId') departmentId?: string) {
-    return this.dashboardService.workload(departmentId);
+  async workload(@CurrentUser() currentUser: JwtPayload, @Query('departmentId') departmentId?: string) {
+    return this.dashboardService.workload(departmentId, currentUser);
   }
 
   @Get('resolution-time')
@@ -159,10 +170,11 @@ export class DashboardController {
   @ApiResponse({ status: 403, description: 'Rôle insuffisant.' })
   async resolutionTime(
     @Query() range: DateRangeDto,
+    @CurrentUser() currentUser: JwtPayload,
     @Query('groupBy') groupBy?: string,
     @Query('departmentId') departmentId?: string,
     @Query('priority') priority?: string,
   ) {
-    return this.dashboardService.resolutionTime(range.from, range.to, groupBy, departmentId, priority);
+    return this.dashboardService.resolutionTime(range.from, range.to, groupBy, departmentId, priority, currentUser);
   }
 }

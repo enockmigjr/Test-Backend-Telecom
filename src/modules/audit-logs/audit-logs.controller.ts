@@ -3,6 +3,8 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiQuery, ApiResponse }
 import { AuditLogsService } from './audit-logs.service';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 
 @ApiTags('audit-logs')
 @ApiBearerAuth()
@@ -55,8 +57,9 @@ export class AuditLogsController {
       page?: number;
       limit?: number;
     },
+    @CurrentUser() currentUser: JwtPayload,
   ) {
-    return this.auditLogsService.search(filters);
+    return this.auditLogsService.search(filters, currentUser);
   }
 
   @Get(':id')

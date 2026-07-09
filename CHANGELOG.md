@@ -4,6 +4,15 @@ Tous les changements notables sont documentés ici. Format basé sur [Keep a Cha
 
 ---
 
+## [1.4.1] — 2026-07-09
+
+### Fixed
+
+- **Tests unitaires de CommentsService** : Alignement des signatures de méthodes avec l'utilisation de `JwtPayload` et correction des mocks de Drizzle (select de ticket et relecture de commentaires) pour le rôle `SUPERVISOR`.
+- **Validation Globale** : Alignement de 100% des tests unitaires (453 tests passés avec succès) et d'intégration (10 tests passés avec succès).
+
+---
+
 ## [1.4.0] — 2026-07-08
 
 ### Added

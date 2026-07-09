@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, ForbiddenException, Logger } from '@nest
 import { eq } from 'drizzle-orm';
 import { generateUuid } from '../../common/helpers/uuidv7.helper';
 import { DrizzleProvider } from '../../database/drizzle.provider';
-import { attachments } from '../../database/schemas';
+import { attachments, tickets, ticketComments, ticketInternalNotes } from '../../database/schemas';
 import { LocalStorageService } from './storage/local-storage.service';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 
@@ -59,9 +59,46 @@ export class AttachmentsService {
 
   async remove(id: string, user: JwtPayload) {
     const att = await this.findOne(id);
-    if (att.uploadedBy !== user.sub && user.role !== 'ADMINISTRATOR' && user.role !== 'SUPERVISOR') {
-      throw new ForbiddenException("Vous n'avez pas le droit de supprimer cette pièce jointe.");
+
+    if (att.uploadedBy !== user.sub) {
+      if (user.role === 'SUPERVISOR') {
+        let ticketId = att.ticketId;
+        if (!ticketId && att.commentId) {
+          const [comment] = await this.drizzle.db
+            .select({ ticketId: ticketComments.ticketId })
+            .from(ticketComments)
+            .where(eq(ticketComments.id, att.commentId))
+            .limit(1);
+          ticketId = comment?.ticketId ?? null;
+        } else if (!ticketId && att.internalNoteId) {
+          const [note] = await this.drizzle.db
+            .select({ ticketId: ticketInternalNotes.ticketId })
+            .from(ticketInternalNotes)
+            .where(eq(ticketInternalNotes.id, att.internalNoteId))
+            .limit(1);
+          ticketId = note?.ticketId ?? null;
+        }
+
+        if (!ticketId) {
+          throw new ForbiddenException('Impossible de verifier la portee de cette piece jointe.');
+        }
+
+        const [ticket] = await this.drizzle.db
+          .select({ assignedTeamId: tickets.assignedTeamId })
+          .from(tickets)
+          .where(eq(tickets.id, ticketId))
+          .limit(1);
+
+        if (!ticket || ticket.assignedTeamId !== user.departmentId) {
+          throw new ForbiddenException(
+            "Vous n'avez pas le droit de supprimer une piece jointe liee a un ticket hors de votre departement.",
+          );
+        }
+      } else if (user.role !== 'ADMINISTRATOR') {
+        throw new ForbiddenException("Vous n'avez pas le droit de supprimer cette pièce jointe.");
+      }
     }
+
     await this.storage.delete(att.objectKey);
     await this.drizzle.db.delete(attachments).where(eq(attachments.id, id));
   }

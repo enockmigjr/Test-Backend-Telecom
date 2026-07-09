@@ -146,12 +146,7 @@ describe('CommentsController', () => {
 
       const result = await controller.update('comment-001', { content: 'Contenu modifié' }, mockUser);
 
-      expect(commentsService.update).toHaveBeenCalledWith(
-        'comment-001',
-        mockUser.sub,
-        mockUser.role,
-        'Contenu modifié',
-      );
+      expect(commentsService.update).toHaveBeenCalledWith('comment-001', mockUser, 'Contenu modifié');
       expect(result).toEqual(updateResult);
     });
 
@@ -160,7 +155,7 @@ describe('CommentsController', () => {
 
       await controller.update('comment-001', { content: 'Admin edit' }, mockAdmin);
 
-      expect(commentsService.update).toHaveBeenCalledWith('comment-001', mockAdmin.sub, mockAdmin.role, 'Admin edit');
+      expect(commentsService.update).toHaveBeenCalledWith('comment-001', mockAdmin, 'Admin edit');
     });
   });
 
@@ -173,7 +168,7 @@ describe('CommentsController', () => {
 
       const result = await controller.remove('comment-001', mockUser);
 
-      expect(commentsService.remove).toHaveBeenCalledWith('comment-001', mockUser.sub, mockUser.role);
+      expect(commentsService.remove).toHaveBeenCalledWith('comment-001', mockUser);
       expect(result).toBeUndefined();
     });
 
@@ -182,7 +177,7 @@ describe('CommentsController', () => {
 
       await controller.remove('comment-other', mockAdmin);
 
-      expect(commentsService.remove).toHaveBeenCalledWith('comment-other', mockAdmin.sub, mockAdmin.role);
+      expect(commentsService.remove).toHaveBeenCalledWith('comment-other', mockAdmin);
     });
 
     it('doit propager les erreurs du service (not found, forbidden)', async () => {

@@ -6,6 +6,22 @@ import { NotFoundException, ForbiddenException } from '@nestjs/common';
 import { mock, MockProxy } from 'jest-mock-extended';
 import { ticketComments } from '../../database/schemas';
 import { eq } from 'drizzle-orm';
+import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
+
+// Helper pour simuler le comportement chaîné de Drizzle
+const createMockQueryBuilder = (resultData: any[] = []) => {
+  const mockBuilder = {
+    from: jest.fn().mockReturnThis(),
+    where: jest.fn().mockReturnThis(),
+    orderBy: jest.fn().mockReturnThis(),
+    limit: jest.fn().mockReturnThis(),
+    offset: jest.fn().mockReturnThis(),
+    execute: jest.fn().mockResolvedValue(resultData),
+    then: jest.fn().mockImplementation((resolve) => resolve(resultData)),
+    catch: jest.fn(),
+  };
+  return mockBuilder as any;
+};
 
 // ---------------------------------------------------------------------------
 // Mock uuidv7
@@ -13,22 +29,6 @@ import { eq } from 'drizzle-orm';
 jest.mock('../../common/helpers/uuidv7.helper', () => ({
   generateUuid: jest.fn().mockReturnValue('0192abcd-1234-7000-8000-000000000001'),
 }));
-
-// ---------------------------------------------------------------------------
-// Helper : construit un query builder chainable et thenable
-// ---------------------------------------------------------------------------
-function createMockQueryBuilder<T>(defaultResult: T[]) {
-  const builder: any = {
-    from: jest.fn().mockReturnThis(),
-    where: jest.fn().mockReturnThis(),
-    orderBy: jest.fn().mockReturnThis(),
-    limit: jest.fn().mockReturnThis(),
-    offset: jest.fn().mockReturnThis(),
-    then: jest.fn((resolve: (val: T[]) => void) => resolve(defaultResult)),
-    catch: jest.fn(),
-  };
-  return builder;
-}
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -46,6 +46,38 @@ const otherUserComment = {
   ...mockComment,
   id: 'comment-other',
   authorId: 'other-author',
+};
+
+const mockUser: JwtPayload = {
+  sub: 'author-001',
+  email: 'agent@telecom.local',
+  role: 'CUSTOMER_SERVICE_AGENT',
+  departmentId: 'dept-001',
+  jti: 'jti-001',
+};
+
+const mockAdmin: JwtPayload = {
+  sub: 'admin-id',
+  email: 'admin@telecom.local',
+  role: 'ADMINISTRATOR',
+  departmentId: 'dept-001',
+  jti: 'jti-002',
+};
+
+const mockSupervisor: JwtPayload = {
+  sub: 'supervisor-id',
+  email: 'supervisor@telecom.local',
+  role: 'SUPERVISOR',
+  departmentId: 'dept-001',
+  jti: 'jti-003',
+};
+
+const mockStranger: JwtPayload = {
+  sub: 'stranger-id',
+  email: 'stranger@telecom.local',
+  role: 'CUSTOMER_SERVICE_AGENT',
+  departmentId: 'dept-002',
+  jti: 'jti-004',
 };
 
 // ---------------------------------------------------------------------------
@@ -208,21 +240,12 @@ describe('CommentsService', () => {
     });
   });
 
-  // =========================================================================
-  // update()
-  // =========================================================================
   describe('update() — Modification de commentaire', () => {
-    it("doit permettre à l'auteur de modifier son commentaire", async () => {
+    it("doit permettre à l'auteur de modifier son propre commentaire", async () => {
       const findBuilder = createMockQueryBuilder([mockComment]);
-      const updateSelectBuilder = createMockQueryBuilder([{ ...mockComment, content: 'Contenu modifié' }]);
-      mockDb.select.mockReturnValueOnce(findBuilder).mockReturnValueOnce(updateSelectBuilder);
+      mockDb.select.mockReturnValue(findBuilder);
 
-      const result = await service.update(
-        mockComment.id,
-        mockComment.authorId,
-        'CUSTOMER_SERVICE_AGENT',
-        'Contenu modifié',
-      );
+      const result = await service.update(mockComment.id, mockUser, 'Contenu modifié');
 
       expect(result.message).toContain('mis à jour');
       expect(mockDb.update).toHaveBeenCalledWith(ticketComments);
@@ -233,17 +256,21 @@ describe('CommentsService', () => {
       const updateSelectBuilder = createMockQueryBuilder([{ ...otherUserComment, content: 'Modified by admin' }]);
       mockDb.select.mockReturnValueOnce(findBuilder).mockReturnValueOnce(updateSelectBuilder);
 
-      const result = await service.update(otherUserComment.id, 'admin-id', 'ADMINISTRATOR', 'Modified by admin');
+      const result = await service.update(otherUserComment.id, mockAdmin, 'Modified by admin');
 
       expect(result.message).toContain('mis à jour');
     });
 
     it('doit permettre à SUPERVISOR de modifier tout commentaire', async () => {
       const findBuilder = createMockQueryBuilder([otherUserComment]);
+      const ticketBuilder = createMockQueryBuilder([{ assignedTeamId: 'dept-001' }]);
       const updateSelectBuilder = createMockQueryBuilder([{ ...otherUserComment, content: 'Modified by supervisor' }]);
-      mockDb.select.mockReturnValueOnce(findBuilder).mockReturnValueOnce(updateSelectBuilder);
+      mockDb.select
+        .mockReturnValueOnce(findBuilder)
+        .mockReturnValueOnce(ticketBuilder)
+        .mockReturnValueOnce(updateSelectBuilder);
 
-      const result = await service.update(otherUserComment.id, 'supervisor-id', 'SUPERVISOR', 'Modified by supervisor');
+      const result = await service.update(otherUserComment.id, mockSupervisor, 'Modified by supervisor');
 
       expect(result.message).toContain('mis à jour');
     });
@@ -252,7 +279,7 @@ describe('CommentsService', () => {
       const findBuilder = createMockQueryBuilder([otherUserComment]);
       mockDb.select.mockReturnValueOnce(findBuilder);
 
-      await expect(service.update(otherUserComment.id, 'stranger-id', 'AGENT', 'Hacked content')).rejects.toThrow(
+      await expect(service.update(otherUserComment.id, mockStranger, 'Hacked content')).rejects.toThrow(
         ForbiddenException,
       );
     });
@@ -261,9 +288,7 @@ describe('CommentsService', () => {
       const findBuilder = createMockQueryBuilder([]);
       mockDb.select.mockReturnValueOnce(findBuilder);
 
-      await expect(service.update('inexistant', 'user-id', 'ADMINISTRATOR', 'Content')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.update('inexistant', mockAdmin, 'Content')).rejects.toThrow(NotFoundException);
     });
 
     it('doit mettre à jour uniquement le champ content', async () => {
@@ -271,22 +296,19 @@ describe('CommentsService', () => {
       const updateSelectBuilder = createMockQueryBuilder([{ ...mockComment, content: 'Updated only content' }]);
       mockDb.select.mockReturnValueOnce(findBuilder).mockReturnValueOnce(updateSelectBuilder);
 
-      await service.update(mockComment.id, mockComment.authorId, 'AGENT', 'Updated only content');
+      await service.update(mockComment.id, mockUser, 'Updated only content');
 
       const setCall = mockDb.update().set as jest.Mock;
       expect(setCall).toHaveBeenCalledWith({ content: 'Updated only content' });
     });
   });
 
-  // =========================================================================
-  // remove()
-  // =========================================================================
   describe('remove() — Suppression de commentaire', () => {
     it("doit permettre à l'auteur de supprimer son commentaire", async () => {
       const findBuilder = createMockQueryBuilder([mockComment]);
       mockDb.select.mockReturnValueOnce(findBuilder);
 
-      await service.remove(mockComment.id, mockComment.authorId, 'AGENT');
+      await service.remove(mockComment.id, mockUser);
 
       expect(mockDb.delete).toHaveBeenCalledWith(ticketComments);
       expect(mockDb.delete().where).toHaveBeenCalledWith(eq(ticketComments.id, mockComment.id));
@@ -296,16 +318,17 @@ describe('CommentsService', () => {
       const findBuilder = createMockQueryBuilder([otherUserComment]);
       mockDb.select.mockReturnValueOnce(findBuilder);
 
-      await service.remove(otherUserComment.id, 'admin-id', 'ADMINISTRATOR');
+      await service.remove(otherUserComment.id, mockAdmin);
 
       expect(mockDb.delete).toHaveBeenCalled();
     });
 
     it('doit permettre à SUPERVISOR de supprimer tout commentaire', async () => {
       const findBuilder = createMockQueryBuilder([otherUserComment]);
-      mockDb.select.mockReturnValueOnce(findBuilder);
+      const ticketBuilder = createMockQueryBuilder([{ assignedTeamId: 'dept-001' }]);
+      mockDb.select.mockReturnValueOnce(findBuilder).mockReturnValueOnce(ticketBuilder);
 
-      await service.remove(otherUserComment.id, 'supervisor-id', 'SUPERVISOR');
+      await service.remove(otherUserComment.id, mockSupervisor);
 
       expect(mockDb.delete).toHaveBeenCalled();
     });
@@ -314,7 +337,7 @@ describe('CommentsService', () => {
       const findBuilder = createMockQueryBuilder([otherUserComment]);
       mockDb.select.mockReturnValueOnce(findBuilder);
 
-      await expect(service.remove(otherUserComment.id, 'stranger-id', 'AGENT')).rejects.toThrow(ForbiddenException);
+      await expect(service.remove(otherUserComment.id, mockStranger)).rejects.toThrow(ForbiddenException);
 
       expect(mockDb.delete).not.toHaveBeenCalled();
     });
@@ -323,7 +346,7 @@ describe('CommentsService', () => {
       const findBuilder = createMockQueryBuilder([]);
       mockDb.select.mockReturnValueOnce(findBuilder);
 
-      await expect(service.remove('inexistant', 'user-id', 'ADMINISTRATOR')).rejects.toThrow(NotFoundException);
+      await expect(service.remove('inexistant', mockAdmin)).rejects.toThrow(NotFoundException);
 
       expect(mockDb.delete).not.toHaveBeenCalled();
     });
@@ -332,8 +355,7 @@ describe('CommentsService', () => {
       const findBuilder = createMockQueryBuilder([mockComment]);
       mockDb.select.mockReturnValueOnce(findBuilder);
 
-      const result = await service.remove(mockComment.id, mockComment.authorId, 'AGENT');
-
+      const result = await service.remove(mockComment.id, mockUser);
       expect(result).toBeUndefined();
     });
   });

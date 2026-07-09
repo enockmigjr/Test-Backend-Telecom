@@ -33,19 +33,19 @@ Avec BullMQ, la requête HTTP retourne immédiatement et l'email est envoyé en 
 
 ## Où sont envoyés les emails ?
 
-| Événement           | Template                  | Déclencheur                    | Destinataire         | Statut   |
-| ------------------- | ------------------------- | ------------------------------ | -------------------- | -------- |
-| Ticket créé         | `ticket-created.hbs`      | `@OnEvent('ticket.created')`   | Créateur du ticket   | ✅ Actif |
-| Ticket assigné      | `ticket-assigned.hbs`     | `@OnEvent('ticket.assigned')`  | Agent assigné        | ✅ Actif |
+| Événement           | Template                  | Déclencheur                     | Destinataire         | Statut   |
+| ------------------- | ------------------------- | ------------------------------- | -------------------- | -------- |
+| Ticket créé         | `ticket-created.hbs`      | `@OnEvent('ticket.created')`    | Créateur du ticket   | ✅ Actif |
+| Ticket assigné      | `ticket-assigned.hbs`     | `@OnEvent('ticket.assigned')`   | Agent assigné        | ✅ Actif |
 | Ticket désassigné   | `ticket-deassigned.hbs`   | `@OnEvent('ticket.deassigned')` | Agent + Superviseurs | ✅ Actif |
-| Ticket escaladé     | `ticket-assigned.hbs`     | `@OnEvent('ticket.escalated')` | Agent escaladé       | ✅ Actif |
-| SLA breach          | `sla-breach.hbs`          | `SlaEngineService` cron        | Supervisor + Assigné | ✅ Actif |
-| SLA warning         | `sla-warning.hbs`         | `SlaEngineService` cron        | Assigné              | ✅ Actif |
-| Compte créé         | `account-created.hbs`     | `UsersService.create()`        | Nouvel utilisateur   | ✅ Actif |
-| Mot de passe changé | `password-changed.hbs`    | `AuthService.changePassword()` | Utilisateur          | ✅ Actif |
-| Rapport ticket      | `ticket-report.hbs`       | `ReportWorker` (async)         | Demandeur            | ✅ Actif |
-| Rapport SLA         | `sla-report.hbs`          | `ReportWorker` (async)         | Demandeur            | ✅ Actif |
-| Rapport hebdo       | `admin-weekly-report.hbs` | `ReportWorker` (async)         | Admin + Supervisor   | ✅ Actif |
+| Ticket escaladé     | `ticket-assigned.hbs`     | `@OnEvent('ticket.escalated')`  | Agent escaladé       | ✅ Actif |
+| SLA breach          | `sla-breach.hbs`          | `SlaEngineService` cron         | Supervisor + Assigné | ✅ Actif |
+| SLA warning         | `sla-warning.hbs`         | `SlaEngineService` cron         | Assigné              | ✅ Actif |
+| Compte créé         | `account-created.hbs`     | `UsersService.create()`         | Nouvel utilisateur   | ✅ Actif |
+| Mot de passe changé | `password-changed.hbs`    | `AuthService.changePassword()`  | Utilisateur          | ✅ Actif |
+| Rapport ticket      | `ticket-report.hbs`       | `ReportWorker` (async)          | Demandeur            | ✅ Actif |
+| Rapport SLA         | `sla-report.hbs`          | `ReportWorker` (async)          | Demandeur            | ✅ Actif |
+| Rapport hebdo       | `admin-weekly-report.hbs` | `ReportWorker` (async)          | Admin + Supervisor   | ✅ Actif |
 
 ## Templates Handlebars
 

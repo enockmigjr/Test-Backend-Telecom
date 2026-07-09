@@ -169,11 +169,13 @@ Le rapport PDF est généré avec **PDFKit**, écrit sur le disque local via `Lo
 **Rôle** : Consomme la file `assignment-queue` pour router automatiquement et ré-aiguiller les tickets d'incident de façon découplée.
 
 **Fonctionnement** :
+
 - Reçoit le `ticketId`.
 - Invoque `AssignmentEngineService.routeTicket(ticketId)` qui applique les règles de routage (RR/LeastLoaded) au sein d'une transaction de base de données avec verrou exclusif (`SELECT FOR UPDATE`).
 - Si un agent éligible est trouvé et assigné, met à jour le statut du ticket à `ASSIGNED` et propage l'assignation.
 
 **Déclencheurs** :
+
 - `TicketAssignmentListener` → `@OnEvent('ticket.created')` pour tout nouveau ticket.
 - `TicketAssignmentListener` → `@OnEvent('ticket.unassigned')` lors d'une désassignation d'urgence par le Cron.
 

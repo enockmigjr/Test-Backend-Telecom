@@ -298,14 +298,14 @@ Table dynamique permettant de définir les catégories de tickets ainsi que le r
 
 ### Colonnes
 
-| Colonne <br>    | Type <br>          |
-| :-------------- | :----------------- |
-| id <br>         | UUIDv7 <br>        |
-| name <br>       | VARCHAR(100) <br>  |
-| description <br>| TEXT NULL <br>     |
-| target_role <br>| VARCHAR(100) <br>  |
-| created_at <br> | TIMESTAMP <br>     |
-| updated_at <br> | TIMESTAMP <br>     |
+| Colonne <br>     | Type <br>         |
+| :--------------- | :---------------- |
+| id <br>          | UUIDv7 <br>       |
+| name <br>        | VARCHAR(100) <br> |
+| description <br> | TEXT NULL <br>    |
+| target_role <br> | VARCHAR(100) <br> |
+| created_at <br>  | TIMESTAMP <br>    |
+| updated_at <br>  | TIMESTAMP <br>    |
 
 ### Contraintes
 

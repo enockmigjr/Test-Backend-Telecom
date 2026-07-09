@@ -1,15 +1,23 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Test, TestingModule } from '@nestjs/testing';
 import { DashboardController } from './dashboard.controller';
 import { DashboardService } from './dashboard.service';
 import { DateRangeDto } from '../../common/dto/date-range.dto';
 import { mock, MockProxy } from 'jest-mock-extended';
+import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 
 // ---------------------------------------------------------------------------
 // Fixtures
 // ---------------------------------------------------------------------------
 const defaultRange: DateRangeDto = { from: '2026-01-01T00:00:00Z', to: '2026-06-30T23:59:59Z' };
 const emptyRange: DateRangeDto = {};
+
+const mockUser: JwtPayload = {
+  sub: 'user-001',
+  email: 'agent@telecom.local',
+  role: 'CUSTOMER_SERVICE_AGENT',
+  departmentId: 'dept-001',
+  jti: 'jti-001',
+};
 
 const overviewResult = {
   period: { from: '2026-01-01T00:00:00Z', to: '2026-06-30T23:59:59Z' },
@@ -108,9 +116,9 @@ describe('DashboardController', () => {
     it('doit retourner les KPIs globaux avec les dates fournies', async () => {
       dashboardService.overview.mockResolvedValue(overviewResult);
 
-      const result = await controller.overview(defaultRange);
+      const result = await controller.overview(defaultRange, mockUser);
 
-      expect(dashboardService.overview).toHaveBeenCalledWith(defaultRange.from, defaultRange.to);
+      expect(dashboardService.overview).toHaveBeenCalledWith(defaultRange.from, defaultRange.to, mockUser);
       expect(result).toEqual(overviewResult);
       expect(result.ticketVolume.total).toBe(150);
       expect(result.sla.complianceRate).toBe(96.67);
@@ -119,15 +127,15 @@ describe('DashboardController', () => {
     it('doit appeler le service sans dates (valeurs par défaut)', async () => {
       dashboardService.overview.mockResolvedValue(overviewResult);
 
-      await controller.overview(emptyRange);
+      await controller.overview(emptyRange, mockUser);
 
-      expect(dashboardService.overview).toHaveBeenCalledWith(undefined, undefined);
+      expect(dashboardService.overview).toHaveBeenCalledWith(undefined, undefined, mockUser);
     });
 
     it('doit propager les erreurs du service', async () => {
       dashboardService.overview.mockRejectedValue(new Error('Erreur base de données'));
 
-      await expect(controller.overview(defaultRange)).rejects.toThrow('Erreur base de données');
+      await expect(controller.overview(defaultRange, mockUser)).rejects.toThrow('Erreur base de données');
     });
   });
 
@@ -138,24 +146,34 @@ describe('DashboardController', () => {
     it('doit retourner la répartition par statut sans filtre département', async () => {
       dashboardService.ticketsByStatus.mockResolvedValue(ticketsByStatusResult);
 
-      const result = await controller.ticketsByStatus(defaultRange, undefined);
+      const result = await controller.ticketsByStatus(defaultRange, mockUser, undefined);
 
-      expect(dashboardService.ticketsByStatus).toHaveBeenCalledWith(defaultRange.from, defaultRange.to, undefined);
+      expect(dashboardService.ticketsByStatus).toHaveBeenCalledWith(
+        defaultRange.from,
+        defaultRange.to,
+        undefined,
+        mockUser,
+      );
       expect(result).toEqual(ticketsByStatusResult);
     });
 
     it('doit filtrer par département quand departmentId est fourni', async () => {
       dashboardService.ticketsByStatus.mockResolvedValue(ticketsByStatusResult);
 
-      await controller.ticketsByStatus(defaultRange, 'dept-002');
+      await controller.ticketsByStatus(defaultRange, mockUser, 'dept-002');
 
-      expect(dashboardService.ticketsByStatus).toHaveBeenCalledWith(defaultRange.from, defaultRange.to, 'dept-002');
+      expect(dashboardService.ticketsByStatus).toHaveBeenCalledWith(
+        defaultRange.from,
+        defaultRange.to,
+        'dept-002',
+        mockUser,
+      );
     });
 
     it('doit propager les erreurs du service', async () => {
       dashboardService.ticketsByStatus.mockRejectedValue(new Error('Erreur requête'));
 
-      await expect(controller.ticketsByStatus(defaultRange, undefined)).rejects.toThrow('Erreur requête');
+      await expect(controller.ticketsByStatus(defaultRange, mockUser, undefined)).rejects.toThrow('Erreur requête');
     });
   });
 
@@ -166,26 +184,41 @@ describe('DashboardController', () => {
     it('doit retourner la répartition par priorité sans filtre statut', async () => {
       dashboardService.ticketsByPriority.mockResolvedValue(ticketsByPriorityResult);
 
-      const result = await controller.ticketsByPriority(defaultRange, undefined);
+      const result = await controller.ticketsByPriority(defaultRange, mockUser, undefined);
 
-      expect(dashboardService.ticketsByPriority).toHaveBeenCalledWith(defaultRange.from, defaultRange.to, undefined);
+      expect(dashboardService.ticketsByPriority).toHaveBeenCalledWith(
+        defaultRange.from,
+        defaultRange.to,
+        undefined,
+        mockUser,
+      );
       expect(result).toEqual(ticketsByPriorityResult);
     });
 
     it('doit filtrer par statut OPEN', async () => {
       dashboardService.ticketsByPriority.mockResolvedValue(ticketsByPriorityResult);
 
-      await controller.ticketsByPriority(defaultRange, 'OPEN');
+      await controller.ticketsByPriority(defaultRange, mockUser, 'OPEN');
 
-      expect(dashboardService.ticketsByPriority).toHaveBeenCalledWith(defaultRange.from, defaultRange.to, 'OPEN');
+      expect(dashboardService.ticketsByPriority).toHaveBeenCalledWith(
+        defaultRange.from,
+        defaultRange.to,
+        'OPEN',
+        mockUser,
+      );
     });
 
     it('doit filtrer par statut RESOLVED', async () => {
       dashboardService.ticketsByPriority.mockResolvedValue(ticketsByPriorityResult);
 
-      await controller.ticketsByPriority(defaultRange, 'RESOLVED');
+      await controller.ticketsByPriority(defaultRange, mockUser, 'RESOLVED');
 
-      expect(dashboardService.ticketsByPriority).toHaveBeenCalledWith(defaultRange.from, defaultRange.to, 'RESOLVED');
+      expect(dashboardService.ticketsByPriority).toHaveBeenCalledWith(
+        defaultRange.from,
+        defaultRange.to,
+        'RESOLVED',
+        mockUser,
+      );
     });
   });
 
@@ -218,7 +251,7 @@ describe('DashboardController', () => {
     it('doit retourner la conformité SLA sans filtres supplémentaires', async () => {
       dashboardService.slaCompliance.mockResolvedValue(slaComplianceResult);
 
-      const result = await controller.slaCompliance(defaultRange, undefined, undefined, undefined);
+      const result = await controller.slaCompliance(defaultRange, mockUser, undefined, undefined, undefined);
 
       expect(dashboardService.slaCompliance).toHaveBeenCalledWith(
         defaultRange.from,
@@ -226,6 +259,7 @@ describe('DashboardController', () => {
         undefined,
         undefined,
         undefined,
+        mockUser,
       );
       expect(result).toEqual(slaComplianceResult);
     });
@@ -233,7 +267,7 @@ describe('DashboardController', () => {
     it('doit filtrer par département, priorité et catégorie', async () => {
       dashboardService.slaCompliance.mockResolvedValue(slaComplianceResult);
 
-      await controller.slaCompliance(defaultRange, 'dept-001', 'HIGH', 'NETWORK');
+      await controller.slaCompliance(defaultRange, mockUser, 'dept-001', 'HIGH', 'NETWORK');
 
       expect(dashboardService.slaCompliance).toHaveBeenCalledWith(
         defaultRange.from,
@@ -241,6 +275,7 @@ describe('DashboardController', () => {
         'dept-001',
         'HIGH',
         'NETWORK',
+        mockUser,
       );
     });
   });
@@ -252,18 +287,18 @@ describe('DashboardController', () => {
     it('doit retourner la charge des agents sans filtre département', async () => {
       dashboardService.workload.mockResolvedValue(workloadResult);
 
-      const result = await controller.workload(undefined);
+      const result = await controller.workload(mockUser, undefined);
 
-      expect(dashboardService.workload).toHaveBeenCalledWith(undefined);
+      expect(dashboardService.workload).toHaveBeenCalledWith(undefined, mockUser);
       expect(result).toEqual(workloadResult);
     });
 
     it('doit filtrer la charge par département', async () => {
       dashboardService.workload.mockResolvedValue(workloadResult);
 
-      await controller.workload('dept-003');
+      await controller.workload(mockUser, 'dept-003');
 
-      expect(dashboardService.workload).toHaveBeenCalledWith('dept-003');
+      expect(dashboardService.workload).toHaveBeenCalledWith('dept-003', mockUser);
     });
   });
 
@@ -274,7 +309,7 @@ describe('DashboardController', () => {
     it('doit retourner les statistiques de temps de résolution', async () => {
       dashboardService.resolutionTime.mockResolvedValue(resolutionTimeResult);
 
-      const result = await controller.resolutionTime(defaultRange, undefined, undefined, undefined);
+      const result = await controller.resolutionTime(defaultRange, mockUser, undefined, undefined, undefined);
 
       expect(dashboardService.resolutionTime).toHaveBeenCalledWith(
         defaultRange.from,
@@ -282,6 +317,7 @@ describe('DashboardController', () => {
         undefined,
         undefined,
         undefined,
+        mockUser,
       );
       expect(result).toEqual(resolutionTimeResult);
     });
@@ -289,7 +325,7 @@ describe('DashboardController', () => {
     it('doit appliquer les filtres groupBy, departmentId et priority', async () => {
       dashboardService.resolutionTime.mockResolvedValue(resolutionTimeResult);
 
-      await controller.resolutionTime(defaultRange, 'week', 'dept-001', 'CRITICAL');
+      await controller.resolutionTime(defaultRange, mockUser, 'week', 'dept-001', 'CRITICAL');
 
       expect(dashboardService.resolutionTime).toHaveBeenCalledWith(
         defaultRange.from,
@@ -297,13 +333,14 @@ describe('DashboardController', () => {
         'week',
         'dept-001',
         'CRITICAL',
+        mockUser,
       );
     });
 
     it('doit propager les erreurs du service', async () => {
       dashboardService.resolutionTime.mockRejectedValue(new Error('Erreur statistiques'));
 
-      await expect(controller.resolutionTime(defaultRange, undefined, undefined, undefined)).rejects.toThrow(
+      await expect(controller.resolutionTime(defaultRange, mockUser, undefined, undefined, undefined)).rejects.toThrow(
         'Erreur statistiques',
       );
     });

@@ -1,17 +1,34 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ForbiddenException } from '@nestjs/common';
 import { and, gte, lte, eq, sql, isNull, count } from 'drizzle-orm';
 import { DrizzleProvider } from '../../database/drizzle.provider';
 import { tickets, departments, categories } from '../../database/schemas';
+import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 
 @Injectable()
 export class DashboardService {
   constructor(private readonly drizzle: DrizzleProvider) {}
 
+  private enforceSupervisorScope(departmentId: string | undefined, currentUser?: JwtPayload): string | undefined {
+    if (currentUser?.role === 'SUPERVISOR') {
+      if (departmentId && departmentId !== currentUser.departmentId) {
+        throw new ForbiddenException("Un superviseur ne peut pas acceder aux statistiques d'un autre departement.");
+      }
+      return currentUser.departmentId;
+    }
+    return departmentId;
+  }
+
   /** KPIs globaux de la plateforme */
-  async overview(from?: string, to?: string) {
+  async overview(from?: string, to?: string, currentUser?: JwtPayload) {
     const fromDate = from ? new Date(from) : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
     const toDate = to ? new Date(to) : new Date();
-    const rangeWhere = and(gte(tickets.createdAt, fromDate), lte(tickets.createdAt, toDate), isNull(tickets.deletedAt));
+
+    const conditions = [gte(tickets.createdAt, fromDate), lte(tickets.createdAt, toDate), isNull(tickets.deletedAt)];
+    if (currentUser?.role === 'SUPERVISOR') {
+      conditions.push(eq(tickets.assignedTeamId, currentUser.departmentId));
+    }
+
+    const rangeWhere = and(...conditions);
     const openWhere = and(rangeWhere, sql`${tickets.status} NOT IN ('RESOLVED','CLOSED','CANCELLED')`);
 
     const [[totals], [openTickets], [], [resolvedToday], [createdToday], [breachedCount], [atRiskCount]] =
@@ -30,7 +47,7 @@ export class DashboardService {
         this.drizzle.db
           .select({ count: count() })
           .from(tickets)
-          .where(and(openWhere, lte(tickets.resolutionDueAt, new Date()))),
+          .where(and(openWhere, eq(tickets.slaBreached, true))),
         this.drizzle.db
           .select({ count: count() })
           .from(tickets)
@@ -84,11 +101,14 @@ export class DashboardService {
   }
 
   /** Tickets par statut avec âge moyen */
-  async ticketsByStatus(from?: string, to?: string, departmentId?: string) {
+  async ticketsByStatus(from?: string, to?: string, departmentId?: string, currentUser?: JwtPayload) {
     const fromDate = from ? new Date(from) : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
     const toDate = to ? new Date(to) : new Date();
+
+    const targetDeptId = this.enforceSupervisorScope(departmentId, currentUser);
+
     const conditions = [gte(tickets.createdAt, fromDate), lte(tickets.createdAt, toDate), isNull(tickets.deletedAt)];
-    if (departmentId) conditions.push(eq(tickets.departmentId, departmentId));
+    if (targetDeptId) conditions.push(eq(tickets.assignedTeamId, targetDeptId));
     const where = and(...conditions);
 
     const data = await this.drizzle.db
@@ -114,12 +134,22 @@ export class DashboardService {
   }
 
   /** Tickets par priorité */
-  async ticketsByPriority(from?: string, to?: string, statusFilter?: string) {
+  async ticketsByPriority(
+    from?: string,
+    to?: string,
+    statusFilter?: string,
+    currentUser?: JwtPayload,
+    departmentId?: string,
+  ) {
     const fromDate = from ? new Date(from) : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
     const toDate = to ? new Date(to) : new Date();
+
+    const targetDeptId = this.enforceSupervisorScope(departmentId, currentUser);
+
     const conditions = [gte(tickets.createdAt, fromDate), lte(tickets.createdAt, toDate), isNull(tickets.deletedAt)];
     if (statusFilter === 'OPEN') conditions.push(sql`${tickets.status} NOT IN ('RESOLVED','CLOSED','CANCELLED')`);
     if (statusFilter === 'RESOLVED') conditions.push(sql`${tickets.status} IN ('RESOLVED','CLOSED')`);
+    if (targetDeptId) conditions.push(eq(tickets.assignedTeamId, targetDeptId));
     const where = and(...conditions);
 
     const data = await this.drizzle.db
@@ -172,11 +202,21 @@ export class DashboardService {
   }
 
   /** Conformité SLA */
-  async slaCompliance(from?: string, to?: string, departmentId?: string, priority?: string, categoryId?: string) {
+  async slaCompliance(
+    from?: string,
+    to?: string,
+    departmentId?: string,
+    priority?: string,
+    categoryId?: string,
+    currentUser?: JwtPayload,
+  ) {
     const fromDate = from ? new Date(from) : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
     const toDate = to ? new Date(to) : new Date();
+
+    const targetDeptId = this.enforceSupervisorScope(departmentId, currentUser);
+
     const conditions = [gte(tickets.createdAt, fromDate), lte(tickets.createdAt, toDate), isNull(tickets.deletedAt)];
-    if (departmentId) conditions.push(eq(tickets.departmentId, departmentId));
+    if (targetDeptId) conditions.push(eq(tickets.assignedTeamId, targetDeptId));
     if (priority) conditions.push(eq(tickets.priority, priority as typeof tickets.$inferSelect.priority));
     if (categoryId) conditions.push(eq(tickets.categoryId, categoryId));
     const where = and(...conditions);
@@ -244,13 +284,15 @@ export class DashboardService {
   }
 
   /** Charge des agents */
-  async workload(departmentId?: string) {
+  async workload(departmentId?: string, currentUser?: JwtPayload) {
+    const targetDeptId = this.enforceSupervisorScope(departmentId, currentUser);
+
     const conditions = [
       isNull(tickets.deletedAt),
       sql`${tickets.status} NOT IN ('RESOLVED','CLOSED','CANCELLED')`,
       sql`${tickets.assignedTo} IS NOT NULL`,
     ];
-    if (departmentId) conditions.push(eq(tickets.assignedTeamId, departmentId));
+    if (targetDeptId) conditions.push(eq(tickets.assignedTeamId, targetDeptId));
     const where = and(...conditions);
 
     const data = await this.drizzle.db
@@ -265,16 +307,17 @@ export class DashboardService {
       .where(where)
       .groupBy(tickets.assignedTo);
 
+    const unassignedConditions = [
+      isNull(tickets.deletedAt),
+      sql`${tickets.status} NOT IN ('RESOLVED','CLOSED','CANCELLED')`,
+      sql`${tickets.assignedTo} IS NULL`,
+    ];
+    if (targetDeptId) unassignedConditions.push(eq(tickets.assignedTeamId, targetDeptId));
+
     const unassigned = await this.drizzle.db
       .select({ count: count() })
       .from(tickets)
-      .where(
-        and(
-          isNull(tickets.deletedAt),
-          sql`${tickets.status} NOT IN ('RESOLVED','CLOSED','CANCELLED')`,
-          sql`${tickets.assignedTo} IS NULL`,
-        ),
-      );
+      .where(and(...unassignedConditions));
 
     return {
       generatedAt: new Date().toISOString(),
@@ -290,16 +333,26 @@ export class DashboardService {
   }
 
   /** Temps de résolution */
-  async resolutionTime(from?: string, to?: string, _groupBy?: string, departmentId?: string, priority?: string) {
+  async resolutionTime(
+    from?: string,
+    to?: string,
+    _groupBy?: string,
+    departmentId?: string,
+    priority?: string,
+    currentUser?: JwtPayload,
+  ) {
     const fromDate = from ? new Date(from) : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
     const toDate = to ? new Date(to) : new Date();
+
+    const targetDeptId = this.enforceSupervisorScope(departmentId, currentUser);
+
     const conditions = [
       gte(tickets.createdAt, fromDate),
       lte(tickets.createdAt, toDate),
       isNull(tickets.deletedAt),
       sql`${tickets.resolvedAt} IS NOT NULL`,
     ];
-    if (departmentId) conditions.push(eq(tickets.departmentId, departmentId));
+    if (targetDeptId) conditions.push(eq(tickets.assignedTeamId, targetDeptId));
     if (priority) conditions.push(eq(tickets.priority, priority as typeof tickets.$inferSelect.priority));
     const where = and(...conditions);
 
