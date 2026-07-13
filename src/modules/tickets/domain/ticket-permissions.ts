@@ -203,4 +203,49 @@ export class TicketPermissions {
       }
     }
   }
+
+  /**
+   * Vérifie si l'utilisateur peut effectuer la transition de statut demandée.
+   * Centralise les 4 blocs isAssignee/isSupervisor/isAdmin présents dans changeStatus.
+   */
+  checkCanChangeStatus(ticket: TicketPermissionData, newStatus: string, user: JwtPayload): void {
+    const isAssignee = ticket.assignedTo === user.sub;
+    const isSupervisor = user.role === 'SUPERVISOR';
+    const isAdmin = user.role === 'ADMINISTRATOR';
+
+    switch (newStatus) {
+      case 'IN_PROGRESS':
+      case 'RESOLVED':
+        if (!isAssignee && !isSupervisor && !isAdmin) {
+          throw new ForbiddenException(
+            `Seul l'agent assigne, un superviseur ou un administrateur peut effectuer cette transition (${newStatus}).`,
+          );
+        }
+        break;
+
+      case 'PENDING_CUSTOMER':
+      case 'PENDING_THIRD_PARTY':
+        if (!isAssignee && !isSupervisor && !isAdmin) {
+          throw new ForbiddenException(
+            "Seul l'agent assigne, un superviseur ou un administrateur peut mettre ce ticket en attente.",
+          );
+        }
+        break;
+
+      case 'CANCELLED':
+        if (!isSupervisor && !isAdmin) {
+          throw new ForbiddenException('Seul un superviseur ou un administrateur peut annuler ce ticket.');
+        }
+        break;
+
+      case 'CLOSED':
+        this.checkCanClose(ticket, user);
+        break;
+
+      case 'REOPENED':
+        this.checkCanReopen(ticket, user);
+        break;
+    }
+  }
 }
+

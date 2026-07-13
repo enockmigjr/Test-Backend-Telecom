@@ -1,5 +1,5 @@
 import { Injectable, Logger, OnModuleInit, OnModuleDestroy, Inject } from '@nestjs/common';
-import { Worker, Job, Queue } from 'bullmq';
+import { Worker, Job } from 'bullmq';
 import { generateUuid } from '../../common/helpers/uuidv7.helper';
 import { eq, and, isNull, gte, lte, count, sql } from 'drizzle-orm';
 import { redisConfig } from '../../common/providers/redis.config';
@@ -8,12 +8,7 @@ import { DrizzleProvider } from '../../database/drizzle.provider';
 import { tickets, users, departments, categories } from '../../database/schemas';
 import { ReportsService } from '../../modules/reports/reports.service';
 import { LocalStorageService } from '../../modules/attachments/storage/local-storage.service';
-
-interface BullMqQueues {
-  email: Queue;
-  notification: Queue;
-  [key: string]: Queue;
-}
+import { BullMqQueues } from '../queues.types';
 
 /**
  * Worker pour la génération asynchrone de rapports (PDF, exports CSV).

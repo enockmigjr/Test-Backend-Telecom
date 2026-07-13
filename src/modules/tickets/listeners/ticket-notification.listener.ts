@@ -3,6 +3,7 @@ import { OnEvent } from '@nestjs/event-emitter';
 import { Queue } from 'bullmq';
 import { eq, and, isNull } from 'drizzle-orm';
 import { EMAIL_QUEUE, NOTIFICATION_QUEUE } from '../../../queues/queues.module';
+import { BullMqQueues } from '../../../queues/queues.types';
 import {
   TicketCreatedEvent,
   TicketAssignedEvent,
@@ -16,11 +17,6 @@ import { DrizzleProvider } from '../../../database/drizzle.provider';
 import { departments, users, tickets, categories } from '../../../database/schemas';
 import { TelecomWebSocketGateway } from '../../../websocket/websocket.gateway';
 
-interface BullMqQueues {
-  email: Queue;
-  notification: Queue;
-  [key: string]: Queue;
-}
 
 interface TicketEmailContext {
   ticketNumber: string;

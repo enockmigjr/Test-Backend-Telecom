@@ -1,7 +1,7 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
-import { and, lt, gte, eq, notInArray, isNull } from 'drizzle-orm';
 import { Queue } from 'bullmq';
+import { and, lt, gte, eq, notInArray, isNull } from 'drizzle-orm';
 import { DrizzleProvider } from '../../database/drizzle.provider';
 import { departments, tickets, users, ticketHistory, categories } from '../../database/schemas';
 import { MetricsService } from '../../common/metrics/metrics.service';
@@ -12,12 +12,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { TicketStatusChangedEvent, TicketClosedEvent } from '../tickets/domain/ticket.events';
 import { calculateSlaDueDate } from '../../common/helpers/sla.helper';
 import { SettingsService } from '../settings/settings.service';
-
-interface BullMqQueues {
-  email: Queue;
-  notification: Queue;
-  [key: string]: Queue;
-}
+import { BullMqQueues } from '../../queues/queues.types';
 
 /**
  * Moteur de verification des SLA et auto-cloture.

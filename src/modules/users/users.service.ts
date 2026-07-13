@@ -11,13 +11,14 @@ import { eq, and, isNull, sql } from 'drizzle-orm';
 import { generateUuid } from '../../common/helpers/uuidv7.helper';
 import * as argon2 from 'argon2';
 import { randomBytes } from 'crypto';
-import { Queue } from 'bullmq';
 
 import { DrizzleProvider } from '../../database/drizzle.provider';
 import { users, departments, tickets } from '../../database/schemas';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 import { PaginationHelper } from '../../common/helpers/pagination.helper';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
+import { BullMqQueues } from '../../queues/queues.types';
+import { CreateUserInput, UpdateUserInput } from './interfaces/user-service.interfaces';
 
 @Injectable()
 export class UsersService {
@@ -25,7 +26,7 @@ export class UsersService {
 
   constructor(
     private readonly drizzle: DrizzleProvider,
-    @Inject('BullMQ_Queues') private readonly queues: { email: Queue; notification: Queue; [key: string]: Queue },
+    @Inject('BullMQ_Queues') private readonly queues: BullMqQueues,
   ) {}
 
   async findAll(dto: PaginationDto, currentUser?: JwtPayload) {
@@ -149,7 +150,7 @@ export class UsersService {
     };
   }
 
-  async create(dto: { email: string; firstName: string; lastName: string; role: string; departmentId: string }) {
+  async create(dto: CreateUserInput) {
     const [existing] = await this.drizzle.db
       .select({ id: users.id })
       .from(users)
@@ -213,11 +214,7 @@ export class UsersService {
     };
   }
 
-  async update(
-    id: string,
-    dto: { firstName?: string; lastName?: string; role?: string; departmentId?: string },
-    currentUser?: JwtPayload,
-  ) {
+  async update(id: string, dto: UpdateUserInput, currentUser?: JwtPayload) {
     const userToUpdate = await this.findOne(id);
 
     if (currentUser?.role === 'SUPERVISOR') {

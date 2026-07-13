@@ -2,6 +2,7 @@ import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { eq, and, isNull, sql, count } from 'drizzle-orm';
 import { generateUuid } from '../../../common/helpers/uuidv7.helper';
+import { CreateTicketInput, UpdateTicketInput } from '../dto/ticket-service.interfaces';
 
 import { DrizzleProvider } from '../../../database/drizzle.provider';
 import {
@@ -51,22 +52,7 @@ export class TicketsService {
   /**
    * Crée un nouveau ticket d'incident.
    */
-  async create(
-    dto: {
-      title: string;
-      description: string;
-      priority: string;
-      severity: string;
-      categoryId: string;
-      departmentId: string;
-      assignedTeamId: string;
-      customerAccountNumber?: string;
-      customerName?: string;
-      customerContact?: string;
-      tags?: string;
-    },
-    createdBy: string,
-  ) {
+  async create(dto: CreateTicketInput, createdBy: string) {
     // Trouver la politique SLA correspondante
     const [policy] = await this.drizzle.db
       .select()
@@ -194,18 +180,7 @@ export class TicketsService {
   /**
    * Met à jour les informations d'un ticket avec validation fine (ownership-based).
    */
-  async update(
-    id: string,
-    dto: {
-      title?: string;
-      description?: string;
-      priority?: string;
-      severity?: string;
-      categoryId?: string;
-      tags?: string;
-    },
-    user: JwtPayload,
-  ) {
+  async update(id: string, dto: UpdateTicketInput, user: JwtPayload) {
     const ticket = await this.findTicketById(id);
 
     // Déterminer quels champs sont modifiés pour valider les permissions correspondantes
@@ -238,123 +213,11 @@ export class TicketsService {
     // 1. Valider la transition de la state machine
     this.stateMachine.validateTransition(oldStatus, newStatus);
 
-    // 2. Valider les permissions d'ownership-based d'accès à la transition
-    if (newStatus === 'IN_PROGRESS') {
-      const isAssignee = ticket.assignedTo === user.sub;
-      const isSupervisor = user.role === 'SUPERVISOR';
-      const isAdmin = user.role === 'ADMINISTRATOR';
-      if (!isAssignee && !isSupervisor && !isAdmin) {
-        throw new BadRequestException(
-          "Seul l'agent assigne, un superviseur ou un administrateur peut demarrer le traitement de ce ticket.",
-        );
-      }
-    } else if (newStatus === 'RESOLVED') {
-      const isAssignee = ticket.assignedTo === user.sub;
-      const isSupervisor = user.role === 'SUPERVISOR';
-      const isAdmin = user.role === 'ADMINISTRATOR';
-      if (!isAssignee && !isSupervisor && !isAdmin) {
-        throw new BadRequestException(
-          "Seul l'agent assigne, un superviseur ou un administrateur peut resoudre ce ticket.",
-        );
-      }
-    } else if (newStatus === 'CLOSED') {
-      this.ticketPermissions.checkCanClose(ticket, user);
-    } else if (newStatus === 'REOPENED') {
-      this.ticketPermissions.checkCanReopen(ticket, user);
-    } else if (newStatus === 'PENDING_CUSTOMER' || newStatus === 'PENDING_THIRD_PARTY') {
-      const isAssignee = ticket.assignedTo === user.sub;
-      const isSupervisor = user.role === 'SUPERVISOR';
-      const isAdmin = user.role === 'ADMINISTRATOR';
-      if (!isAssignee && !isSupervisor && !isAdmin) {
-        throw new BadRequestException(
-          "Seul l'agent assigne, un superviseur ou un administrateur peut mettre ce ticket en attente.",
-        );
-      }
-    } else if (newStatus === 'CANCELLED') {
-      const isSupervisor = user.role === 'SUPERVISOR';
-      const isAdmin = user.role === 'ADMINISTRATOR';
-      if (!isSupervisor && !isAdmin) {
-        throw new BadRequestException('Seul un superviseur ou un administrateur peut annuler ce ticket.');
-      }
-    }
+    // 2. Valider les permissions via TicketPermissions (point unique de vérité)
+    this.ticketPermissions.checkCanChangeStatus(ticket, newStatus, user);
 
-    const updateFields: Record<string, unknown> = { status: newStatus };
     const now = new Date();
-
-    // Gestion du cycle de vie SLA (START / PAUSE / RESUME / STOP)
-
-    // 1. Passage à PENDING (PAUSE)
-    if (newStatus === 'PENDING_CUSTOMER' || newStatus === 'PENDING_THIRD_PARTY') {
-      updateFields['slaPausedAt'] = now;
-    }
-
-    // 2. Retour de PENDING à ASSIGNED ou IN_PROGRESS (RESUME)
-    if (
-      (oldStatus === 'PENDING_CUSTOMER' || oldStatus === 'PENDING_THIRD_PARTY') &&
-      (newStatus === 'ASSIGNED' || newStatus === 'IN_PROGRESS')
-    ) {
-      if (ticket.slaPausedAt) {
-        const pauseDuration = now.getTime() - new Date(ticket.slaPausedAt).getTime();
-        updateFields['accumulatedPauseMs'] = ticket.accumulatedPauseMs + pauseDuration;
-        updateFields['slaPausedAt'] = null;
-        if (ticket.resolutionDueAt) {
-          updateFields['resolutionDueAt'] = new Date(new Date(ticket.resolutionDueAt).getTime() + pauseDuration);
-        }
-      }
-    }
-
-    // 3. Premier démarrage de la résolution (START du SLA de Résolution)
-    if (
-      (oldStatus === 'NEW' || oldStatus === 'REOPENED') &&
-      (newStatus === 'ASSIGNED' || newStatus === 'IN_PROGRESS')
-    ) {
-      const [policy] = await this.drizzle.db
-        .select()
-        .from(slaPolicies)
-        .where(and(eq(slaPolicies.categoryId, ticket.categoryId), eq(slaPolicies.priority, ticket.priority)))
-        .limit(1);
-
-      if (policy) {
-        const calendarType = ticket.priority === 'CRITICAL' || ticket.priority === 'HIGH' ? '24_7' : 'BUSINESS_HOURS';
-        const businessHours = await this.settingsService.getBusinessHours();
-        const businessDays = await this.settingsService.getBusinessDays();
-        const resolutionDueAt = calculateSlaDueDate(
-          now,
-          policy.resolutionMinutes,
-          calendarType,
-          businessHours,
-          businessDays,
-        );
-        updateFields['resolutionDueAt'] = resolutionDueAt;
-      }
-    }
-
-    // 4. Arrêt ou nettoyage de pause sur Clôture (STOP / CLEANUP)
-    if (newStatus === 'RESOLVED' || newStatus === 'CLOSED' || newStatus === 'CANCELLED') {
-      updateFields['slaPausedAt'] = null;
-    }
-
-    // Actions spécifiques d'origine selon le statut cible
-    if (newStatus === 'IN_PROGRESS' && !ticket.firstResponseAt) {
-      updateFields['firstResponseAt'] = now;
-    }
-    if (newStatus === 'RESOLVED') {
-      updateFields['resolvedAt'] = now;
-      if (reason) {
-        updateFields['resolutionSummary'] = reason;
-      }
-    }
-    if (newStatus === 'CLOSED') {
-      updateFields['closedAt'] = now;
-    }
-    if (newStatus === 'REOPENED') {
-      updateFields['resolvedAt'] = null;
-      updateFields['closedAt'] = null;
-      const businessHours = await this.settingsService.getBusinessHours();
-      const businessDays = await this.settingsService.getBusinessDays();
-      // Recalculer une rallonge sur réouverture en heures ouvrées par défaut
-      updateFields['resolutionDueAt'] = calculateSlaDueDate(now, 240, 'BUSINESS_HOURS', businessHours, businessDays); // +4h ouvrables
-    }
+    const updateFields = await this.buildSlaUpdateFields(ticket, oldStatus, newStatus, now, reason);
 
     await this.drizzle.db.update(tickets).set(updateFields).where(eq(tickets.id, id));
     await this.ticketHistory.record(
@@ -498,6 +361,86 @@ export class TicketsService {
   }
 
   // ─── Méthodes privées ────────────────────────────────────────────
+
+  /**
+   * Construit l'objet de mise à jour des champs SLA selon la transition de statut.
+   * Gère les 4 cas : PAUSE (→PENDING), RESUME (←PENDING), START (premier démarrage), STOP (clôture).
+   */
+  private async buildSlaUpdateFields(
+    ticket: Awaited<ReturnType<typeof this.findTicketById>>,
+    oldStatus: string,
+    newStatus: string,
+    now: Date,
+    reason?: string,
+  ): Promise<Record<string, unknown>> {
+    const fields: Record<string, unknown> = { status: newStatus };
+
+    // PAUSE — passage en attente
+    if (newStatus === 'PENDING_CUSTOMER' || newStatus === 'PENDING_THIRD_PARTY') {
+      fields['slaPausedAt'] = now;
+    }
+
+    // RESUME — retour de PENDING vers ASSIGNED ou IN_PROGRESS
+    if (
+      (oldStatus === 'PENDING_CUSTOMER' || oldStatus === 'PENDING_THIRD_PARTY') &&
+      (newStatus === 'ASSIGNED' || newStatus === 'IN_PROGRESS')
+    ) {
+      if (ticket.slaPausedAt) {
+        const pauseDuration = now.getTime() - new Date(ticket.slaPausedAt).getTime();
+        fields['accumulatedPauseMs'] = ticket.accumulatedPauseMs + pauseDuration;
+        fields['slaPausedAt'] = null;
+        if (ticket.resolutionDueAt) {
+          fields['resolutionDueAt'] = new Date(new Date(ticket.resolutionDueAt).getTime() + pauseDuration);
+        }
+      }
+    }
+
+    // START — premier démarrage du SLA de résolution (NEW/REOPENED → ASSIGNED/IN_PROGRESS)
+    if (
+      (oldStatus === 'NEW' || oldStatus === 'REOPENED') &&
+      (newStatus === 'ASSIGNED' || newStatus === 'IN_PROGRESS')
+    ) {
+      const [policy] = await this.drizzle.db
+        .select()
+        .from(slaPolicies)
+        .where(and(eq(slaPolicies.categoryId, ticket.categoryId), eq(slaPolicies.priority, ticket.priority)))
+        .limit(1);
+
+      if (policy) {
+        const calendarType = ticket.priority === 'CRITICAL' || ticket.priority === 'HIGH' ? '24_7' : 'BUSINESS_HOURS';
+        const businessHours = await this.settingsService.getBusinessHours();
+        const businessDays = await this.settingsService.getBusinessDays();
+        fields['resolutionDueAt'] = calculateSlaDueDate(now, policy.resolutionMinutes, calendarType, businessHours, businessDays);
+      }
+    }
+
+    // STOP — nettoyage de la pause sur clôture
+    if (newStatus === 'RESOLVED' || newStatus === 'CLOSED' || newStatus === 'CANCELLED') {
+      fields['slaPausedAt'] = null;
+    }
+
+    // Timestamps spécifiques au statut cible
+    if (newStatus === 'IN_PROGRESS' && !ticket.firstResponseAt) {
+      fields['firstResponseAt'] = now;
+    }
+    if (newStatus === 'RESOLVED') {
+      fields['resolvedAt'] = now;
+      if (reason) fields['resolutionSummary'] = reason;
+    }
+    if (newStatus === 'CLOSED') {
+      fields['closedAt'] = now;
+    }
+    if (newStatus === 'REOPENED') {
+      fields['resolvedAt'] = null;
+      fields['closedAt'] = null;
+      const businessHours = await this.settingsService.getBusinessHours();
+      const businessDays = await this.settingsService.getBusinessDays();
+      // +4h ouvrables de rallonge sur réouverture
+      fields['resolutionDueAt'] = calculateSlaDueDate(now, 240, 'BUSINESS_HOURS', businessHours, businessDays);
+    }
+
+    return fields;
+  }
 
   private async findTicketById(id: string) {
     const result = await this.drizzle.db

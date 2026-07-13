@@ -43,24 +43,7 @@ export class CommentsService {
 
   async update(id: string, currentUser: JwtPayload, content: string) {
     const comment = await this.findOne(id);
-
-    if (comment.authorId !== currentUser.sub) {
-      if (currentUser.role === 'SUPERVISOR') {
-        const [ticket] = await this.drizzle.db
-          .select({ assignedTeamId: tickets.assignedTeamId })
-          .from(tickets)
-          .where(eq(tickets.id, comment.ticketId))
-          .limit(1);
-        if (!ticket || ticket.assignedTeamId !== currentUser.departmentId) {
-          throw new ForbiddenException(
-            "Vous n'avez pas le droit de modifier un commentaire sur un ticket hors de votre departement.",
-          );
-        }
-      } else if (currentUser.role !== 'ADMINISTRATOR') {
-        throw new ForbiddenException('Vous ne pouvez modifier que vos propres commentaires.');
-      }
-    }
-
+    await this.assertCanModifyComment(comment, currentUser, 'modifier');
     await this.drizzle.db.update(ticketComments).set({ content }).where(eq(ticketComments.id, id));
     const [updated] = await this.drizzle.db.select().from(ticketComments).where(eq(ticketComments.id, id)).limit(1);
     return { message: 'Commentaire mis à jour.', data: updated };
@@ -68,24 +51,7 @@ export class CommentsService {
 
   async remove(id: string, currentUser: JwtPayload) {
     const comment = await this.findOne(id);
-
-    if (comment.authorId !== currentUser.sub) {
-      if (currentUser.role === 'SUPERVISOR') {
-        const [ticket] = await this.drizzle.db
-          .select({ assignedTeamId: tickets.assignedTeamId })
-          .from(tickets)
-          .where(eq(tickets.id, comment.ticketId))
-          .limit(1);
-        if (!ticket || ticket.assignedTeamId !== currentUser.departmentId) {
-          throw new ForbiddenException(
-            "Vous n'avez pas le droit de supprimer un commentaire sur un ticket hors de votre departement.",
-          );
-        }
-      } else if (currentUser.role !== 'ADMINISTRATOR') {
-        throw new ForbiddenException('Vous ne pouvez supprimer que vos propres commentaires.');
-      }
-    }
-
+    await this.assertCanModifyComment(comment, currentUser, 'supprimer');
     await this.drizzle.db.delete(ticketComments).where(eq(ticketComments.id, id));
   }
 
@@ -93,5 +59,35 @@ export class CommentsService {
     const [comment] = await this.drizzle.db.select().from(ticketComments).where(eq(ticketComments.id, id)).limit(1);
     if (!comment) throw new NotFoundException('Commentaire non trouvé.');
     return comment;
+  }
+
+  /**
+   * Vérifie que l'utilisateur a le droit de modifier ou supprimer un commentaire.
+   * Logique : auteur peut toujours, superviseur peut sur son département, admin peut tout.
+   */
+  private async assertCanModifyComment(
+    comment: { authorId: string; ticketId: string },
+    currentUser: JwtPayload,
+    action: 'modifier' | 'supprimer',
+  ): Promise<void> {
+    if (comment.authorId === currentUser.sub) return;
+
+    if (currentUser.role === 'SUPERVISOR') {
+      const [ticket] = await this.drizzle.db
+        .select({ assignedTeamId: tickets.assignedTeamId })
+        .from(tickets)
+        .where(eq(tickets.id, comment.ticketId))
+        .limit(1);
+      if (!ticket || ticket.assignedTeamId !== currentUser.departmentId) {
+        throw new ForbiddenException(
+          `Vous n'avez pas le droit de ${action} un commentaire sur un ticket hors de votre departement.`,
+        );
+      }
+      return;
+    }
+
+    if (currentUser.role !== 'ADMINISTRATOR') {
+      throw new ForbiddenException(`Vous ne pouvez ${action} que vos propres commentaires.`);
+    }
   }
 }
