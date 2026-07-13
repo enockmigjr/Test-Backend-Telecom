@@ -17,7 +17,6 @@ import { DrizzleProvider } from '../../../database/drizzle.provider';
 import { departments, users, tickets, categories } from '../../../database/schemas';
 import { TelecomWebSocketGateway } from '../../../websocket/websocket.gateway';
 
-
 interface TicketEmailContext {
   ticketNumber: string;
   title: string;

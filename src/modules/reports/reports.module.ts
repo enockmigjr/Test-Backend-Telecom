@@ -11,4 +11,3 @@ import { QueuesModule } from '../../queues/queues.module';
   exports: [ReportsService],
 })
 export class ReportsModule {}
-

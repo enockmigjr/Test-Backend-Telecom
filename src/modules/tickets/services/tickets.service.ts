@@ -410,7 +410,13 @@ export class TicketsService {
         const calendarType = ticket.priority === 'CRITICAL' || ticket.priority === 'HIGH' ? '24_7' : 'BUSINESS_HOURS';
         const businessHours = await this.settingsService.getBusinessHours();
         const businessDays = await this.settingsService.getBusinessDays();
-        fields['resolutionDueAt'] = calculateSlaDueDate(now, policy.resolutionMinutes, calendarType, businessHours, businessDays);
+        fields['resolutionDueAt'] = calculateSlaDueDate(
+          now,
+          policy.resolutionMinutes,
+          calendarType,
+          businessHours,
+          businessDays,
+        );
       }
     }
 

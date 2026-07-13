@@ -60,9 +60,7 @@ export class ReportSchedulerService {
         data: { reportId, requestedBy: admin.id },
       });
 
-      this.logger.log(
-        `Job de rapport hebdomadaire automatique créé avec succès (ID: ${reportId}) pour ${admin.email}`,
-      );
+      this.logger.log(`Job de rapport hebdomadaire automatique créé avec succès (ID: ${reportId}) pour ${admin.email}`);
     } catch (err) {
       this.logger.error(`Erreur lors du déclenchement du rapport hebdomadaire automatique: ${String(err)}`);
     }
