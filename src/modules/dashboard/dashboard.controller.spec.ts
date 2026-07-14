@@ -77,7 +77,18 @@ const slaComplianceResult = {
 
 const workloadResult = {
   generatedAt: '2026-06-30T12:00:00Z',
-  data: [{ assignedTo: 'user-001', total: 10, critical: 2, high: 3, slaAtRisk: 1 }],
+  data: [
+    {
+      agentId: 'user-001',
+      firstName: 'Jean',
+      lastName: 'Dupont',
+      email: 'jean.dupont@telecom.local',
+      openTicketsCount: 10,
+      criticalTicketsCount: 2,
+      highTicketsCount: 3,
+      slaAtRiskCount: 1,
+    },
+  ],
   summary: { totalAgents: 1, totalOpenTickets: 10, avgTicketsPerAgent: 10.0, unassignedTickets: 5 },
 };
 

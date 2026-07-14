@@ -1,7 +1,7 @@
 import { Injectable, ForbiddenException } from '@nestjs/common';
 import { and, gte, lte, eq, sql, isNull, count } from 'drizzle-orm';
 import { DrizzleProvider } from '../../database/drizzle.provider';
-import { tickets, departments, categories } from '../../database/schemas';
+import { tickets, departments, categories, users } from '../../database/schemas';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 
 @Injectable()
@@ -297,15 +297,19 @@ export class DashboardService {
 
     const data = await this.drizzle.db
       .select({
-        assignedTo: tickets.assignedTo,
-        total: count(),
-        critical: sql<number>`COUNT(*) FILTER (WHERE ${tickets.priority} = 'CRITICAL')`,
-        high: sql<number>`COUNT(*) FILTER (WHERE ${tickets.priority} = 'HIGH')`,
-        slaAtRisk: sql<number>`COUNT(*) FILTER (WHERE ${tickets.slaBreached} = false AND ${tickets.resolutionDueAt} <= NOW() + INTERVAL '30 minutes')`,
+        agentId: tickets.assignedTo,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        email: users.email,
+        openTicketsCount: count(),
+        criticalTicketsCount: sql<number>`COUNT(*) FILTER (WHERE ${tickets.priority} = 'CRITICAL')`,
+        highTicketsCount: sql<number>`COUNT(*) FILTER (WHERE ${tickets.priority} = 'HIGH')`,
+        slaAtRiskCount: sql<number>`COUNT(*) FILTER (WHERE ${tickets.slaBreached} = false AND ${tickets.resolutionDueAt} <= NOW() + INTERVAL '30 minutes')`,
       })
       .from(tickets)
+      .leftJoin(users, eq(tickets.assignedTo, users.id))
       .where(where)
-      .groupBy(tickets.assignedTo);
+      .groupBy(tickets.assignedTo, users.firstName, users.lastName, users.email);
 
     const unassignedConditions = [
       isNull(tickets.deletedAt),
@@ -321,12 +325,20 @@ export class DashboardService {
 
     return {
       generatedAt: new Date().toISOString(),
-      data,
+      data: data.map((a) => ({
+        ...a,
+        openTicketsCount: Number(a.openTicketsCount || 0),
+        criticalTicketsCount: Number(a.criticalTicketsCount || 0),
+        highTicketsCount: Number(a.highTicketsCount || 0),
+        slaAtRiskCount: Number(a.slaAtRiskCount || 0),
+      })),
       summary: {
         totalAgents: data.length,
-        totalOpenTickets: data.reduce((sum, a) => sum + Number(a.total), 0),
+        totalOpenTickets: data.reduce((sum, a) => sum + Number(a.openTicketsCount), 0),
         avgTicketsPerAgent:
-          data.length > 0 ? Number((data.reduce((sum, a) => sum + Number(a.total), 0) / data.length).toFixed(1)) : 0,
+          data.length > 0
+            ? Number((data.reduce((sum, a) => sum + Number(a.openTicketsCount), 0) / data.length).toFixed(1))
+            : 0,
         unassignedTickets: Number(unassigned[0]?.count || 0),
       },
     };
