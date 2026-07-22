@@ -1,6 +1,10 @@
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { createTestApp } from './setup';
+import { JwtService } from '@nestjs/jwt';
+import { eq } from 'drizzle-orm';
+import { DrizzleProvider } from '../src/database/drizzle.provider';
+import { users } from '../src/database/schemas';
 
 /**
  * Tests End-to-End du flux d'authentification.
@@ -80,6 +84,20 @@ describe('Auth — Flux E2E', () => {
 
       expect(res.body.success).toBe(false);
     });
+
+    it('doit refuser un compte desactive -> 403', async () => {
+      const drizzle = app.get(DrizzleProvider);
+      await drizzle.db.update(users).set({ isActive: false }).where(eq(users.email, 'admin@telecom.local'));
+
+      try {
+        await request(app.getHttpServer())
+          .post('/api/v1/auth/login')
+          .send({ email: 'admin@telecom.local', password: 'Admin@1234' })
+          .expect(403);
+      } finally {
+        await drizzle.db.update(users).set({ isActive: true }).where(eq(users.email, 'admin@telecom.local'));
+      }
+    });
   });
 
   describe('POST /api/v1/auth/refresh', () => {
@@ -103,6 +121,26 @@ describe('Auth — Flux E2E', () => {
 
       expect(res.body.success).toBe(false);
     });
+
+    it('autorise un seul gagnant concurrent puis revoque la famille compromise', async () => {
+      const login = await request(app.getHttpServer())
+        .post('/api/v1/auth/login')
+        .send({ email: 'admin@telecom.local', password: 'Admin@1234' })
+        .expect(200);
+      const concurrentToken = login.body.data.refreshToken as string;
+
+      const responses = await Promise.all([
+        request(app.getHttpServer()).post('/api/v1/auth/refresh').send({ refreshToken: concurrentToken }),
+        request(app.getHttpServer()).post('/api/v1/auth/refresh').send({ refreshToken: concurrentToken }),
+      ]);
+      expect(responses.map((response) => response.status).sort()).toEqual([200, 401]);
+
+      const winner = responses.find((response) => response.status === 200);
+      await request(app.getHttpServer())
+        .post('/api/v1/auth/refresh')
+        .send({ refreshToken: winner?.body.data.refreshToken })
+        .expect(401);
+    });
   });
 
   describe('GET /api/v1/auth/me', () => {
@@ -120,6 +158,29 @@ describe('Auth — Flux E2E', () => {
       const res = await request(app.getHttpServer()).get('/api/v1/auth/me').expect(401);
 
       expect(res.body.success).toBe(false);
+    });
+
+    it('doit retourner 401 avec un access token expire', async () => {
+      const jwt = app.get(JwtService);
+      const expiredToken = jwt.sign(
+        {
+          sub: '00000000-0000-0000-0000-000000000001',
+          email: 'admin@telecom.local',
+          role: 'ADMINISTRATOR',
+          departmentId: '00000000-0000-0000-0000-000000000002',
+          mustChangePassword: false,
+          jti: '00000000-0000-0000-0000-000000000003',
+        },
+        {
+          secret: process.env['JWT_ACCESS_SECRET'] || 'dev-access-secret-change-in-production',
+          expiresIn: -1,
+        },
+      );
+
+      await request(app.getHttpServer())
+        .get('/api/v1/auth/me')
+        .set('Authorization', `Bearer ${expiredToken}`)
+        .expect(401);
     });
   });
 
@@ -152,19 +213,84 @@ describe('Auth — Flux E2E', () => {
     });
   });
 
+  describe('POST /api/v1/auth/logout-all', () => {
+    it('serialise un refresh concurrent et ne laisse aucun successeur actif', async () => {
+      const login = await request(app.getHttpServer())
+        .post('/api/v1/auth/login')
+        .send({ email: 'admin@telecom.local', password: 'Admin@1234' })
+        .expect(200);
+
+      const [logoutResponse, refreshResponse] = await Promise.all([
+        request(app.getHttpServer())
+          .post('/api/v1/auth/logout-all')
+          .set('Authorization', `Bearer ${login.body.data.accessToken as string}`),
+        request(app.getHttpServer()).post('/api/v1/auth/refresh').send({ refreshToken: login.body.data.refreshToken }),
+      ]);
+
+      expect(logoutResponse.status).toBe(204);
+      expect([200, 401]).toContain(refreshResponse.status);
+      if (refreshResponse.status === 200) {
+        await request(app.getHttpServer())
+          .get('/api/v1/auth/me')
+          .set('Authorization', `Bearer ${refreshResponse.body.data.accessToken as string}`)
+          .expect(401);
+        await request(app.getHttpServer())
+          .post('/api/v1/auth/refresh')
+          .send({ refreshToken: refreshResponse.body.data.refreshToken })
+          .expect(401);
+      }
+    });
+
+    it('revoque les refresh tokens de toutes les sessions', async () => {
+      const first = await request(app.getHttpServer())
+        .post('/api/v1/auth/login')
+        .send({ email: 'admin@telecom.local', password: 'Admin@1234' })
+        .expect(200);
+      const second = await request(app.getHttpServer())
+        .post('/api/v1/auth/login')
+        .send({ email: 'admin@telecom.local', password: 'Admin@1234' })
+        .expect(200);
+
+      await request(app.getHttpServer())
+        .post('/api/v1/auth/logout-all')
+        .set('Authorization', `Bearer ${first.body.data.accessToken as string}`)
+        .expect(204);
+
+      await request(app.getHttpServer())
+        .post('/api/v1/auth/refresh')
+        .send({ refreshToken: first.body.data.refreshToken })
+        .expect(401);
+      await request(app.getHttpServer())
+        .post('/api/v1/auth/refresh')
+        .send({ refreshToken: second.body.data.refreshToken })
+        .expect(401);
+      await request(app.getHttpServer())
+        .get('/api/v1/auth/me')
+        .set('Authorization', `Bearer ${second.body.data.accessToken as string}`)
+        .expect(401);
+    });
+  });
+
   describe('POST /api/v1/auth/logout', () => {
     it('doit reussir avec 204 et invalider l access token', async () => {
+      const login = await request(app.getHttpServer())
+        .post('/api/v1/auth/login')
+        .send({ email: 'admin@telecom.local', password: 'Admin@1234' })
+        .expect(200);
+      const logoutAccessToken = login.body.data.accessToken as string;
+      const logoutRefreshToken = login.body.data.refreshToken as string;
+
       // 1. Déconnexion
       await request(app.getHttpServer())
         .post('/api/v1/auth/logout')
-        .set('Authorization', `Bearer ${accessToken}`)
-        .send({ refreshToken })
+        .set('Authorization', `Bearer ${logoutAccessToken}`)
+        .send({ refreshToken: logoutRefreshToken })
         .expect(204);
 
       // 2. Tenter d'accéder à /me avec le même access token doit maintenant échouer (401)
       const res = await request(app.getHttpServer())
         .get('/api/v1/auth/me')
-        .set('Authorization', `Bearer ${accessToken}`)
+        .set('Authorization', `Bearer ${logoutAccessToken}`)
         .expect(401);
 
       expect(res.body.success).toBe(false);

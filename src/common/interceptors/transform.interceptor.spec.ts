@@ -46,6 +46,23 @@ describe('TransformInterceptor', () => {
     expect(result).toEqual({ success: true, statusCode: 201, message: 'OK', data: { id: '1' } });
   });
 
+  it('doit préserver la pagination au niveau racine', async () => {
+    const paginated = { data: [{ id: '1' }], meta: { page: 1, limit: 20, total: 1, totalPages: 1 } };
+    const result = await interceptor.intercept(mockContext(200), mockCallHandler(paginated)).toPromise();
+    expect(result).toEqual({ success: true, statusCode: 200, ...paginated });
+  });
+
+  it('doit éviter une double enveloppe pour un détail déjà sous data', async () => {
+    const detailed = { data: { id: '1', assignmentHistory: { data: [], meta: { total: 0 } } } };
+    const result = await interceptor.intercept(mockContext(200), mockCallHandler(detailed)).toPromise();
+    expect(result).toEqual({ success: true, statusCode: 200, ...detailed });
+  });
+
+  it('doit préserver un message sans créer de data imbriqué', async () => {
+    const result = await interceptor.intercept(mockContext(200), mockCallHandler({ message: 'Terminé' })).toPromise();
+    expect(result).toEqual({ success: true, statusCode: 200, message: 'Terminé' });
+  });
+
   it('doit gérer une réponse null', async () => {
     const result = await interceptor.intercept(mockContext(204), mockCallHandler(null)).toPromise();
     expect(result).toEqual({ success: true, statusCode: 204, data: null });

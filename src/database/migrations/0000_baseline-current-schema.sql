@@ -61,10 +61,24 @@ CREATE TABLE IF NOT EXISTS "audit_logs" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE IF NOT EXISTS "categories" (
+	"id" uuid PRIMARY KEY NOT NULL,
+	"name" varchar(100) NOT NULL,
+	"description" text,
+	"target_role" varchar(100),
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "categories_name_unique" UNIQUE("name")
+);
+--> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "departments" (
 	"id" uuid PRIMARY KEY NOT NULL,
 	"name" varchar(100) NOT NULL,
 	"description" text,
+	"auto_assignment_enabled" boolean DEFAULT true NOT NULL,
+	"assignment_strategy" varchar(50) DEFAULT 'LEAST_LOADED' NOT NULL,
+	"max_workload_per_agent" integer DEFAULT 100 NOT NULL,
+	"workload_weights" jsonb,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"deleted_at" timestamp with time zone,
@@ -80,6 +94,10 @@ CREATE TABLE IF NOT EXISTS "users" (
 	"last_name" varchar(100) NOT NULL,
 	"role" "role_enum" NOT NULL,
 	"is_active" boolean DEFAULT true NOT NULL,
+	"is_available" boolean DEFAULT true NOT NULL,
+	"max_concurrent_tickets" integer DEFAULT 5 NOT NULL,
+	"absence_ends_at" timestamp with time zone,
+	"last_assigned_at" timestamp with time zone,
 	"must_change_password" boolean DEFAULT false NOT NULL,
 	"last_login_at" timestamp with time zone,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
@@ -90,7 +108,7 @@ CREATE TABLE IF NOT EXISTS "users" (
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "sla_policies" (
 	"id" uuid PRIMARY KEY NOT NULL,
-	"category" "ticket_category_enum" NOT NULL,
+	"category_id" uuid NOT NULL,
 	"priority" "ticket_priority_enum" NOT NULL,
 	"first_response_minutes" integer NOT NULL,
 	"resolution_minutes" integer NOT NULL,
@@ -106,7 +124,7 @@ CREATE TABLE IF NOT EXISTS "tickets" (
 	"status" "ticket_status_enum" DEFAULT 'NEW' NOT NULL,
 	"priority" "ticket_priority_enum" NOT NULL,
 	"severity" "ticket_severity_enum" NOT NULL,
-	"category" "ticket_category_enum" NOT NULL,
+	"category_id" uuid NOT NULL,
 	"sla_policy_id" uuid NOT NULL,
 	"customer_account_number" varchar(100),
 	"customer_name" varchar(255),
@@ -118,12 +136,18 @@ CREATE TABLE IF NOT EXISTS "tickets" (
 	"resolution_summary" text,
 	"first_response_at" timestamp with time zone,
 	"first_response_due_at" timestamp with time zone NOT NULL,
+	"first_response_warning_sent_at" timestamp with time zone,
+	"first_response_breached_at" timestamp with time zone,
 	"resolution_due_at" timestamp with time zone NOT NULL,
+	"resolution_warning_sent_at" timestamp with time zone,
+	"resolution_breached_at" timestamp with time zone,
 	"resolved_at" timestamp with time zone,
 	"sla_breached" boolean DEFAULT false NOT NULL,
 	"closed_at" timestamp with time zone,
 	"tags" text,
 	"metadata" jsonb,
+	"sla_paused_at" timestamp with time zone,
+	"accumulated_pause_ms" integer DEFAULT 0 NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"deleted_at" timestamp with time zone,
@@ -207,6 +231,16 @@ CREATE TABLE IF NOT EXISTS "reports" (
 	"completed_at" timestamp with time zone
 );
 --> statement-breakpoint
+CREATE TABLE IF NOT EXISTS "settings" (
+	"id" uuid PRIMARY KEY NOT NULL,
+	"key" varchar(100) NOT NULL,
+	"value" text NOT NULL,
+	"description" text,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "settings_key_unique" UNIQUE("key")
+);
+--> statement-breakpoint
 DO $$ BEGIN
  ALTER TABLE "attachments" ADD CONSTRAINT "attachments_ticket_id_tickets_id_fk" FOREIGN KEY ("ticket_id") REFERENCES "public"."tickets"("id") ON DELETE no action ON UPDATE no action;
 EXCEPTION
@@ -239,6 +273,18 @@ END $$;
 --> statement-breakpoint
 DO $$ BEGIN
  ALTER TABLE "users" ADD CONSTRAINT "users_department_id_departments_id_fk" FOREIGN KEY ("department_id") REFERENCES "public"."departments"("id") ON DELETE no action ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ ALTER TABLE "sla_policies" ADD CONSTRAINT "sla_policies_category_id_categories_id_fk" FOREIGN KEY ("category_id") REFERENCES "public"."categories"("id") ON DELETE no action ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ ALTER TABLE "tickets" ADD CONSTRAINT "tickets_category_id_categories_id_fk" FOREIGN KEY ("category_id") REFERENCES "public"."categories"("id") ON DELETE no action ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
@@ -372,7 +418,7 @@ CREATE INDEX IF NOT EXISTS "idx_audit_logs_created_at" ON "audit_logs" USING btr
 CREATE UNIQUE INDEX IF NOT EXISTS "idx_users_email" ON "users" USING btree ("email");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "idx_users_department" ON "users" USING btree ("department_id");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "idx_users_role" ON "users" USING btree ("role");--> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS "idx_sla_policies_category_priority" ON "sla_policies" USING btree ("category","priority");--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "idx_sla_policies_category_priority" ON "sla_policies" USING btree ("category_id","priority");--> statement-breakpoint
 CREATE UNIQUE INDEX IF NOT EXISTS "idx_tickets_number" ON "tickets" USING btree ("ticket_number");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "idx_tickets_status" ON "tickets" USING btree ("status");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "idx_tickets_priority" ON "tickets" USING btree ("priority");--> statement-breakpoint

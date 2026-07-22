@@ -67,12 +67,39 @@ const slaComplianceResult = {
     totalTracked: 150,
     compliant: 145,
     breached: 5,
+    firstResponseBreached: 3,
+    resolutionBreached: 5,
     atRisk: 0,
     complianceRate: 96.67,
     firstResponseComplianceRate: 96.67,
+    resolutionComplianceRate: 96.67,
   },
-  byPriority: [{ priority: 'HIGH' as const, totalTracked: 40, compliant: 38, breached: 2, complianceRate: 95.0 }],
-  byCategory: [{ category: 'NETWORK' as const, totalTracked: 60, compliant: 58, breached: 2, complianceRate: 96.67 }],
+  byPriority: [
+    {
+      priority: 'HIGH' as const,
+      totalTracked: 40,
+      compliant: 38,
+      breached: 2,
+      firstResponseBreached: 1,
+      resolutionBreached: 2,
+      complianceRate: 95,
+      firstResponseComplianceRate: 97.5,
+      resolutionComplianceRate: 95,
+    },
+  ],
+  byCategory: [
+    {
+      category: 'NETWORK',
+      totalTracked: 60,
+      compliant: 58,
+      breached: 2,
+      firstResponseBreached: 1,
+      resolutionBreached: 2,
+      complianceRate: 96.67,
+      firstResponseComplianceRate: 98.33,
+      resolutionComplianceRate: 96.67,
+    },
+  ],
 };
 
 const workloadResult = {
@@ -240,18 +267,18 @@ describe('DashboardController', () => {
     it('doit retourner la performance par département avec les dates', async () => {
       dashboardService.departmentsReport.mockResolvedValue(departmentsResult);
 
-      const result = await controller.departments(defaultRange);
+      const result = await controller.departments(defaultRange, mockUser);
 
-      expect(dashboardService.departmentsReport).toHaveBeenCalledWith(defaultRange.from, defaultRange.to);
+      expect(dashboardService.departmentsReport).toHaveBeenCalledWith(defaultRange.from, defaultRange.to, mockUser);
       expect(result).toEqual(departmentsResult);
     });
 
     it('doit appeler le service sans dates', async () => {
       dashboardService.departmentsReport.mockResolvedValue(departmentsResult);
 
-      await controller.departments(emptyRange);
+      await controller.departments(emptyRange, mockUser);
 
-      expect(dashboardService.departmentsReport).toHaveBeenCalledWith(undefined, undefined);
+      expect(dashboardService.departmentsReport).toHaveBeenCalledWith(undefined, undefined, mockUser);
     });
   });
 

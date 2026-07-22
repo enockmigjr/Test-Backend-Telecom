@@ -63,7 +63,7 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
             await this.generateTicketReport(reportId, data.ticketId, data.requestedBy);
             break;
           case 'sla-report':
-            await this.generateSlaReport(reportId, data.from, data.to, data.requestedBy);
+            await this.generateSlaReport(reportId, data.from, data.to, data.requestedBy, data.departmentId);
             break;
           case 'weekly-report':
             await this.generateWeeklyReport(reportId, data.requestedBy);
@@ -256,6 +256,7 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
     from: string | undefined,
     to: string | undefined,
     requestedBy: string,
+    departmentId?: string,
   ): Promise<void> {
     // Gérer les valeurs par défaut si non spécifiées ou invalides
     let fromDate = from ? new Date(from) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
@@ -272,7 +273,12 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
     const toStr = toDate.toLocaleDateString('fr-FR');
 
     try {
-      const where = and(gte(tickets.createdAt, fromDate), lte(tickets.createdAt, toDate), isNull(tickets.deletedAt));
+      const where = and(
+        gte(tickets.createdAt, fromDate),
+        lte(tickets.createdAt, toDate),
+        isNull(tickets.deletedAt),
+        departmentId ? eq(tickets.assignedTeamId, departmentId) : undefined,
+      );
 
       const [stats] = await this.drizzle.db
         .select({

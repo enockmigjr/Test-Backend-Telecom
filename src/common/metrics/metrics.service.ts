@@ -69,7 +69,7 @@ export class MetricsService implements OnModuleInit {
     this.slaBreachesTotal = new Counter({
       name: 'telecom_sla_breaches_total',
       help: 'Nombre total de violations SLA',
-      labelNames: ['priority'],
+      labelNames: ['priority', 'target'],
       registers: [this.registry],
     });
 

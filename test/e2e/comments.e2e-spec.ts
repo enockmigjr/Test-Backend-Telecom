@@ -73,8 +73,9 @@ describe('Comments — E2E', () => {
         .expect(200);
 
       expect(res.body.success).toBe(true);
-      expect(Array.isArray(res.body.data.data)).toBe(true);
-      expect(res.body.data.data.length).toBeGreaterThan(0);
+      expect(Array.isArray(res.body.data)).toBe(true);
+      expect(res.body.data.length).toBeGreaterThan(0);
+      expect(res.body.meta).toBeDefined();
     });
   });
 

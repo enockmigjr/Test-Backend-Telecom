@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { ThrottlerStorageRedisService } from './common/providers/throttler-storage-redis.provider';
 import { LoggerModule } from 'nestjs-pino';
@@ -36,6 +36,7 @@ import { EmailModule } from './modules/email/email.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { BullBoardModule } from './common/bull-board/bull-board.module';
 import { SettingsModule } from './modules/settings/settings.module';
+import { IdempotencyInterceptor } from './common/interceptors/idempotency.interceptor';
 
 @Module({
   imports: [
@@ -133,6 +134,10 @@ import { SettingsModule } from './modules/settings/settings.module';
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: IdempotencyInterceptor,
     },
   ],
   controllers: [],

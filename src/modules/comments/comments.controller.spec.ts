@@ -13,6 +13,7 @@ const mockUser: JwtPayload = {
   email: 'agent@telecom.local',
   role: 'CUSTOMER_SERVICE_AGENT',
   departmentId: 'dept-001',
+  mustChangePassword: false,
   jti: 'jti-001',
 };
 
@@ -21,6 +22,7 @@ const mockAdmin: JwtPayload = {
   email: 'admin@telecom.local',
   role: 'ADMINISTRATOR',
   departmentId: 'dept-001',
+  mustChangePassword: false,
   jti: 'jti-002',
 };
 
@@ -91,26 +93,26 @@ describe('CommentsController', () => {
     it('doit retourner la liste paginée des commentaires', async () => {
       commentsService.findAll.mockResolvedValue(paginatedResult);
 
-      const result = await controller.findAll('ticket-001', { page: 1, limit: 20 });
+      const result = await controller.findAll('ticket-001', { page: 1, limit: 20 }, mockUser);
 
-      expect(commentsService.findAll).toHaveBeenCalledWith('ticket-001', 1, 20);
+      expect(commentsService.findAll).toHaveBeenCalledWith('ticket-001', mockUser, 1, 20);
       expect(result).toEqual(paginatedResult);
     });
 
     it('doit utiliser les valeurs par défaut de pagination', async () => {
       commentsService.findAll.mockResolvedValue(paginatedResult);
 
-      await controller.findAll('ticket-001', { page: 1, limit: 20 });
+      await controller.findAll('ticket-001', { page: 1, limit: 20 }, mockUser);
 
-      expect(commentsService.findAll).toHaveBeenCalledWith('ticket-001', 1, 20);
+      expect(commentsService.findAll).toHaveBeenCalledWith('ticket-001', mockUser, 1, 20);
     });
 
     it('doit transmettre la page demandée', async () => {
       commentsService.findAll.mockResolvedValue(paginatedResult);
 
-      await controller.findAll('ticket-001', { page: 3, limit: 10 });
+      await controller.findAll('ticket-001', { page: 3, limit: 10 }, mockUser);
 
-      expect(commentsService.findAll).toHaveBeenCalledWith('ticket-001', 3, 10);
+      expect(commentsService.findAll).toHaveBeenCalledWith('ticket-001', mockUser, 3, 10);
     });
   });
 
@@ -123,7 +125,7 @@ describe('CommentsController', () => {
 
       const result = await controller.create('ticket-001', { content: 'Nouveau commentaire' }, mockUser);
 
-      expect(commentsService.create).toHaveBeenCalledWith('ticket-001', mockUser.sub, 'Nouveau commentaire');
+      expect(commentsService.create).toHaveBeenCalledWith('ticket-001', mockUser, 'Nouveau commentaire');
       expect(result).toEqual(createResult);
     });
 
@@ -132,7 +134,7 @@ describe('CommentsController', () => {
 
       const result = await controller.create('ticket-001', { content: 'Test' }, mockUser);
 
-      expect(commentsService.create).toHaveBeenCalledWith('ticket-001', mockUser.sub, expect.any(String));
+      expect(commentsService.create).toHaveBeenCalledWith('ticket-001', mockUser, expect.any(String));
       expect(result).toBeDefined();
     });
   });

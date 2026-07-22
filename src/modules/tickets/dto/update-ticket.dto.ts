@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsOptional, MaxLength, IsIn } from 'class-validator';
+import { IsIn, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
 
 export class UpdateTicketDto {
   @ApiPropertyOptional({ description: 'Nouveau titre' })
@@ -13,26 +13,20 @@ export class UpdateTicketDto {
   @IsString()
   description?: string;
 
-  @ApiPropertyOptional({ description: 'Nouvelle priorité', enum: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] })
+  @ApiPropertyOptional({ enum: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] })
   @IsOptional()
-  @IsString()
   @IsIn(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'])
   priority?: string;
 
-  @ApiPropertyOptional({ description: 'Nouvelle sévérité', enum: ['S1', 'S2', 'S3', 'S4'] })
+  @ApiPropertyOptional({ enum: ['S1', 'S2', 'S3', 'S4'] })
   @IsOptional()
-  @IsString()
   @IsIn(['S1', 'S2', 'S3', 'S4'])
   severity?: string;
 
-  @ApiPropertyOptional({
-    description: 'Nouvelle catégorie',
-    enum: ['NETWORK', 'BILLING', 'TECHNICAL', 'HARDWARE', 'SOFTWARE', 'OTHER'],
-  })
+  @ApiPropertyOptional({ description: 'UUID de la nouvelle categorie' })
   @IsOptional()
-  @IsString()
-  @IsIn(['NETWORK', 'BILLING', 'TECHNICAL', 'HARDWARE', 'SOFTWARE', 'OTHER'])
-  category?: string;
+  @IsUUID('all')
+  categoryId?: string;
 
   @ApiPropertyOptional({ description: 'Tags' })
   @IsOptional()

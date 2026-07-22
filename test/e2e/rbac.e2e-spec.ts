@@ -79,7 +79,7 @@ describe("RBAC — Controle d'acces par roles", () => {
     // Forcer le statut des tickets de test de façon isolée en DB
     await drizzle.db
       .update(tickets)
-      .set({ status: 'NEW', assignedTo: admin.id })
+      .set({ status: 'NEW', assignedTo: admin.id, assignedTeamId: agent.departmentId })
       .where(eq(tickets.id, ticketAssignOkId));
 
     await drizzle.db

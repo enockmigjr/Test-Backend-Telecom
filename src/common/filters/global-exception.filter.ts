@@ -29,8 +29,15 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
       if (typeof exceptionResponse === 'object' && exceptionResponse !== null) {
         const resp = exceptionResponse as Record<string, unknown>;
-        message = (resp['message'] as string) || exception.message;
-        details = resp['errors'] || resp['details'] || undefined;
+        const responseMessage = resp['message'];
+
+        if (Array.isArray(responseMessage) && responseMessage.every((item) => typeof item === 'string')) {
+          message = 'La validation des données a échoué.';
+          details = resp['errors'] ?? resp['details'] ?? { messages: responseMessage };
+        } else {
+          message = typeof responseMessage === 'string' ? responseMessage : exception.message;
+          details = resp['errors'] ?? resp['details'] ?? undefined;
+        }
 
         // Déterminer le code d'erreur
         code = this.mapHttpStatusToErrorCode(status, resp['code'] as string | undefined);

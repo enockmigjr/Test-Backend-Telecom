@@ -10,6 +10,7 @@ export const refreshTokens = pgTable(
   'refresh_tokens',
   {
     id: uuid('id').primaryKey(),
+    familyId: uuid('family_id').notNull(),
     userId: uuid('user_id')
       .notNull()
       .references(() => users.id),
@@ -23,6 +24,7 @@ export const refreshTokens = pgTable(
   (table) => ({
     idxRefreshTokensUser: index('idx_refresh_tokens_user').on(table.userId),
     idxRefreshTokensHash: index('idx_refresh_tokens_hash').on(table.tokenHash),
+    idxRefreshTokensFamily: index('idx_refresh_tokens_family').on(table.familyId),
   }),
 );
 

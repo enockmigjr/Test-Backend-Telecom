@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ReportsService } from './reports.service';
 import { DrizzleProvider } from '../../database/drizzle.provider';
 import { mock, MockProxy } from 'jest-mock-extended';
+import { ReportQueryService } from './report-query.service';
 
 // ---------------------------------------------------------------------------
 // Mocks pdfkit
@@ -111,6 +112,7 @@ describe('ReportsService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ReportsService,
+        ReportQueryService,
         { provide: DrizzleProvider, useValue: drizzle },
         { provide: 'BullMQ_Queues', useValue: { report: { add: jest.fn().mockResolvedValue(undefined) } } },
       ],

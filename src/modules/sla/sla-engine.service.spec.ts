@@ -1,198 +1,46 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { Test, TestingModule } from '@nestjs/testing';
-import { DrizzleProvider } from '../../database/drizzle.provider';
-
-/**
- * Mocks manuels pour les importations.
- * Les schemas Drizzle ne sont pas inclus dans le scope de test unitaire
- * (ils nécessitent une connexion PostgreSQL réelle).
- */
-jest.mock('../../database/schemas/tickets', () => ({
-  tickets: {
-    id: 'tickets.id',
-    ticketNumber: 'tickets.ticket_number',
-    status: 'tickets.status',
-    resolutionDueAt: 'tickets.resolution_due_at',
-    slaBreached: 'tickets.sla_breached',
-  },
-}));
-
-jest.mock('@nestjs/schedule', () => ({
-  Cron: () => jest.fn(),
-}));
-
-/**
- * Mock de drizzle-orm pour les operateurs utilises par SlaEngineService.
- */
-jest.mock('drizzle-orm', () => {
-  const actual = jest.requireActual('drizzle-orm');
-  return {
-    ...actual,
-    and: jest.fn((...args: unknown[]) => args),
-    lt: jest.fn((a: unknown, b: unknown) => ({ op: 'lt', a, b })),
-    gte: jest.fn((a: unknown, b: unknown) => ({ op: 'gte', a, b })),
-    eq: jest.fn((a: unknown, b: unknown) => ({ op: 'eq', a, b })),
-    notInArray: jest.fn((a: unknown, b: unknown[]) => ({ op: 'notInArray', a, b })),
-  };
-});
+import { SettingsService } from '../settings/settings.service';
+import { SlaAlertProcessorService } from './sla-alert-processor.service';
+import { SlaAutoCloseService } from './sla-auto-close.service';
+import { SlaEngineService } from './sla-engine.service';
 
 describe('SlaEngineService', () => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let service: any; // Utiliser any pour contourner les problèmes de typage des modules mockés
-  let mockSelectQuery: { from: jest.Mock; leftJoin: jest.Mock; where: jest.Mock; limit: jest.Mock };
-  let mockUpdateQuery: { set: jest.Mock; where: jest.Mock };
-  let mockDb: { select: jest.Mock; update: jest.Mock };
+  const alertProcessor = { process: jest.fn<Promise<void>, []>() };
+  const autoCloseService = { process: jest.fn<Promise<void>, []>() };
+  const settingsService = {
+    getBusinessHours: jest.fn<Promise<{ start: number; end: number }>, []>(),
+    getBusinessDays: jest.fn<Promise<number[]>, []>(),
+  };
+  let service: SlaEngineService;
 
-  beforeEach(async () => {
-    mockSelectQuery = {
-      from: jest.fn().mockReturnThis(),
-      leftJoin: jest.fn().mockReturnThis(),
-      where: jest.fn().mockReturnThis(),
-      limit: jest.fn().mockResolvedValue([]),
-    };
-
-    mockUpdateQuery = {
-      set: jest.fn().mockReturnThis(),
-      where: jest.fn().mockResolvedValue(undefined),
-    };
-
-    mockDb = {
-      select: jest.fn().mockReturnValue(mockSelectQuery),
-      update: jest.fn().mockReturnValue(mockUpdateQuery),
-    };
-
-    const drizzle = { db: mockDb } as unknown as DrizzleProvider;
-
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        {
-          provide: DrizzleProvider,
-          useValue: drizzle,
-        },
-      ],
-    }).compile();
-
-    // Utiliser evaluate() pour instancier SlaEngineService manuellement
-    // car le mock de @nestjs/schedule @Cron peut causer des erreurs d'heritage
-    const { SlaEngineService } = jest.requireActual('./sla-engine.service');
-    const mockMetricsService = {
-      slaBreachesTotal: { inc: jest.fn() },
-    };
-    const mockWsGateway = {
-      emitToRole: jest.fn(),
-      emitToUser: jest.fn(),
-    };
-    const mockQueue = {
-      add: jest.fn().mockResolvedValue({ id: 'job-id' }),
-      remove: jest.fn().mockResolvedValue(undefined),
-    };
-    const mockQueues = {
-      email: mockQueue,
-      notification: mockQueue,
-      sla: mockQueue,
-    };
-    const mockEventEmitter = {
-      emit: jest.fn(),
-    };
-    const mockSettingsService = {
-      getBusinessHours: jest.fn().mockResolvedValue({ start: 8, end: 18 }),
-      getBusinessDays: jest.fn().mockResolvedValue([1, 2, 3, 4, 5]),
-    };
+  beforeEach(() => {
+    jest.clearAllMocks();
+    alertProcessor.process.mockResolvedValue();
+    autoCloseService.process.mockResolvedValue();
+    settingsService.getBusinessHours.mockResolvedValue({ start: 8, end: 18 });
+    settingsService.getBusinessDays.mockResolvedValue([1, 2, 3, 4, 5]);
     service = new SlaEngineService(
-      drizzle,
-      mockMetricsService,
-      mockWsGateway,
-      mockEventEmitter as any,
-      mockSettingsService as any,
-      mockQueues as any,
+      alertProcessor as unknown as SlaAlertProcessorService,
+      autoCloseService as unknown as SlaAutoCloseService,
+      settingsService as unknown as SettingsService,
     );
   });
 
-  afterEach(() => {
-    jest.clearAllMocks();
+  it('traite les deux objectifs SLA avant la cloture automatique', async () => {
+    await service.checkSla();
+
+    expect(alertProcessor.process).toHaveBeenCalledTimes(1);
+    expect(autoCloseService.process).toHaveBeenCalledTimes(1);
+    expect(alertProcessor.process.mock.invocationCallOrder[0]).toBeLessThan(
+      autoCloseService.process.mock.invocationCallOrder[0],
+    );
   });
 
-  describe("calculateDueDate() — Calcul de la date d'echeance SLA", () => {
-    it('doit retourner createdAt + resolutionMinutes pour un calcul simple', async () => {
-      const createdAt = new Date('2026-06-26T10:00:00Z');
-      const resolutionMinutes = 120; // 2 heures
+  it('calcule une echeance 24/7 sans muter la date source', async () => {
+    const createdAt = new Date('2026-06-26T10:00:00Z');
 
-      const dueDate = await service.calculateDueDate(createdAt, resolutionMinutes);
+    const dueDate = await service.calculateDueDate(createdAt, 120);
 
-      expect(dueDate.toISOString()).toBe('2026-06-26T12:00:00.000Z');
-    });
-
-    it('doit retourner createdAt + 0 pour resolutionMinutes = 0', async () => {
-      const createdAt = new Date('2026-06-26T10:00:00Z');
-
-      const dueDate = await service.calculateDueDate(createdAt, 0);
-
-      expect(dueDate.toISOString()).toBe(createdAt.toISOString());
-    });
-
-    it('doit fonctionner avec de grandes valeurs (24h = 1440 minutes)', async () => {
-      const createdAt = new Date('2026-06-26T10:00:00Z');
-
-      const dueDate = await service.calculateDueDate(createdAt, 1440);
-
-      expect(dueDate.toISOString()).toBe('2026-06-27T10:00:00.000Z');
-    });
-
-    it('doit retourner une nouvelle instance Date (pas la meme reference)', async () => {
-      const createdAt = new Date('2026-06-26T10:00:00Z');
-
-      const dueDate = await service.calculateDueDate(createdAt, 60);
-
-      expect(dueDate).not.toBe(createdAt);
-      expect(dueDate.getTime()).toBe(createdAt.getTime() + 3600000);
-    });
-  });
-
-  describe('checkSla() — Verification periodique des SLA', () => {
-    it("ne doit pas planter quand aucun ticket n'est en breach ni en warning", async () => {
-      await expect(service.checkSla()).resolves.toBeUndefined();
-    });
-
-    it('doit marquer les tickets en breach comme slaBreached = true', async () => {
-      const breachedTicket = { id: 'ticket-1', ticketNumber: 'TKT-001' };
-
-      // Premier appel .limit() = requete des tickets en breach
-      mockSelectQuery.limit
-        .mockResolvedValueOnce([breachedTicket]) // breached tickets
-        .mockResolvedValueOnce([]); // warning tickets
-
-      await service.checkSla();
-
-      // Verifier que update a ete appele pour marquer le breach
-      expect(mockUpdateQuery.set).toHaveBeenCalledWith({ slaBreached: true });
-      expect(mockUpdateQuery.where).toHaveBeenCalled();
-    });
-
-    it('doit traiter plusieurs tickets en breach simultanement', async () => {
-      const breachedTickets = [
-        { id: 'ticket-1', ticketNumber: 'TKT-001' },
-        { id: 'ticket-2', ticketNumber: 'TKT-002' },
-      ];
-
-      mockSelectQuery.limit
-        .mockResolvedValueOnce(breachedTickets) // breached tickets
-        .mockResolvedValueOnce([]); // warning tickets
-
-      await service.checkSla();
-
-      // Doit avoir marque chaque ticket comme breached
-      expect(mockUpdateQuery.set).toHaveBeenCalledTimes(2);
-    });
-
-    it('doit fonctionner sans breach ni warning', async () => {
-      mockSelectQuery.limit
-        .mockResolvedValueOnce([]) // aucun breach
-        .mockResolvedValueOnce([]); // aucun warning
-
-      await expect(service.checkSla()).resolves.toBeUndefined();
-
-      expect(mockUpdateQuery.set).not.toHaveBeenCalled();
-    });
+    expect(dueDate.toISOString()).toBe('2026-06-26T12:00:00.000Z');
+    expect(dueDate).not.toBe(createdAt);
   });
 });

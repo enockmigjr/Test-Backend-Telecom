@@ -49,7 +49,7 @@ export class AuthController {
   @ApiOperation({ summary: "Déconnexion (révoque le refresh token + blackliste l'access token)" })
   @ApiResponse({ status: 204, description: "Déconnexion réussie. L'access token est immédiatement invalide." })
   async logout(@Body() dto: RefreshDto, @CurrentUser() user: JwtPayload) {
-    await this.authService.logout(dto.refreshToken, user.jti);
+    await this.authService.logout(dto.refreshToken, user.jti, user.sub);
   }
 
   @Post('logout-all')

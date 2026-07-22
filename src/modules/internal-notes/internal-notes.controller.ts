@@ -46,8 +46,8 @@ export class InternalNotesController {
   @ApiResponse({ status: 401, description: 'Token JWT manquant ou expiré.' })
   @ApiResponse({ status: 403, description: 'Accès refusé — FIELD_TECHNICIAN non autorisé.' })
   @ApiResponse({ status: 404, description: 'Ticket non trouvé.' })
-  async findAll(@Param('ticketId') ticketId: string, @Query() p: PaginationDto) {
-    return this.notesService.findAll(ticketId, p.page, p.limit);
+  async findAll(@Param('ticketId') ticketId: string, @Query() p: PaginationDto, @CurrentUser() user: JwtPayload) {
+    return this.notesService.findAll(ticketId, user, p.page, p.limit);
   }
 
   @Post('tickets/:ticketId/internal-notes')
@@ -72,7 +72,7 @@ export class InternalNotesController {
     @Body() dto: CreateInternalNoteDto,
     @CurrentUser() user: JwtPayload,
   ) {
-    return this.notesService.create(ticketId, user.sub, dto.content, user.role);
+    return this.notesService.create(ticketId, user, dto.content);
   }
 
   @Patch('internal-notes/:id')
@@ -89,7 +89,7 @@ export class InternalNotesController {
   @ApiResponse({ status: 403, description: 'Accès refusé.' })
   @ApiResponse({ status: 404, description: 'Note interne non trouvée.' })
   async update(@Param('id') id: string, @Body() dto: UpdateInternalNoteDto, @CurrentUser() user: JwtPayload) {
-    return this.notesService.update(id, user.sub, user.role, dto.content);
+    return this.notesService.update(id, user, dto.content);
   }
 
   @Delete('internal-notes/:id')
@@ -105,6 +105,6 @@ export class InternalNotesController {
   @ApiResponse({ status: 403, description: 'Accès refusé.' })
   @ApiResponse({ status: 404, description: 'Note interne non trouvée.' })
   async remove(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
-    await this.notesService.remove(id, user.sub, user.role);
+    await this.notesService.remove(id, user);
   }
 }

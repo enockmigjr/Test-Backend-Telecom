@@ -24,7 +24,8 @@ export class TicketPermissions {
 
     for (const field of updatedFields) {
       if (field === 'title' || field === 'description') {
-        if (!isOwner && !isAssignee && !isSupervisor && !isAdmin) {
+        const canCreatorEdit = isOwner && ticket.status === 'NEW';
+        if (!canCreatorEdit && !isAssignee && !isSupervisor && !isAdmin) {
           throw new ForbiddenException(`Vous n'avez pas le droit de modifier le titre ou la description de ce ticket.`);
         }
       } else if (field === 'status') {
@@ -39,7 +40,7 @@ export class TicketPermissions {
             `Seul un superviseur ou un administrateur peut modifier la priorite ou la severite.`,
           );
         }
-      } else if (field === 'category') {
+      } else if (field === 'categoryId') {
         const isNew = ticket.status === 'NEW';
         if (!(isOwner && isNew) && !isSupervisor && !isAdmin) {
           throw new ForbiddenException(

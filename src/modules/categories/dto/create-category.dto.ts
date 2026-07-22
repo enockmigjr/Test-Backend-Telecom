@@ -1,5 +1,13 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, MaxLength, IsOptional } from 'class-validator';
+import { IsString, IsNotEmpty, MaxLength, IsOptional, IsIn } from 'class-validator';
+
+const TARGET_AGENT_ROLES = [
+  'CUSTOMER_SERVICE_AGENT',
+  'NOC_ENGINEER',
+  'BILLING_AGENT',
+  'TECHNICAL_SUPPORT_ENGINEER',
+  'FIELD_TECHNICIAN',
+] as const;
 
 export class CreateCategoryDto {
   @ApiProperty({ description: 'Nom unique de la catégorie', example: 'NETWORK' })
@@ -19,7 +27,8 @@ export class CreateCategoryDto {
   })
   @IsOptional()
   @IsString()
-  targetRole?: string;
+  @IsIn(TARGET_AGENT_ROLES)
+  targetRole?: (typeof TARGET_AGENT_ROLES)[number];
 }
 
 export class UpdateCategoryDto {
@@ -37,5 +46,6 @@ export class UpdateCategoryDto {
   @ApiPropertyOptional({ description: "Nouveau rôle d'agent ciblé", example: 'NOC_ENGINEER' })
   @IsOptional()
   @IsString()
-  targetRole?: string;
+  @IsIn(TARGET_AGENT_ROLES)
+  targetRole?: (typeof TARGET_AGENT_ROLES)[number];
 }

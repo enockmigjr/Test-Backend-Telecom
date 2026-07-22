@@ -23,6 +23,7 @@ const mockUser: JwtPayload = {
 const loginResult = {
   accessToken: 'mock-access-token',
   refreshToken: 'mock-refresh-token',
+  expiresIn: 900,
   user: {
     id: 'user-001',
     email: 'agent@telecom.local',
@@ -31,12 +32,14 @@ const loginResult = {
     role: 'CUSTOMER_SERVICE_AGENT',
     departmentId: 'dept-001',
     departmentName: 'Support Technique',
+    mustChangePassword: false,
   },
 };
 
 const refreshResult = {
   accessToken: 'new-access-token',
   refreshToken: 'new-refresh-token',
+  expiresIn: 900,
   user: {
     id: 'user-001',
     email: 'agent@telecom.local',
@@ -158,7 +161,7 @@ describe('AuthController', () => {
 
       const result = await controller.logout(dto, mockUser);
 
-      expect(authService.logout).toHaveBeenCalledWith(dto.refreshToken, mockUser.jti);
+      expect(authService.logout).toHaveBeenCalledWith(dto.refreshToken, mockUser.jti, mockUser.sub);
       expect(result).toBeUndefined();
     });
 

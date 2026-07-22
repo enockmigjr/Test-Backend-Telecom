@@ -8,6 +8,7 @@ import { users } from '../../src/database/schemas';
 describe('Tickets Permissions — E2E fine checks', () => {
   let app: INestApplication;
   let supervisorToken: string;
+  let adminToken: string;
   let csAgentToken: string; // Customer Service Agent
   let csAgentUserId: string;
   let nocAgentToken: string; // NOC Engineer (Tech)
@@ -76,6 +77,11 @@ describe('Tickets Permissions — E2E fine checks', () => {
 
     // Logins
 
+    const adminLogin = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ email: admin.email, password: 'Admin@1234' });
+    adminToken = adminLogin.body.data.accessToken;
+
     const supervisorLogin = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
       .send({ email: supervisor.email, password: 'Super@1234' });
@@ -139,9 +145,33 @@ describe('Tickets Permissions — E2E fine checks', () => {
         .send({ userId: csAgentUserId, reason: 'Changement d assignation.' })
         .expect(403);
     });
+
+    it('refuse meme a un admin une cible hors de l equipe assignee -> 400', async () => {
+      await request(app.getHttpServer())
+        .post(`/api/v1/tickets/${ticketId}/assign`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ userId: csAgentUserId, reason: 'Cible incoherente avec l equipe.' })
+        .expect(400);
+    });
+
+    it('refuse une escalade dont l utilisateur ne correspond pas au departement cible -> 400', async () => {
+      await request(app.getHttpServer())
+        .post(`/api/v1/tickets/${ticketId}/escalate`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ userId: csAgentUserId, departmentId: assignedTeamId, reason: 'Cible incoherente.' })
+        .expect(400);
+    });
   });
 
   describe('Validation des permissions fines sur les champs (PATCH)', () => {
+    it('doit interdire au createur non assigne de modifier le titre apres NEW -> 403', async () => {
+      await request(app.getHttpServer())
+        .patch(`/api/v1/tickets/${ticketId}`)
+        .set('Authorization', `Bearer ${csAgentToken}`)
+        .send({ title: 'Modification tardive du createur' })
+        .expect(403);
+    });
+
     it('doit autoriser l assigne (nocAgent) a modifier le titre, description, tags -> 200', async () => {
       const res = await request(app.getHttpServer())
         .patch(`/api/v1/tickets/${ticketId}`)

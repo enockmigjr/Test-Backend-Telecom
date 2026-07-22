@@ -3,6 +3,7 @@ import request from 'supertest';
 import { createTestApp } from '../setup';
 import { DrizzleProvider } from '../../src/database/drizzle.provider';
 import { tickets, users } from '../../src/database/schemas';
+import { eq } from 'drizzle-orm';
 
 describe('Internal Notes — E2E', () => {
   let app: INestApplication;
@@ -19,18 +20,31 @@ describe('Internal Notes — E2E', () => {
     app = testApp;
 
     const drizzle = app.get(DrizzleProvider);
-    const [t] = await drizzle.db.select().from(tickets).limit(1);
-    ticketId = t?.id;
+    const allUsers = await drizzle.db.select().from(users);
+    const supervisor = allUsers.find((u) => u.email === 'supervisor@telecom.local');
+    const tech = allUsers.find((u) => u.email === 'field1@telecom.local');
 
-    // Login Supervisor (autorisé)
+    if (!supervisor?.departmentId) {
+      throw new Error('Superviseur avec departement requis dans le seed.');
+    }
+
+    const [t] = await drizzle.db
+      .select()
+      .from(tickets)
+      .where(eq(tickets.departmentId, supervisor.departmentId))
+      .limit(1);
+    if (!t) {
+      throw new Error('Ticket du departement du superviseur requis dans le seed.');
+    }
+    ticketId = t.id;
+
+    // Login Supervisor (autorise sur son propre departement)
     const supervisorLogin = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
-      .send({ email: 'supervisor@telecom.local', password: 'Super@1234' });
+      .send({ email: supervisor.email, password: 'Super@1234' });
     supervisorToken = supervisorLogin.body.data.accessToken;
 
     // Trouver un field tech dans le seed
-    const allUsers = await drizzle.db.select().from(users);
-    const tech = allUsers.find((u) => u.email === 'field1@telecom.local');
     const techEmail = tech?.email || 'field1@telecom.local';
 
     const techLogin = await request(app.getHttpServer())
@@ -84,7 +98,8 @@ describe('Internal Notes — E2E', () => {
         .expect(200);
 
       expect(res.body.success).toBe(true);
-      expect(res.body.data.data.length).toBeGreaterThan(0);
+      expect(res.body.data.length).toBeGreaterThan(0);
+      expect(res.body.meta).toBeDefined();
     });
 
     it('doit autoriser l auteur a modifier la note interne -> 200', async () => {
@@ -96,7 +111,7 @@ describe('Internal Notes — E2E', () => {
         .expect(200);
 
       expect(res.body.success).toBe(true);
-      expect(res.body.data.message).toBe('Note interne mise à jour.');
+      expect(res.body.message).toBe('Note interne mise a jour.');
     });
 
     it('doit autoriser la suppression de la note interne -> 204', async () => {

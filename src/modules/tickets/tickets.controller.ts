@@ -16,6 +16,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiQuery, 
 
 import { TicketsService } from './services/tickets.service';
 import { TicketsSearchService } from './services/tickets-search.service';
+import { TicketDetailsService } from './services/ticket-details.service';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 import { SearchTicketsDto } from './dto/search-tickets.dto';
 import { AssignTicketDto } from './dto/assign-ticket.dto';
@@ -40,6 +41,7 @@ export class TicketsController {
   constructor(
     private readonly ticketsService: TicketsService,
     private readonly searchService: TicketsSearchService,
+    private readonly ticketDetails: TicketDetailsService,
   ) {}
 
   @Post()
@@ -80,23 +82,28 @@ export class TicketsController {
   @ApiQuery({ name: 'sort', required: false, description: 'Champ de tri (ex: createdAt, priority)' })
   @ApiQuery({ name: 'order', required: false, description: 'Ordre de tri: asc | desc' })
   @ApiResponse({ status: 200, description: 'Liste paginée de tickets.' })
-  async search(@Query() filters: SearchTicketsDto) {
-    return this.searchService.search(filters);
+  async search(@Query() filters: SearchTicketsDto, @CurrentUser() user: JwtPayload) {
+    return this.searchService.search(filters, user);
   }
 
   @Get(':id')
   @ApiOperation({
     summary: "Détails d'un ticket",
     description:
-      'Retourne un ticket par son UUID. Avec ?detail=full, retourne aussi les commentaires, notes internes et historique.',
+      "Retourne un ticket par son UUID. Avec ?detail=full, ajoute l'historique pagine des assignations et les compteurs de relations.",
   })
   @ApiParam({ name: 'id', description: 'UUID du ticket' })
   @ApiQuery({ name: 'detail', required: false, description: "Option 'full' pour retourner les relations détaillées" })
   @ApiResponse({ status: 200, description: 'Détails du ticket.' })
   @ApiResponse({ status: 404, description: 'Ticket introuvable.' })
-  async findOne(@Param('id') id: string, @Query('detail') detail?: string) {
+  async findOne(
+    @Param('id') id: string,
+    @Query('detail') detail?: string,
+    @Query('assignmentPage') assignmentPage?: string,
+    @Query('assignmentLimit') assignmentLimit?: string,
+  ) {
     if (detail === 'full') {
-      return this.ticketsService.findByIdDetailed(id);
+      return this.ticketDetails.findById(id, Number(assignmentPage ?? 1), Number(assignmentLimit ?? 20));
     }
     return this.ticketsService.findById(id);
   }

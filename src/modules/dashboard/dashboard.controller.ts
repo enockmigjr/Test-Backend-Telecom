@@ -79,7 +79,7 @@ export class DashboardController {
   }
 
   @Get('departments')
-  @Roles('ADMINISTRATOR')
+  @Roles('ADMINISTRATOR', 'SUPERVISOR')
   @ApiOperation({
     summary: 'Performance par département',
     description:
@@ -92,8 +92,8 @@ export class DashboardController {
   })
   @ApiResponse({ status: 401, description: 'Non authentifié.' })
   @ApiResponse({ status: 403, description: 'Rôle insuffisant.' })
-  async departments(@Query() range: DateRangeDto) {
-    return this.dashboardService.departmentsReport(range.from, range.to);
+  async departments(@Query() range: DateRangeDto, @CurrentUser() currentUser: JwtPayload) {
+    return this.dashboardService.departmentsReport(range.from, range.to, currentUser);
   }
 
   @Get('sla-compliance')

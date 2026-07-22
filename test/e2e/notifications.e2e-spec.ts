@@ -43,9 +43,10 @@ describe('Notifications — E2E', () => {
         .expect(200);
 
       expect(res.body.success).toBe(true);
-      expect(Array.isArray(res.body.data.data)).toBe(true);
-      if (res.body.data.data.length > 0) {
-        notifId = res.body.data.data[0].id;
+      expect(Array.isArray(res.body.data)).toBe(true);
+      expect(res.body.meta).toBeDefined();
+      if (res.body.data.length > 0) {
+        notifId = res.body.data[0].id;
       }
     });
 

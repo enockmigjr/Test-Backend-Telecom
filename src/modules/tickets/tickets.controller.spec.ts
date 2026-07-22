@@ -11,6 +11,7 @@ import { AssignTicketDto } from './dto/assign-ticket.dto';
 import { EscalateTicketDto } from './dto/escalate-ticket.dto';
 import { UpdateTicketDto } from './dto/update-ticket.dto';
 import { DepartmentAbacGuard } from '../../common/guards/department-abac.guard';
+import { TicketDetailsService } from './services/ticket-details.service';
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -20,6 +21,7 @@ const mockUser: JwtPayload = {
   email: 'agent@telecom.local',
   role: 'CUSTOMER_SERVICE_AGENT',
   departmentId: 'dept-001',
+  mustChangePassword: false,
   jti: 'jti-001',
 };
 
@@ -28,6 +30,7 @@ const mockAdmin: JwtPayload = {
   email: 'admin@telecom.local',
   role: 'ADMINISTRATOR',
   departmentId: 'dept-001',
+  mustChangePassword: false,
   jti: 'jti-002',
 };
 
@@ -185,16 +188,19 @@ describe('TicketsController', () => {
   let controller: TicketsController;
   let ticketsService: MockProxy<TicketsService>;
   let searchService: MockProxy<TicketsSearchService>;
+  let ticketDetails: MockProxy<TicketDetailsService>;
 
   beforeEach(async () => {
     ticketsService = mock<TicketsService>();
     searchService = mock<TicketsSearchService>();
+    ticketDetails = mock<TicketDetailsService>();
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [TicketsController],
       providers: [
         { provide: TicketsService, useValue: ticketsService },
         { provide: TicketsSearchService, useValue: searchService },
+        { provide: TicketDetailsService, useValue: ticketDetails },
       ],
     })
       .overrideGuard(DepartmentAbacGuard)
@@ -254,39 +260,42 @@ describe('TicketsController', () => {
     it('doit retourner une liste paginee de tickets', async () => {
       searchService.search.mockResolvedValue(paginatedResult as any);
 
-      const result = await controller.search(searchFilters);
+      const result = await controller.search(searchFilters, mockUser);
 
-      expect(searchService.search).toHaveBeenCalledWith(searchFilters);
+      expect(searchService.search).toHaveBeenCalledWith(searchFilters, mockUser);
       expect(result).toEqual(paginatedResult);
     });
 
     it('doit transmettre les filtres de recherche', async () => {
       searchService.search.mockResolvedValue(paginatedResult as any);
 
-      await controller.search(searchFilters);
+      await controller.search(searchFilters, mockUser);
 
-      expect(searchService.search).toHaveBeenCalledWith({
-        status: 'IN_PROGRESS',
-        priority: 'HIGH',
-        categoryId: '019f28ea-9e12-7cc0-a0ea-3d4de79e7a95',
-        page: 1,
-        limit: 20,
-      });
+      expect(searchService.search).toHaveBeenCalledWith(
+        {
+          status: 'IN_PROGRESS',
+          priority: 'HIGH',
+          categoryId: '019f28ea-9e12-7cc0-a0ea-3d4de79e7a95',
+          page: 1,
+          limit: 20,
+        },
+        mockUser,
+      );
     });
 
     it('doit accepter des filtres vides', async () => {
       searchService.search.mockResolvedValue(paginatedResult as any);
       const emptyFilters = new SearchTicketsDto();
 
-      await controller.search(emptyFilters);
+      await controller.search(emptyFilters, mockUser);
 
-      expect(searchService.search).toHaveBeenCalledWith(emptyFilters);
+      expect(searchService.search).toHaveBeenCalledWith(emptyFilters, mockUser);
     });
 
     it('doit retourner la structure paginee complete', async () => {
       searchService.search.mockResolvedValue(paginatedResult as any);
 
-      const result = await controller.search(searchFilters);
+      const result = await controller.search(searchFilters, mockUser);
 
       expect(result).toHaveProperty('data');
       expect(result).toHaveProperty('meta');
@@ -300,7 +309,7 @@ describe('TicketsController', () => {
       const emptyResult = { data: [], meta: { page: 1, limit: 20, total: 0, totalPages: 0 } };
       searchService.search.mockResolvedValue(emptyResult as any);
 
-      const result = await controller.search(searchFilters);
+      const result = await controller.search(searchFilters, mockUser);
 
       expect(result.data).toHaveLength(0);
       expect(result.meta.total).toBe(0);
@@ -321,11 +330,11 @@ describe('TicketsController', () => {
     });
 
     it('doit retourner les details complets si detail=full', async () => {
-      ticketsService.findByIdDetailed.mockResolvedValue(detailedResponse as any);
+      ticketDetails.findById.mockResolvedValue(detailedResponse as any);
 
       const result = await controller.findOne(ticketId, 'full');
 
-      expect(ticketsService.findByIdDetailed).toHaveBeenCalledWith(ticketId);
+      expect(ticketDetails.findById).toHaveBeenCalledWith(ticketId, 1, 20);
       expect(ticketsService.findById).not.toHaveBeenCalled();
       expect(result).toEqual(detailedResponse);
     });

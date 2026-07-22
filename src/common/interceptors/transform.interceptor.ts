@@ -2,6 +2,10 @@ import { Injectable, NestInterceptor, ExecutionContext, CallHandler } from '@nes
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
 /**
  * Intercepteur qui standardise toutes les réponses de succès.
  * Transforme automatiquement le retour des controllers en :
@@ -17,20 +21,23 @@ export class TransformInterceptor<T> implements NestInterceptor<T, unknown> {
     return next.handle().pipe(
       map((data) => {
         // Si la réponse est déjà au format standard, ne pas la re-wrapper
-        if (data && typeof data === 'object' && 'success' in data) {
+        if (isRecord(data) && 'success' in data) {
           return data;
         }
 
-        // Si la donnée contient un message explicite
-        if (data && typeof data === 'object' && 'message' in data && 'data' in data) {
+        if (isRecord(data) && Object.prototype.hasOwnProperty.call(data, 'data')) {
           return {
             success: true,
             statusCode,
-            message: data['message'],
-            data: data['data'],
+            ...data,
           };
         }
 
+        if (isRecord(data) && typeof data['message'] === 'string') {
+          return { success: true, statusCode, ...data };
+        }
+
+        // Si la donnée contient un message explicite
         // Format standard
         return {
           success: true,

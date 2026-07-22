@@ -63,7 +63,8 @@ describe('Users — E2E', () => {
         .expect(200);
 
       expect(res.body.success).toBe(true);
-      expect(Array.isArray(res.body.data.data)).toBe(true);
+      expect(Array.isArray(res.body.data)).toBe(true);
+      expect(res.body.meta).toBeDefined();
     });
 
     it('doit autoriser le supervisor a lister les utilisateurs -> 200', async () => {

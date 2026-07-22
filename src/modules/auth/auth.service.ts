@@ -1,18 +1,28 @@
-import { Injectable, UnauthorizedException, Logger, Inject } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  UnauthorizedException,
+  Logger,
+  Inject,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import * as argon2 from 'argon2';
-import { generateUuid } from '../../common/helpers/uuidv7.helper';
-import { createHash, randomBytes } from 'crypto';
+import { createHash } from 'crypto';
 import { eq, and, isNull } from 'drizzle-orm';
 import { Queue } from 'bullmq';
 
+import { generateUuid } from '../../common/helpers/uuidv7.helper';
 import { DrizzleProvider } from '../../database/drizzle.provider';
 import { RedisProvider } from '../../common/providers/redis.provider';
 import { users, refreshTokens } from '../../database/schemas';
 import { JwtConfigService } from '../../config/jwt.config';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 import { LoginResponse, TokenPair } from './interfaces/auth-response.interface';
-
+import { RefreshSessionService } from './refresh-session.service';
+import { AuthSessionRevokedEvent, AuthUserSessionsRevokedEvent } from './domain/auth-session.events';
+import { acquireUserSessionLock } from './user-session-lock';
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
@@ -22,6 +32,8 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly jwtConfig: JwtConfigService,
     private readonly redisProvider: RedisProvider,
+    private readonly refreshSessions: RefreshSessionService,
+    private readonly eventEmitter: EventEmitter2,
     @Inject('BullMQ_Queues') private readonly queues: { email: Queue; [key: string]: Queue },
   ) {}
 
@@ -33,7 +45,7 @@ export class AuthService {
       .limit(1);
 
     if (!user) throw new UnauthorizedException('Identifiants invalides.');
-    if (!user.isActive) throw new UnauthorizedException('Ce compte est desactive. Contactez un administrateur.');
+    if (!user.isActive) throw new ForbiddenException('Ce compte est desactive. Contactez un administrateur.');
 
     const isPasswordValid = await argon2.verify(user.passwordHash, password);
     if (!isPasswordValid) throw new UnauthorizedException('Identifiants invalides.');
@@ -59,48 +71,48 @@ export class AuthService {
         role: user.role,
         departmentId: user.departmentId,
         departmentName: department?.name || 'Inconnu',
+        mustChangePassword: user.mustChangePassword,
       },
     };
   }
 
-  async refresh(refreshToken: string, _ipAddress: string, _userAgent: string): Promise<TokenPair> {
-    const tokenHash = this.hashToken(refreshToken);
-
-    const [storedToken] = await this.drizzle.db
-      .select()
-      .from(refreshTokens)
-      .where(eq(refreshTokens.tokenHash, tokenHash))
-      .limit(1);
-
-    if (!storedToken || storedToken.revokedAt) throw new UnauthorizedException('Refresh token invalide ou revoque.');
-    if (new Date() > storedToken.expiresAt) throw new UnauthorizedException('Refresh token expire.');
-
-    const [user] = await this.drizzle.db
-      .select()
-      .from(users)
-      .where(and(eq(users.id, storedToken.userId), isNull(users.deletedAt)))
-      .limit(1);
-
-    if (!user || !user.isActive) throw new UnauthorizedException('Utilisateur non trouve ou desactive.');
-
-    // Générer uniquement un nouvel Access Token (pas de rotation du refresh token d'origine)
-    const { accessToken } = this.generateAccessToken(user);
-
-    return { accessToken, refreshToken };
+  async refresh(refreshToken: string, ipAddress: string, userAgent: string): Promise<TokenPair> {
+    const rotated = await this.refreshSessions.rotate(refreshToken, ipAddress, userAgent, (user) =>
+      this.generateAccessToken(user),
+    );
+    const { accessToken } = rotated.finalized;
+    return { accessToken, refreshToken: rotated.refreshToken, expiresIn: this.jwtConfig.accessExpirationSeconds };
   }
 
   /**
    * Deconnecte l utilisateur : revoque le refresh token en DB ET blackliste
    * l access token dans Redis (cle individuelle jwt_bl:{jti} avec TTL).
    */
-  async logout(refreshToken: string, jti: string): Promise<void> {
+  async logout(refreshToken: string, jti: string, userId: string): Promise<void> {
     const tokenHash = this.hashToken(refreshToken);
-    await this.drizzle.db
-      .update(refreshTokens)
-      .set({ revokedAt: new Date() })
-      .where(eq(refreshTokens.tokenHash, tokenHash));
+    await this.drizzle.runInTransaction(async () => {
+      const [session] = await this.drizzle.db
+        .select({ familyId: refreshTokens.familyId, userId: refreshTokens.userId })
+        .from(refreshTokens)
+        .where(eq(refreshTokens.tokenHash, tokenHash))
+        .limit(1);
+      if (!session || session.userId !== userId) return;
+
+      await acquireUserSessionLock(this.drizzle.db, userId);
+      await this.drizzle.db
+        .update(refreshTokens)
+        .set({ revokedAt: new Date() })
+        .where(
+          and(
+            eq(refreshTokens.userId, userId),
+            eq(refreshTokens.familyId, session.familyId),
+            isNull(refreshTokens.revokedAt),
+          ),
+        );
+    });
 
     await this.blacklistJti(jti);
+    this.eventEmitter.emit('auth.session.revoked', new AuthSessionRevokedEvent(userId, jti));
   }
 
   /**
@@ -108,14 +120,19 @@ export class AuthService {
    * L'access token actif de la session courante (jti) est immédiatement blacklisté.
    */
   async logoutAll(userId: string, jti?: string): Promise<void> {
-    await this.drizzle.db
-      .update(refreshTokens)
-      .set({ revokedAt: new Date() })
-      .where(and(eq(refreshTokens.userId, userId), isNull(refreshTokens.revokedAt)));
+    await this.drizzle.runInTransaction(async () => {
+      await acquireUserSessionLock(this.drizzle.db, userId);
+      await this.drizzle.db
+        .update(refreshTokens)
+        .set({ revokedAt: new Date() })
+        .where(and(eq(refreshTokens.userId, userId), isNull(refreshTokens.revokedAt)));
+    });
 
     if (jti) {
       await this.blacklistJti(jti);
     }
+    await this.blacklistUserSessions(userId);
+    this.eventEmitter.emit('auth.user-sessions.revoked', new AuthUserSessionsRevokedEvent(userId));
   }
 
   async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
@@ -169,7 +186,6 @@ export class AuthService {
   /**
    * Blackliste un JTI dans Redis avec TTL individuel.
    * Cle : jwt_bl:{jti} — expire automatiquement avec le token.
-   * Non-bloquant : en cas d indisponibilite Redis, le token expire naturellement.
    */
   private async blacklistJti(jti: string): Promise<void> {
     try {
@@ -177,20 +193,38 @@ export class AuthService {
       const ttl = this.jwtConfig.accessExpirationSeconds;
       await redis.setex(`jwt_bl:${jti}`, ttl, '1');
     } catch (err) {
-      this.logger.warn(`Impossible de blacklister le JTI ${jti}: ${(err as Error).message}`);
+      this.logger.error(`Impossible de blacklister le JTI ${jti}: ${(err as Error).message}`);
+      throw new ServiceUnavailableException('La révocation de session est temporairement indisponible.');
     }
   }
 
-  private generateAccessToken(
-    user: typeof users.$inferSelect | { id: string; email: string; role: string; departmentId: string },
-  ): { accessToken: string; jti: string } {
+  private async blacklistUserSessions(userId: string): Promise<void> {
+    try {
+      const redis = this.redisProvider.getClient();
+      await redis.setex(`jwt_user_bl:${userId}`, this.jwtConfig.accessExpirationSeconds, String(Date.now()));
+    } catch (err) {
+      this.logger.error(`Impossible de révoquer les sessions de ${userId}: ${(err as Error).message}`);
+      throw new ServiceUnavailableException('La révocation globale des sessions est temporairement indisponible.');
+    }
+  }
+
+  private async generateAccessToken(
+    user:
+      | typeof users.$inferSelect
+      | { id: string; email: string; role: string; departmentId: string; mustChangePassword: boolean },
+  ): Promise<{ accessToken: string; jti: string }> {
     const jti = generateUuid();
+    const revokedAfterRaw = await this.redisProvider.getClient().get(`jwt_user_bl:${user.id}`);
+    const revokedAfter = revokedAfterRaw ? Number(revokedAfterRaw) : 0;
+    const sessionIssuedAt = Math.max(Date.now(), Number.isFinite(revokedAfter) ? revokedAfter + 1 : 0);
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
       role: user.role as typeof users.$inferSelect.role,
       departmentId: user.departmentId,
+      mustChangePassword: user.mustChangePassword,
       jti,
+      sessionIssuedAt,
     };
 
     const accessToken = this.jwtService.sign(payload);
@@ -203,18 +237,10 @@ export class AuthService {
     ipAddress: string,
     userAgent: string,
   ): Promise<TokenPair> {
-    const { accessToken } = this.generateAccessToken(user);
+    const { accessToken } = await this.generateAccessToken(user);
 
-    const rawRefreshToken = randomBytes(48).toString('hex');
-    const tokenHash = this.hashToken(rawRefreshToken);
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7);
-
-    await this.drizzle.db
-      .insert(refreshTokens)
-      .values({ id: generateUuid(), userId: user.id, tokenHash, userAgent, ipAddress, expiresAt });
-
-    return { accessToken, refreshToken: rawRefreshToken };
+    const refreshToken = await this.refreshSessions.create(user.id, ipAddress, userAgent);
+    return { accessToken, refreshToken, expiresIn: this.jwtConfig.accessExpirationSeconds };
   }
 
   private hashToken(token: string): string {
