@@ -2,7 +2,7 @@
 
 ## Statut
 
-- État : validé, backend prérequis en validation avant implémentation frontend
+- État : implémenté, gates backend fermées et validations frontend finales réussies
 - Périmètre validé : Release 1 ticketing, temps réel, dashboards, supervision et administration
 - Vérité constatée : code, tests et OpenAPI runtime du backend
 - Vérité contractuelle cible : OpenAPI fiabilisé et testé en CI
@@ -77,3 +77,10 @@ Livrer une console opérationnelle Next.js sobre, rapide, accessible et sécuris
 - Backend P0 : à estimer après validation du périmètre et des choix auth/WS.
 - Release 1 frontend consolidée : estimation à recalibrer après le walking skeleton exécutable.
 - Roadmap avancée : estimations séparées, après contrats backend et validation utilisateur.
+
+## Validation exécutée
+
+- Backend : build, 52 suites unitaires (432 tests), 15 suites E2E (127 tests), 4 suites d'intégration (12 tests) et 5 contrôles OpenAPI réussis.
+- Frontend : lint, TypeScript strict, 23 suites unitaires (60 tests réussis, 1 ignoré), build production de 22 routes et contrat généré stable.
+- Parcours navigateur : quatre scénarios critiques réussis, dont refus 403 inter-département et cycle ticket complet avec notification persistée.
+- Distribution : image Docker construite et endpoint de santé validé ; audit de production sur le registre npm officiel sans vulnérabilité connue.

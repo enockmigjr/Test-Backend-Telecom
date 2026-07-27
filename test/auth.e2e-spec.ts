@@ -182,6 +182,50 @@ describe('Auth — Flux E2E', () => {
         .set('Authorization', `Bearer ${expiredToken}`)
         .expect(401);
     });
+
+    it('bloque les routes metier mais conserve me pendant le changement obligatoire', async () => {
+      const drizzle = app.get(DrizzleProvider);
+      await drizzle.db.update(users).set({ mustChangePassword: true }).where(eq(users.email, 'admin@telecom.local'));
+
+      try {
+        const login = await request(app.getHttpServer())
+          .post('/api/v1/auth/login')
+          .send({ email: 'admin@telecom.local', password: 'Admin@1234' })
+          .expect(200);
+        const temporaryAccess = login.body.data.accessToken as string;
+
+        await request(app.getHttpServer())
+          .get('/api/v1/auth/me')
+          .set('Authorization', `Bearer ${temporaryAccess}`)
+          .expect(200);
+        const blocked = await request(app.getHttpServer())
+          .get('/api/v1/dashboard/overview')
+          .set('Authorization', `Bearer ${temporaryAccess}`)
+          .expect(403);
+        expect(blocked.body.error.code).toBe('PASSWORD_CHANGE_REQUIRED');
+      } finally {
+        await drizzle.db.update(users).set({ mustChangePassword: false }).where(eq(users.email, 'admin@telecom.local'));
+      }
+    });
+
+    it('autorise la deconnexion pendant le changement obligatoire', async () => {
+      const drizzle = app.get(DrizzleProvider);
+      await drizzle.db.update(users).set({ mustChangePassword: true }).where(eq(users.email, 'admin@telecom.local'));
+
+      try {
+        const login = await request(app.getHttpServer())
+          .post('/api/v1/auth/login')
+          .send({ email: 'admin@telecom.local', password: 'Admin@1234' })
+          .expect(200);
+        await request(app.getHttpServer())
+          .post('/api/v1/auth/logout')
+          .set('Authorization', `Bearer ${login.body.data.accessToken as string}`)
+          .send({ refreshToken: login.body.data.refreshToken })
+          .expect(204);
+      } finally {
+        await drizzle.db.update(users).set({ mustChangePassword: false }).where(eq(users.email, 'admin@telecom.local'));
+      }
+    });
   });
 
   describe('PUT /api/v1/auth/change-password', () => {

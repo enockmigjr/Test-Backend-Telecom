@@ -1,7 +1,6 @@
 import { Controller, Post, Body, Req, HttpCode, HttpStatus, Get, Put } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { Request } from 'express';
-import { Throttle } from '@nestjs/throttler';
 
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
@@ -10,6 +9,8 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
+import { AllowPasswordChangePending } from '../../common/decorators/allow-password-change-pending.decorator';
+import { AuthRateLimited } from '../../common/decorators/auth-rate-limited.decorator';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -19,7 +20,7 @@ export class AuthController {
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 10, ttl: 3600000 } })
+  @AuthRateLimited()
   @ApiOperation({ summary: 'Connexion utilisateur' })
   @ApiResponse({ status: 200, description: 'Authentification réussie.' })
   @ApiResponse({ status: 401, description: 'Identifiants invalides.' })
@@ -44,6 +45,7 @@ export class AuthController {
   }
 
   @Post('logout')
+  @AllowPasswordChangePending()
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiBearerAuth()
   @ApiOperation({ summary: "Déconnexion (révoque le refresh token + blackliste l'access token)" })
@@ -53,6 +55,7 @@ export class AuthController {
   }
 
   @Post('logout-all')
+  @AllowPasswordChangePending()
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Déconnexion de toutes les sessions actives' })
@@ -62,6 +65,7 @@ export class AuthController {
   }
 
   @Get('me')
+  @AllowPasswordChangePending()
   @ApiBearerAuth()
   @ApiOperation({ summary: "Profil de l'utilisateur connecté" })
   async me(@CurrentUser() user: JwtPayload) {
@@ -69,6 +73,7 @@ export class AuthController {
   }
 
   @Put('change-password')
+  @AllowPasswordChangePending()
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Changer le mot de passe' })

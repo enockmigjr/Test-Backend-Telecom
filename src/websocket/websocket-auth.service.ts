@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 
 import { JwtPayload } from '../modules/auth/interfaces/jwt-payload.interface';
 import { JwtStrategy } from '../modules/auth/strategies/jwt.strategy';
+import { assertPasswordChangeComplete } from '../modules/auth/password-change-policy';
 
 @Injectable()
 export class WebSocketAuthService {
@@ -16,12 +17,14 @@ export class WebSocketAuthService {
     if (!token) throw new UnauthorizedException('Cookie de session absent.');
 
     const payload = await this.jwtService.verifyAsync<JwtPayload>(token);
-    return this.jwtStrategy.validate(payload);
+    const user = await this.jwtStrategy.validate(payload);
+    assertPasswordChangeComplete(user);
+    return user;
   }
 
   private extractAccessToken(cookieHeader: string | undefined): string | null {
     if (!cookieHeader) return null;
-    const cookieName = process.env['AUTH_ACCESS_COOKIE_NAME'] || 'access_token';
+    const cookieName = this.accessCookieName();
     const values = cookieHeader
       .split(';')
       .map((part) => part.trim())
@@ -34,5 +37,16 @@ export class WebSocketAuthService {
     } catch {
       return null;
     }
+  }
+
+  private accessCookieName(): string {
+    const configured = process.env['AUTH_ACCESS_COOKIE_NAME'];
+    if (process.env['NODE_ENV'] !== 'production') return configured || 'access_token';
+
+    const name = configured || '__Host-access-token';
+    if (!name.startsWith('__Host-')) {
+      throw new Error('AUTH_ACCESS_COOKIE_NAME doit utiliser le prefixe __Host- en production.');
+    }
+    return name;
   }
 }

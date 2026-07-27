@@ -46,7 +46,7 @@ Cette matrice décrit le comportement effectif constaté dans les contrôleurs e
 | Rapports : liste globale                                   |    ✅ |                    — |        — |        — |        — |            — |          — |
 | Rapports : téléchargement                                  |    ✅ |                   ✅ |        — |        — |        — |            — |          — |
 
-Les scopes tickets/commentaires/notes/fichiers sont appliqués côté backend et couverts par des tests négatifs inter-départements. Le frontend doit masquer les actions non autorisées, sans jamais se substituer à ces contrôles backend.
+Les scopes tickets/commentaires/notes/fichiers sont appliqués côté backend et couverts par des tests négatifs inter-départements. Le parcours Playwright agent vérifie aussi un refus HTTP 403 réel sur un ticket NOC hors périmètre. Le frontend doit masquer les actions non autorisées, sans jamais se substituer à ces contrôles backend.
 
 ## Actions sur un ticket
 
@@ -90,4 +90,4 @@ Les scopes tickets/commentaires/notes/fichiers sont appliqués côté backend et
 
 ## Critère de validation
 
-La matrice est le contrat produit Release 1. Les refus inter-départements et les principales transitions sont couverts en E2E ; chaque nouvelle action frontend doit conserver un test négatif serveur correspondant.
+La matrice est le contrat produit Release 1. Les 15 suites E2E backend (127 tests) et les parcours critiques frontend couvrent les refus inter-départements et les principales transitions ; chaque nouvelle action frontend doit conserver un test négatif serveur correspondant.

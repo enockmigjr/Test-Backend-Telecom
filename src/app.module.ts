@@ -15,6 +15,7 @@ import { DatabaseModule } from './database/database.module';
 // Modules métier
 import { AuthModule } from './modules/auth/auth.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
+import { PasswordChangeRequiredGuard } from './modules/auth/guards/password-change-required.guard';
 import { DepartmentsModule } from './modules/departments/departments.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { UsersModule } from './modules/users/users.module';
@@ -37,6 +38,7 @@ import { ReportsModule } from './modules/reports/reports.module';
 import { BullBoardModule } from './common/bull-board/bull-board.module';
 import { SettingsModule } from './modules/settings/settings.module';
 import { IdempotencyInterceptor } from './common/interceptors/idempotency.interceptor';
+import { isAuthRateLimited } from './common/decorators/auth-rate-limited.decorator';
 
 @Module({
   imports: [
@@ -81,6 +83,7 @@ import { IdempotencyInterceptor } from './common/interceptors/idempotency.interc
             name: 'auth',
             ttl: config.throttleAuthTtl,
             limit: config.throttleAuthLimit,
+            skipIf: (context) => !isAuthRateLimited(context.getHandler()),
           },
         ],
         storage: new ThrottlerStorageRedisService(),
@@ -134,6 +137,10 @@ import { IdempotencyInterceptor } from './common/interceptors/idempotency.interc
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: PasswordChangeRequiredGuard,
     },
     {
       provide: APP_INTERCEPTOR,
