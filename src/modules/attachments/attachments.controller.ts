@@ -75,13 +75,25 @@ export class AttachmentsController {
   @ApiOperation({ summary: 'Telecharger une piece jointe visible' })
   @ApiParam({ name: 'id', description: 'UUID de la piece jointe' })
   async download(@Param('id') id: string, @CurrentUser() user: JwtPayload, @Res() res: Response) {
+    return this.streamFile(id, user, res, 'attachment');
+  }
+
+  @Get('attachments/:id/preview')
+  @ApiOperation({ summary: 'Prévisualiser une pièce jointe visible' })
+  @ApiParam({ name: 'id', description: 'UUID de la pièce jointe' })
+  async preview(@Param('id') id: string, @CurrentUser() user: JwtPayload, @Res() res: Response) {
+    return this.streamFile(id, user, res, 'inline');
+  }
+
+  private async streamFile(id: string, user: JwtPayload, res: Response, disposition: 'attachment' | 'inline') {
     const attachment = await this.attachmentsService.findOneForUser(id, user);
     const filePath = join(process.env['STORAGE_LOCAL_PATH'] || './uploads', attachment.objectKey);
     // eslint-disable-next-line security/detect-non-literal-fs-filename -- objectKey is generated server-side
     if (!existsSync(filePath)) throw new NotFoundException('Le fichier physique est introuvable.');
 
     res.setHeader('Content-Type', attachment.mimeType);
-    res.setHeader('Content-Disposition', `attachment; filename="${attachment.originalFilename}"`);
+    res.setHeader('Content-Disposition', `${disposition}; filename="${attachment.originalFilename}"`);
+    res.setHeader('X-Content-Type-Options', 'nosniff');
     // eslint-disable-next-line security/detect-non-literal-fs-filename -- objectKey is generated server-side
     const stream = createReadStream(filePath);
     stream.on('error', () => {

@@ -16,7 +16,7 @@ const user: JwtPayload = {
 
 function query<T>(rows: T[]): Record<string, jest.Mock> {
   const builder: Record<string, jest.Mock> = {};
-  for (const method of ['from', 'where', 'orderBy', 'limit', 'offset']) {
+  for (const method of ['from', 'leftJoin', 'where', 'orderBy', 'limit', 'offset']) {
     builder[method] = jest.fn(() => builder);
   }
   builder['then'] = jest.fn((resolve: (value: T[]) => void) => resolve(rows));

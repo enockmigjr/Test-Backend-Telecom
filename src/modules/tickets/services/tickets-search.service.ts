@@ -65,6 +65,8 @@ export class TicketsSearchService {
         categoryId: tickets.categoryId,
         categoryName: categories.name,
         assignedTo: tickets.assignedTo,
+        assignedTeamId: tickets.assignedTeamId,
+        departmentId: tickets.departmentId,
         assigneeName: sql<string>`concat(${assignee.firstName}, ' ', ${assignee.lastName})`,
         departmentName: departments.name,
         assignedTeamName: assignedTeam.name,

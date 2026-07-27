@@ -47,7 +47,7 @@ describe('InternalNotesController', () => {
   });
 
   it('transmet le contexte utilisateur pour la modification', async () => {
-    service.update.mockResolvedValue({ message: 'Note interne mise a jour.' });
+    service.update.mockResolvedValue({ message: 'Note interne mise a jour.', data: note });
     await controller.update('note-001', { content: 'Diagnostic corrige' }, user);
     expect(service.update).toHaveBeenCalledWith('note-001', user, 'Diagnostic corrige');
   });
