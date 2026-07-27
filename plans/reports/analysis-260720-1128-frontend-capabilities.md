@@ -77,6 +77,17 @@ La Release 1 validée couvre le ticketing, le temps réel, les dashboards et les
 - Workspace multi-onglets, layouts, brouillons, épingles et reprise de session.
 - Colonnes configurables, groupements, exports génériques et cursor pagination.
 
+### Modération globale des contenus de ticket
+
+- Les commentaires, notes internes et pièces jointes disposent aujourd’hui de listes contextualisées sous
+  `tickets/:ticketId/*`, ainsi que d’actions unitaires par identifiant.
+- Il n’existe pas de liste globale paginée et filtrable par type, ticket, auteur, date ou état de suppression.
+- Le frontend conserve donc leur gestion complète dans la fiche ticket. Construire trois pages administratives
+  globales imposerait un parcours N+1 sur tous les tickets, produirait une vue incomplète et dégraderait les
+  performances.
+- Une vraie console de modération nécessite d’abord des endpoints globaux dédiés, un RBAC administrateur/superviseur,
+  des filtres serveur et une pagination stable.
+
 ## Découpage produit recommandé
 
 1. **Release 1** : auth sécurisée, tickets, cycle de vie, collaboration, fichiers, notifications, realtime, dashboards, workload, audit, rapports et administration supportée.
