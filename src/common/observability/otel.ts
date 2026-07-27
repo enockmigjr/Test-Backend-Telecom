@@ -35,7 +35,8 @@ export function initOpenTelemetry(): NodeSDK {
             url.endsWith('/health') ||
             url.endsWith('/health/ready') ||
             url.includes('/api/v1/metrics') ||
-            url.includes('/api/v1/health')
+            url.includes('/api/v1/health') ||
+            url.includes('/api/v1/reports/public/')
           );
         },
       }),

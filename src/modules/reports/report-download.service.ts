@@ -3,10 +3,14 @@ import { existsSync } from 'fs';
 import { resolve, sep } from 'path';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { ReportsService } from './reports.service';
+import { ReportDownloadLinkService } from './report-download-link.service';
 
 @Injectable()
 export class ReportDownloadService {
-  constructor(private readonly reportsService: ReportsService) {}
+  constructor(
+    private readonly reportsService: ReportsService,
+    private readonly downloadLinks: ReportDownloadLinkService,
+  ) {}
 
   async accessibleReport(id: string, user: JwtPayload, action = 'consulter') {
     const report = await this.reportsService.getReport(id);
@@ -18,6 +22,16 @@ export class ReportDownloadService {
 
   async resolve(id: string, user: JwtPayload) {
     const report = await this.accessibleReport(id, user, 'telecharger');
+    return this.resolveFile(report);
+  }
+
+  async resolveSigned(id: string, expires: number, signature: string) {
+    this.downloadLinks.verify(id, expires, signature);
+    const report = await this.reportsService.getReport(id);
+    return this.resolveFile(report);
+  }
+
+  private resolveFile(report: Awaited<ReturnType<ReportsService['getReport']>>) {
     if (report.status !== 'completed' || !report.objectKey) {
       throw new BadRequestException("Le rapport n'est pas encore prêt ou a echoue.");
     }

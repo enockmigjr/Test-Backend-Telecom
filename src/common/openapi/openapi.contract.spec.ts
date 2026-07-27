@@ -64,9 +64,9 @@ describe('contrat openapi.json', () => {
   const document = loadDocument();
   const apiOperations = operations(document);
 
-  it('contient les 81 opérations actuelles avec des operationId uniques', () => {
+  it('contient les 83 opérations actuelles avec des operationId uniques', () => {
     const operationIds = apiOperations.map((operation) => operation['operationId']);
-    expect(apiOperations).toHaveLength(81);
+    expect(apiOperations).toHaveLength(83);
     expect(operationIds.every((id) => typeof id === 'string' && id.length > 0)).toBe(true);
     expect(new Set(operationIds).size).toBe(operationIds.length);
   });
@@ -136,7 +136,9 @@ describe('contrat openapi.json', () => {
 
     const attachment = byId.get('AttachmentsController_download');
     const report = byId.get('ReportsController_downloadReport');
+    const publicReport = byId.get('PublicReportsController_download');
     expect(attachment && successMediaTypes(attachment)).toEqual(['application/octet-stream']);
     expect(report && successMediaTypes(report)).toEqual(['application/pdf']);
+    expect(publicReport && successMediaTypes(publicReport)).toEqual(['application/pdf']);
   });
 });

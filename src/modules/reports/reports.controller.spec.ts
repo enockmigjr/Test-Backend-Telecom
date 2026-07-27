@@ -7,6 +7,7 @@ import { DateRangeDto } from '../../common/dto/date-range.dto';
 import { mock, MockProxy } from 'jest-mock-extended';
 import { Queue } from 'bullmq';
 import { ReportDownloadService } from './report-download.service';
+import { ReportDownloadLinkService } from './report-download-link.service';
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -60,6 +61,7 @@ describe('ReportsController', () => {
       controllers: [ReportsController],
       providers: [
         { provide: ReportsService, useValue: reportsService },
+        { provide: ReportDownloadLinkService, useValue: mock<ReportDownloadLinkService>() },
         ReportDownloadService,
         { provide: 'BullMQ_Queues', useValue: { report: reportQueue } },
       ],

@@ -9,6 +9,7 @@ import { tickets, users, departments, categories } from '../../database/schemas'
 import { ReportsService } from '../../modules/reports/reports.service';
 import { LocalStorageService } from '../../modules/attachments/storage/local-storage.service';
 import { BullMqQueues } from '../queues.types';
+import { ReportDownloadLinkService } from '../../modules/reports/report-download-link.service';
 
 /**
  * Worker pour la génération asynchrone de rapports (PDF, exports CSV).
@@ -29,6 +30,7 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
     @Inject('BullMQ_Queues') private readonly queues: BullMqQueues,
     private readonly reportsService: ReportsService,
     private readonly storage: LocalStorageService,
+    private readonly downloadLinks: ReportDownloadLinkService,
   ) {}
 
   onModuleInit(): void {
@@ -197,7 +199,7 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
       await this.reportsService.updateReportStatus(reportId, 'completed', objectKey);
 
       const appUrl = process.env['APP_URL'] || 'http://localhost:3000';
-      const downloadUrl = `${appUrl}/api/v1/reports/${reportId}/download`;
+      const downloadUrl = this.downloadLinks.createUrl(reportId);
 
       // Notifier le demandeur
       await this.notifyUser(
@@ -329,8 +331,7 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
       // Mettre à jour la DB
       await this.reportsService.updateReportStatus(reportId, 'completed', objectKey);
 
-      const appUrl = process.env['APP_URL'] || 'http://localhost:3000';
-      const downloadUrl = `${appUrl}/api/v1/reports/${reportId}/download`;
+      const downloadUrl = this.downloadLinks.createUrl(reportId);
 
       // Notifier le demandeur
       await this.notifyUser(
@@ -470,8 +471,7 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
       // Mettre à jour la DB
       await this.reportsService.updateReportStatus(reportId, 'completed', objectKey);
 
-      const appUrl = process.env['APP_URL'] || 'http://localhost:3000';
-      const downloadUrl = `${appUrl}/api/v1/reports/${reportId}/download`;
+      const downloadUrl = this.downloadLinks.createUrl(reportId);
 
       // Notifier le demandeur
       await this.notifyUser(

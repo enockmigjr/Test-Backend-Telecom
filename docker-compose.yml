@@ -74,6 +74,9 @@ services:
       SMTP_PORT: ${DOCKER_SMTP_PORT:-1025}
       APP_NAME: ${APP_NAME:-"Helpdesk Telecom"}
       APP_URL: ${APP_URL:-http://localhost:3000}
+      API_PUBLIC_URL: ${API_PUBLIC_URL:-http://localhost:3000}
+      REPORT_DOWNLOAD_SECRET: ${REPORT_DOWNLOAD_SECRET:-development-report-download-secret-change-me}
+      REPORT_DOWNLOAD_TTL_SECONDS: ${REPORT_DOWNLOAD_TTL_SECONDS:-604800}
       LOGO_URL: ${LOGO_URL:-http://localhost:3000/logo.png}
       OTEL_ENABLED: 'true'
       OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4318/v1/traces

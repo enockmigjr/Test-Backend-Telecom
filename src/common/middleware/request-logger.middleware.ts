@@ -14,7 +14,7 @@ export class RequestLoggerMiddleware implements NestMiddleware {
     this.logger.log({
       message: 'Requête entrante',
       method: req.method,
-      url: req.originalUrl,
+      url: redactSignature(req.originalUrl),
       correlationId,
       ip: req.ip,
       userAgent: req.headers['user-agent'],
@@ -22,4 +22,10 @@ export class RequestLoggerMiddleware implements NestMiddleware {
 
     next();
   }
+}
+
+function redactSignature(rawUrl: string): string {
+  const url = new URL(rawUrl, 'http://request.local');
+  if (url.searchParams.has('signature')) url.searchParams.set('signature', '[REDACTED]');
+  return `${url.pathname}${url.search}`;
 }
