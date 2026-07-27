@@ -9,6 +9,7 @@ import {
   TicketAssignedEvent,
   TicketEscalatedEvent,
   TicketResolvedEvent,
+  TicketClosedEvent,
   TicketStatusChangedEvent,
   TicketReopenedEvent,
   TicketDeassignedEvent,
@@ -319,6 +320,40 @@ export class TicketNotificationListener {
       referenceType: 'ticket',
       referenceId: event.ticketId,
     });
+  }
+
+  @OnEvent('ticket.closed')
+  async handleTicketClosed(event: TicketClosedEvent): Promise<void> {
+    const [ticket] = await this.drizzle.db
+      .select({
+        ticketNumber: tickets.ticketNumber,
+        assignedTo: tickets.assignedTo,
+        createdBy: tickets.createdBy,
+      })
+      .from(tickets)
+      .where(and(eq(tickets.id, event.ticketId), isNull(tickets.deletedAt)))
+      .limit(1);
+    const payload = {
+      ticketId: event.ticketId,
+      ticketNumber: ticket?.ticketNumber ?? event.ticketId,
+      closedBy: event.closedBy,
+    };
+
+    this.wsGateway.emitToUser(event.closedBy, 'ticket.closed', payload);
+    await this.emitToTicketDepartment(event.ticketId, 'ticket.closed', payload);
+    const recipients = new Set(
+      [event.closedBy, ticket?.assignedTo, ticket?.createdBy].filter((id): id is string => Boolean(id)),
+    );
+    for (const userId of recipients) {
+      await this.createNotification({
+        userId,
+        type: 'TICKET_RESOLVED',
+        title: `Ticket clôturé — ${payload.ticketNumber}`,
+        message: 'Le ticket a été clôturé avec succès.',
+        referenceType: 'ticket',
+        referenceId: event.ticketId,
+      });
+    }
   }
 
   @OnEvent('ticket.reopened')

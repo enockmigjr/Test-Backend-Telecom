@@ -5,7 +5,7 @@ import { PaginationHelper } from '../../common/helpers/pagination.helper';
 import { generateUuid } from '../../common/helpers/uuidv7.helper';
 import { TicketAccessService } from '../../common/services/ticket-access.service';
 import { DrizzleProvider } from '../../database/drizzle.provider';
-import { ticketComments } from '../../database/schemas';
+import { ticketComments, users } from '../../database/schemas';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 
 @Injectable()
@@ -27,8 +27,19 @@ export class CommentsService {
       .from(ticketComments)
       .where(where);
     const data = await this.drizzle.db
-      .select()
+      .select({
+        id: ticketComments.id,
+        ticketId: ticketComments.ticketId,
+        authorId: ticketComments.authorId,
+        content: ticketComments.content,
+        createdAt: ticketComments.createdAt,
+        updatedAt: ticketComments.updatedAt,
+        authorFirstName: users.firstName,
+        authorLastName: users.lastName,
+        authorRole: users.role,
+      })
       .from(ticketComments)
+      .leftJoin(users, eq(ticketComments.authorId, users.id))
       .where(where)
       .orderBy(ticketComments.createdAt)
       .limit(pagination.limit)

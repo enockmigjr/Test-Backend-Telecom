@@ -1,10 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { and, asc, desc, eq, gte, ilike, isNull, lte, or, sql, SQL } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 import { normalizePagination } from '../../../common/helpers/normalized-pagination.helper';
 import { PaginationHelper } from '../../../common/helpers/pagination.helper';
 import { ticketVisibilityCondition } from '../../../common/services/ticket-access.service';
 import { DrizzleProvider } from '../../../database/drizzle.provider';
-import { categories, tickets } from '../../../database/schemas';
+import { categories, departments, tickets, users } from '../../../database/schemas';
 import { JwtPayload } from '../../auth/interfaces/jwt-payload.interface';
 
 export interface TicketSearchFilters {
@@ -24,6 +25,9 @@ export interface TicketSearchFilters {
   sort?: 'createdAt' | 'updatedAt' | 'priority' | 'severity' | 'status' | 'ticketNumber';
   order?: 'asc' | 'desc';
 }
+
+const assignedTeam = alias(departments, 'search_assigned_team');
+const assignee = alias(users, 'search_assignee');
 
 @Injectable()
 export class TicketsSearchService {
@@ -61,12 +65,20 @@ export class TicketsSearchService {
         categoryId: tickets.categoryId,
         categoryName: categories.name,
         assignedTo: tickets.assignedTo,
+        assigneeName: sql<string>`concat(${assignee.firstName}, ' ', ${assignee.lastName})`,
+        departmentName: departments.name,
+        assignedTeamName: assignedTeam.name,
         customerName: tickets.customerName,
+        resolutionDueAt: tickets.resolutionDueAt,
+        slaBreached: tickets.slaBreached,
         createdAt: tickets.createdAt,
         updatedAt: tickets.updatedAt,
       })
       .from(tickets)
       .leftJoin(categories, eq(tickets.categoryId, categories.id))
+      .leftJoin(departments, eq(tickets.departmentId, departments.id))
+      .leftJoin(assignedTeam, eq(tickets.assignedTeamId, assignedTeam.id))
+      .leftJoin(assignee, eq(tickets.assignedTo, assignee.id))
       .where(where)
       .orderBy(filters.order === 'asc' ? asc(sortColumn) : desc(sortColumn))
       .limit(pagination.limit)

@@ -30,6 +30,7 @@ import {
 
 const creator = alias(users, 'ticket_creator');
 const assignee = alias(users, 'ticket_assignee');
+const assignedTeam = alias(departments, 'ticket_assigned_team');
 
 @Injectable()
 export class TicketsService {
@@ -420,16 +421,19 @@ export class TicketsService {
         metadata: tickets.metadata,
         slaPausedAt: tickets.slaPausedAt,
         accumulatedPauseMs: tickets.accumulatedPauseMs,
+        slaBreached: tickets.slaBreached,
         createdAt: tickets.createdAt,
         updatedAt: tickets.updatedAt,
         creatorName: sql<string>`concat(${creator.firstName}, ' ', ${creator.lastName})`,
         assigneeName: sql<string>`concat(${assignee.firstName}, ' ', ${assignee.lastName})`,
         departmentName: departments.name,
+        assignedTeamName: assignedTeam.name,
       })
       .from(tickets)
       .leftJoin(creator, eq(tickets.createdBy, creator.id))
       .leftJoin(assignee, eq(tickets.assignedTo, assignee.id))
       .leftJoin(departments, eq(tickets.departmentId, departments.id))
+      .leftJoin(assignedTeam, eq(tickets.assignedTeamId, assignedTeam.id))
       .leftJoin(categories, eq(tickets.categoryId, categories.id))
       .where(and(eq(tickets.id, id), isNull(tickets.deletedAt)))
       .limit(1);

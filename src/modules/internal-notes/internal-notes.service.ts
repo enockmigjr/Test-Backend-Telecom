@@ -64,7 +64,12 @@ export class InternalNotesService {
     await this.ticketAccess.assertTicketVisible(note.ticketId, user);
     this.assertCanModify(note.authorId, user, 'modifier');
     await this.drizzle.db.update(ticketInternalNotes).set({ content }).where(eq(ticketInternalNotes.id, id));
-    return { message: 'Note interne mise a jour.' };
+    const [updated] = await this.drizzle.db
+      .select()
+      .from(ticketInternalNotes)
+      .where(eq(ticketInternalNotes.id, id))
+      .limit(1);
+    return { message: 'Note interne mise a jour.', data: updated };
   }
 
   async remove(id: string, user: JwtPayload) {
