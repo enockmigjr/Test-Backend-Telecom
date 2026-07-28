@@ -67,7 +67,7 @@ export class AuditLogsController {
   @ApiParam({ name: 'id', description: "UUID de l'entree d'audit" })
   @ApiResponse({ status: 200, description: "Entree d'audit trouvee." })
   @ApiResponse({ status: 404, description: "Entree d'audit introuvable." })
-  async findOne(@Param('id') id: string) {
-    return this.auditLogsService.findOne(id);
+  async findOne(@Param('id') id: string, @CurrentUser() currentUser: JwtPayload) {
+    return this.auditLogsService.findOne(id, currentUser);
   }
 }

@@ -1,12 +1,28 @@
 import { Injectable, ForbiddenException } from '@nestjs/common';
-import { and, gte, lte, eq, sql, isNull, count } from 'drizzle-orm';
+import { and, gte, lt, lte, eq, sql, isNull, count, SQL } from 'drizzle-orm';
 import { DrizzleProvider } from '../../database/drizzle.provider';
-import { tickets, departments, categories, users } from '../../database/schemas';
+import { tickets, departments, users } from '../../database/schemas';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
+import { DashboardSlaService } from './dashboard-sla.service';
+
+type ResolutionGroupBy = 'day' | 'week' | 'month';
+
+function resolutionPeriod(groupBy: string | undefined): SQL<Date | string> {
+  const safeGroupBy: ResolutionGroupBy = groupBy === 'week' || groupBy === 'month' ? groupBy : 'day';
+  const expressions: Record<ResolutionGroupBy, SQL<Date | string>> = {
+    day: sql<Date | string>`DATE_TRUNC('day', ${tickets.resolvedAt})`,
+    week: sql<Date | string>`DATE_TRUNC('week', ${tickets.resolvedAt})`,
+    month: sql<Date | string>`DATE_TRUNC('month', ${tickets.resolvedAt})`,
+  };
+  return expressions[safeGroupBy];
+}
 
 @Injectable()
 export class DashboardService {
-  constructor(private readonly drizzle: DrizzleProvider) {}
+  constructor(
+    private readonly drizzle: DrizzleProvider,
+    private readonly dashboardSla: DashboardSlaService,
+  ) {}
 
   private enforceSupervisorScope(departmentId: string | undefined, currentUser?: JwtPayload): string | undefined {
     if (currentUser?.role === 'SUPERVISOR') {
@@ -30,6 +46,13 @@ export class DashboardService {
 
     const rangeWhere = and(...conditions);
     const openWhere = and(rangeWhere, sql`${tickets.status} NOT IN ('RESOLVED','CLOSED','CANCELLED')`);
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const tomorrowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    const todayScope = [isNull(tickets.deletedAt)];
+    if (currentUser?.role === 'SUPERVISOR') {
+      todayScope.push(eq(tickets.assignedTeamId, currentUser.departmentId));
+    }
 
     const [[totals], [openTickets], [], [resolvedToday], [createdToday], [breachedCount], [atRiskCount]] =
       await Promise.all([
@@ -42,8 +65,11 @@ export class DashboardService {
         this.drizzle.db
           .select({ count: count() })
           .from(tickets)
-          .where(and(rangeWhere, eq(tickets.status, 'RESOLVED' as const))),
-        this.drizzle.db.select({ count: count() }).from(tickets).where(rangeWhere), // approximation
+          .where(and(...todayScope, gte(tickets.resolvedAt, todayStart), lt(tickets.resolvedAt, tomorrowStart))),
+        this.drizzle.db
+          .select({ count: count() })
+          .from(tickets)
+          .where(and(...todayScope, gte(tickets.createdAt, todayStart), lt(tickets.createdAt, tomorrowStart))),
         this.drizzle.db
           .select({ count: count() })
           .from(tickets)
@@ -175,10 +201,13 @@ export class DashboardService {
   }
 
   /** Performance par département */
-  async departmentsReport(from?: string, to?: string) {
+  async departmentsReport(from?: string, to?: string, currentUser?: JwtPayload) {
     const fromDate = from ? new Date(from) : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
     const toDate = to ? new Date(to) : new Date();
-    const where = and(gte(tickets.createdAt, fromDate), lte(tickets.createdAt, toDate), isNull(tickets.deletedAt));
+    const conditions = [gte(tickets.createdAt, fromDate), lte(tickets.createdAt, toDate), isNull(tickets.deletedAt)];
+    const targetDeptId = this.enforceSupervisorScope(undefined, currentUser);
+    if (targetDeptId) conditions.push(eq(tickets.assignedTeamId, targetDeptId));
+    const where = and(...conditions);
 
     return {
       period: { from: fromDate.toISOString(), to: toDate.toISOString() },
@@ -210,77 +239,7 @@ export class DashboardService {
     categoryId?: string,
     currentUser?: JwtPayload,
   ) {
-    const fromDate = from ? new Date(from) : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-    const toDate = to ? new Date(to) : new Date();
-
-    const targetDeptId = this.enforceSupervisorScope(departmentId, currentUser);
-
-    const conditions = [gte(tickets.createdAt, fromDate), lte(tickets.createdAt, toDate), isNull(tickets.deletedAt)];
-    if (targetDeptId) conditions.push(eq(tickets.assignedTeamId, targetDeptId));
-    if (priority) conditions.push(eq(tickets.priority, priority as typeof tickets.$inferSelect.priority));
-    if (categoryId) conditions.push(eq(tickets.categoryId, categoryId));
-    const where = and(...conditions);
-
-    const [[totals], [breached], byPriority, byCategory] = await Promise.all([
-      this.drizzle.db.select({ count: count() }).from(tickets).where(where),
-      this.drizzle.db
-        .select({ count: count() })
-        .from(tickets)
-        .where(and(where, eq(tickets.slaBreached, true))),
-      this.drizzle.db
-        .select({
-          priority: tickets.priority,
-          totalTracked: count(),
-          compliant: sql<number>`COUNT(*) FILTER (WHERE ${tickets.slaBreached} = false)`,
-          breached: sql<number>`COUNT(*) FILTER (WHERE ${tickets.slaBreached} = true)`,
-        })
-        .from(tickets)
-        .where(where)
-        .groupBy(tickets.priority),
-      this.drizzle.db
-        .select({
-          category: categories.name,
-          totalTracked: count(),
-          compliant: sql<number>`COUNT(*) FILTER (WHERE ${tickets.slaBreached} = false)`,
-          breached: sql<number>`COUNT(*) FILTER (WHERE ${tickets.slaBreached} = true)`,
-        })
-        .from(tickets)
-        .leftJoin(categories, eq(tickets.categoryId, categories.id))
-        .where(where)
-        .groupBy(categories.name),
-    ]);
-
-    const total = Number(totals?.count || 0);
-    const breachedCount = Number(breached?.count || 0);
-    const compliantCount = total - breachedCount;
-
-    return {
-      period: { from: fromDate.toISOString(), to: toDate.toISOString() },
-      summary: {
-        totalTracked: total,
-        compliant: compliantCount,
-        breached: breachedCount,
-        atRisk: 0,
-        complianceRate: total > 0 ? Number(((compliantCount / total) * 100).toFixed(2)) : 100,
-        firstResponseComplianceRate: total > 0 ? Number(((compliantCount / total) * 100).toFixed(2)) : 100,
-      },
-      byPriority: byPriority.map((p) => ({
-        ...p,
-        totalTracked: Number(p.totalTracked),
-        compliant: Number(p.compliant),
-        breached: Number(p.breached),
-        complianceRate:
-          Number(p.totalTracked) > 0 ? Number(((Number(p.compliant) / Number(p.totalTracked)) * 100).toFixed(2)) : 100,
-      })),
-      byCategory: byCategory.map((c) => ({
-        ...c,
-        totalTracked: Number(c.totalTracked),
-        compliant: Number(c.compliant),
-        breached: Number(c.breached),
-        complianceRate:
-          Number(c.totalTracked) > 0 ? Number(((Number(c.compliant) / Number(c.totalTracked)) * 100).toFixed(2)) : 100,
-      })),
-    };
+    return this.dashboardSla.compliance(from, to, departmentId, priority, categoryId, currentUser);
   }
 
   /** Charge des agents */
@@ -348,7 +307,7 @@ export class DashboardService {
   async resolutionTime(
     from?: string,
     to?: string,
-    _groupBy?: string,
+    groupBy?: string,
     departmentId?: string,
     priority?: string,
     currentUser?: JwtPayload,
@@ -359,31 +318,48 @@ export class DashboardService {
     const targetDeptId = this.enforceSupervisorScope(departmentId, currentUser);
 
     const conditions = [
-      gte(tickets.createdAt, fromDate),
-      lte(tickets.createdAt, toDate),
+      gte(tickets.resolvedAt, fromDate),
+      lte(tickets.resolvedAt, toDate),
       isNull(tickets.deletedAt),
       sql`${tickets.resolvedAt} IS NOT NULL`,
     ];
     if (targetDeptId) conditions.push(eq(tickets.assignedTeamId, targetDeptId));
     if (priority) conditions.push(eq(tickets.priority, priority as typeof tickets.$inferSelect.priority));
     const where = and(...conditions);
+    const periodExpression = resolutionPeriod(groupBy);
+    const durationMinutes = sql<number>`EXTRACT(EPOCH FROM (${tickets.resolvedAt} - ${tickets.createdAt})) / 60`;
 
     const [stats] = await this.drizzle.db
       .select({
-        avgMinutes: sql<number>`COALESCE(AVG(EXTRACT(EPOCH FROM (${tickets.resolvedAt} - ${tickets.createdAt})) / 60), 0)`,
+        avgMinutes: sql<number>`COALESCE(AVG(${durationMinutes}), 0)`,
+        medianMinutes: sql<number>`COALESCE(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY ${durationMinutes}), 0)`,
+        p90Minutes: sql<number>`COALESCE(PERCENTILE_CONT(0.9) WITHIN GROUP (ORDER BY ${durationMinutes}), 0)`,
         resolvedCount: count(),
       })
       .from(tickets)
       .where(where);
 
+    const trend = await this.drizzle.db
+      .select({
+        period: periodExpression,
+        avgResolutionTimeMinutes: sql<number>`COALESCE(AVG(${durationMinutes}), 0)`,
+      })
+      .from(tickets)
+      .where(where)
+      .groupBy(periodExpression)
+      .orderBy(periodExpression);
+
     return {
       period: { from: fromDate.toISOString(), to: toDate.toISOString() },
       overall: {
         avgResolutionTimeMinutes: Math.round(Number(stats?.avgMinutes || 0)),
-        medianResolutionTimeMinutes: Math.round(Number(stats?.avgMinutes || 0) * 0.76),
-        p90ResolutionTimeMinutes: Math.round(Number(stats?.avgMinutes || 0) * 2.57),
+        medianResolutionTimeMinutes: Math.round(Number(stats?.medianMinutes || 0)),
+        p90ResolutionTimeMinutes: Math.round(Number(stats?.p90Minutes || 0)),
       },
-      trend: [],
+      trend: trend.map((point) => ({
+        period: new Date(point.period).toISOString(),
+        avgResolutionTimeMinutes: Number(point.avgResolutionTimeMinutes),
+      })),
     };
   }
 }

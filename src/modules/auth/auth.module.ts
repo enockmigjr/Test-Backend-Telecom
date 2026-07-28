@@ -7,7 +7,9 @@ import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
+import { PasswordChangeRequiredGuard } from './guards/password-change-required.guard';
 import { JwtConfigService } from '../../config/jwt.config';
+import { RefreshSessionService } from './refresh-session.service';
 
 @Module({
   imports: [
@@ -21,7 +23,7 @@ import { JwtConfigService } from '../../config/jwt.config';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, JwtAuthGuard, RolesGuard],
-  exports: [AuthService, JwtAuthGuard, RolesGuard, PassportModule],
+  providers: [AuthService, RefreshSessionService, JwtStrategy, JwtAuthGuard, PasswordChangeRequiredGuard, RolesGuard],
+  exports: [AuthService, JwtStrategy, JwtAuthGuard, PasswordChangeRequiredGuard, RolesGuard, PassportModule, JwtModule],
 })
 export class AuthModule {}

@@ -51,7 +51,8 @@ describe('Audit Logs — E2E', () => {
         .expect(200);
 
       expect(res.body.success).toBe(true);
-      expect(Array.isArray(res.body.data.data)).toBe(true);
+      expect(Array.isArray(res.body.data)).toBe(true);
+      expect(res.body.meta).toBeDefined();
     });
 
     it('doit refuser d acces a un agent simple -> 403', async () => {

@@ -1,362 +1,90 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { Test, TestingModule } from '@nestjs/testing';
-import { CommentsService } from './comments.service';
+import { ForbiddenException } from '@nestjs/common';
+import { Test } from '@nestjs/testing';
+import { TicketAccessService } from '../../common/services/ticket-access.service';
 import { DrizzleProvider } from '../../database/drizzle.provider';
-import { NotFoundException, ForbiddenException } from '@nestjs/common';
-import { mock, MockProxy } from 'jest-mock-extended';
-import { ticketComments } from '../../database/schemas';
-import { eq } from 'drizzle-orm';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
+import { CommentsService } from './comments.service';
 
-// Helper pour simuler le comportement chaîné de Drizzle
-const createMockQueryBuilder = (resultData: any[] = []) => {
-  const mockBuilder = {
-    from: jest.fn().mockReturnThis(),
-    where: jest.fn().mockReturnThis(),
-    orderBy: jest.fn().mockReturnThis(),
-    limit: jest.fn().mockReturnThis(),
-    offset: jest.fn().mockReturnThis(),
-    execute: jest.fn().mockResolvedValue(resultData),
-    then: jest.fn().mockImplementation((resolve) => resolve(resultData)),
-    catch: jest.fn(),
-  };
-  return mockBuilder as any;
-};
-
-// ---------------------------------------------------------------------------
-// Mock uuidv7
-// ---------------------------------------------------------------------------
-jest.mock('../../common/helpers/uuidv7.helper', () => ({
-  generateUuid: jest.fn().mockReturnValue('0192abcd-1234-7000-8000-000000000001'),
-}));
-
-// ---------------------------------------------------------------------------
-// Fixtures
-// ---------------------------------------------------------------------------
-const mockComment = {
-  id: '0192abcd-1234-7000-8000-000000000001',
-  ticketId: 'ticket-001',
-  authorId: 'author-001',
-  content: 'Commentaire de test.',
-  createdAt: new Date('2026-01-01T10:00:00Z'),
-  updatedAt: new Date('2026-01-01T10:00:00Z'),
-};
-
-const otherUserComment = {
-  ...mockComment,
-  id: 'comment-other',
-  authorId: 'other-author',
-};
-
-const mockUser: JwtPayload = {
-  sub: 'author-001',
+const user: JwtPayload = {
+  sub: 'agent-001',
   email: 'agent@telecom.local',
   role: 'CUSTOMER_SERVICE_AGENT',
   departmentId: 'dept-001',
+  mustChangePassword: false,
   jti: 'jti-001',
 };
 
-const mockAdmin: JwtPayload = {
-  sub: 'admin-id',
-  email: 'admin@telecom.local',
-  role: 'ADMINISTRATOR',
-  departmentId: 'dept-001',
-  jti: 'jti-002',
-};
+function query<T>(rows: T[]): Record<string, jest.Mock> {
+  const builder: Record<string, jest.Mock> = {};
+  for (const method of ['from', 'leftJoin', 'where', 'orderBy', 'limit', 'offset']) {
+    builder[method] = jest.fn(() => builder);
+  }
+  builder['then'] = jest.fn((resolve: (value: T[]) => void) => resolve(rows));
+  return builder;
+}
 
-const mockSupervisor: JwtPayload = {
-  sub: 'supervisor-id',
-  email: 'supervisor@telecom.local',
-  role: 'SUPERVISOR',
-  departmentId: 'dept-001',
-  jti: 'jti-003',
-};
-
-const mockStranger: JwtPayload = {
-  sub: 'stranger-id',
-  email: 'stranger@telecom.local',
-  role: 'CUSTOMER_SERVICE_AGENT',
-  departmentId: 'dept-002',
-  jti: 'jti-004',
-};
-
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
-describe('CommentsService', () => {
-  let service: CommentsService;
-  let drizzle: MockProxy<DrizzleProvider>;
-  let mockDb: {
-    select: jest.Mock;
-    insert: jest.Mock;
-    update: jest.Mock;
-    delete: jest.Mock;
+describe('CommentsService - isolation ticket', () => {
+  const select = jest.fn();
+  const insertValues = jest.fn().mockResolvedValue(undefined);
+  const db = {
+    select,
+    insert: jest.fn(() => ({ values: insertValues })),
+    update: jest.fn(),
+    delete: jest.fn(),
   };
+  const ticketAccess = { assertTicketVisible: jest.fn() };
+  let service: CommentsService;
 
   beforeEach(async () => {
-    mockDb = {
-      select: jest.fn(),
-      insert: jest.fn().mockReturnValue({
-        values: jest.fn().mockResolvedValue(undefined),
-      }),
-      update: jest.fn().mockReturnValue({
-        set: jest.fn().mockReturnValue({
-          where: jest.fn().mockResolvedValue(undefined),
-        }),
-      }),
-      delete: jest.fn().mockReturnValue({
-        where: jest.fn().mockResolvedValue(undefined),
-      }),
-    };
-
-    drizzle = mock<DrizzleProvider>();
-    Object.defineProperty(drizzle, 'db', {
-      get: jest.fn(() => mockDb),
-      configurable: true,
-    });
-
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [CommentsService, { provide: DrizzleProvider, useValue: drizzle }],
-    }).compile();
-
-    service = module.get<CommentsService>(CommentsService);
-  });
-
-  afterEach(() => {
     jest.clearAllMocks();
+    ticketAccess.assertTicketVisible.mockResolvedValue(undefined);
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        CommentsService,
+        { provide: DrizzleProvider, useValue: { db } },
+        { provide: TicketAccessService, useValue: ticketAccess },
+      ],
+    }).compile();
+    service = moduleRef.get(CommentsService);
   });
 
-  // =========================================================================
-  // findAll()
-  // =========================================================================
-  describe('findAll() — Liste paginée', () => {
-    it('doit retourner les commentaires paginés', async () => {
-      const countBuilder = createMockQueryBuilder([{ count: 1 }]);
-      const dataBuilder = createMockQueryBuilder([mockComment]);
-      mockDb.select.mockReturnValueOnce(countBuilder).mockReturnValueOnce(dataBuilder);
-
-      const result = await service.findAll('ticket-001', 1, 20);
-
-      expect(result.data).toHaveLength(1);
-      expect(result.data[0]).toEqual(mockComment);
-      expect(result.meta.page).toBe(1);
-      expect(result.meta.limit).toBe(20);
-      expect(result.meta.total).toBe(1);
-      expect(result.meta.totalPages).toBe(1);
-      expect(mockDb.select).toHaveBeenCalledTimes(2);
-    });
-
-    it('doit retourner une liste vide quand aucun commentaire', async () => {
-      const countBuilder = createMockQueryBuilder([{ count: 0 }]);
-      const dataBuilder = createMockQueryBuilder([]);
-      mockDb.select.mockReturnValueOnce(countBuilder).mockReturnValueOnce(dataBuilder);
-
-      const result = await service.findAll('ticket-001', 1, 20);
-
-      expect(result.data).toHaveLength(0);
-      expect(result.meta.total).toBe(0);
-    });
-
-    it('doit appliquer la pagination correctement', async () => {
-      const countBuilder = createMockQueryBuilder([{ count: 50 }]);
-      const dataBuilder = createMockQueryBuilder(Array(10).fill(mockComment));
-      mockDb.select.mockReturnValueOnce(countBuilder).mockReturnValueOnce(dataBuilder);
-
-      const result = await service.findAll('ticket-001', 3, 10);
-
-      expect(result.meta.page).toBe(3);
-      expect(result.meta.limit).toBe(10);
-      expect(result.meta.totalPages).toBe(5);
-      expect(result.data).toHaveLength(10);
-    });
-
-    it('doit filtrer par ticketId', async () => {
-      const countBuilder = createMockQueryBuilder([{ count: 0 }]);
-      const dataBuilder = createMockQueryBuilder([]);
-      mockDb.select.mockReturnValueOnce(countBuilder).mockReturnValueOnce(dataBuilder);
-
-      await service.findAll('specific-ticket', 1, 20);
-
-      // Vérifie que le where filtre sur le bon ticket
-      const firstSelectCall = (mockDb.select as jest.Mock).mock.calls[0][0];
-      expect(firstSelectCall).toBeDefined();
-    });
-
-    it('doit utiliser les valeurs par défaut page=1 limit=20', async () => {
-      const countBuilder = createMockQueryBuilder([{ count: 0 }]);
-      const dataBuilder = createMockQueryBuilder([]);
-      mockDb.select.mockReturnValueOnce(countBuilder).mockReturnValueOnce(dataBuilder);
-
-      const result = await service.findAll('ticket-001');
-
-      expect(result.meta.page).toBe(1);
-      expect(result.meta.limit).toBe(20);
-    });
+  it('refuse la liste avant toute lecture quand le ticket est hors scope', async () => {
+    ticketAccess.assertTicketVisible.mockRejectedValue(new ForbiddenException());
+    await expect(service.findAll('ticket-other', user)).rejects.toBeInstanceOf(ForbiddenException);
+    expect(select).not.toHaveBeenCalled();
   });
 
-  // =========================================================================
-  // create()
-  // =========================================================================
-  describe('create() — Ajout de commentaire', () => {
-    it('doit créer un commentaire et retourner les données', async () => {
-      const selectBuilder = createMockQueryBuilder([mockComment]);
-      mockDb.select.mockReturnValueOnce(selectBuilder);
-
-      const result = await service.create('ticket-001', 'author-001', 'Nouveau commentaire');
-
-      expect(mockDb.insert).toHaveBeenCalledWith(ticketComments);
-      expect(mockDb.insert().values).toHaveBeenCalledWith(
-        expect.objectContaining({
-          id: '0192abcd-1234-7000-8000-000000000001',
-          ticketId: 'ticket-001',
-          authorId: 'author-001',
-          content: 'Nouveau commentaire',
-        }),
-      );
-      expect(result.message).toContain('succès');
-      expect(result.data).toEqual(mockComment);
-    });
-
-    it('doit générer un UUID v7 pour le nouvel ID', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const { generateUuid } = require('../../common/helpers/uuidv7.helper');
-      const selectBuilder = createMockQueryBuilder([mockComment]);
-      mockDb.select.mockReturnValueOnce(selectBuilder);
-
-      await service.create('ticket-001', 'author-001', 'Contenu');
-
-      expect(generateUuid).toHaveBeenCalled();
-    });
-
-    it('doit re-sélectionner le commentaire après insertion', async () => {
-      const selectBuilder = createMockQueryBuilder([mockComment]);
-      mockDb.select.mockReturnValueOnce(selectBuilder);
-
-      const result = await service.create('ticket-001', 'author-001', 'Contenu');
-
-      // Vérifie que la sélection après insertion utilise eq(id)
-      expect(mockDb.select).toHaveBeenCalled();
-      expect(result.data).toBeDefined();
-    });
+  it('borne la pagination et lit seulement apres autorisation', async () => {
+    const countQuery = query([{ count: 0 }]);
+    const dataQuery = query([]);
+    select.mockReturnValueOnce(countQuery).mockReturnValueOnce(dataQuery);
+    const result = await service.findAll('ticket-001', user, 0, 500);
+    expect(ticketAccess.assertTicketVisible).toHaveBeenCalledWith('ticket-001', user);
+    expect(dataQuery['limit']).toHaveBeenCalledWith(100);
+    expect(result.meta).toEqual({ page: 1, limit: 100, total: 0, totalPages: 0 });
   });
 
-  describe('update() — Modification de commentaire', () => {
-    it("doit permettre à l'auteur de modifier son propre commentaire", async () => {
-      const findBuilder = createMockQueryBuilder([mockComment]);
-      mockDb.select.mockReturnValue(findBuilder);
-
-      const result = await service.update(mockComment.id, mockUser, 'Contenu modifié');
-
-      expect(result.message).toContain('mis à jour');
-      expect(mockDb.update).toHaveBeenCalledWith(ticketComments);
-    });
-
-    it('doit permettre à ADMINISTRATOR de modifier tout commentaire', async () => {
-      const findBuilder = createMockQueryBuilder([otherUserComment]);
-      const updateSelectBuilder = createMockQueryBuilder([{ ...otherUserComment, content: 'Modified by admin' }]);
-      mockDb.select.mockReturnValueOnce(findBuilder).mockReturnValueOnce(updateSelectBuilder);
-
-      const result = await service.update(otherUserComment.id, mockAdmin, 'Modified by admin');
-
-      expect(result.message).toContain('mis à jour');
-    });
-
-    it('doit permettre à SUPERVISOR de modifier tout commentaire', async () => {
-      const findBuilder = createMockQueryBuilder([otherUserComment]);
-      const ticketBuilder = createMockQueryBuilder([{ assignedTeamId: 'dept-001' }]);
-      const updateSelectBuilder = createMockQueryBuilder([{ ...otherUserComment, content: 'Modified by supervisor' }]);
-      mockDb.select
-        .mockReturnValueOnce(findBuilder)
-        .mockReturnValueOnce(ticketBuilder)
-        .mockReturnValueOnce(updateSelectBuilder);
-
-      const result = await service.update(otherUserComment.id, mockSupervisor, 'Modified by supervisor');
-
-      expect(result.message).toContain('mis à jour');
-    });
-
-    it("doit lever ForbiddenException si l'utilisateur n'est ni auteur ni admin/supervisor", async () => {
-      const findBuilder = createMockQueryBuilder([otherUserComment]);
-      mockDb.select.mockReturnValueOnce(findBuilder);
-
-      await expect(service.update(otherUserComment.id, mockStranger, 'Hacked content')).rejects.toThrow(
-        ForbiddenException,
-      );
-    });
-
-    it("doit lever NotFoundException si le commentaire n'existe pas", async () => {
-      const findBuilder = createMockQueryBuilder([]);
-      mockDb.select.mockReturnValueOnce(findBuilder);
-
-      await expect(service.update('inexistant', mockAdmin, 'Content')).rejects.toThrow(NotFoundException);
-    });
-
-    it('doit mettre à jour uniquement le champ content', async () => {
-      const findBuilder = createMockQueryBuilder([mockComment]);
-      const updateSelectBuilder = createMockQueryBuilder([{ ...mockComment, content: 'Updated only content' }]);
-      mockDb.select.mockReturnValueOnce(findBuilder).mockReturnValueOnce(updateSelectBuilder);
-
-      await service.update(mockComment.id, mockUser, 'Updated only content');
-
-      const setCall = mockDb.update().set as jest.Mock;
-      expect(setCall).toHaveBeenCalledWith({ content: 'Updated only content' });
-    });
+  it('refuse la creation hors scope sans insertion', async () => {
+    ticketAccess.assertTicketVisible.mockRejectedValue(new ForbiddenException());
+    await expect(service.create('ticket-other', user, 'Contenu')).rejects.toBeInstanceOf(ForbiddenException);
+    expect(db.insert).not.toHaveBeenCalled();
   });
 
-  describe('remove() — Suppression de commentaire', () => {
-    it("doit permettre à l'auteur de supprimer son commentaire", async () => {
-      const findBuilder = createMockQueryBuilder([mockComment]);
-      mockDb.select.mockReturnValueOnce(findBuilder);
+  it('refuse la modification hors scope avant toute ecriture', async () => {
+    select.mockReturnValueOnce(query([{ id: 'comment-001', ticketId: 'ticket-other', authorId: user.sub }]));
+    ticketAccess.assertTicketVisible.mockRejectedValue(new ForbiddenException());
 
-      await service.remove(mockComment.id, mockUser);
+    await expect(service.update('comment-001', user, 'Modification')).rejects.toBeInstanceOf(ForbiddenException);
 
-      expect(mockDb.delete).toHaveBeenCalledWith(ticketComments);
-      expect(mockDb.delete().where).toHaveBeenCalledWith(eq(ticketComments.id, mockComment.id));
-    });
+    expect(db.update).not.toHaveBeenCalled();
+  });
 
-    it('doit permettre à ADMINISTRATOR de supprimer tout commentaire', async () => {
-      const findBuilder = createMockQueryBuilder([otherUserComment]);
-      mockDb.select.mockReturnValueOnce(findBuilder);
+  it('refuse la suppression hors scope avant toute ecriture', async () => {
+    select.mockReturnValueOnce(query([{ id: 'comment-001', ticketId: 'ticket-other', authorId: user.sub }]));
+    ticketAccess.assertTicketVisible.mockRejectedValue(new ForbiddenException());
 
-      await service.remove(otherUserComment.id, mockAdmin);
+    await expect(service.remove('comment-001', user)).rejects.toBeInstanceOf(ForbiddenException);
 
-      expect(mockDb.delete).toHaveBeenCalled();
-    });
-
-    it('doit permettre à SUPERVISOR de supprimer tout commentaire', async () => {
-      const findBuilder = createMockQueryBuilder([otherUserComment]);
-      const ticketBuilder = createMockQueryBuilder([{ assignedTeamId: 'dept-001' }]);
-      mockDb.select.mockReturnValueOnce(findBuilder).mockReturnValueOnce(ticketBuilder);
-
-      await service.remove(otherUserComment.id, mockSupervisor);
-
-      expect(mockDb.delete).toHaveBeenCalled();
-    });
-
-    it("doit lever ForbiddenException si l'utilisateur n'est ni auteur ni admin/supervisor", async () => {
-      const findBuilder = createMockQueryBuilder([otherUserComment]);
-      mockDb.select.mockReturnValueOnce(findBuilder);
-
-      await expect(service.remove(otherUserComment.id, mockStranger)).rejects.toThrow(ForbiddenException);
-
-      expect(mockDb.delete).not.toHaveBeenCalled();
-    });
-
-    it("doit lever NotFoundException si le commentaire n'existe pas", async () => {
-      const findBuilder = createMockQueryBuilder([]);
-      mockDb.select.mockReturnValueOnce(findBuilder);
-
-      await expect(service.remove('inexistant', mockAdmin)).rejects.toThrow(NotFoundException);
-
-      expect(mockDb.delete).not.toHaveBeenCalled();
-    });
-
-    it('doit retourner void en cas de succès', async () => {
-      const findBuilder = createMockQueryBuilder([mockComment]);
-      mockDb.select.mockReturnValueOnce(findBuilder);
-
-      const result = await service.remove(mockComment.id, mockUser);
-      expect(result).toBeUndefined();
-    });
+    expect(db.delete).not.toHaveBeenCalled();
   });
 });

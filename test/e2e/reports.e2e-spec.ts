@@ -84,7 +84,7 @@ describe('Reports — E2E', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(202);
 
-      expect(res.body.data.message).toContain('en cours de generation');
+      expect(res.body.message).toContain('en cours de generation');
     });
 
     it('POST /reports/sla/generate — doit enqueuer le job SLA PDF -> 202', async () => {
@@ -93,7 +93,7 @@ describe('Reports — E2E', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(202);
 
-      expect(res.body.data.message).toContain('en cours de generation');
+      expect(res.body.message).toContain('en cours de generation');
     });
 
     it('POST /reports/weekly/generate — doit enqueuer le job hebdomadaire PDF -> 202', async () => {
@@ -102,7 +102,7 @@ describe('Reports — E2E', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(202);
 
-      expect(res.body.data.message).toContain('en cours de generation');
+      expect(res.body.message).toContain('en cours de generation');
     });
   });
 

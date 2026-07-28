@@ -32,8 +32,12 @@ export class CommentsController {
   @ApiResponse({ status: 200, description: 'Liste paginée des commentaires publics.' })
   @ApiResponse({ status: 401, description: 'Token JWT manquant ou expiré.' })
   @ApiResponse({ status: 404, description: 'Ticket non trouvé.' })
-  async findAll(@Param('ticketId') ticketId: string, @Query() pagination: PaginationDto) {
-    return this.commentsService.findAll(ticketId, pagination.page, pagination.limit);
+  async findAll(
+    @Param('ticketId') ticketId: string,
+    @Query() pagination: PaginationDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.commentsService.findAll(ticketId, user, pagination.page, pagination.limit);
   }
 
   @Post('tickets/:ticketId/comments')
@@ -53,7 +57,7 @@ export class CommentsController {
   @ApiResponse({ status: 401, description: 'Non authentifié.' })
   @ApiResponse({ status: 404, description: 'Ticket non trouvé.' })
   async create(@Param('ticketId') ticketId: string, @Body() dto: CreateCommentDto, @CurrentUser() user: JwtPayload) {
-    return this.commentsService.create(ticketId, user.sub, dto.content);
+    return this.commentsService.create(ticketId, user, dto.content);
   }
 
   @Patch('comments/:id')

@@ -9,6 +9,7 @@ import { tickets, users, departments, categories } from '../../database/schemas'
 import { ReportsService } from '../../modules/reports/reports.service';
 import { LocalStorageService } from '../../modules/attachments/storage/local-storage.service';
 import { BullMqQueues } from '../queues.types';
+import { ReportDownloadLinkService } from '../../modules/reports/report-download-link.service';
 
 /**
  * Worker pour la génération asynchrone de rapports (PDF, exports CSV).
@@ -29,6 +30,7 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
     @Inject('BullMQ_Queues') private readonly queues: BullMqQueues,
     private readonly reportsService: ReportsService,
     private readonly storage: LocalStorageService,
+    private readonly downloadLinks: ReportDownloadLinkService,
   ) {}
 
   onModuleInit(): void {
@@ -63,7 +65,7 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
             await this.generateTicketReport(reportId, data.ticketId, data.requestedBy);
             break;
           case 'sla-report':
-            await this.generateSlaReport(reportId, data.from, data.to, data.requestedBy);
+            await this.generateSlaReport(reportId, data.from, data.to, data.requestedBy, data.departmentId);
             break;
           case 'weekly-report':
             await this.generateWeeklyReport(reportId, data.requestedBy);
@@ -197,7 +199,7 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
       await this.reportsService.updateReportStatus(reportId, 'completed', objectKey);
 
       const appUrl = process.env['APP_URL'] || 'http://localhost:3000';
-      const downloadUrl = `${appUrl}/api/v1/reports/${reportId}/download`;
+      const downloadUrl = this.downloadLinks.createUrl(reportId);
 
       // Notifier le demandeur
       await this.notifyUser(
@@ -256,6 +258,7 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
     from: string | undefined,
     to: string | undefined,
     requestedBy: string,
+    departmentId?: string,
   ): Promise<void> {
     // Gérer les valeurs par défaut si non spécifiées ou invalides
     let fromDate = from ? new Date(from) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
@@ -272,7 +275,12 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
     const toStr = toDate.toLocaleDateString('fr-FR');
 
     try {
-      const where = and(gte(tickets.createdAt, fromDate), lte(tickets.createdAt, toDate), isNull(tickets.deletedAt));
+      const where = and(
+        gte(tickets.createdAt, fromDate),
+        lte(tickets.createdAt, toDate),
+        isNull(tickets.deletedAt),
+        departmentId ? eq(tickets.assignedTeamId, departmentId) : undefined,
+      );
 
       const [stats] = await this.drizzle.db
         .select({
@@ -323,8 +331,7 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
       // Mettre à jour la DB
       await this.reportsService.updateReportStatus(reportId, 'completed', objectKey);
 
-      const appUrl = process.env['APP_URL'] || 'http://localhost:3000';
-      const downloadUrl = `${appUrl}/api/v1/reports/${reportId}/download`;
+      const downloadUrl = this.downloadLinks.createUrl(reportId);
 
       // Notifier le demandeur
       await this.notifyUser(
@@ -464,8 +471,7 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
       // Mettre à jour la DB
       await this.reportsService.updateReportStatus(reportId, 'completed', objectKey);
 
-      const appUrl = process.env['APP_URL'] || 'http://localhost:3000';
-      const downloadUrl = `${appUrl}/api/v1/reports/${reportId}/download`;
+      const downloadUrl = this.downloadLinks.createUrl(reportId);
 
       // Notifier le demandeur
       await this.notifyUser(

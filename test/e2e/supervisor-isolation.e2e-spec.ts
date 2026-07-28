@@ -3,8 +3,17 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { createTestApp } from '../setup';
 import { DrizzleProvider } from '../../src/database/drizzle.provider';
-import { users, departments, tickets } from '../../src/database/schemas';
+import {
+  attachments,
+  auditLogs,
+  departments,
+  ticketComments,
+  ticketInternalNotes,
+  tickets,
+  users,
+} from '../../src/database/schemas';
 import { eq } from 'drizzle-orm';
+import { generateUuid } from '../../src/common/helpers/uuidv7.helper';
 
 describe('Supervisor & Agent Isolation — E2E', () => {
   let app: INestApplication;
@@ -16,6 +25,10 @@ describe('Supervisor & Agent Isolation — E2E', () => {
   let nocDeptId: string;
   let billingTicketId: string;
   let billingAgentUser: any;
+  let billingAuditId: string;
+  let billingAttachmentId: string;
+  let billingCommentId: string;
+  let billingInternalNoteId: string;
 
   jest.setTimeout(60000);
 
@@ -81,6 +94,40 @@ describe('Supervisor & Agent Isolation — E2E', () => {
 
       billingTicketId = resCreate.body.data.id;
     }
+
+    billingAuditId = generateUuid();
+    await drizzle.db.insert(auditLogs).values({
+      id: billingAuditId,
+      userId: billingAgentUser.id,
+      action: 'TICKET_UPDATED',
+      entityType: 'ticket',
+      entityId: billingTicketId,
+    });
+    billingAttachmentId = generateUuid();
+    await drizzle.db.insert(attachments).values({
+      id: billingAttachmentId,
+      ticketId: billingTicketId,
+      uploadedBy: billingAgentUser.id,
+      objectKey: `tickets/tests/${billingAttachmentId}.pdf`,
+      bucketName: 'default',
+      originalFilename: 'billing-private.pdf',
+      mimeType: 'application/pdf',
+      fileSize: 4,
+    });
+    billingCommentId = generateUuid();
+    await drizzle.db.insert(ticketComments).values({
+      id: billingCommentId,
+      ticketId: billingTicketId,
+      authorId: billingAgentUser.id,
+      content: 'Commentaire prive au perimetre Billing.',
+    });
+    billingInternalNoteId = generateUuid();
+    await drizzle.db.insert(ticketInternalNotes).values({
+      id: billingInternalNoteId,
+      ticketId: billingTicketId,
+      authorId: billingAgentUser.id,
+      content: 'Note interne privee au perimetre Billing.',
+    });
   });
 
   afterAll(async () => {
@@ -96,10 +143,9 @@ describe('Supervisor & Agent Isolation — E2E', () => {
 
       expect(res.body.success).toBe(true);
       expect(res.body.data).toBeDefined();
-      expect(res.body.data.data).toBeDefined();
 
       // Tous les utilisateurs retournés doivent appartenir au NOC
-      for (const u of res.body.data.data) {
+      for (const u of res.body.data) {
         expect(u.departmentId).toBe(nocDeptId);
       }
     });
@@ -132,11 +178,17 @@ describe('Supervisor & Agent Isolation — E2E', () => {
   });
 
   describe('Isolation du Dashboard (GET /dashboard)', () => {
-    it('un superviseur NOC ne peut pas acceder a la performance de tous les departements', async () => {
-      await request(app.getHttpServer())
+    it('un superviseur NOC ne voit que la performance de son departement', async () => {
+      const response = await request(app.getHttpServer())
         .get('/api/v1/dashboard/departments')
         .set('Authorization', `Bearer ${supervisorNocToken}`)
-        .expect(403);
+        .expect(200);
+      expect(response.body.data).toEqual(
+        expect.arrayContaining([expect.objectContaining({ departmentId: nocDeptId })]),
+      );
+      expect(response.body.data).not.toEqual(
+        expect.arrayContaining([expect.objectContaining({ departmentId: billingDeptId })]),
+      );
     });
 
     it('un superviseur NOC ne peut pas requerir les stats d un autre departement', async () => {
@@ -153,6 +205,81 @@ describe('Supervisor & Agent Isolation — E2E', () => {
         .post(`/api/v1/tickets/${billingTicketId}/assign`)
         .set('Authorization', `Bearer ${agentNocToken}`)
         .send({ userId: agentNocUser.id, reason: 'Tentative de vol de ticket' })
+        .expect(403);
+    });
+  });
+
+  describe('Isolation tickets, audit et sous-ressources', () => {
+    it('un agent NOC ne voit pas le ticket Billing dans GET /tickets', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/api/v1/tickets?limit=100')
+        .set('Authorization', `Bearer ${agentNocToken}`)
+        .expect(200);
+      const ids = response.body.data.map((ticket: { id: string }) => ticket.id);
+      expect(ids).not.toContain(billingTicketId);
+    });
+
+    it('un agent NOC ne peut ni lister, creer, modifier ou supprimer un commentaire Billing', async () => {
+      await request(app.getHttpServer())
+        .get(`/api/v1/tickets/${billingTicketId}/comments`)
+        .set('Authorization', `Bearer ${agentNocToken}`)
+        .expect(403);
+      await request(app.getHttpServer())
+        .post(`/api/v1/tickets/${billingTicketId}/comments`)
+        .set('Authorization', `Bearer ${agentNocToken}`)
+        .send({ content: 'Tentative hors perimetre.' })
+        .expect(403);
+      await request(app.getHttpServer())
+        .patch(`/api/v1/comments/${billingCommentId}`)
+        .set('Authorization', `Bearer ${agentNocToken}`)
+        .send({ content: 'Tentative de modification hors perimetre.' })
+        .expect(403);
+      await request(app.getHttpServer())
+        .delete(`/api/v1/comments/${billingCommentId}`)
+        .set('Authorization', `Bearer ${agentNocToken}`)
+        .expect(403);
+    });
+
+    it('un agent NOC ne peut ni lister, creer, modifier ou supprimer une note interne Billing', async () => {
+      await request(app.getHttpServer())
+        .get(`/api/v1/tickets/${billingTicketId}/internal-notes`)
+        .set('Authorization', `Bearer ${agentNocToken}`)
+        .expect(403);
+      await request(app.getHttpServer())
+        .post(`/api/v1/tickets/${billingTicketId}/internal-notes`)
+        .set('Authorization', `Bearer ${agentNocToken}`)
+        .send({ content: 'Tentative de note hors perimetre.' })
+        .expect(403);
+      await request(app.getHttpServer())
+        .patch(`/api/v1/internal-notes/${billingInternalNoteId}`)
+        .set('Authorization', `Bearer ${agentNocToken}`)
+        .send({ content: 'Tentative de modification hors perimetre.' })
+        .expect(403);
+      await request(app.getHttpServer())
+        .delete(`/api/v1/internal-notes/${billingInternalNoteId}`)
+        .set('Authorization', `Bearer ${agentNocToken}`)
+        .expect(403);
+    });
+
+    it('un superviseur NOC ne peut pas lire un audit Billing par UUID', async () => {
+      await request(app.getHttpServer())
+        .get(`/api/v1/audit-logs/${billingAuditId}`)
+        .set('Authorization', `Bearer ${supervisorNocToken}`)
+        .expect(404);
+    });
+
+    it('un agent NOC ne peut pas lister, telecharger ou supprimer un fichier Billing', async () => {
+      await request(app.getHttpServer())
+        .get(`/api/v1/tickets/${billingTicketId}/attachments`)
+        .set('Authorization', `Bearer ${agentNocToken}`)
+        .expect(403);
+      await request(app.getHttpServer())
+        .get(`/api/v1/attachments/${billingAttachmentId}/download`)
+        .set('Authorization', `Bearer ${agentNocToken}`)
+        .expect(403);
+      await request(app.getHttpServer())
+        .delete(`/api/v1/attachments/${billingAttachmentId}`)
+        .set('Authorization', `Bearer ${agentNocToken}`)
         .expect(403);
     });
   });

@@ -13,6 +13,9 @@ import { TicketAuditListener } from './listeners/ticket-audit.listener';
 import { TicketSlaListener } from './listeners/ticket-sla.listener';
 import { TicketAssignmentListener } from './listeners/ticket-assignment.listener';
 import { WebSocketModule } from '../../websocket/websocket.module';
+import { TicketAccessService } from '../../common/services/ticket-access.service';
+import { TicketDetailsService } from './services/ticket-details.service';
+import { TicketAssignmentTargetService } from './services/ticket-assignment-target.service';
 
 /**
  * Module Tickets — cœur métier de la plateforme.
@@ -29,12 +32,15 @@ import { WebSocketModule } from '../../websocket/websocket.module';
   providers: [
     TicketsService,
     TicketsSearchService,
+    TicketDetailsService,
+    TicketAssignmentTargetService,
     TicketNumberService,
     TicketHistoryService,
     AssignmentEngineService,
     AutoAssignmentCron,
     TicketStateMachine,
     TicketPermissions,
+    TicketAccessService,
     TicketNotificationListener,
     TicketAuditListener,
     TicketSlaListener,

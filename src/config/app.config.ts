@@ -35,7 +35,7 @@ export class AppConfigService {
   }
 
   get throttleLimit(): number {
-    return parseInt(process.env['THROTTLE_LIMIT'] || '100', 10);
+    return parseInt(process.env['THROTTLE_LIMIT'] || '1000', 10);
   }
 
   get throttleAuthTtl(): number {
@@ -43,6 +43,6 @@ export class AppConfigService {
   }
 
   get throttleAuthLimit(): number {
-    return parseInt(process.env['THROTTLE_AUTH_LIMIT'] || '10', 10);
+    return parseInt(process.env['THROTTLE_AUTH_LIMIT'] || '20', 10);
   }
 }

@@ -30,9 +30,12 @@
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
     "db:migrate": "ts-node src/database/run-migrations.ts",
+    "db:migrate:baseline": "ts-node src/database/run-migrations.ts --baseline-existing",
     "db:seed": "ts-node src/database/seed/run-seed.ts",
     "db:reset": "pnpm run db:push && pnpm run db:seed",
     "db:studio": "drizzle-kit studio",
+    "openapi:export": "ts-node -r tsconfig-paths/register src/common/openapi/export-openapi.ts",
+    "openapi:check": "pnpm run openapi:export && jest --runInBand src/common/openapi/openapi.contract.spec.ts",
     "prepare": "husky || true"
   },
   "dependencies": {

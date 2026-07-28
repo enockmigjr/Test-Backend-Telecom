@@ -1,10 +1,12 @@
-import { Injectable, Logger, NotFoundException, Inject } from '@nestjs/common';
+import { Injectable, Logger, Inject } from '@nestjs/common';
 import { DrizzleProvider } from '../../database/drizzle.provider';
-import { tickets, departments, reports, NewReport, Report, categories } from '../../database/schemas';
-import { eq, and, gte, lte, isNull, count, sql } from 'drizzle-orm';
+import { reports, NewReport, Report } from '../../database/schemas';
+import { eq } from 'drizzle-orm';
 import PDFDocument from 'pdfkit';
 import { Writable } from 'stream';
 import { Queue } from 'bullmq';
+import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
+import { ReportQueryService } from './report-query.service';
 
 export interface TicketReportData {
   ticketNumber?: string | null;
@@ -41,83 +43,21 @@ export class ReportsService {
   constructor(
     private readonly drizzle: DrizzleProvider,
     @Inject('BullMQ_Queues') private readonly queues: { report: Queue },
+    private readonly reportQuery: ReportQueryService,
   ) {}
 
   /**
    * Génère les données pour un rapport détaillé d'un ticket.
    */
-  async ticketReport(ticketId: string) {
-    const [ticket] = await this.drizzle.db
-      .select({
-        id: tickets.id,
-        ticketNumber: tickets.ticketNumber,
-        title: tickets.title,
-        description: tickets.description,
-        status: tickets.status,
-        priority: tickets.priority,
-        severity: tickets.severity,
-        category: categories.name,
-        createdAt: tickets.createdAt,
-        resolvedAt: tickets.resolvedAt,
-        closedAt: tickets.closedAt,
-        customerName: tickets.customerName,
-        resolutionSummary: tickets.resolutionSummary,
-        departmentName: departments.name,
-      })
-      .from(tickets)
-      .leftJoin(departments, eq(tickets.departmentId, departments.id))
-      .leftJoin(categories, eq(tickets.categoryId, categories.id))
-      .where(and(eq(tickets.id, ticketId), isNull(tickets.deletedAt)))
-      .limit(1);
-
-    if (!ticket) throw new NotFoundException(`Ticket introuvable pour l'id ${ticketId}.`);
-
-    return {
-      generatedAt: new Date().toISOString(),
-      type: 'ticket-report',
-      ticket,
-    };
+  async ticketReport(ticketId: string, user?: JwtPayload) {
+    return this.reportQuery.ticketReport(ticketId, user);
   }
 
   /**
    * Génère les données pour un rapport SLA (tous les tickets d'une période).
    */
-  async slaReport(from?: string, to?: string) {
-    const fromDate = from ? new Date(from) : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-    const toDate = to ? new Date(to) : new Date();
-
-    const where = and(gte(tickets.createdAt, fromDate), lte(tickets.createdAt, toDate), isNull(tickets.deletedAt));
-
-    const [stats] = await this.drizzle.db
-      .select({
-        total: count(),
-        breached: sql<number>`COUNT(*) FILTER (WHERE ${tickets.slaBreached} = true)`,
-        avgResolutionMinutes: sql<number>`COALESCE(AVG(EXTRACT(EPOCH FROM (${tickets.resolvedAt} - ${tickets.createdAt})) / 60) FILTER (WHERE ${tickets.resolvedAt} IS NOT NULL), 0)`,
-      })
-      .from(tickets)
-      .where(where);
-
-    const byPriority = await this.drizzle.db
-      .select({
-        priority: tickets.priority,
-        count: count(),
-        breached: sql<number>`COUNT(*) FILTER (WHERE ${tickets.slaBreached} = true)`,
-      })
-      .from(tickets)
-      .where(where)
-      .groupBy(tickets.priority);
-
-    return {
-      generatedAt: new Date().toISOString(),
-      type: 'sla-report',
-      period: { from: fromDate.toISOString(), to: toDate.toISOString() },
-      summary: {
-        total: Number(stats?.total || 0),
-        breached: Number(stats?.breached || 0),
-        avgResolutionMinutes: Math.round(Number(stats?.avgResolutionMinutes || 0)),
-      },
-      byPriority,
-    };
+  async slaReport(from?: string, to?: string, departmentId?: string) {
+    return this.reportQuery.slaReport(from, to, departmentId);
   }
 
   /** Génère un PDF avec PDFKit */
@@ -482,9 +422,7 @@ export class ReportsService {
    * Récupère un rapport par son UUID.
    */
   async getReport(id: string): Promise<Report> {
-    const [report] = await this.drizzle.db.select().from(reports).where(eq(reports.id, id)).limit(1);
-    if (!report) throw new NotFoundException('Rapport introuvable.');
-    return report;
+    return this.reportQuery.getReport(id);
   }
 
   /**
@@ -512,26 +450,9 @@ export class ReportsService {
    */
   async listReports(
     page = 1,
-    limit = 10,
-  ): Promise<{ success: boolean; data: Report[]; total: number; page: number; limit: number }> {
-    const offset = (page - 1) * limit;
-
-    const [totalRes] = await this.drizzle.db.select({ count: count() }).from(reports);
-    const total = totalRes?.count || 0;
-
-    const data = await this.drizzle.db
-      .select()
-      .from(reports)
-      .orderBy(sql`${reports.createdAt} DESC`)
-      .limit(limit)
-      .offset(offset);
-
-    return {
-      success: true,
-      data,
-      total,
-      page,
-      limit,
-    };
+    limit = 20,
+    requestedBy?: string,
+  ): Promise<{ data: Report[]; meta: { total: number; page: number; limit: number; totalPages: number } }> {
+    return this.reportQuery.listReports(page, limit, requestedBy);
   }
 }

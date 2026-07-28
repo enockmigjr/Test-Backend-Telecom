@@ -1,13 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Test, TestingModule } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
-import { UnauthorizedException } from '@nestjs/common';
+import { ForbiddenException, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
 import { mock, MockProxy } from 'jest-mock-extended';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 import { AuthService } from './auth.service';
 import { DrizzleProvider } from '../../database/drizzle.provider';
 import { JwtConfigService } from '../../config/jwt.config';
 import { RedisProvider } from '../../common/providers/redis.provider';
+import { RefreshSessionService } from './refresh-session.service';
 
 // ---------------------------------------------------------------------------
 // Mocks des modules natifs et de tiers utilises par AuthService
@@ -37,9 +39,13 @@ const mockUser = {
   passwordHash: '$argon2id$hashed-password-value',
   firstName: 'Admin',
   lastName: 'Principal',
-  role: 'ADMINISTRATOR',
+  role: 'ADMINISTRATOR' as const,
   departmentId: 'dept-001',
   isActive: true,
+  isAvailable: true,
+  maxConcurrentTickets: 5,
+  absenceEndsAt: null as Date | null,
+  lastAssignedAt: null as Date | null,
   mustChangePassword: false,
   lastLoginAt: null as Date | null,
   createdAt: new Date('2026-01-01'),
@@ -65,6 +71,8 @@ describe('AuthService', () => {
   let jwtService: MockProxy<JwtService>;
   let jwtConfig: MockProxy<JwtConfigService>;
   let redisProvider: MockProxy<RedisProvider>;
+  let refreshSessions: MockProxy<RefreshSessionService>;
+  let eventEmitter: MockProxy<EventEmitter2>;
 
   // Query builders mocks
   let mockSelectQuery: {
@@ -101,6 +109,7 @@ describe('AuthService', () => {
       select: jest.fn().mockReturnValue(mockSelectQuery),
       update: jest.fn().mockReturnValue(mockUpdateQuery),
       insert: jest.fn().mockReturnValue(mockInsertQuery),
+      execute: jest.fn().mockResolvedValue([]),
     };
 
     // Creer le mock DrizzleProvider avec un db getter
@@ -109,6 +118,7 @@ describe('AuthService', () => {
       get: jest.fn(() => mockDb),
       configurable: true,
     });
+    drizzle.runInTransaction.mockImplementation(async (callback) => callback());
 
     // Mocks JWT
     jwtService = mock<JwtService>();
@@ -135,9 +145,19 @@ describe('AuthService', () => {
       setex: jest.fn().mockResolvedValue('OK'),
       exists: jest.fn().mockResolvedValue(0),
       sismember: jest.fn().mockResolvedValue(0),
+      get: jest.fn().mockResolvedValue(null),
     };
     redisProvider = mock<RedisProvider>();
     redisProvider.getClient.mockReturnValue(mockRedisClient as any);
+
+    refreshSessions = mock<RefreshSessionService>();
+    refreshSessions.create.mockResolvedValue('new-refresh-token');
+    refreshSessions.rotate.mockImplementation(async (_token, _ip, _agent, finalize) => ({
+      refreshToken: 'rotated-refresh-token',
+      user: mockUser,
+      finalized: finalize ? await finalize(mockUser) : undefined,
+    }));
+    eventEmitter = mock<EventEmitter2>();
 
     const mockQueues = { email: { add: jest.fn().mockResolvedValue(undefined) } };
 
@@ -148,6 +168,8 @@ describe('AuthService', () => {
         { provide: JwtService, useValue: jwtService },
         { provide: JwtConfigService, useValue: jwtConfig },
         { provide: RedisProvider, useValue: redisProvider },
+        { provide: RefreshSessionService, useValue: refreshSessions },
+        { provide: EventEmitter2, useValue: eventEmitter },
         { provide: 'BullMQ_Queues', useValue: mockQueues },
       ],
     }).compile();
@@ -220,7 +242,7 @@ describe('AuthService', () => {
       mockSelectQuery.limit.mockResolvedValueOnce([mockInactiveUser]);
 
       await expect(service.login('inactive@telecom.local', 'AnyPass123!', '127.0.0.1', 'agent')).rejects.toThrow(
-        UnauthorizedException,
+        ForbiddenException,
       );
     });
 
@@ -279,10 +301,18 @@ describe('AuthService', () => {
 
       expect(result).toBeDefined();
       expect(result.accessToken).toBe('mock-access-token-value');
-      expect(result.refreshToken).toBe(validRefreshToken); // Renvoie le même refresh token
+      expect(result.refreshToken).toBe('rotated-refresh-token');
+      expect(result.expiresIn).toBe(900);
+      expect(refreshSessions.rotate).toHaveBeenCalledWith(
+        validRefreshToken,
+        '10.0.0.1',
+        'TestAgent',
+        expect.any(Function),
+      );
     });
 
     it('doit lever UnauthorizedException pour un refresh token revoque', async () => {
+      refreshSessions.rotate.mockRejectedValueOnce(new UnauthorizedException());
       const revokedToken = {
         id: 'token-id-revoked',
         userId: mockUser.id,
@@ -300,12 +330,14 @@ describe('AuthService', () => {
     });
 
     it('doit lever UnauthorizedException pour un refresh token inexistant', async () => {
+      refreshSessions.rotate.mockRejectedValueOnce(new UnauthorizedException());
       mockSelectQuery.limit.mockResolvedValueOnce([]);
 
       await expect(service.refresh(validRefreshToken, '10.0.0.1', 'TestAgent')).rejects.toThrow(UnauthorizedException);
     });
 
     it('doit lever UnauthorizedException pour un refresh token expire', async () => {
+      refreshSessions.rotate.mockRejectedValueOnce(new UnauthorizedException());
       const expiredToken = {
         id: 'token-id-expired',
         userId: mockUser.id,
@@ -323,6 +355,7 @@ describe('AuthService', () => {
     });
 
     it("doit lever UnauthorizedException si l'utilisateur du token est desactive", async () => {
+      refreshSessions.rotate.mockRejectedValueOnce(new UnauthorizedException());
       const storedToken = {
         id: 'token-id-2',
         userId: mockInactiveUser.id,
@@ -346,19 +379,34 @@ describe('AuthService', () => {
   describe('logout() — Deconnexion', () => {
     it('doit revoquer le refresh token et retourner void', async () => {
       const redisClient = redisProvider.getClient();
-      await service.logout('some-refresh-token', 'jti-test-123');
+      mockSelectQuery.limit.mockResolvedValueOnce([{ familyId: 'family-001', userId: mockUser.id }]);
+      await service.logout('some-refresh-token', 'jti-test-123', mockUser.id);
 
       expect(mockUpdateQuery.set).toHaveBeenCalledWith({
         revokedAt: expect.any(Date),
       });
       expect(mockUpdateQuery.where).toHaveBeenCalled();
       expect(redisClient.setex).toHaveBeenCalledWith('jwt_bl:jti-test-123', expect.any(Number), '1');
+      expect(eventEmitter.emit).toHaveBeenCalledWith(
+        'auth.session.revoked',
+        expect.objectContaining({ userId: mockUser.id, jti: 'jti-test-123' }),
+      );
     });
 
     it("ne doit pas lever d'erreur si le token n'existe pas (idempotent)", async () => {
       mockUpdateQuery.where.mockResolvedValue(undefined);
 
-      await expect(service.logout('token-inexistant', 'jti-test-999')).resolves.toBeUndefined();
+      await expect(service.logout('token-inexistant', 'jti-test-999', mockUser.id)).resolves.toBeUndefined();
+    });
+
+    it("doit échouer explicitement si l'access token ne peut pas être révoqué", async () => {
+      redisProvider.getClient.mockImplementationOnce(() => {
+        throw new Error('Redis indisponible');
+      });
+
+      await expect(service.logout('some-refresh-token', 'jti-test-123', mockUser.id)).rejects.toBeInstanceOf(
+        ServiceUnavailableException,
+      );
     });
   });
 
@@ -382,6 +430,15 @@ describe('AuthService', () => {
         revokedAt: expect.any(Date),
       });
       expect(redisClient.setex).toHaveBeenCalledWith('jwt_bl:jti-logout-all-123', expect.any(Number), '1');
+      expect(redisClient.setex).toHaveBeenCalledWith(
+        `jwt_user_bl:${mockUser.id}`,
+        expect.any(Number),
+        expect.any(String),
+      );
+      expect(eventEmitter.emit).toHaveBeenCalledWith(
+        'auth.user-sessions.revoked',
+        expect.objectContaining({ userId: mockUser.id }),
+      );
     });
   });
 

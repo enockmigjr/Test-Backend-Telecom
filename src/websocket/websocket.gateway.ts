@@ -4,48 +4,40 @@ import {
   SubscribeMessage,
   OnGatewayConnection,
   OnGatewayDisconnect,
-  MessageBody,
-  ConnectedSocket,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { Logger } from '@nestjs/common';
-import * as jwt from 'jsonwebtoken';
+import { OnEvent } from '@nestjs/event-emitter';
 import { MetricsService } from '../common/metrics/metrics.service';
-
-interface JwtSocketPayload {
-  sub: string;
-  email: string;
-  role: string;
-  departmentId: string;
-}
+import { WebSocketAuthService } from './websocket-auth.service';
+import { websocketCorsOrigin } from './websocket-cors';
+import { AuthSessionRevokedEvent, AuthUserSessionsRevokedEvent } from '../modules/auth/domain/auth-session.events';
 
 /**
  * Gateway WebSocket principal pour la plateforme.
  *
  * Connexion :
- * - Le client doit envoyer son JWT dans handshake.auth.token ou handshake.query.token
+ * - Le navigateur envoie son JWT via le cookie HttpOnly pose par le BFF
  * - À la connexion, le client rejoint automatiquement :
  *   - `user:{userId}` — notifications personnelles
  *   - `department:{departmentId}` — événements du département
- *   - `role:{role}` — événements par rôle (ex: superviseurs)
+ *   - `session:{jti}` — révocation interne multi-instance, jamais fournie par le client
  *
  * Événements émis par le serveur :
- * - ticket.created → département + SUPERVISOR
+ * - ticket.created → département
  * - ticket.assigned → user assigné
- * - ticket.escalated → user escaladé + SUPERVISOR
- * - ticket.resolved → SUPERVISOR
- * - ticket.status_changed → SUPERVISOR
- * - ticket.sla_warning → user assigné + SUPERVISOR
- * - ticket.sla_breached → user assigné + SUPERVISOR
+ * - ticket.escalated → user escaladé + département cible
+ * - ticket.resolved → département
+ * - ticket.status_changed → département
+ * - ticket.sla_warning → user assigné + département
+ * - ticket.sla_breached → user assigné + département
  * - notification.created → user concerné
  *
  * Événements acceptés du client :
  * - ping → pong (heartbeat)
- * - join_room → rejoindre une room custom
- * - leave_room → quitter une room custom
  */
 @WebSocketGateway({
-  cors: { origin: '*', credentials: true },
+  cors: { origin: websocketCorsOrigin, credentials: true },
   namespace: '/ws',
 })
 export class TelecomWebSocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -58,28 +50,25 @@ export class TelecomWebSocketGateway implements OnGatewayConnection, OnGatewayDi
   // Map socketId → userId pour nettoyage rapide à la déconnexion
   private readonly socketToUser = new Map<string, string>();
 
-  constructor(private readonly metricsService: MetricsService) {}
+  constructor(
+    private readonly metricsService: MetricsService,
+    private readonly webSocketAuth: WebSocketAuthService,
+  ) {}
 
   async handleConnection(client: Socket): Promise<void> {
     try {
-      const token = client.handshake.auth?.token || client.handshake.query?.token;
-      if (!token) {
-        client.disconnect();
-        return;
-      }
-
-      const payload = jwt.verify(token as string, process.env['JWT_ACCESS_SECRET'] || 'dev-secret') as JwtSocketPayload;
+      const payload = await this.webSocketAuth.authenticate(client.handshake.headers.cookie);
 
       // Rejoindre les rooms automatiques
       await client.join(`user:${payload.sub}`);
       await client.join(`department:${payload.departmentId}`);
-      await client.join(`role:${payload.role}`);
+      await client.join(`session:${payload.jti}`);
 
       // Indexation pour le tracking
       if (!this.connectedClients.has(payload.sub)) {
         this.connectedClients.set(payload.sub, new Set());
       }
-      this.connectedClients.get(payload.sub)!.add(client.id);
+      this.connectedClients.get(payload.sub)?.add(client.id);
       this.socketToUser.set(client.id, payload.sub);
 
       // Métriques Prometheus
@@ -93,7 +82,7 @@ export class TelecomWebSocketGateway implements OnGatewayConnection, OnGatewayDi
         userId: payload.sub,
         email: payload.email,
         role: payload.role,
-        rooms: [`user:${payload.sub}`, `department:${payload.departmentId}`, `role:${payload.role}`],
+        rooms: [`user:${payload.sub}`, `department:${payload.departmentId}`],
       });
     } catch {
       this.logger.warn(`Connexion WebSocket rejetée: JWT invalide (socket: ${client.id})`);
@@ -115,7 +104,7 @@ export class TelecomWebSocketGateway implements OnGatewayConnection, OnGatewayDi
       }
     }
 
-    this.metricsService.wsConnections.dec();
+    if (userId) this.metricsService.wsConnections.dec();
     this.metricsService.activeUsers.set(this.connectedClients.size);
 
     this.logger.log(`WebSocket déconnecté: socket ${client.id}`);
@@ -133,11 +122,6 @@ export class TelecomWebSocketGateway implements OnGatewayConnection, OnGatewayDi
     this.server.to(`department:${departmentId}`).emit(event, payload);
   }
 
-  /** Émet un événement à tous les utilisateurs ayant un rôle spécifique. */
-  emitToRole(role: string, event: string, payload: unknown): void {
-    this.server.to(`role:${role}`).emit(event, payload);
-  }
-
   /** Diffuse un événement à TOUS les clients connectés. */
   broadcast(event: string, payload: unknown): void {
     this.server.emit(event, payload);
@@ -153,27 +137,20 @@ export class TelecomWebSocketGateway implements OnGatewayConnection, OnGatewayDi
     return this.socketToUser.size;
   }
 
+  @OnEvent('auth.session.revoked')
+  handleSessionRevoked(event: AuthSessionRevokedEvent): void {
+    this.server.in(`session:${event.jti}`).disconnectSockets(true);
+  }
+
+  @OnEvent('auth.user-sessions.revoked')
+  handleUserSessionsRevoked(event: AuthUserSessionsRevokedEvent): void {
+    this.server.in(`user:${event.userId}`).disconnectSockets(true);
+  }
+
   // ─── Handlers client → serveur ───────────────────────────────────
 
   @SubscribeMessage('ping')
   handlePing(): { event: string; data: string } {
     return { event: 'pong', data: new Date().toISOString() };
-  }
-
-  @SubscribeMessage('join_room')
-  async handleJoinRoom(@ConnectedSocket() client: Socket, @MessageBody() data: { room: string }): Promise<void> {
-    if (data?.room) {
-      await client.join(data.room);
-      client.emit('room_joined', { room: data.room });
-      this.logger.debug(`Socket ${client.id} a rejoint la room: ${data.room}`);
-    }
-  }
-
-  @SubscribeMessage('leave_room')
-  async handleLeaveRoom(@ConnectedSocket() client: Socket, @MessageBody() data: { room: string }): Promise<void> {
-    if (data?.room) {
-      await client.leave(data.room);
-      client.emit('room_left', { room: data.room });
-    }
   }
 }

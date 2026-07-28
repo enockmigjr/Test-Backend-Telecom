@@ -41,6 +41,7 @@ export class CategoriesService {
       id,
       name: dto.name,
       description: dto.description || null,
+      targetRole: dto.targetRole || null,
     });
 
     this.logger.log(`Catégorie créée: ${dto.name} (${id})`);
@@ -67,6 +68,7 @@ export class CategoriesService {
     const updateData: Record<string, unknown> = {};
     if (dto.name) updateData['name'] = dto.name;
     if (dto.description !== undefined) updateData['description'] = dto.description;
+    if (dto.targetRole !== undefined) updateData['targetRole'] = dto.targetRole;
 
     await this.drizzle.db.update(categories).set(updateData).where(eq(categories.id, id));
 

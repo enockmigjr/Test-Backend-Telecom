@@ -4,6 +4,7 @@ import { SlaPoliciesController } from './sla-policies.controller';
 import { SlaPoliciesService } from './sla-policies.service';
 import { CreateSlaPolicyDto, UpdateSlaPolicyDto } from './dto/sla-policy.dto';
 import { mock, MockProxy } from 'jest-mock-extended';
+import { ROLES_KEY } from '../../common/decorators/roles.decorator';
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -171,6 +172,10 @@ describe('SlaPoliciesController', () => {
   // create()
   // =========================================================================
   describe('POST /sla-policies (Admin uniquement)', () => {
+    it('reserve explicitement la creation a ADMINISTRATOR', () => {
+      expect(Reflect.getMetadata(ROLES_KEY, controller.create)).toEqual(['ADMINISTRATOR']);
+    });
+
     it('doit créer une politique SLA et retourner 201', async () => {
       slaPoliciesService.create.mockResolvedValue(createResult);
 
@@ -195,6 +200,10 @@ describe('SlaPoliciesController', () => {
   // update()
   // =========================================================================
   describe('PATCH /sla-policies/:id (Admin uniquement)', () => {
+    it('reserve explicitement la modification a ADMINISTRATOR', () => {
+      expect(Reflect.getMetadata(ROLES_KEY, controller.update)).toEqual(['ADMINISTRATOR']);
+    });
+
     it("doit mettre à jour les délais d'une politique SLA", async () => {
       slaPoliciesService.update.mockResolvedValue(updateResult);
 

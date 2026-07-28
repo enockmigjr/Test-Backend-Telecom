@@ -1,7 +1,6 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import { Request } from 'express';
 import { JwtConfigService } from '../../../config/jwt.config';
 import { JwtPayload } from '../interfaces/jwt-payload.interface';
 import { DrizzleProvider } from '../../../database/drizzle.provider';
@@ -17,15 +16,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     private readonly redisProvider: RedisProvider,
   ) {
     super({
-      jwtFromRequest: ExtractJwt.fromExtractors([
-        ExtractJwt.fromAuthHeaderAsBearerToken(),
-        (req: Request) => {
-          if (req && req.query && req.query['token']) {
-            return req.query['token'] as string;
-          }
-          return null;
-        },
-      ]),
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
       secretOrKey: jwtConfig.accessSecret,
     });
@@ -36,11 +27,17 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     // Nouvelle stratégie : clé individuelle jwt_bl:{jti} avec TTL automatique.
     // Ancienne stratégie (Set global jwt_blacklist) maintenue pour compatibilité.
     const redis = this.redisProvider.getClient();
-    const [isRevokedNew, isRevokedLegacy] = await Promise.all([
+    const [isRevokedNew, isRevokedLegacy, userRevokedAfterRaw] = await Promise.all([
       redis.exists(`jwt_bl:${payload.jti}`),
       redis.sismember('jwt_blacklist', payload.jti),
+      redis.get(`jwt_user_bl:${payload.sub}`),
     ]);
-    if (isRevokedNew || isRevokedLegacy) {
+    const userRevokedAfter = userRevokedAfterRaw ? Number(userRevokedAfterRaw) : null;
+    const revokedByLogoutAll =
+      userRevokedAfter !== null &&
+      Number.isFinite(userRevokedAfter) &&
+      (!payload.sessionIssuedAt || payload.sessionIssuedAt <= userRevokedAfter);
+    if (isRevokedNew || isRevokedLegacy || revokedByLogoutAll) {
       throw new UnauthorizedException('Token révoqué.');
     }
 
@@ -52,6 +49,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
         role: users.role,
         departmentId: users.departmentId,
         isActive: users.isActive,
+        mustChangePassword: users.mustChangePassword,
       })
       .from(users)
       .where(and(eq(users.id, payload.sub), isNull(users.deletedAt)))
@@ -67,7 +65,9 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       email: user.email,
       role: user.role,
       departmentId: user.departmentId,
+      mustChangePassword: user.mustChangePassword,
       jti: payload.jti,
+      sessionIssuedAt: payload.sessionIssuedAt,
     };
   }
 }

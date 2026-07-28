@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { ThrottlerStorageRedisService } from './common/providers/throttler-storage-redis.provider';
 import { LoggerModule } from 'nestjs-pino';
@@ -15,6 +15,7 @@ import { DatabaseModule } from './database/database.module';
 // Modules métier
 import { AuthModule } from './modules/auth/auth.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
+import { PasswordChangeRequiredGuard } from './modules/auth/guards/password-change-required.guard';
 import { DepartmentsModule } from './modules/departments/departments.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { UsersModule } from './modules/users/users.module';
@@ -36,6 +37,8 @@ import { EmailModule } from './modules/email/email.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { BullBoardModule } from './common/bull-board/bull-board.module';
 import { SettingsModule } from './modules/settings/settings.module';
+import { IdempotencyInterceptor } from './common/interceptors/idempotency.interceptor';
+import { isAuthRateLimited } from './common/decorators/auth-rate-limited.decorator';
 
 @Module({
   imports: [
@@ -80,6 +83,7 @@ import { SettingsModule } from './modules/settings/settings.module';
             name: 'auth',
             ttl: config.throttleAuthTtl,
             limit: config.throttleAuthLimit,
+            skipIf: (context) => !isAuthRateLimited(context.getHandler()),
           },
         ],
         storage: new ThrottlerStorageRedisService(),
@@ -133,6 +137,14 @@ import { SettingsModule } from './modules/settings/settings.module';
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: PasswordChangeRequiredGuard,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: IdempotencyInterceptor,
     },
   ],
   controllers: [],

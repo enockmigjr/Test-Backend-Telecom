@@ -1,5 +1,5 @@
 {
-  "id": "28c3899d-1b37-43fd-88d7-b4d844efd3c8",
+  "id": "ddffccef-6524-45db-a268-acccdd5382fd",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -298,6 +298,60 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
+    "public.categories": {
+      "name": "categories",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "target_role": {
+          "name": "target_role",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "categories_name_unique": {
+          "name": "categories_name_unique",
+          "nullsNotDistinct": false,
+          "columns": ["name"]
+        }
+      }
+    },
     "public.departments": {
       "name": "departments",
       "schema": "",
@@ -317,6 +371,33 @@
         "description": {
           "name": "description",
           "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "auto_assignment_enabled": {
+          "name": "auto_assignment_enabled",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "assignment_strategy": {
+          "name": "assignment_strategy",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'LEAST_LOADED'"
+        },
+        "max_workload_per_agent": {
+          "name": "max_workload_per_agent",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 100
+        },
+        "workload_weights": {
+          "name": "workload_weights",
+          "type": "jsonb",
           "primaryKey": false,
           "notNull": false
         },
@@ -405,6 +486,32 @@
           "primaryKey": false,
           "notNull": true,
           "default": true
+        },
+        "is_available": {
+          "name": "is_available",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "max_concurrent_tickets": {
+          "name": "max_concurrent_tickets",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 5
+        },
+        "absence_ends_at": {
+          "name": "absence_ends_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_assigned_at": {
+          "name": "last_assigned_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
         },
         "must_change_password": {
           "name": "must_change_password",
@@ -517,10 +624,9 @@
           "primaryKey": true,
           "notNull": true
         },
-        "category": {
-          "name": "category",
-          "type": "ticket_category_enum",
-          "typeSchema": "public",
+        "category_id": {
+          "name": "category_id",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
@@ -563,7 +669,7 @@
           "name": "idx_sla_policies_category_priority",
           "columns": [
             {
-              "expression": "category",
+              "expression": "category_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -581,7 +687,17 @@
           "with": {}
         }
       },
-      "foreignKeys": {},
+      "foreignKeys": {
+        "sla_policies_category_id_categories_id_fk": {
+          "name": "sla_policies_category_id_categories_id_fk",
+          "tableFrom": "sla_policies",
+          "tableTo": "categories",
+          "columnsFrom": ["category_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
@@ -635,10 +751,9 @@
           "primaryKey": false,
           "notNull": true
         },
-        "category": {
-          "name": "category",
-          "type": "ticket_category_enum",
-          "typeSchema": "public",
+        "category_id": {
+          "name": "category_id",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
@@ -708,11 +823,35 @@
           "primaryKey": false,
           "notNull": true
         },
+        "first_response_warning_sent_at": {
+          "name": "first_response_warning_sent_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "first_response_breached_at": {
+          "name": "first_response_breached_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
         "resolution_due_at": {
           "name": "resolution_due_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true
+        },
+        "resolution_warning_sent_at": {
+          "name": "resolution_warning_sent_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "resolution_breached_at": {
+          "name": "resolution_breached_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
         },
         "resolved_at": {
           "name": "resolved_at",
@@ -744,6 +883,19 @@
           "type": "jsonb",
           "primaryKey": false,
           "notNull": false
+        },
+        "sla_paused_at": {
+          "name": "sla_paused_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "accumulated_pause_ms": {
+          "name": "accumulated_pause_ms",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
         },
         "created_at": {
           "name": "created_at",
@@ -925,6 +1077,15 @@
         }
       },
       "foreignKeys": {
+        "tickets_category_id_categories_id_fk": {
+          "name": "tickets_category_id_categories_id_fk",
+          "tableFrom": "tickets",
+          "tableTo": "categories",
+          "columnsFrom": ["category_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
         "tickets_sla_policy_id_sla_policies_id_fk": {
           "name": "tickets_sla_policy_id_sla_policies_id_fk",
           "tableFrom": "tickets",
@@ -1701,6 +1862,60 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
+    },
+    "public.settings": {
+      "name": "settings",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "key": {
+          "name": "key",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "value": {
+          "name": "value",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "settings_key_unique": {
+          "name": "settings_key_unique",
+          "nullsNotDistinct": false,
+          "columns": ["key"]
+        }
+      }
     }
   },
   "enums": {

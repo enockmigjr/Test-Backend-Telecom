@@ -19,9 +19,6 @@ describe('Comments — E2E', () => {
     app = testApp;
 
     const drizzle = app.get(DrizzleProvider);
-    const [t] = await drizzle.db.select().from(tickets).limit(1);
-    ticketId = t?.id;
-
     // Charger dynamiquement les utilisateurs
     const { users } = await import('../../src/database/schemas');
     const allUsers = await drizzle.db.select().from(users);
@@ -31,6 +28,17 @@ describe('Comments — E2E', () => {
     if (!csAgent || !otherAgent) {
       throw new Error('Utilisateurs requis non trouves.');
     }
+    const allTickets = await drizzle.db.select().from(tickets);
+    const visibleTicket = allTickets.find(
+      (ticket) =>
+        ticket.deletedAt === null &&
+        (ticket.departmentId === csAgent.departmentId ||
+          ticket.assignedTeamId === csAgent.departmentId ||
+          ticket.assignedTo === csAgent.id ||
+          ticket.createdBy === csAgent.id),
+    );
+    if (!visibleTicket) throw new Error("Aucun ticket visible par l'agent Customer Care.");
+    ticketId = visibleTicket.id;
 
     // Logins
     const agentLogin = await request(app.getHttpServer())
@@ -73,8 +81,9 @@ describe('Comments — E2E', () => {
         .expect(200);
 
       expect(res.body.success).toBe(true);
-      expect(Array.isArray(res.body.data.data)).toBe(true);
-      expect(res.body.data.data.length).toBeGreaterThan(0);
+      expect(Array.isArray(res.body.data)).toBe(true);
+      expect(res.body.data.length).toBeGreaterThan(0);
+      expect(res.body.meta).toBeDefined();
     });
   });
 

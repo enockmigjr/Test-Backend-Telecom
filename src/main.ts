@@ -6,7 +6,7 @@ if (process.env['OTEL_ENABLED'] !== 'false') {
 
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { SwaggerModule } from '@nestjs/swagger';
 import { Logger } from 'nestjs-pino';
 import helmet from 'helmet';
 import compression from 'compression';
@@ -20,6 +20,7 @@ import { CorrelationIdMiddleware } from './common/middleware/correlation-id.midd
 import { RequestLoggerMiddleware } from './common/middleware/request-logger.middleware';
 import { AppConfigService } from './config/app.config';
 import { RedisIoAdapter } from './websocket/redis-io.adapter';
+import { createOpenApiDocument } from './common/openapi/openapi.config';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule, {
@@ -82,29 +83,7 @@ async function bootstrap(): Promise<void> {
   app.useGlobalInterceptors(new MetricsInterceptor(metricsService));
 
   // Swagger / OpenAPI
-  const swaggerConfig = new DocumentBuilder()
-    .setTitle('Telecom Ticket Management API')
-    .setDescription("Système de Gestion des Tickets d\'Incidents Télécom")
-    .setVersion('1.0')
-    .addBearerAuth()
-    .addTag('auth', 'Authentification')
-    .addTag('users', 'Utilisateurs')
-    .addTag('departments', 'Départements')
-    .addTag('tickets', "Tickets d\'incidents")
-    .addTag('comments', 'Commentaires publics')
-    .addTag('internal-notes', 'Notes internes')
-    .addTag('attachments', 'Pièces jointes')
-    .addTag('notifications', 'Notifications')
-    .addTag('sla', 'Politiques SLA')
-    .addTag('dashboard', 'Tableaux de bord')
-    .addTag('audit-logs', "Journaux d'audit")
-    .addTag('reports', 'Rapports (PDF, SLA)')
-    .addTag('health', 'Health checks')
-    .addTag('root', 'API Info')
-    .addTag('metrics', 'Prometheus Metrics')
-    .build();
-
-  const document = SwaggerModule.createDocument(app, swaggerConfig);
+  const document = createOpenApiDocument(app);
   SwaggerModule.setup('api/docs', app, document);
 
   await app.listen(config.port);

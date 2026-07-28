@@ -9,10 +9,12 @@ export interface LoginResponse {
     role: string;
     departmentId: string;
     departmentName: string;
+    mustChangePassword: boolean;
   };
 }
 
 export interface TokenPair {
   accessToken: string;
   refreshToken: string;
+  expiresIn: number;
 }

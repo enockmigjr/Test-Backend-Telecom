@@ -11,6 +11,8 @@ import { ReportWorker } from './workers/report.worker';
 import { EmailService } from '../modules/email/email.service';
 import { DrizzleProvider } from '../database/drizzle.provider';
 import { TelecomWebSocketGateway } from '../websocket/websocket.gateway';
+import { JwtConfigService } from '../config/jwt.config';
+import { JwtStrategy } from '../modules/auth/strategies/jwt.strategy';
 
 // ─── BullMQ mock (hoisted by jest) ───────────────────────────────────────────
 const mockWorkerOn = jest.fn();
@@ -55,6 +57,10 @@ describe('QueuesModule', () => {
       .useValue(mockEmailService)
       .overrideProvider(TelecomWebSocketGateway)
       .useValue(mockWsGateway)
+      .overrideProvider(JwtConfigService)
+      .useValue({ accessSecret: 'test-access-secret-at-least-32-characters' })
+      .overrideProvider(JwtStrategy)
+      .useValue({})
       .useMocker((token) => {
         if (typeof token === 'function') return {};
         return {};

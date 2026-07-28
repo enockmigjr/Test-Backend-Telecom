@@ -9,6 +9,7 @@ import {
   TicketAssignedEvent,
   TicketEscalatedEvent,
   TicketResolvedEvent,
+  TicketClosedEvent,
   TicketStatusChangedEvent,
   TicketReopenedEvent,
   TicketDeassignedEvent,
@@ -129,6 +130,16 @@ export class TicketNotificationListener {
     }
   }
 
+  private async emitToTicketDepartment(ticketId: string, event: string, payload: unknown): Promise<void> {
+    const [ticket] = await this.drizzle.db
+      .select({ assignedTeamId: tickets.assignedTeamId })
+      .from(tickets)
+      .where(and(eq(tickets.id, ticketId), isNull(tickets.deletedAt)))
+      .limit(1);
+
+    if (ticket) this.wsGateway.emitToDepartment(ticket.assignedTeamId, event, payload);
+  }
+
   /** Enqueue un job email de façon résiliente */
   private async sendEmail(data: Record<string, unknown>): Promise<void> {
     try {
@@ -154,26 +165,16 @@ export class TicketNotificationListener {
     const priority = event.ticket['priority'] as string;
     const category = event.ticket['category'] as string;
     const departmentId = event.ticket['departmentId'] as string;
+    const assignedTeamId = event.ticket['assignedTeamId'] as string;
     const creatorId = event.userId;
 
     this.logger.log(`Notification: ticket créé ${ticketNumber}`);
 
     // Émettre en temps réel au département propriétaire
-    this.wsGateway.emitToDepartment(departmentId, 'ticket.created', {
-      ticketId: event.ticket['id'],
-      ticketNumber,
-      title,
-      priority,
-      createdBy: creatorId,
-    });
-
-    // Émettre aussi aux superviseurs (accès global)
-    this.wsGateway.emitToRole('SUPERVISOR', 'ticket.created', {
-      ticketId: event.ticket['id'],
-      ticketNumber,
-      title,
-      priority,
-    });
+    const payload = { ticketId: event.ticket['id'], ticketNumber, title, priority, createdBy: creatorId };
+    for (const authorizedDepartmentId of new Set([departmentId, assignedTeamId])) {
+      this.wsGateway.emitToDepartment(authorizedDepartmentId, 'ticket.created', payload);
+    }
 
     // Email de confirmation au créateur
     const appUrl = process.env['APP_URL'] || 'http://localhost:3000';
@@ -253,8 +254,7 @@ export class TicketNotificationListener {
       escalatedBy: event.escalatedBy,
     });
 
-    // WebSocket → tous les superviseurs
-    this.wsGateway.emitToRole('SUPERVISOR', 'ticket.escalated', {
+    await this.emitToTicketDepartment(event.ticketId, 'ticket.escalated', {
       ticketId: event.ticketId,
       escalatedTo: event.escalatedTo,
       escalatedBy: event.escalatedBy,
@@ -306,8 +306,7 @@ export class TicketNotificationListener {
       ticketId: event.ticketId,
     });
 
-    // Notification aux superviseurs
-    this.wsGateway.emitToRole('SUPERVISOR', 'ticket.resolved', {
+    await this.emitToTicketDepartment(event.ticketId, 'ticket.resolved', {
       ticketId: event.ticketId,
       resolvedBy: event.resolvedBy,
     });
@@ -323,6 +322,40 @@ export class TicketNotificationListener {
     });
   }
 
+  @OnEvent('ticket.closed')
+  async handleTicketClosed(event: TicketClosedEvent): Promise<void> {
+    const [ticket] = await this.drizzle.db
+      .select({
+        ticketNumber: tickets.ticketNumber,
+        assignedTo: tickets.assignedTo,
+        createdBy: tickets.createdBy,
+      })
+      .from(tickets)
+      .where(and(eq(tickets.id, event.ticketId), isNull(tickets.deletedAt)))
+      .limit(1);
+    const payload = {
+      ticketId: event.ticketId,
+      ticketNumber: ticket?.ticketNumber ?? event.ticketId,
+      closedBy: event.closedBy,
+    };
+
+    this.wsGateway.emitToUser(event.closedBy, 'ticket.closed', payload);
+    await this.emitToTicketDepartment(event.ticketId, 'ticket.closed', payload);
+    const recipients = new Set(
+      [event.closedBy, ticket?.assignedTo, ticket?.createdBy].filter((id): id is string => Boolean(id)),
+    );
+    for (const userId of recipients) {
+      await this.createNotification({
+        userId,
+        type: 'TICKET_RESOLVED',
+        title: `Ticket clôturé — ${payload.ticketNumber}`,
+        message: 'Le ticket a été clôturé avec succès.',
+        referenceType: 'ticket',
+        referenceId: event.ticketId,
+      });
+    }
+  }
+
   @OnEvent('ticket.reopened')
   async handleTicketReopened(event: TicketReopenedEvent): Promise<void> {
     this.logger.log(`Notification: ticket ${event.ticketId} reouvert par ${event.reopenedBy}`);
@@ -331,7 +364,7 @@ export class TicketNotificationListener {
       .select({
         ticketNumber: tickets.ticketNumber,
         assignedTo: tickets.assignedTo,
-        departmentId: tickets.departmentId,
+        assignedTeamId: tickets.assignedTeamId,
         title: tickets.title,
         description: tickets.description,
         priority: tickets.priority,
@@ -355,8 +388,7 @@ export class TicketNotificationListener {
       reopenedBy: event.reopenedBy,
     };
 
-    // WebSocket → superviseurs
-    this.wsGateway.emitToRole('SUPERVISOR', 'ticket.reopened', payload);
+    this.wsGateway.emitToDepartment(ticket.assignedTeamId, 'ticket.reopened', payload);
 
     // WebSocket + Notification + Email → assigne
     if (ticket.assignedTo) {
@@ -399,8 +431,7 @@ export class TicketNotificationListener {
 
   @OnEvent('ticket.status_changed')
   async handleStatusChanged(event: TicketStatusChangedEvent): Promise<void> {
-    // Notifier via WS les superviseurs de tout changement de statut
-    this.wsGateway.emitToRole('SUPERVISOR', 'ticket.status_changed', {
+    await this.emitToTicketDepartment(event.ticketId, 'ticket.status_changed', {
       ticketId: event.ticketId,
       oldStatus: event.oldStatus,
       newStatus: event.newStatus,
@@ -419,8 +450,7 @@ export class TicketNotificationListener {
       reason: event.reason,
     };
 
-    // WS aux Superviseurs
-    this.wsGateway.emitToRole('SUPERVISOR', 'ticket.deassigned', payload);
+    this.wsGateway.emitToDepartment(event.departmentId, 'ticket.deassigned', payload);
 
     // WS à l'agent indisponible
     this.wsGateway.emitToUser(event.deassignedAgentId, 'ticket.deassigned', payload);

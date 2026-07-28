@@ -10,5 +10,8 @@ export interface JwtPayload {
   email: string;
   role: string;
   departmentId: string;
+  mustChangePassword?: boolean;
   jti: string;
+  /** Horodatage milliseconde utilisé pour invalider toutes les sessions antérieures. */
+  sessionIssuedAt?: number;
 }

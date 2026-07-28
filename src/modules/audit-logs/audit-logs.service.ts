@@ -1,10 +1,11 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { eq, gte, lte, sql, and, or, inArray, SQL } from 'drizzle-orm';
 import { generateUuid } from '../../common/helpers/uuidv7.helper';
 import { DrizzleProvider } from '../../database/drizzle.provider';
 import { auditLogs, users, tickets } from '../../database/schemas';
 import { PaginationHelper } from '../../common/helpers/pagination.helper';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
+import { normalizePagination } from '../../common/helpers/normalized-pagination.helper';
 
 @Injectable()
 export class AuditLogsService {
@@ -51,8 +52,7 @@ export class AuditLogsService {
     },
     currentUser?: JwtPayload,
   ) {
-    const pageNum = Number(filters.page ?? 1);
-    const limitNum = Number(filters.limit ?? 20);
+    const { page: pageNum, limit: limitNum } = normalizePagination(filters.page, filters.limit);
     const offset = PaginationHelper.getOffset(pageNum, limitNum);
     const conditions: SQL<unknown>[] = [];
 
@@ -64,21 +64,7 @@ export class AuditLogsService {
 
     // Isolation fine des logs d'audit pour les superviseurs
     if (currentUser?.role === 'SUPERVISOR') {
-      const deptId = currentUser.departmentId;
-
-      const userSubquery = this.drizzle.db.select({ id: users.id }).from(users).where(eq(users.departmentId, deptId));
-
-      const ticketSubquery = this.drizzle.db
-        .select({ id: tickets.id })
-        .from(tickets)
-        .where(eq(tickets.assignedTeamId, deptId));
-
-      conditions.push(
-        or(
-          inArray(auditLogs.userId, userSubquery),
-          and(eq(auditLogs.entityType, 'ticket'), inArray(auditLogs.entityId, ticketSubquery)),
-        ) as SQL<unknown>,
-      );
+      conditions.push(this.supervisorVisibility(currentUser));
     }
 
     const where = conditions.length > 0 ? and(...conditions) : undefined;
@@ -99,7 +85,32 @@ export class AuditLogsService {
     return PaginationHelper.paginate(data, Number(total?.count ?? 0), pageNum, limitNum);
   }
 
-  async findOne(id: string) {
-    return this.drizzle.db.select().from(auditLogs).where(eq(auditLogs.id, id)).limit(1);
+  async findOne(id: string, currentUser: JwtPayload) {
+    const conditions: SQL<unknown>[] = [eq(auditLogs.id, id)];
+    if (currentUser.role === 'SUPERVISOR') conditions.push(this.supervisorVisibility(currentUser));
+    const [entry] = await this.drizzle.db
+      .select()
+      .from(auditLogs)
+      .where(and(...conditions))
+      .limit(1);
+    if (!entry) throw new NotFoundException("Entree d'audit introuvable.");
+    return entry;
+  }
+
+  private supervisorVisibility(currentUser: JwtPayload): SQL<unknown> {
+    const userSubquery = this.drizzle.db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.departmentId, currentUser.departmentId));
+    const ticketSubquery = this.drizzle.db
+      .select({ id: tickets.id })
+      .from(tickets)
+      .where(
+        or(eq(tickets.departmentId, currentUser.departmentId), eq(tickets.assignedTeamId, currentUser.departmentId)),
+      );
+    return or(
+      inArray(auditLogs.userId, userSubquery),
+      and(eq(auditLogs.entityType, 'ticket'), inArray(auditLogs.entityId, ticketSubquery)),
+    ) as SQL<unknown>;
   }
 }

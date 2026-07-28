@@ -1,19 +1,12 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { eq, and, isNull, sql, count } from 'drizzle-orm';
+import { eq, and, isNull, sql } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 import { generateUuid } from '../../../common/helpers/uuidv7.helper';
 import { CreateTicketInput, UpdateTicketInput } from '../dto/ticket-service.interfaces';
 
 import { DrizzleProvider } from '../../../database/drizzle.provider';
-import {
-  tickets,
-  ticketAssignments,
-  slaPolicies,
-  users,
-  departments,
-  ticketComments,
-  categories,
-} from '../../../database/schemas';
+import { tickets, ticketAssignments, slaPolicies, users, departments, categories } from '../../../database/schemas';
 import { TicketStateMachine, TicketStatus } from '../domain/ticket-status-transitions';
 import { TicketPermissions } from '../domain/ticket-permissions';
 import { TicketNumberService } from './ticket-number.service';
@@ -23,6 +16,7 @@ import { MetricsService } from '../../../common/metrics/metrics.service';
 import { JwtPayload } from '../../auth/interfaces/jwt-payload.interface';
 import { SettingsService } from '../../settings/settings.service';
 import { calculateSlaDueDate } from '../../../common/helpers/sla.helper';
+import { TicketAssignmentTargetService } from './ticket-assignment-target.service';
 import {
   TicketCreatedEvent,
   TicketStatusChangedEvent,
@@ -33,6 +27,10 @@ import {
   TicketReopenedEvent,
   TicketCancelledEvent,
 } from '../domain/ticket.events';
+
+const creator = alias(users, 'ticket_creator');
+const assignee = alias(users, 'ticket_assignee');
+const assignedTeam = alias(departments, 'ticket_assigned_team');
 
 @Injectable()
 export class TicketsService {
@@ -47,6 +45,7 @@ export class TicketsService {
     private readonly eventEmitter: EventEmitter2,
     private readonly metricsService: MetricsService,
     private readonly settingsService: SettingsService,
+    private readonly assignmentTarget: TicketAssignmentTargetService,
   ) {}
 
   /**
@@ -90,9 +89,13 @@ export class TicketsService {
       businessDays,
     );
 
-    // Le SLA de résolution ne démarre qu'au passage en statut ASSIGNED/IN_PROGRESS.
-    // On initialise ici resolutionDueAt de façon lâche à 7 jours par défaut.
-    const resolutionDueAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const resolutionDueAt = calculateSlaDueDate(
+      now,
+      policy.resolutionMinutes,
+      calendarType,
+      businessHours,
+      businessDays,
+    );
 
     await this.drizzle.db.insert(tickets).values({
       id,
@@ -121,7 +124,7 @@ export class TicketsService {
     await this.ticketHistory.record(id, createdBy, 'TICKET_CREATED', null, { ticketNumber, title: dto.title });
 
     // Émettre l'événement de domaine
-    this.eventEmitter.emit('ticket.created', new TicketCreatedEvent(created, createdBy));
+    this.emitAfterCommit('ticket.created', new TicketCreatedEvent(created, createdBy));
 
     // Métriques Prometheus
     this.metricsService.ticketsCreatedTotal.inc({ priority: dto.priority, category: categoryName });
@@ -138,43 +141,6 @@ export class TicketsService {
   async findById(id: string) {
     const ticket = await this.findTicketById(id);
     return { data: ticket };
-  }
-
-  /**
-   * Récupère un ticket avec toutes les relations enrichies.
-   */
-  async findByIdDetailed(id: string) {
-    const ticket = await this.findTicketById(id);
-
-    const [commentCount] = await this.drizzle.db
-      .select({ count: count() })
-      .from(ticketComments)
-      .where(eq(ticketComments.ticketId, id));
-
-    // Historique des assignations
-    const assignments = await this.drizzle.db
-      .select({
-        id: ticketAssignments.id,
-        toUserId: ticketAssignments.toUserId,
-        fromUserId: ticketAssignments.fromUserId,
-        reason: ticketAssignments.reason,
-        createdAt: ticketAssignments.createdAt,
-      })
-      .from(ticketAssignments)
-      .where(eq(ticketAssignments.ticketId, id))
-      .orderBy(sql`${ticketAssignments.createdAt} asc`)
-      .limit(20);
-
-    return {
-      data: {
-        ...ticket,
-        _meta: {
-          commentCount: Number(commentCount?.count ?? 0),
-          assignmentCount: assignments.length,
-        },
-        assignmentHistory: assignments,
-      },
-    };
   }
 
   /**
@@ -230,7 +196,7 @@ export class TicketsService {
     );
 
     // Émettre l'événement de changement de statut
-    this.eventEmitter.emit('ticket.status_changed', new TicketStatusChangedEvent(id, oldStatus, newStatus, user.sub));
+    this.emitAfterCommit('ticket.status_changed', new TicketStatusChangedEvent(id, oldStatus, newStatus, user.sub));
 
     // Émettre des événements spécifiques
     this.emitStatusEvent(newStatus, id, user.sub);
@@ -256,6 +222,7 @@ export class TicketsService {
 
     // 1. Valider la permission d'assignation
     const { isAutoAssign } = this.ticketPermissions.checkCanAssign(ticket, toUserId, user);
+    await this.assignmentTarget.assertEligible(toUserId, ticket.assignedTeamId);
 
     // 2. Créer l'entrée d'assignation
     await this.drizzle.db.insert(ticketAssignments).values({
@@ -286,7 +253,7 @@ export class TicketsService {
       { reason },
     );
 
-    this.eventEmitter.emit('ticket.assigned', new TicketAssignedEvent(id, toUserId, user.sub));
+    this.emitAfterCommit('ticket.assigned', new TicketAssignedEvent(id, toUserId, user.sub));
     this.logger.log(`Ticket ${ticket.ticketNumber} assigne a ${toUserId} par ${user.sub} (auto: ${isAutoAssign})`);
 
     const updated = await this.findTicketById(id);
@@ -304,6 +271,7 @@ export class TicketsService {
 
     // 1. Valider la permission d'escalade
     const { isHierarchical } = this.ticketPermissions.checkCanEscalate(ticket, toDepartmentId, user);
+    await this.assignmentTarget.assertEligible(toUserId, toDepartmentId);
 
     await this.drizzle.db.insert(ticketAssignments).values({
       id: generateUuid(),
@@ -330,7 +298,7 @@ export class TicketsService {
       { reason, type: isHierarchical ? 'hierarchical' : 'functional' },
     );
 
-    this.eventEmitter.emit('ticket.escalated', new TicketEscalatedEvent(id, toUserId, user.sub));
+    this.emitAfterCommit('ticket.escalated', new TicketEscalatedEvent(id, toUserId, user.sub));
     this.logger.log(
       `Ticket ${ticket.ticketNumber} escalade par ${user.sub} (type: ${isHierarchical ? 'hierarchical' : 'functional'})`,
     );
@@ -395,31 +363,6 @@ export class TicketsService {
       }
     }
 
-    // START — premier démarrage du SLA de résolution (NEW/REOPENED → ASSIGNED/IN_PROGRESS)
-    if (
-      (oldStatus === 'NEW' || oldStatus === 'REOPENED') &&
-      (newStatus === 'ASSIGNED' || newStatus === 'IN_PROGRESS')
-    ) {
-      const [policy] = await this.drizzle.db
-        .select()
-        .from(slaPolicies)
-        .where(and(eq(slaPolicies.categoryId, ticket.categoryId), eq(slaPolicies.priority, ticket.priority)))
-        .limit(1);
-
-      if (policy) {
-        const calendarType = ticket.priority === 'CRITICAL' || ticket.priority === 'HIGH' ? '24_7' : 'BUSINESS_HOURS';
-        const businessHours = await this.settingsService.getBusinessHours();
-        const businessDays = await this.settingsService.getBusinessDays();
-        fields['resolutionDueAt'] = calculateSlaDueDate(
-          now,
-          policy.resolutionMinutes,
-          calendarType,
-          businessHours,
-          businessDays,
-        );
-      }
-    }
-
     // STOP — nettoyage de la pause sur clôture
     if (newStatus === 'RESOLVED' || newStatus === 'CLOSED' || newStatus === 'CANCELLED') {
       fields['slaPausedAt'] = null;
@@ -478,15 +421,19 @@ export class TicketsService {
         metadata: tickets.metadata,
         slaPausedAt: tickets.slaPausedAt,
         accumulatedPauseMs: tickets.accumulatedPauseMs,
+        slaBreached: tickets.slaBreached,
         createdAt: tickets.createdAt,
         updatedAt: tickets.updatedAt,
-        creatorName: sql<string>`concat(${users.firstName}, ' ', ${users.lastName})`,
-        assigneeName: sql<string>`concat(${users.firstName}, ' ', ${users.lastName})`,
+        creatorName: sql<string>`concat(${creator.firstName}, ' ', ${creator.lastName})`,
+        assigneeName: sql<string>`concat(${assignee.firstName}, ' ', ${assignee.lastName})`,
         departmentName: departments.name,
+        assignedTeamName: assignedTeam.name,
       })
       .from(tickets)
-      .leftJoin(users, eq(tickets.createdBy, users.id))
+      .leftJoin(creator, eq(tickets.createdBy, creator.id))
+      .leftJoin(assignee, eq(tickets.assignedTo, assignee.id))
       .leftJoin(departments, eq(tickets.departmentId, departments.id))
+      .leftJoin(assignedTeam, eq(tickets.assignedTeamId, assignedTeam.id))
       .leftJoin(categories, eq(tickets.categoryId, categories.id))
       .where(and(eq(tickets.id, id), isNull(tickets.deletedAt)))
       .limit(1);
@@ -501,17 +448,25 @@ export class TicketsService {
   private emitStatusEvent(newStatus: TicketStatus, id: string, userId: string): void {
     switch (newStatus) {
       case 'RESOLVED':
-        this.eventEmitter.emit('ticket.resolved', new TicketResolvedEvent(id, userId));
+        this.emitAfterCommit('ticket.resolved', new TicketResolvedEvent(id, userId));
         break;
       case 'CLOSED':
-        this.eventEmitter.emit('ticket.closed', new TicketClosedEvent(id, userId));
+        this.emitAfterCommit('ticket.closed', new TicketClosedEvent(id, userId));
         break;
       case 'REOPENED':
-        this.eventEmitter.emit('ticket.reopened', new TicketReopenedEvent(id, userId));
+        this.emitAfterCommit('ticket.reopened', new TicketReopenedEvent(id, userId));
         break;
       case 'CANCELLED':
-        this.eventEmitter.emit('ticket.cancelled', new TicketCancelledEvent(id, userId));
+        this.emitAfterCommit('ticket.cancelled', new TicketCancelledEvent(id, userId));
         break;
     }
+  }
+
+  private emitAfterCommit(event: string, payload: object): void {
+    const effect = () => {
+      this.eventEmitter.emit(event, payload);
+    };
+    if (typeof this.drizzle.afterCommit === 'function') this.drizzle.afterCommit(effect);
+    else effect();
   }
 }

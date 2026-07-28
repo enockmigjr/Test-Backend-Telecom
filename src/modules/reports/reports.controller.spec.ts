@@ -6,6 +6,8 @@ import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { DateRangeDto } from '../../common/dto/date-range.dto';
 import { mock, MockProxy } from 'jest-mock-extended';
 import { Queue } from 'bullmq';
+import { ReportDownloadService } from './report-download.service';
+import { ReportDownloadLinkService } from './report-download-link.service';
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -59,6 +61,8 @@ describe('ReportsController', () => {
       controllers: [ReportsController],
       providers: [
         { provide: ReportsService, useValue: reportsService },
+        { provide: ReportDownloadLinkService, useValue: mock<ReportDownloadLinkService>() },
+        ReportDownloadService,
         { provide: 'BullMQ_Queues', useValue: { report: reportQueue } },
       ],
     }).compile();
@@ -77,6 +81,7 @@ describe('ReportsController', () => {
     it('doit dispatcher un job de rapport ticket et retourner 202', async () => {
       const result = await controller.ticketReport('ticket-001', mockUser);
 
+      expect(reportsService.ticketReport).toHaveBeenCalledWith('ticket-001', mockUser);
       expect(reportQueue.add).toHaveBeenCalledWith('generate-report', {
         type: 'ticket-report',
         data: { reportId: expect.any(String), ticketId: 'ticket-001', requestedBy: mockUser.sub },
@@ -103,6 +108,13 @@ describe('ReportsController', () => {
     });
   });
 
+  describe('GET /reports/ticket/:id', () => {
+    it("doit transmettre l'utilisateur pour appliquer la visibilité ticket", async () => {
+      await controller.getTicketReport('ticket-001', mockUser);
+      expect(reportsService.ticketReport).toHaveBeenCalledWith('ticket-001', mockUser);
+    });
+  });
+
   // =========================================================================
   // slaReport() — GET
   // =========================================================================
@@ -110,9 +122,9 @@ describe('ReportsController', () => {
     it('doit retourner le rapport SLA avec les dates fournies', async () => {
       (reportsService.slaReport as any).mockResolvedValue(slaReportResult);
 
-      const result = await controller.slaReport(defaultRange);
+      const result = await controller.slaReport(defaultRange, mockUser);
 
-      expect(reportsService.slaReport).toHaveBeenCalledWith(defaultRange.from, defaultRange.to);
+      expect(reportsService.slaReport).toHaveBeenCalledWith(defaultRange.from, defaultRange.to, mockUser.departmentId);
       expect(result).toEqual(slaReportResult);
     });
 
@@ -120,15 +132,15 @@ describe('ReportsController', () => {
       (reportsService.slaReport as any).mockResolvedValue(slaReportResult);
       const emptyRange: DateRangeDto = {};
 
-      await controller.slaReport(emptyRange);
+      await controller.slaReport(emptyRange, mockAdmin);
 
-      expect(reportsService.slaReport).toHaveBeenCalledWith(undefined, undefined);
+      expect(reportsService.slaReport).toHaveBeenCalledWith(undefined, undefined, undefined);
     });
 
     it('doit propager les erreurs du service', async () => {
       (reportsService.slaReport as any).mockRejectedValue(new Error('Erreur rapport SLA'));
 
-      await expect(controller.slaReport(defaultRange)).rejects.toThrow('Erreur rapport SLA');
+      await expect(controller.slaReport(defaultRange, mockUser)).rejects.toThrow('Erreur rapport SLA');
     });
   });
 
@@ -145,6 +157,7 @@ describe('ReportsController', () => {
           reportId: expect.any(String),
           from: defaultRange.from,
           to: defaultRange.to,
+          departmentId: mockUser.departmentId,
           requestedBy: mockUser.sub,
         },
       });
@@ -165,6 +178,7 @@ describe('ReportsController', () => {
           reportId: expect.any(String),
           from: undefined,
           to: undefined,
+          departmentId: mockUser.departmentId,
           requestedBy: mockUser.sub,
         },
       });
@@ -185,6 +199,7 @@ describe('ReportsController', () => {
           reportId: expect.any(String),
           from: defaultRange.from,
           to: defaultRange.to,
+          departmentId: undefined,
           requestedBy: mockAdmin.sub,
         },
       });
@@ -196,13 +211,13 @@ describe('ReportsController', () => {
   // =========================================================================
   describe('POST /reports/weekly/generate', () => {
     it('doit dispatcher un job de rapport hebdomadaire et retourner 202', async () => {
-      const result = await controller.weeklyReportAsync(mockUser);
+      const result = await controller.weeklyReportAsync(mockAdmin);
 
       expect(reportQueue.add).toHaveBeenCalledWith('generate-report', {
         type: 'weekly-report',
         data: {
           reportId: expect.any(String),
-          requestedBy: mockUser.sub,
+          requestedBy: mockAdmin.sub,
         },
       });
       expect(result).toEqual({
@@ -214,7 +229,7 @@ describe('ReportsController', () => {
     it('doit propager les erreurs de BullMQ', async () => {
       (reportQueue.add as any).mockRejectedValue(new Error('Erreur file'));
 
-      await expect(controller.weeklyReportAsync(mockUser)).rejects.toThrow('Erreur file');
+      await expect(controller.weeklyReportAsync(mockAdmin)).rejects.toThrow('Erreur file');
     });
   });
 
@@ -223,13 +238,41 @@ describe('ReportsController', () => {
   // =========================================================================
   describe('GET /reports', () => {
     it('doit lister les rapports générés via le service', async () => {
-      const mockResult = { success: true, data: [], total: 0, page: 1, limit: 10 };
-      (reportsService.listReports as any).mockResolvedValue(mockResult);
+      const mockResult = { data: [], meta: { total: 0, page: 1, limit: 10, totalPages: 0 } };
+      reportsService.listReports.mockResolvedValue(mockResult);
 
-      const result = await controller.listReports(1, 10);
+      const result = await controller.listReports({ page: 1, limit: 10 }, mockUser);
 
-      expect(reportsService.listReports).toHaveBeenCalledWith(1, 10);
+      expect(reportsService.listReports).toHaveBeenCalledWith(1, 10, mockUser.sub);
       expect(result).toEqual(mockResult);
+    });
+
+    it('doit autoriser un administrateur à lister tous les rapports', async () => {
+      reportsService.listReports.mockResolvedValue({
+        data: [],
+        meta: { total: 0, page: 1, limit: 20, totalPages: 0 },
+      });
+      await controller.listReports({ page: 1, limit: 20 }, mockAdmin);
+      expect(reportsService.listReports).toHaveBeenCalledWith(1, 20, undefined);
+    });
+  });
+
+  describe('GET /reports/:id', () => {
+    it("doit refuser le rapport d'un autre superviseur", async () => {
+      reportsService.getReport.mockResolvedValue({
+        id: 'report-001',
+        type: 'ticket-report',
+        status: 'completed',
+        objectKey: 'reports/report-001.pdf',
+        requestedBy: 'user-other',
+        errorMessage: null,
+        metadata: null,
+        createdAt: new Date(),
+        completedAt: new Date(),
+      });
+      await expect(controller.getReport('report-001', mockUser)).rejects.toThrow(
+        "Vous n'avez pas l'autorisation de consulter ce rapport.",
+      );
     });
   });
 
