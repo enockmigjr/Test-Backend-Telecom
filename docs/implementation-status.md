@@ -1,6 +1,6 @@
 # État d'Implémentation — Production Readiness
 
-Dernière mise à jour: 2026-07-08 (v1.4.0)
+Dernière mise à jour: 2026-07-28 (v1.4.1)
 
 ## ✅ Prod-Ready
 

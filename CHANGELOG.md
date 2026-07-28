@@ -4,6 +4,21 @@ Tous les changements notables sont documentés ici. Format basé sur [Keep a Cha
 
 ---
 
+## [1.4.2] — 2026-07-28
+
+### Added
+
+- **Documentation complète** : Réécriture du README avec table des matières, tous les comptes de test (14 utilisateurs), instructions pas à pas, troubleshooting, et liens vers toutes les docs.
+- **Makefile amélioré** : Ajout de `test-all`, correction de `clean` pour Windows, descriptions complètes sur chaque commande.
+- **Frontend documenté** : README complet pour le frontend externe (`Test frontend Telecom`) avec architecture, comptes de test, troubleshooting.
+- **CONTRIBUTING.md** : Guide de contribution pour les nouveaux développeurs.
+
+### Fixed
+
+- **Frontend audit-logs pagination** : Correction du bug où le changement de page déclenchait une nouvelle requête mais les données n'étaient pas rafraîchies dans l'UI. Cause : `isLoading` (React Query v5 = seulement vrai au premier fetch) était passé au DataTable au lieu de `isFetching` (vrai à chaque requête réseau).
+
+---
+
 ## [1.4.1] — 2026-07-09
 
 ### Fixed
