@@ -4,6 +4,23 @@ Tous les changements notables sont documentés ici. Format basé sur [Keep a Cha
 
 ---
 
+## [1.4.3] — 2026-07-28
+
+### Added
+
+- **docs/quick-start.md** : Guide de démarrage rapide (5 minutes) pour les nouveaux développeurs.
+- **docs/security.md** : Guide de sécurité complet (auth JWT, RBAC, ABAC, rate limiting, idempotence, Helmet, CORS, validation, audit trail).
+- **docs/testing.md** : Guide des tests (453 unitaires + 110 E2E = 563 tests) avec conventions, mocking, couverture par module.
+- **docs/environment-variables.md** : Référence complète des 70+ variables d'environnement organisées par catégorie.
+- **docs/database-schema.md** : Documentation du schéma de base de données (15 tables, ENUMs, contraintes, seed data).
+- **docs/ticket-lifecycle.md** : Machine à états des tickets (9 statuts, transitions, SLA, auto-clôture, numérotation INC-AAAA-NNNNNN).
+- **docs/domain-events.md** : Documentation des 11 événements domaine (EventEmitter2), 4 listeners, et architecture asynchrone BullMQ.
+- **docs/test-accounts.md** : Guide dédié aux 14 comptes de test avec exemples cURL et identifiants de monitoring.
+- **docs/troubleshooting.md** : Guide complet de résolution des erreurs (démarrage, auth, DB, emails, tests, BullMQ, Docker, WebSocket, monitoring).
+- **README.md** : Mise à jour du tableau des documentations (22 entrées).
+
+---
+
 ## [1.4.2] — 2026-07-28
 
 ### Added

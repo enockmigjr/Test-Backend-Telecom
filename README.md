@@ -475,15 +475,26 @@ pnpm run start:dev
 
 | Fichier                                   | Contenu                                            |
 | ----------------------------------------- | -------------------------------------------------- |
-| [CHANGELOG.md](CHANGELOG.md)              | Historique complet des versions (v1.0.0 → v1.4.1)  |
+| [CHANGELOG.md](CHANGELOG.md)              | Historique complet des versions (v1.0.0 → v1.4.2)  |
+| [CONTRIBUTING.md](CONTRIBUTING.md)        | Guide de contribution                               |
+| [docs/quick-start.md](docs/quick-start.md)| Guide de démarrage rapide (5 min)                   |
 | [docs/routes.md](docs/routes.md)          | Catalogue complet des 60 routes API                 |
 | [docs/architecture-flows.md](docs/architecture-flows.md) | 10 diagrammes Mermaid                |
+| [docs/database-schema.md](docs/database-schema.md) | Schéma de base de données (15 tables)       |
+| [docs/ticket-lifecycle.md](docs/ticket-lifecycle.md) | Machine à états des tickets (9 statuts)    |
+| [docs/domain-events.md](docs/domain-events.md) | Événements domaine EventEmitter2               |
+| [docs/security.md](docs/security.md)      | Guide de sécurité (auth, RBAC, rate limiting)       |
+| [docs/test-accounts.md](docs/test-accounts.md) | Comptes de test et identifiants                |
+| [docs/testing.md](docs/testing.md)        | Guide des tests (563 tests)                         |
+| [docs/environment-variables.md](docs/environment-variables.md) | Référence variables d'env     |
 | [docs/deployment.md](docs/deployment.md)  | Guide de déploiement production                     |
 | [docs/emails.md](docs/emails.md)          | Architecture email, templates, flux                 |
 | [docs/observability.md](docs/observability.md) | Prometheus, Loki, Tempo, Grafana, alertes       |
 | [docs/websockets.md](docs/websockets.md)  | WebSocket temps réel, rooms, scaling                |
 | [docs/jobs-and-workers.md](docs/jobs-and-workers.md) | Architecture BullMQ et 6 workers            |
 | [docs/workers.md](docs/workers.md)        | Détail des 6 workers BullMQ                         |
+| [docs/troubleshooting.md](docs/troubleshooting.md) | Résolution des erreurs courantes           |
 | [docs/implementation-status.md](docs/implementation-status.md) | État production-readiness          |
 | [docs/detailed-design-assignment-sla.md](docs/detailed-design-assignment-sla.md) | Choix d'archi SLA & Auto-Assignation |
 | [.env.example](.env.example)              | 70+ variables d'environnement documentées           |
+

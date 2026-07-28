@@ -1,6 +1,6 @@
 # État d'Implémentation — Production Readiness
 
-Dernière mise à jour: 2026-07-28 (v1.4.1)
+Dernière mise à jour: 2026-07-28 (v1.4.3)
 
 ## ✅ Prod-Ready
 
@@ -43,7 +43,7 @@ Dernière mise à jour: 2026-07-28 (v1.4.1)
 | Makefile          | 20 commandes                                                                                                                                                                                                                                                                                                                                                                 |
 | BullBoard         | Interface de supervision des 6 queues BullMQ à /admin/queues                                                                                                                                                                                                                                                                                                                 |
 | Token Cleanup     | Cron quotidien 3h — supprime refresh_tokens expirés + révoqués >30j                                                                                                                                                                                                                                                                                                          |
-| Documentation     | 9 fichiers docs/, CHANGELOG v1.3.0, README à jour, .env.example 70+ variables                                                                                                                                                                                                                                                                                                |
+| Documentation     | 18 fichiers docs/, CHANGELOG v1.4.3, README à jour, CONTRIBUTING.md, .env.example 70+ variables                                                                                                                                                                                                                                                                              |
 | Tests             | **453 unitaires** + **110 E2E** = **563 tests**, 32 suites (100% de réussite)                                                                                                                                                                                                                                                                                                |
 | Build             | TypeScript strict, zéro erreur                                                                                                                                                                                                                                                                                                                                               |
 | Observabilité     | Vue matérialisée PostgreSQL pour la consolidation du workload, sécurisée par vérification d'existence avant rafraîchissement                                                                                                                                                                                                                                                 |
