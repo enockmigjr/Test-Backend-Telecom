@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/notifications/notifications.service.spec.ts
+ * RÔLE : Suite de tests unitaires pour le composant notifications.service.
+ * EXPLICATION :
+ * Ce fichier contient les tests automatisés validant le comportement et l'intégrité de notifications.service.
+ * 1. Vérifie le fonctionnement nominal et les cas d'erreur.
+ * 2. Garantit qu'aucune régression n'est introduite lors des évolutions du code.
+ * ============================================================================
+ */
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotificationsService } from './notifications.service';
@@ -118,6 +129,8 @@ describe('NotificationsService', () => {
       expect(result.meta.totalPages).toBe(1);
     });
 
+    /** Test : doit filtrer les notifications par userId */
+
     it('doit filtrer les notifications par userId', async () => {
       const countBuilder = createMockQueryBuilder([{ count: 0 }]);
       const dataBuilder = createMockQueryBuilder([]);
@@ -128,6 +141,8 @@ describe('NotificationsService', () => {
       // Vérifie que select a été appelé deux fois
       expect(mockDb.select).toHaveBeenCalledTimes(2);
     });
+
+    /** Test : doit retourner une liste vide si aucune notification */
 
     it('doit retourner une liste vide si aucune notification', async () => {
       const countBuilder = createMockQueryBuilder([{ count: 0 }]);
@@ -140,6 +155,8 @@ describe('NotificationsService', () => {
       expect(result.meta.total).toBe(0);
     });
 
+    /** Test : doit appliquer la pagination correctement */
+
     it('doit appliquer la pagination correctement', async () => {
       const countBuilder = createMockQueryBuilder([{ count: 50 }]);
       const dataBuilder = createMockQueryBuilder(Array(10).fill(mockNotification));
@@ -151,6 +168,8 @@ describe('NotificationsService', () => {
       expect(result.meta.limit).toBe(10);
       expect(result.meta.totalPages).toBe(5);
     });
+
+    /** Test : doit trier par createdAt desc */
 
     it('doit trier par createdAt desc', async () => {
       const countBuilder = createMockQueryBuilder([{ count: 0 }]);
@@ -179,6 +198,8 @@ describe('NotificationsService', () => {
       expect(result[0].isRead).toBe(false);
     });
 
+    /** Test : doit filtrer par userId ET isRead=false */
+
     it('doit filtrer par userId ET isRead=false', async () => {
       const unreadBuilder = createMockQueryBuilder([]);
       mockDb.select.mockReturnValueOnce(unreadBuilder);
@@ -190,6 +211,8 @@ describe('NotificationsService', () => {
       expect(whereFn).toHaveBeenCalled();
     });
 
+    /** Test : ne doit pas inclure les notifications lues */
+
     it('ne doit pas inclure les notifications lues', async () => {
       const unreadBuilder = createMockQueryBuilder([]);
       mockDb.select.mockReturnValueOnce(unreadBuilder);
@@ -199,6 +222,8 @@ describe('NotificationsService', () => {
       expect(result).toHaveLength(0);
     });
 
+    /** Test : doit retourner une liste triée par createdAt desc */
+
     it('doit retourner une liste triée par createdAt desc', async () => {
       const unreadBuilder = createMockQueryBuilder([mockNotification]);
       mockDb.select.mockReturnValueOnce(unreadBuilder);
@@ -207,6 +232,8 @@ describe('NotificationsService', () => {
 
       expect(result).toBeDefined();
     });
+
+    /** Test : ne doit pas retourner les notifications des autres utilisateurs */
 
     it('ne doit pas retourner les notifications des autres utilisateurs', async () => {
       const unreadBuilder = createMockQueryBuilder([]);
@@ -222,6 +249,7 @@ describe('NotificationsService', () => {
   // create()
   // =========================================================================
   describe('create() — Création', () => {
+    /** Test : doit créer une notification avec tous les champs */
     it('doit créer une notification avec tous les champs', async () => {
       const result = await service.create(
         'user-001',
@@ -244,6 +272,8 @@ describe('NotificationsService', () => {
       });
       expect(result).toBe('0192abcd-1234-7000-8000-000000000001');
     });
+
+    /** Test : doit créer une notification sans référence */
 
     it('doit créer une notification sans référence', async () => {
       const result = await service.create(
@@ -269,6 +299,8 @@ describe('NotificationsService', () => {
       expect(result).toBe('0192abcd-1234-7000-8000-000000000001');
     });
 
+    /** Test : doit générer un UUID v7 pour le nouvel ID */
+
     it('doit générer un UUID v7 pour le nouvel ID', async () => {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       const { generateUuid } = require('../../common/helpers/uuidv7.helper');
@@ -283,6 +315,7 @@ describe('NotificationsService', () => {
   // markAsRead()
   // =========================================================================
   describe('markAsRead() — Marquer comme lue', () => {
+    /** Test : doit marquer une notification comme lue */
     it('doit marquer une notification comme lue', async () => {
       const findBuilder = createMockQueryBuilder([mockNotification]);
       mockDb.select.mockReturnValueOnce(findBuilder);
@@ -309,6 +342,8 @@ describe('NotificationsService', () => {
       expect(mockDb.update).not.toHaveBeenCalled();
     });
 
+    /** Test : doit lever NotFoundException si la notification appartient à un autre utilisateur */
+
     it('doit lever NotFoundException si la notification appartient à un autre utilisateur', async () => {
       const findBuilder = createMockQueryBuilder([otherUserNotification]);
       mockDb.select.mockReturnValueOnce(findBuilder);
@@ -328,6 +363,8 @@ describe('NotificationsService', () => {
       expect(result.message).toContain('marquée comme lue');
     });
 
+    /** Test : doit marquer une notification déjà lue sans erreur */
+
     it('doit marquer une notification déjà lue sans erreur', async () => {
       const findBuilder = createMockQueryBuilder([mockReadNotification]);
       mockDb.select.mockReturnValueOnce(findBuilder);
@@ -344,6 +381,7 @@ describe('NotificationsService', () => {
   // markAllAsRead()
   // =========================================================================
   describe('markAllAsRead() — Tout marquer comme lu', () => {
+    /** Test : doit marquer toutes les notifications non lues comme lues */
     it('doit marquer toutes les notifications non lues comme lues', async () => {
       const result = await service.markAllAsRead('user-001');
 
@@ -358,6 +396,8 @@ describe('NotificationsService', () => {
       // Vérifie que where filtre par userId ET isRead=false
       expect(mockDb.update().set().where).toHaveBeenCalled();
     });
+
+    /** Test : doit fonctionner même si aucune notification non lue */
 
     it('doit fonctionner même si aucune notification non lue', async () => {
       const result = await service.markAllAsRead('user-001');

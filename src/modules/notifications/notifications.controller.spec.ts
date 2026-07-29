@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/notifications/notifications.controller.spec.ts
+ * RÔLE : Suite de tests unitaires pour le composant notifications.controller.
+ * EXPLICATION :
+ * Ce fichier contient les tests automatisés validant le comportement et l'intégrité de notifications.controller.
+ * 1. Vérifie le fonctionnement nominal et les cas d'erreur.
+ * 2. Garantit qu'aucune régression n'est introduite lors des évolutions du code.
+ * ============================================================================
+ */
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotificationsController } from './notifications.controller';
@@ -104,6 +115,8 @@ describe('NotificationsController', () => {
       expect(result).toEqual(paginatedResult);
     });
 
+    /** Test : doit utiliser le sub du JWT comme userId */
+
     it('doit utiliser le sub du JWT comme userId', async () => {
       notificationsService.findAll.mockResolvedValue(paginatedResult);
 
@@ -111,6 +124,8 @@ describe('NotificationsController', () => {
 
       expect(notificationsService.findAll).toHaveBeenCalledWith(mockUser.sub, expect.any(Number), expect.any(Number));
     });
+
+    /** Test : doit transmettre la pagination demandée */
 
     it('doit transmettre la pagination demandée', async () => {
       notificationsService.findAll.mockResolvedValue(paginatedResult);
@@ -135,6 +150,8 @@ describe('NotificationsController', () => {
       expect(result).toHaveLength(1);
     });
 
+    /** Test : doit retourner un tableau vide si aucune notification non lue */
+
     it('doit retourner un tableau vide si aucune notification non lue', async () => {
       notificationsService.getUnread.mockResolvedValue([]);
 
@@ -148,6 +165,7 @@ describe('NotificationsController', () => {
   // markRead()
   // =========================================================================
   describe('PATCH /notifications/:id/read', () => {
+    /** Test : doit marquer une notification comme lue */
     it('doit marquer une notification comme lue', async () => {
       notificationsService.markAsRead.mockResolvedValue(markAsReadResult);
 
@@ -163,6 +181,8 @@ describe('NotificationsController', () => {
       await expect(controller.markRead('inexistant', mockUser)).rejects.toThrow('Notification non trouvée.');
     });
 
+    /** Test : doit propager NotFoundException si la notification appartient à un autre utilisateur */
+
     it('doit propager NotFoundException si la notification appartient à un autre utilisateur', async () => {
       notificationsService.markAsRead.mockRejectedValue(new Error('Notification non trouvée.'));
 
@@ -174,6 +194,7 @@ describe('NotificationsController', () => {
   // markAllRead()
   // =========================================================================
   describe('PATCH /notifications/read-all', () => {
+    /** Test : doit marquer toutes les notifications comme lues */
     it('doit marquer toutes les notifications comme lues', async () => {
       notificationsService.markAllAsRead.mockResolvedValue(markAllAsReadResult);
 
@@ -184,6 +205,8 @@ describe('NotificationsController', () => {
       expect(result.message).toContain('Toutes les notifications');
     });
 
+    /** Test : doit utiliser le sub du JWT comme userId */
+
     it('doit utiliser le sub du JWT comme userId', async () => {
       notificationsService.markAllAsRead.mockResolvedValue(markAllAsReadResult);
 
@@ -191,6 +214,8 @@ describe('NotificationsController', () => {
 
       expect(notificationsService.markAllAsRead).toHaveBeenCalledWith(mockUser.sub);
     });
+
+    /** Test : doit fonctionner sans erreur */
 
     it('doit fonctionner sans erreur', async () => {
       notificationsService.markAllAsRead.mockResolvedValue(markAllAsReadResult);

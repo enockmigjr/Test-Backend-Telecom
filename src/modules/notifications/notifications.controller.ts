@@ -1,3 +1,16 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/notifications/notifications.controller.ts
+ * RÔLE : Contrôleur REST de gestion de la boîte de réception des notifications utilisateur.
+ * EXPLICATION :
+ * Ce contrôleur expose les endpoints d'interaction avec les notifications personnelles (`/api/v1/notifications`) :
+ * 1. `GET /` : Liste paginée de l'historique complet des notifications de l'utilisateur connecté (`user.sub`).
+ * 2. `GET /unread` : Extrait uniquement les notifications non encore consultées (`isRead = false`).
+ * 3. `PATCH /:id/read` : Marque une notification spécifique comme lue en horodatant `readAt`.
+ * 4. `PATCH /read-all` : Marque l'ensemble des notifications de l'utilisateur comme lues en une seule transaction.
+ * ============================================================================
+ */
+
 import { Controller, Get, Patch, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { NotificationsService } from './notifications.service';
@@ -6,6 +19,9 @@ import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 import { RolesGuard } from '../auth/guards/roles.guard';
 
+/**
+ * Contrôleur d'API pour la boîte de réception et le statut de lecture des notifications.
+ */
 @ApiTags('notifications')
 @ApiBearerAuth()
 @UseGuards(RolesGuard)
@@ -13,6 +29,12 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 
+  /**
+   * Récupère la liste paginée des notifications de l'utilisateur connecté.
+   *
+   * @param user Payload JWT de l'utilisateur courant.
+   * @param p Paramètres de pagination.
+   */
   @Get()
   @ApiOperation({
     summary: "Notifications de l'utilisateur connecté",
@@ -30,6 +52,11 @@ export class NotificationsController {
     return this.notificationsService.findAll(user.sub, p.page, p.limit);
   }
 
+  /**
+   * Récupère l'ensemble des notifications non lues de l'utilisateur authentifié.
+   *
+   * @param user Utilisateur connecté.
+   */
   @Get('unread')
   @ApiOperation({
     summary: 'Notifications non lues',
@@ -42,6 +69,12 @@ export class NotificationsController {
     return this.notificationsService.getUnread(user.sub);
   }
 
+  /**
+   * Marque une notification spécifique de l'utilisateur comme lue.
+   *
+   * @param id UUID de la notification.
+   * @param user Utilisateur propriétaire.
+   */
   @Patch(':id/read')
   @ApiOperation({
     summary: 'Marquer une notification comme lue',
@@ -56,6 +89,11 @@ export class NotificationsController {
     return this.notificationsService.markAsRead(id, user.sub);
   }
 
+  /**
+   * Marque l'ensemble des notifications de l'utilisateur connecté comme lues.
+   *
+   * @param user Utilisateur courant.
+   */
   @Patch('read-all')
   @ApiOperation({
     summary: 'Marquer toutes les notifications comme lues',
