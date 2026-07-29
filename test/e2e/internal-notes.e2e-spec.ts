@@ -111,7 +111,7 @@ describe('Internal Notes — E2E', () => {
         .expect(200);
 
       expect(res.body.success).toBe(true);
-      expect(res.body.message).toBe('Note interne mise a jour.');
+      expect(res.body.message).toBe('Note interne mise à jour.');
     });
 
     it('doit autoriser la suppression de la note interne -> 204', async () => {
