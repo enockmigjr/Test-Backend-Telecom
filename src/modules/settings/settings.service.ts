@@ -1,18 +1,36 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/settings/settings.service.ts
+ * RÔLE : Service de gestion des clés de configuration dynamiques et règles de fonctionnement.
+ * EXPLICATION :
+ * Ce service centralise la configuration dynamique du système télécom (heures ouvrées, charge d'agent max...) :
+ * 1. Cache mémoire local (TTL 60 secondes) : Réduit les requêtes PostgreSQL répétitives lors des calculs massifs de SLAs.
+ * 2. `getSetting` & `updateSetting` : Extrait et met à jour les paires clé-valeur avec auto-invalidation du cache.
+ * 3. Helpers métier : `getBusinessHours` (ex: 8h-18h), `getMaxConcurrentTickets` (ex: 5 tickets max par agent), `getBusinessDays` (ex: [1,2,3,4,5] du lundi au vendredi).
+ * ============================================================================
+ */
+
 import { Injectable, Logger } from '@nestjs/common';
 import { DrizzleProvider } from '../../database/drizzle.provider';
 import { settings } from '../../database/schemas/settings';
 import { eq } from 'drizzle-orm';
 
+/**
+ * Service gérant les paramètres système dynamiques et leur mise en cache temporaire.
+ */
 @Injectable()
 export class SettingsService {
   private readonly logger = new Logger(SettingsService.name);
   private cache = new Map<string, { value: string; expiresAt: number }>();
-  private readonly CACHE_TTL = 60 * 1000; // 1 minute
+  private readonly CACHE_TTL = 60 * 1000; // Cache en mémoire de 60 secondes
 
   constructor(private readonly drizzle: DrizzleProvider) {}
 
   /**
-   * Récupère une valeur de configuration par sa clé avec cache et valeur par défaut.
+   * Extrait une valeur de configuration par sa clé avec mise en cache mémoire de 60 secondes.
+   *
+   * @param key Clé de configuration unique.
+   * @param defaultValue Valeur de secours par défaut si la clé n'est pas définie en base.
    */
   async getSetting(key: string, defaultValue: string): Promise<string> {
     const cached = this.cache.get(key);
@@ -35,7 +53,11 @@ export class SettingsService {
   }
 
   /**
-   * Met à jour ou crée un paramètre système.
+   * Insère ou met à jour une clé de configuration système et invalide l'entrée de cache correspondante.
+   *
+   * @param key Clé unique du paramètre.
+   * @param value Valeur sous forme de chaîne de caractères (ou JSON sérialisé).
+   * @param description Description fonctionnelle du paramètre.
    */
   async updateSetting(key: string, value: string, description?: string): Promise<void> {
     try {
@@ -56,7 +78,7 @@ export class SettingsService {
         });
       }
 
-      // Invalider le cache local
+      // Invalider immédiatement le cache local
       this.cache.delete(key);
     } catch (err) {
       this.logger.error(`Erreur d'écriture du setting ${key}: ${String(err)}`);
@@ -65,14 +87,14 @@ export class SettingsService {
   }
 
   /**
-   * Récupère tous les paramètres.
+   * Extrait l'ensemble des paramètres de configuration depuis PostgreSQL.
    */
   async getAllSettings() {
     return this.drizzle.db.select().from(settings);
   }
 
   /**
-   * Helper pour récupérer les heures de bureau.
+   * Extrait la plage horaire ouvrée configurée (heures de début et de fin).
    */
   async getBusinessHours(): Promise<{ start: number; end: number }> {
     const startStr = await this.getSetting('BUSINESS_HOURS_START', '8');
@@ -85,7 +107,7 @@ export class SettingsService {
   }
 
   /**
-   * Helper pour récupérer la charge concurrente max par agent.
+   * Extrait le nombre maximal de tickets simultanés autorisés par agent pour le moteur d'auto-assignation.
    */
   async getMaxConcurrentTickets(): Promise<number> {
     const val = await this.getSetting('MAX_CONCURRENT_TICKETS', '5');
@@ -93,7 +115,7 @@ export class SettingsService {
   }
 
   /**
-   * Helper pour récupérer la liste des jours ouvrables sous forme de tableau d'entiers (ex: [1, 2, 3, 4, 5]).
+   * Extrait la liste des jours ouvrés de la semaine (1 = Lundi, 5 = Vendredi).
    */
   async getBusinessDays(): Promise<number[]> {
     const val = await this.getSetting('BUSINESS_DAYS', '1,2,3,4,5');
