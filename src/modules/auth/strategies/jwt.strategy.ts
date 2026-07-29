@@ -1,3 +1,16 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/auth/strategies/jwt.strategy.ts
+ * RÔLE : Stratégie d'authentification Passport JWT (JSON Web Token).
+ * EXPLICATION :
+ * Cette stratégie intercepte l'en-tête HTTP `Authorization: Bearer <token>` sur chaque route protégée :
+ * 1. Valide la signature cryptographique du jeton d'accès via la clé secrète `accessSecret`.
+ * 2. Vérifie dans Redis si le jeton individuel (`jti`) a été révoqué (`jwt_bl:{jti}`).
+ * 3. Vérifie si toutes les sessions de l'utilisateur ont été invalidées via `logoutAll` (`jwt_user_bl:{sub}`).
+ * 4. Interroge la base PostgreSQL pour s'assurer que l'utilisateur existe toujours et que son compte n'est ni désactivé (`isActive = false`) ni supprimé (`deletedAt IS NOT NULL`).
+ * ============================================================================
+ */
+
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
@@ -8,6 +21,9 @@ import { RedisProvider } from '../../../common/providers/redis.provider';
 import { users } from '../../../database/schemas';
 import { eq, and, isNull } from 'drizzle-orm';
 
+/**
+ * Stratégie Passport validant les requêtes HTTP protégées par jetons JWT.
+ */
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   constructor(
@@ -22,10 +38,15 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     });
   }
 
+  /**
+   * Valide le jeton décodé, vérifie sa non-révocation dans Redis et contrôle la validité du compte utilisateur.
+   *
+   * @param payload Données décodées contenues dans le jeton d'accès.
+   * @returns L'objet utilisateur injecté dans `request.user`.
+   * @throws UnauthorizedException (401) si le jeton est révoqué ou l'utilisateur inactif.
+   */
   async validate(payload: JwtPayload) {
-    // Vérifier si le token est blacklisté dans Redis.
-    // Nouvelle stratégie : clé individuelle jwt_bl:{jti} avec TTL automatique.
-    // Ancienne stratégie (Set global jwt_blacklist) maintenue pour compatibilité.
+    // 1. Contrôle multi-niveaux de révocation dans Redis
     const redis = this.redisProvider.getClient();
     const [isRevokedNew, isRevokedLegacy, userRevokedAfterRaw] = await Promise.all([
       redis.exists(`jwt_bl:${payload.jti}`),
@@ -37,11 +58,12 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       userRevokedAfter !== null &&
       Number.isFinite(userRevokedAfter) &&
       (!payload.sessionIssuedAt || payload.sessionIssuedAt <= userRevokedAfter);
+
     if (isRevokedNew || isRevokedLegacy || revokedByLogoutAll) {
       throw new UnauthorizedException('Token révoqué.');
     }
 
-    // Vérifier que l'utilisateur existe et est actif
+    // 2. Contrôle de l'existence et du statut du compte dans PostgreSQL
     const [user] = await this.drizzle.db
       .select({
         id: users.id,
@@ -59,6 +81,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       throw new UnauthorizedException('Utilisateur non trouvé ou désactivé.');
     }
 
+    // 3. Retourne le contexte utilisateur pour les guards et contrôleurs
     return {
       sub: user.id,
       id: user.id,

@@ -1,3 +1,16 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/auth/auth.service.ts
+ * RÔLE : Service de gestion de l'authentification, de la sécurité et des sessions JWT.
+ * EXPLICATION :
+ * Ce service centralise l'ensemble des règles de sécurité et d'authentification :
+ * 1. Authentification des utilisateurs (email/mot de passe avec hachage Argon2id).
+ * 2. Génération et rotation sécurisée des paires de jetons (Access Token + Refresh Token).
+ * 3. Gestion de la déconnexion avec mise en liste noire (blacklist) Redis par JTI et par utilisateur.
+ * 4. Changement de mot de passe sécurisé et notification par email asynchrone.
+ * ============================================================================
+ */
+
 import {
   ForbiddenException,
   Injectable,
@@ -23,6 +36,10 @@ import { LoginResponse, TokenPair } from './interfaces/auth-response.interface';
 import { RefreshSessionService } from './refresh-session.service';
 import { AuthSessionRevokedEvent, AuthUserSessionsRevokedEvent } from './domain/auth-session.events';
 import { acquireUserSessionLock } from './user-session-lock';
+
+/**
+ * Service centralisant la logique d'authentification et la gestion du cycle de vie des sessions.
+ */
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
@@ -37,6 +54,17 @@ export class AuthService {
     @Inject('BullMQ_Queues') private readonly queues: { email: Queue; [key: string]: Queue },
   ) {}
 
+  /**
+   * Authentifie un utilisateur par email et mot de passe.
+   *
+   * @param email Email de l'utilisateur.
+   * @param password Mot de passe brut envoyé dans le formulaire de connexion.
+   * @param ipAddress Adresse IP de l'utilisateur pour le suivi de la session.
+   * @param userAgent Identifiant du navigateur ou client HTTP.
+   * @returns Un objet contenant les jetons de connexion et le profil utilisateur.
+   * @throws UnauthorizedException si l'email ou le mot de passe est incorrect.
+   * @throws ForbiddenException si le compte est désactivé.
+   */
   async login(email: string, password: string, ipAddress: string, userAgent: string): Promise<LoginResponse> {
     const [user] = await this.drizzle.db
       .select()
@@ -76,6 +104,14 @@ export class AuthService {
     };
   }
 
+  /**
+   * Effectue la rotation d'un jeton de rafraîchissement (Refresh Token).
+   *
+   * @param refreshToken Le jeton de rafraîchissement actuel.
+   * @param ipAddress Adresse IP de l'utilisateur.
+   * @param userAgent User-Agent de la requête.
+   * @returns La nouvelle paire de jetons d'accès et de rafraîchissement.
+   */
   async refresh(refreshToken: string, ipAddress: string, userAgent: string): Promise<TokenPair> {
     const rotated = await this.refreshSessions.rotate(refreshToken, ipAddress, userAgent, (user) =>
       this.generateAccessToken(user),
@@ -85,8 +121,12 @@ export class AuthService {
   }
 
   /**
-   * Deconnecte l utilisateur : revoque le refresh token en DB ET blackliste
-   * l access token dans Redis (cle individuelle jwt_bl:{jti} avec TTL).
+   * Déconnecte l'utilisateur de la session courante :
+   * Révoque le refresh token correspondant en base de données et place le JTI de l'access token dans la liste noire Redis.
+   *
+   * @param refreshToken Jeton de rafraîchissement à révoquer.
+   * @param jti Identifiant unique du jeton JWT à invalider.
+   * @param userId Identifiant unique de l'utilisateur.
    */
   async logout(refreshToken: string, jti: string, userId: string): Promise<void> {
     const tokenHash = this.hashToken(refreshToken);
@@ -116,8 +156,10 @@ export class AuthService {
   }
 
   /**
-   * Deconnecte toutes les sessions : revoque tous les refresh tokens.
-   * L'access token actif de la session courante (jti) est immédiatement blacklisté.
+   * Déconnecte toutes les sessions actives d'un utilisateur sur l'ensemble de ses appareils.
+   *
+   * @param userId Identifiant unique de l'utilisateur.
+   * @param jti Identifiant JTI facultatif du jeton actif à invalider immédiatement.
    */
   async logoutAll(userId: string, jti?: string): Promise<void> {
     await this.drizzle.runInTransaction(async () => {
@@ -128,6 +170,7 @@ export class AuthService {
         .where(and(eq(refreshTokens.userId, userId), isNull(refreshTokens.revokedAt)));
     });
 
+    // Invalider immédiatement le JTI du jeton actif dans Redis si fourni
     if (jti) {
       await this.blacklistJti(jti);
     }
@@ -135,6 +178,14 @@ export class AuthService {
     this.eventEmitter.emit('auth.user-sessions.revoked', new AuthUserSessionsRevokedEvent(userId));
   }
 
+  /**
+   * Modifie le mot de passe d'un utilisateur après vérification de l'ancien mot de passe.
+   *
+   * @param userId Identifiant de l'utilisateur.
+   * @param currentPassword Ancien mot de passe saisi.
+   * @param newPassword Nouveau mot de passe à enregistrer.
+   * @throws UnauthorizedException si l'ancien mot de passe est invalide.
+   */
   async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
     const [user] = await this.drizzle.db.select().from(users).where(eq(users.id, userId)).limit(1);
 
@@ -160,6 +211,9 @@ export class AuthService {
     });
   }
 
+  /**
+   * Empile une tâche d'envoi d'email de confirmation de changement de mot de passe dans BullMQ.
+   */
   private async sendPasswordChangedEmail(to: string, firstName: string): Promise<void> {
     try {
       await this.queues.email.add('send-email', {
@@ -184,8 +238,7 @@ export class AuthService {
   }
 
   /**
-   * Blackliste un JTI dans Redis avec TTL individuel.
-   * Cle : jwt_bl:{jti} — expire automatiquement avec le token.
+   * Inscrit l'identifiant de jeton JTI dans Redis avec une durée de vie (TTL) égale à l'expiration du jeton d'accès.
    */
   private async blacklistJti(jti: string): Promise<void> {
     try {
@@ -198,6 +251,9 @@ export class AuthService {
     }
   }
 
+  /**
+   * Inscrit une empreinte d'invalidation globale pour un utilisateur dans Redis afin de révoquer tous ses jetons actifs.
+   */
   private async blacklistUserSessions(userId: string): Promise<void> {
     try {
       const redis = this.redisProvider.getClient();
@@ -208,6 +264,9 @@ export class AuthService {
     }
   }
 
+  /**
+   * Génère un nouveau jeton d'accès JWT avec un identifiant JTI unique (UUIDv7).
+   */
   private async generateAccessToken(
     user:
       | typeof users.$inferSelect
@@ -232,6 +291,9 @@ export class AuthService {
     return { accessToken, jti };
   }
 
+  /**
+   * Génère une paire complète de jetons (Access + Refresh) pour un utilisateur.
+   */
   private async generateTokens(
     user: typeof users.$inferSelect,
     ipAddress: string,
@@ -243,6 +305,9 @@ export class AuthService {
     return { accessToken, refreshToken, expiresIn: this.jwtConfig.accessExpirationSeconds };
   }
 
+  /**
+   * Calcule le dôme SHA-256 d'un jeton avant stockage en base de données.
+   */
   private hashToken(token: string): string {
     return createHash('sha256').update(token).digest('hex');
   }

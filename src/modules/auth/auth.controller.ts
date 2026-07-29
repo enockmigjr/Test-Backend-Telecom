@@ -2,7 +2,7 @@
  * ============================================================================
  * FICHIER : src/modules/auth/auth.controller.ts
  * RÔLE : Contrôleur REST des routes d'authentification (`/api/v1/auth`).
- * EXPLICATION (Pour non-développeurs) :
+ * EXPLICATION :
  * Ce fichier gère tous les échanges de connexion, déconnexion et gestion des jetons :
  * - `POST /auth/login` : Connexion avec email et mot de passe.
  * - `POST /auth/refresh` : Renouvellement des jetons d'accès expiré (rotation).

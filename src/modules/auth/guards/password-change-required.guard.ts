@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/auth/guards/password-change-required.guard.ts
+ * RÔLE : Garde de sécurité (Guard) NestJS pour le contrôle d'accès.
+ * EXPLICATION :
+ * Ce composant intercepte les requêtes HTTP afin de vérifier les permissions de l'utilisateur avant d'autoriser l'accès.
+ * 1. Contrôle l'authentification (ex: jetons JWT validés).
+ * 2. Applique les règles de contrôle d'accès basées sur les rôles (RBAC).
+ * ============================================================================
+ */
+
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 

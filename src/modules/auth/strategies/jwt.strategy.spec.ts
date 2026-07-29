@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/auth/strategies/jwt.strategy.spec.ts
+ * RÔLE : Suite de tests unitaires pour le composant jwt.strategy.
+ * EXPLICATION :
+ * Ce fichier contient les tests automatisés validant le comportement et l'intégrité de jwt.strategy.
+ * 1. Vérifie le fonctionnement nominal et les cas d'erreur.
+ * 2. Garantit qu'aucune régression n'est introduite lors des évolutions du code.
+ * ============================================================================
+ */
+
 import { UnauthorizedException } from '@nestjs/common';
 
 import { RedisProvider } from '../../../common/providers/redis.provider';
@@ -43,11 +54,14 @@ function payload(sessionIssuedAt: number): JwtPayload {
 }
 
 describe('JwtStrategy — révocation globale', () => {
+  /** Test : refuse un access token émis avant logout-all */
   it('refuse un access token émis avant logout-all', async () => {
     const strategy = createStrategy('2000');
 
     await expect(strategy.validate(payload(1999))).rejects.toBeInstanceOf(UnauthorizedException);
   });
+
+  /** Test : accepte une nouvelle session émise après logout-all */
 
   it('accepte une nouvelle session émise après logout-all', async () => {
     const strategy = createStrategy('2000');

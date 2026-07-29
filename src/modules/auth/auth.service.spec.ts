@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/auth/auth.service.spec.ts
+ * RÔLE : Suite de tests unitaires pour le composant auth.service.
+ * EXPLICATION :
+ * Ce fichier contient les tests automatisés validant le comportement et l'intégrité de auth.service.
+ * 1. Vérifie le fonctionnement nominal et les cas d'erreur.
+ * 2. Garantit qu'aucune régression n'est introduite lors des évolutions du code.
+ * ============================================================================
+ */
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Test, TestingModule } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
@@ -185,6 +196,7 @@ describe('AuthService', () => {
   // login()
   // =========================================================================
   describe('login() — Authentification', () => {
+    /** Test : doit retourner tokens + user pour des identifiants valides */
     it('doit retourner tokens + user pour des identifiants valides', async () => {
       // La requete utilisateur retourne un utilisateur actif
       mockSelectQuery.limit.mockResolvedValueOnce([mockUser]);
@@ -215,6 +227,8 @@ describe('AuthService', () => {
       expect(result.user.departmentName).toBe(mockDepartment.name);
     });
 
+    /** Test : doit lever UnauthorizedException pour un email inexistant */
+
     it('doit lever UnauthorizedException pour un email inexistant', async () => {
       // Aucun utilisateur trouve → limit retourne []
       mockSelectQuery.limit.mockResolvedValueOnce([]);
@@ -225,6 +239,8 @@ describe('AuthService', () => {
 
       expect(mockSelectQuery.from).toHaveBeenCalled();
     });
+
+    /** Test : doit lever UnauthorizedException pour un mot de passe incorrect */
 
     it('doit lever UnauthorizedException pour un mot de passe incorrect', async () => {
       mockSelectQuery.limit.mockResolvedValueOnce([mockUser]);
@@ -237,6 +253,8 @@ describe('AuthService', () => {
         UnauthorizedException,
       );
     });
+
+    /** Test : doit lever UnauthorizedException pour un compte desactive */
 
     it('doit lever UnauthorizedException pour un compte desactive', async () => {
       mockSelectQuery.limit.mockResolvedValueOnce([mockInactiveUser]);
@@ -260,6 +278,8 @@ describe('AuthService', () => {
       expect(mockSelectQuery.from).toHaveBeenCalled();
     });
 
+    /** Test : doit mettre a jour lastLoginAt apres une authentification reussie */
+
     it('doit mettre a jour lastLoginAt apres une authentification reussie', async () => {
       mockSelectQuery.limit.mockResolvedValueOnce([mockUser]);
       // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -280,6 +300,8 @@ describe('AuthService', () => {
   // =========================================================================
   describe('refresh() — Rotation de tokens', () => {
     const validRefreshToken = 'valid-refresh-token-hex-value-64-chars';
+
+    /** Test : doit retourner une nouvelle paire de tokens pour un refresh token valide */
 
     it('doit retourner une nouvelle paire de tokens pour un refresh token valide', async () => {
       const storedToken = {
@@ -311,6 +333,8 @@ describe('AuthService', () => {
       );
     });
 
+    /** Test : doit lever UnauthorizedException pour un refresh token revoque */
+
     it('doit lever UnauthorizedException pour un refresh token revoque', async () => {
       refreshSessions.rotate.mockRejectedValueOnce(new UnauthorizedException());
       const revokedToken = {
@@ -329,12 +353,16 @@ describe('AuthService', () => {
       await expect(service.refresh(validRefreshToken, '10.0.0.1', 'TestAgent')).rejects.toThrow(UnauthorizedException);
     });
 
+    /** Test : doit lever UnauthorizedException pour un refresh token inexistant */
+
     it('doit lever UnauthorizedException pour un refresh token inexistant', async () => {
       refreshSessions.rotate.mockRejectedValueOnce(new UnauthorizedException());
       mockSelectQuery.limit.mockResolvedValueOnce([]);
 
       await expect(service.refresh(validRefreshToken, '10.0.0.1', 'TestAgent')).rejects.toThrow(UnauthorizedException);
     });
+
+    /** Test : doit lever UnauthorizedException pour un refresh token expire */
 
     it('doit lever UnauthorizedException pour un refresh token expire', async () => {
       refreshSessions.rotate.mockRejectedValueOnce(new UnauthorizedException());
@@ -377,6 +405,7 @@ describe('AuthService', () => {
   // logout()
   // =========================================================================
   describe('logout() — Deconnexion', () => {
+    /** Test : doit revoquer le refresh token et retourner void */
     it('doit revoquer le refresh token et retourner void', async () => {
       const redisClient = redisProvider.getClient();
       mockSelectQuery.limit.mockResolvedValueOnce([{ familyId: 'family-001', userId: mockUser.id }]);
@@ -422,6 +451,8 @@ describe('AuthService', () => {
       });
     });
 
+    /** Test : doit revoquer les tokens et blacklister le JTI courant si fourni */
+
     it('doit revoquer les tokens et blacklister le JTI courant si fourni', async () => {
       const redisClient = redisProvider.getClient();
       await service.logoutAll(mockUser.id, 'jti-logout-all-123');
@@ -446,6 +477,7 @@ describe('AuthService', () => {
   // changePassword()
   // =========================================================================
   describe('changePassword() — Changement de mot de passe', () => {
+    /** Test : doit changer le mot de passe si le mot de passe actuel est correct */
     it('doit changer le mot de passe si le mot de passe actuel est correct', async () => {
       mockSelectQuery.limit.mockResolvedValueOnce([mockUser]);
 
@@ -464,6 +496,8 @@ describe('AuthService', () => {
         }),
       );
     });
+
+    /** Test : doit lever UnauthorizedException pour un mauvais mot de passe actuel */
 
     it('doit lever UnauthorizedException pour un mauvais mot de passe actuel', async () => {
       mockSelectQuery.limit.mockResolvedValueOnce([mockUser]);
@@ -484,6 +518,8 @@ describe('AuthService', () => {
         UnauthorizedException,
       );
     });
+
+    /** Test : doit hasher le nouveau mot de passe avec argon2id */
 
     it('doit hasher le nouveau mot de passe avec argon2id', async () => {
       mockSelectQuery.limit.mockResolvedValueOnce([mockUser]);

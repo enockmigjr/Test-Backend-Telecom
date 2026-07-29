@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/auth/auth.controller.spec.ts
+ * RÔLE : Suite de tests unitaires pour le composant auth.controller.
+ * EXPLICATION :
+ * Ce fichier contient les tests automatisés validant le comportement et l'intégrité de auth.controller.
+ * 1. Vérifie le fonctionnement nominal et les cas d'erreur.
+ * 2. Garantit qu'aucune régression n'est introduite lors des évolutions du code.
+ * ============================================================================
+ */
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthController } from './auth.controller';
@@ -87,6 +98,7 @@ describe('AuthController', () => {
   // login()
   // =========================================================================
   describe('POST /auth/login', () => {
+    /** Test : doit authentifier un utilisateur avec des identifiants valides */
     it('doit authentifier un utilisateur avec des identifiants valides', async () => {
       authService.login.mockResolvedValue(loginResult);
       const dto: LoginDto = { email: 'agent@telecom.local', password: 'Pass@1234' };
@@ -118,6 +130,8 @@ describe('AuthController', () => {
       expect(authService.login).toHaveBeenCalledWith(dto.email, dto.password, 'unknown', 'unknown');
     });
 
+    /** Test : doit propager UnauthorizedException du service */
+
     it('doit propager UnauthorizedException du service', async () => {
       authService.login.mockRejectedValue(new Error('Identifiants invalides.'));
       const dto: LoginDto = { email: 'inconnu@telecom.local', password: 'WrongPass' };
@@ -131,6 +145,7 @@ describe('AuthController', () => {
   // refresh()
   // =========================================================================
   describe('POST /auth/refresh', () => {
+    /** Test : doit retourner une nouvelle paire de tokens */
     it('doit retourner une nouvelle paire de tokens', async () => {
       authService.refresh.mockResolvedValue(refreshResult);
       const dto: RefreshDto = { refreshToken: 'valid-refresh-token' };
@@ -141,6 +156,8 @@ describe('AuthController', () => {
       expect(authService.refresh).toHaveBeenCalledWith(dto.refreshToken, '127.0.0.1', 'Mozilla/5.0 TestAgent');
       expect(result).toEqual(refreshResult);
     });
+
+    /** Test : doit propager les erreurs du service */
 
     it('doit propager les erreurs du service', async () => {
       authService.refresh.mockRejectedValue(new Error('Refresh token invalide.'));
@@ -155,6 +172,7 @@ describe('AuthController', () => {
   // logout()
   // =========================================================================
   describe('POST /auth/logout', () => {
+    /** Test : doit révoquer le refresh token et retourner 204 */
     it('doit révoquer le refresh token et retourner 204', async () => {
       authService.logout.mockResolvedValue(undefined);
       const dto: RefreshDto = { refreshToken: 'token-a-revoquer' };
@@ -164,6 +182,8 @@ describe('AuthController', () => {
       expect(authService.logout).toHaveBeenCalledWith(dto.refreshToken, mockUser.jti, mockUser.sub);
       expect(result).toBeUndefined();
     });
+
+    /** Test : doit fonctionner même si le token est déjà révoqué (idempotent) */
 
     it('doit fonctionner même si le token est déjà révoqué (idempotent)', async () => {
       authService.logout.mockResolvedValue(undefined);
@@ -177,6 +197,7 @@ describe('AuthController', () => {
   // logoutAll()
   // =========================================================================
   describe('POST /auth/logout-all', () => {
+    /** Test : doit révoquer toutes les sessions et retourner 204 */
     it('doit révoquer toutes les sessions et retourner 204', async () => {
       authService.logoutAll.mockResolvedValue(undefined);
 
@@ -185,6 +206,8 @@ describe('AuthController', () => {
       expect(authService.logoutAll).toHaveBeenCalledWith(mockUser.sub, mockUser.jti);
       expect(result).toBeUndefined();
     });
+
+    /** Test : doit utiliser le sub du JWT comme userId */
 
     it('doit utiliser le sub du JWT comme userId', async () => {
       authService.logoutAll.mockResolvedValue(undefined);
@@ -208,6 +231,8 @@ describe('AuthController', () => {
       expect(result.role).toBe('CUSTOMER_SERVICE_AGENT');
     });
 
+    /** Test : doit retourner le payload pour un administrateur */
+
     it('doit retourner le payload pour un administrateur', async () => {
       const admin: JwtPayload = {
         sub: 'admin-001',
@@ -227,6 +252,7 @@ describe('AuthController', () => {
   // changePassword()
   // =========================================================================
   describe('PUT /auth/change-password', () => {
+    /** Test : doit changer le mot de passe avec succès */
     it('doit changer le mot de passe avec succès', async () => {
       authService.changePassword.mockResolvedValue(undefined);
       const dto: ChangePasswordDto = {
@@ -240,6 +266,8 @@ describe('AuthController', () => {
       expect(result).toEqual(changePasswordResult);
     });
 
+    /** Test : doit utiliser le sub du JWT comme userId */
+
     it('doit utiliser le sub du JWT comme userId', async () => {
       authService.changePassword.mockResolvedValue(undefined);
       const dto: ChangePasswordDto = {
@@ -252,6 +280,8 @@ describe('AuthController', () => {
       expect(authService.changePassword).toHaveBeenCalledWith('user-001', dto.currentPassword, dto.newPassword);
     });
 
+    /** Test : doit propager UnauthorizedException pour un mauvais mot de passe actuel */
+
     it('doit propager UnauthorizedException pour un mauvais mot de passe actuel', async () => {
       authService.changePassword.mockRejectedValue(new Error('Mot de passe actuel incorrect.'));
       const dto: ChangePasswordDto = {
@@ -261,6 +291,8 @@ describe('AuthController', () => {
 
       await expect(controller.changePassword(mockUser, dto)).rejects.toThrow('Mot de passe actuel incorrect.');
     });
+
+    /** Test : doit retourner un message de confirmation */
 
     it('doit retourner un message de confirmation', async () => {
       authService.changePassword.mockResolvedValue(undefined);

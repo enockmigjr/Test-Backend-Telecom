@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/auth/refresh-session.service.spec.ts
+ * RÔLE : Suite de tests unitaires pour le composant refresh-session.service.
+ * EXPLICATION :
+ * Ce fichier contient les tests automatisés validant le comportement et l'intégrité de refresh-session.service.
+ * 1. Vérifie le fonctionnement nominal et les cas d'erreur.
+ * 2. Garantit qu'aucune régression n'est introduite lors des évolutions du code.
+ * ============================================================================
+ */
+
 import { UnauthorizedException } from '@nestjs/common';
 import { mock } from 'jest-mock-extended';
 
@@ -81,6 +92,7 @@ function createHarness(selectResults: readonly unknown[][], consumed = true) {
 }
 
 describe('RefreshSessionService', () => {
+  /** Test : consomme le token puis cree un refresh token distinct dans la meme transaction */
   it('consomme le token puis cree un refresh token distinct dans la meme transaction', async () => {
     const harness = createHarness([[{ userId: user.id }], [storedToken], [user]]);
 
@@ -111,6 +123,8 @@ describe('RefreshSessionService', () => {
     expect(harness.transaction.execute).toHaveBeenCalledTimes(1);
   });
 
+  /** Test : rejette et revoque les sessions si le contexte IP ou User-Agent change */
+
   it('rejette et revoque les sessions si le contexte IP ou User-Agent change', async () => {
     const harness = createHarness([[{ userId: user.id }], [storedToken]]);
 
@@ -121,6 +135,8 @@ describe('RefreshSessionService', () => {
     expect(harness.insertBuilder.values).not.toHaveBeenCalled();
   });
 
+  /** Test : traite comme replay un token deja revoque et revoque les sessions actives */
+
   it('traite comme replay un token deja revoque et revoque les sessions actives', async () => {
     const harness = createHarness([[{ userId: user.id }], [{ ...storedToken, revokedAt: new Date() }]]);
 
@@ -129,6 +145,8 @@ describe('RefreshSessionService', () => {
     );
     expect(harness.transaction.update).toHaveBeenCalledTimes(1);
   });
+
+  /** Test : rejette le perdant de deux consommations concurrentes et revoque les sessions */
 
   it('rejette le perdant de deux consommations concurrentes et revoque les sessions', async () => {
     const harness = createHarness([[{ userId: user.id }], [storedToken], [user]], false);

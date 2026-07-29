@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/auth/auth.module.ts
+ * RÔLE : Module NestJS organisant le composant auth.
+ * EXPLICATION :
+ * Ce module regroupe et configure les contrôleurs, services, répertoires et dépendances de auth.
+ * 1. Définit les éléments internes du domaine fonctionnel.
+ * 2. Rend les services accessibles aux autres modules ayant importé celui-ci.
+ * ============================================================================
+ */
+
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
@@ -26,4 +37,7 @@ import { RefreshSessionService } from './refresh-session.service';
   providers: [AuthService, RefreshSessionService, JwtStrategy, JwtAuthGuard, PasswordChangeRequiredGuard, RolesGuard],
   exports: [AuthService, JwtStrategy, JwtAuthGuard, PasswordChangeRequiredGuard, RolesGuard, PassportModule, JwtModule],
 })
+/**
+ * Module NestJS `AuthModule` configurant les dépendances, contrôleurs et services associés.
+ */
 export class AuthModule {}
