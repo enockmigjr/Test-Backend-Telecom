@@ -1,3 +1,15 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/categories/categories.controller.ts
+ * RÔLE : Contrôleur REST de gestion de la typologie et des catégories d'incidents.
+ * EXPLICATION :
+ * Ce contrôleur expose les points d'entrée (GET, POST, PATCH, DELETE) sur `/api/v1/categories` :
+ * 1. Consultation (`GET /`, `GET /:id`) : Accessible à tous les agents authentifiés pour alimenter les listes déroulantes de création de tickets.
+ * 2. Administration (`POST`, `PATCH`, `DELETE`) : Strictement réservé au rôle `ADMINISTRATOR` (`@Roles('ADMINISTRATOR')`).
+ * 3. Intégrité référentielle : La suppression échoue (HTTP 409) si la catégorie est associée à des tickets actifs ou à des politiques SLA.
+ * ============================================================================
+ */
+
 import { Controller, Get, Post, Patch, Delete, Body, Param, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiBody } from '@nestjs/swagger';
 import { CategoriesService } from './categories.service';
@@ -5,6 +17,9 @@ import { CreateCategoryDto, UpdateCategoryDto } from './dto/create-category.dto'
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../auth/guards/roles.guard';
 
+/**
+ * Contrôleur d'API pour le référentiel des catégories d'incidents télécom.
+ */
 @ApiTags('categories')
 @ApiBearerAuth()
 @Controller('categories')
@@ -12,6 +27,9 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 export class CategoriesController {
   constructor(private readonly categoriesService: CategoriesService) {}
 
+  /**
+   * Extrait la liste complète des catégories de tickets disponibles dans le système.
+   */
   @Get()
   @ApiOperation({
     summary: 'Liste de toutes les catégories',
@@ -24,6 +42,11 @@ export class CategoriesController {
     return this.categoriesService.findAll();
   }
 
+  /**
+   * Recherche et retourne le détail d'une catégorie d'incident par son identifiant UUIDv7.
+   *
+   * @param id Identifiant unique UUID de la catégorie.
+   */
   @Get(':id')
   @ApiOperation({
     summary: "Détails d'une catégorie",
@@ -38,6 +61,11 @@ export class CategoriesController {
     return this.categoriesService.findOne(id);
   }
 
+  /**
+   * Enregistre une nouvelle catégorie de ticket avec son rôle cible d'assignation automatique (`targetRole`).
+   *
+   * @param dto Objet DTO contenant le nom, la description et le rôle cible.
+   */
   @Post()
   @Roles('ADMINISTRATOR')
   @HttpCode(HttpStatus.CREATED)
@@ -56,6 +84,12 @@ export class CategoriesController {
     return this.categoriesService.create(dto);
   }
 
+  /**
+   * Met à jour les propriétés d'une catégorie existante (nom, description, targetRole).
+   *
+   * @param id Identifiant UUID de la catégorie.
+   * @param dto Champs modifiés.
+   */
   @Patch(':id')
   @Roles('ADMINISTRATOR')
   @ApiOperation({
@@ -74,6 +108,11 @@ export class CategoriesController {
     return this.categoriesService.update(id, dto);
   }
 
+  /**
+   * Supprime une catégorie si aucun ticket ni politique SLA ne l'utilise.
+   *
+   * @param id Identifiant UUID de la catégorie à supprimer.
+   */
   @Delete(':id')
   @Roles('ADMINISTRATOR')
   @HttpCode(HttpStatus.OK)

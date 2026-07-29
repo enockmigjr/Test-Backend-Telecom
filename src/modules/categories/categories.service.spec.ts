@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/categories/categories.service.spec.ts
+ * RÔLE : Suite de tests unitaires pour le composant categories.service.
+ * EXPLICATION :
+ * Ce fichier contient les tests automatisés validant le comportement et l'intégrité de categories.service.
+ * 1. Vérifie le fonctionnement nominal et les cas d'erreur.
+ * 2. Garantit qu'aucune régression n'est introduite lors des évolutions du code.
+ * ============================================================================
+ */
+
 import { Test } from '@nestjs/testing';
 import { DrizzleProvider } from '../../database/drizzle.provider';
 import { CategoriesService } from './categories.service';
@@ -21,6 +32,7 @@ function queryBuilder<T>(result: T[]): QueryBuilder<T> {
 }
 
 describe('CategoriesService', () => {
+  /** Test : persiste targetRole lors de la mise à jour */
   it('persiste targetRole lors de la mise à jour', async () => {
     const category = {
       id: '019f7f6b-6158-788c-ae88-f20169fd43ec',
