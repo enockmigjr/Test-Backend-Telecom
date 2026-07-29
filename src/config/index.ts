@@ -2,7 +2,7 @@
  * ============================================================================
  * FICHIER : src/config/index.ts
  * RÔLE : Point de réexportation centralisé du dossier de configuration.
- * EXPLICATION (Pour non-développeurs) :
+ * EXPLICATION :
  * Ce fichier permet de réexporter l'ensemble des modules et services de configuration
  * afin que les autres fichiers du projet puissent les importer facilement depuis une seule adresse.
  * ============================================================================

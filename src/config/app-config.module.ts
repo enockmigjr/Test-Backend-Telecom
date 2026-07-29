@@ -2,7 +2,7 @@
  * ============================================================================
  * FICHIER : src/config/app-config.module.ts
  * RÔLE : Module NestJS distribuant les services de configuration à toute l'application.
- * EXPLICATION (Pour non-développeurs) :
+ * EXPLICATION :
  * Ce module est déclaré comme "Global" (`@Global()`). Cela signifie qu'une fois
  * chargé au démarrage, tous les autres modules du projet peuvent accéder directement
  * aux configurations système, base de données et sécurité (JWT) sans avoir à réimporter ce module.
@@ -27,4 +27,7 @@ const configServices = [AppConfigService, DatabaseConfigService, JwtConfigServic
   providers: configServices,
   exports: configServices,
 })
+/**
+ * Module NestJS `AppConfigModule` configurant les dépendances, contrôleurs et services associés.
+ */
 export class AppConfigModule {}

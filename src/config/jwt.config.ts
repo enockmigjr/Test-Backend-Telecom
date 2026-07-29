@@ -2,7 +2,7 @@
  * ============================================================================
  * FICHIER : src/config/jwt.config.ts
  * RÔLE : Configuration et gestion des jetons de sécurité JWT (JSON Web Tokens).
- * EXPLICATION (Pour non-développeurs) :
+ * EXPLICATION :
  * Les jetons JWT sont comme des "badges d'accès numériques".
  * Quand un utilisateur se connecte, l'API lui délivre :
  * 1. Un "Access Token" (durée courte, ex: 15 min) pour accéder aux données.
@@ -22,6 +22,7 @@ export class JwtConfigService {
   /**
    * Clé secrète de signature pour les jetons d'accès courts (Access Tokens).
    */
+  /** Getter `accessSecret` : Récupère la valeur de configuration correspondante. */
   get accessSecret(): string {
     return this.getSecret('JWT_ACCESS_SECRET', 'dev-access-secret-change-in-production');
   }
@@ -29,6 +30,7 @@ export class JwtConfigService {
   /**
    * Clé secrète de signature pour les jetons de rafraîchissement longs (Refresh Tokens).
    */
+  /** Getter `refreshSecret` : Récupère la valeur de configuration correspondante. */
   get refreshSecret(): string {
     return this.getSecret('JWT_REFRESH_SECRET', 'dev-refresh-secret-change-in-production');
   }
@@ -36,6 +38,7 @@ export class JwtConfigService {
   /**
    * Durée de validité de l'access token exprimée sous forme de texte (ex: "15m" pour 15 minutes).
    */
+  /** Getter `accessExpiration` : Récupère la valeur de configuration correspondante. */
   get accessExpiration(): string {
     return process.env['JWT_ACCESS_EXPIRATION'] || '15m';
   }
@@ -43,6 +46,7 @@ export class JwtConfigService {
   /**
    * Durée de validité du refresh token exprimée sous forme de texte (ex: "7d" pour 7 jours).
    */
+  /** Getter `refreshExpiration` : Récupère la valeur de configuration correspondante. */
   get refreshExpiration(): string {
     return process.env['JWT_REFRESH_EXPIRATION'] || '7d';
   }
@@ -50,6 +54,7 @@ export class JwtConfigService {
   /**
    * Durée de vie de l'access token convertie en secondes (utilisée pour purger Redis).
    */
+  /** Getter `accessExpirationSeconds` : Récupère la valeur de configuration correspondante. */
   get accessExpirationSeconds(): number {
     return this.parseDuration(this.accessExpiration, 900);
   }
@@ -57,6 +62,7 @@ export class JwtConfigService {
   /**
    * Durée de vie du refresh token convertie en secondes (utilisée pour purger Redis).
    */
+  /** Getter `refreshExpirationSeconds` : Récupère la valeur de configuration correspondante. */
   get refreshExpirationSeconds(): number {
     return this.parseDuration(this.refreshExpiration, 604800);
   }

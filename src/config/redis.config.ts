@@ -2,7 +2,7 @@
  * ============================================================================
  * FICHIER : src/config/redis.config.ts
  * RÔLE : Configuration du serveur de mémoire vive Redis.
- * EXPLICATION (Pour non-développeurs) :
+ * EXPLICATION :
  * Redis est une base de données en mémoire ultra-rapide utilisée pour :
  * 1. Le cache de données (accélérer l'affichage des tableaux de bord).
  * 2. La gestion des files d'attente de tâches (BullMQ - envois d'emails, rapports PDF).
@@ -21,6 +21,7 @@ export class RedisConfigService {
   /**
    * Adresse hôte du serveur Redis (ex: localhost ou 127.0.0.1).
    */
+  /** Getter `host` : Récupère la valeur de configuration correspondante. */
   get host(): string {
     return process.env['REDIS_HOST'] || 'localhost';
   }
@@ -28,6 +29,7 @@ export class RedisConfigService {
   /**
    * Port réseau standard de Redis (6379).
    */
+  /** Getter `port` : Récupère la valeur de configuration correspondante. */
   get port(): number {
     return parseInt(process.env['REDIS_PORT'] || '6379', 10);
   }
@@ -35,6 +37,7 @@ export class RedisConfigService {
   /**
    * Mot de passe optionnel pour sécuriser l'accès à Redis.
    */
+  /** Getter `password` : Récupère la valeur de configuration correspondante. */
   get password(): string | undefined {
     return process.env['REDIS_PASSWORD'] || undefined;
   }
@@ -42,6 +45,7 @@ export class RedisConfigService {
   /**
    * URL de connexion complète à Redis (ex: redis://localhost:6379).
    */
+  /** Getter `url` : Récupère la valeur de configuration correspondante. */
   get url(): string {
     return process.env['REDIS_URL'] || `redis://${this.host}:${this.port}`;
   }
