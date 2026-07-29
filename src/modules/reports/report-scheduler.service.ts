@@ -1,3 +1,15 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/reports/report-scheduler.service.ts
+ * RÔLE : Service de planification automatique (Cron) de génération des rapports périodiques.
+ * EXPLICATION :
+ * Ce service gère les tâches planifiées de reporting pour la direction et les administrateurs :
+ * 1. `@Cron('0 6 * * 1')` : Déclenche l'exécution automatique tous les lundis à 06h00 du matin.
+ * 2. Recherche du destinataire : Récupère le premier administrateur actif (`role = ADMINISTRATOR`, `deletedAt IS NULL`).
+ * 3. Enregistrement et enfilement : Insère un rapport à l'état `pending` en base de données et envoie un job asynchrone à la file BullMQ `report` (`generate-report`).
+ * ============================================================================
+ */
+
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { eq, isNull, and } from 'drizzle-orm';
@@ -28,8 +40,8 @@ export class ReportSchedulerService {
   ) {}
 
   /**
-   * Cron hebdomadaire exécuté tous les lundis à 6h00 du matin.
-   * Génère automatiquement le rapport hebdomadaire pour le premier administrateur actif.
+   * Tâche Cron exécutée automatiquement tous les lundis à 06h00.
+   * Génère le bilan hebdomadaire des incidents et de la conformité SLA de la semaine écoulée.
    */
   @Cron('0 6 * * 1')
   async handleWeeklyReportCron(): Promise<void> {

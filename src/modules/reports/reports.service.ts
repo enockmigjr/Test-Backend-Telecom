@@ -1,3 +1,15 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/reports/reports.service.ts
+ * RÔLE : Service de génération dynamique de documents PDF et de persistance des métadonnées de rapport.
+ * EXPLICATION :
+ * Ce service utilise la bibliothèque PDFKit pour construire des documents PDF vectoriels haute qualité :
+ * 1. `generateTicketPdf` : Dessine un document PDF format A4 stylisé pour un ticket d'incident (en-tête sombre, sections structurées, détails opérationnels, délais).
+ * 2. `generateSlaPdf` : Construit un tableau de bord PDF de conformité SLA (cartes statistiques de KPIs avec codes couleurs, tableau par priorité avec alternance de couleur de ligne).
+ * 3. `createReport` & `updateReportStatus` : Gère le cycle de vie du rapport (`pending` -> `completed` / `failed`) et enregistre le chemin `objectKey` ou l'erreur.
+ * ============================================================================
+ */
+
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { DrizzleProvider } from '../../database/drizzle.provider';
 import { reports, NewReport, Report } from '../../database/schemas';
@@ -8,6 +20,7 @@ import { Queue } from 'bullmq';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { ReportQueryService } from './report-query.service';
 
+/** Données requises pour le rapport PDF d'un ticket. */
 export interface TicketReportData {
   ticketNumber?: string | null;
   title?: string | null;
@@ -24,18 +37,23 @@ export interface TicketReportData {
   departmentName?: string | null;
 }
 
+/** Métriques globales pour le rapport SLA. */
 export interface SlaStatsReportData {
   total: number;
   breached: number;
   avgResolutionMinutes: number;
 }
 
+/** Données de ventilation par priorité pour le rapport SLA. */
 export interface SlaPriorityReportData {
   priority: string | null;
   count: number;
   breached: number;
 }
 
+/**
+ * Service central de compilation PDF avec PDFKit et d'enregistrement des rapports.
+ */
 @Injectable()
 export class ReportsService {
   private readonly logger = new Logger(ReportsService.name);
@@ -47,20 +65,25 @@ export class ReportsService {
   ) {}
 
   /**
-   * Génère les données pour un rapport détaillé d'un ticket.
+   * Délègue l'extraction des données brutes d'un ticket au service de requête.
    */
   async ticketReport(ticketId: string, user?: JwtPayload) {
     return this.reportQuery.ticketReport(ticketId, user);
   }
 
   /**
-   * Génère les données pour un rapport SLA (tous les tickets d'une période).
+   * Délègue l'extraction des statistiques SLA au service de requête.
    */
   async slaReport(from?: string, to?: string, departmentId?: string) {
     return this.reportQuery.slaReport(from, to, departmentId);
   }
 
-  /** Génère un PDF avec PDFKit */
+  /**
+   * Génère un PDF générique à partir d'un titre, d'en-têtes et de lignes de tableau.
+   *
+   * @param reportData Données structurées du tableau.
+   * @returns Un Buffer binaire contenant le document PDF généré.
+   */
   async generatePdf(reportData: { title: string; headers: string[]; rows: string[][] }): Promise<Buffer> {
     return new Promise((resolve, reject) => {
       const chunks: Buffer[] = [];
@@ -92,7 +115,10 @@ export class ReportsService {
   }
 
   /**
-   * Génère un PDF stylisé et complet pour un ticket d'incident.
+   * Génère un fichier PDF élégant et complet présentant l'ensemble des détails d'un ticket d'incident.
+   *
+   * @param ticket Données de la fiche du ticket.
+   * @returns Le tampon Buffer du document PDF.
    */
   async generateTicketPdf(ticket: TicketReportData): Promise<Buffer> {
     return new Promise((resolve, reject) => {
@@ -240,7 +266,7 @@ export class ReportsService {
           .text(ticket.resolutionSummary, 40, doc.y, { width: doc.page.width - 80 });
       }
 
-      // Footer
+      // Pied de page
       doc
         .fontSize(8)
         .fillColor('#999999')
@@ -253,7 +279,12 @@ export class ReportsService {
   }
 
   /**
-   * Génère un PDF complet et esthétique pour les statistiques SLA d'une période.
+   * Génère un document PDF d'analyse de conformité SLA pour une période donnée.
+   *
+   * @param stats Synthèse globale des métriques.
+   * @param byPriority Ventilation des données par priorité.
+   * @param period Dates de début et de fin.
+   * @returns Tampon Buffer PDF.
    */
   async generateSlaPdf(
     stats: SlaStatsReportData,
@@ -375,7 +406,7 @@ export class ReportsService {
         }
 
         doc.fillColor('#111111');
-        doc.text(p.priority, 50, rowY);
+        doc.text(p.priority || 'N/A', 50, rowY);
         doc.text(String(p.count), 180, rowY);
         doc.text(String(p.breached), 320, rowY);
 
@@ -399,7 +430,7 @@ export class ReportsService {
         .font('Helvetica-Bold')
         .text(`Temps moyen de résolution de la période : ${stats.avgResolutionMinutes} minutes`, 40, doc.y);
 
-      // Footer
+      // Pied de page
       doc
         .fontSize(8)
         .fillColor('#999999')
@@ -412,21 +443,30 @@ export class ReportsService {
   }
 
   /**
-   * Crée un enregistrement de rapport en base de données.
+   * Insère un nouvel enregistrement de rapport à l'état `pending`.
+   *
+   * @param data Métadonnées du rapport.
    */
   async createReport(data: NewReport): Promise<void> {
     await this.drizzle.db.insert(reports).values(data);
   }
 
   /**
-   * Récupère un rapport par son UUID.
+   * Recherche un rapport par son identifiant unique.
+   *
+   * @param id UUID du rapport.
    */
   async getReport(id: string): Promise<Report> {
     return this.reportQuery.getReport(id);
   }
 
   /**
-   * Modifie le statut et le résultat d'un rapport.
+   * Met à jour l'état final d'un rapport (`completed` ou `failed`) avec le lien de fichier ou le message d'erreur.
+   *
+   * @param id UUID du rapport.
+   * @param status État final.
+   * @param objectKey Chemin du fichier sur le stockage local (si succès).
+   * @param errorMessage Message d'erreur (si échec).
    */
   async updateReportStatus(
     id: string,
@@ -446,7 +486,11 @@ export class ReportsService {
   }
 
   /**
-   * Liste paginée de tous les rapports (rôle ADMINISTRATOR uniquement).
+   * Extrait la liste paginée des rapports.
+   *
+   * @param page Page courante.
+   * @param limit Nombre d'éléments par page.
+   * @param requestedBy UUID de l'utilisateur demandeur (facultatif).
    */
   async listReports(
     page = 1,

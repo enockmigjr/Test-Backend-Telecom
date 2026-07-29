@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/reports/reports.module.ts
+ * RÔLE : Module NestJS organisant le composant reports.
+ * EXPLICATION :
+ * Ce module regroupe et configure les contrôleurs, services, répertoires et dépendances de reports.
+ * 1. Définit les éléments internes du domaine fonctionnel.
+ * 2. Rend les services accessibles aux autres modules ayant importé celui-ci.
+ * ============================================================================
+ */
+
 import { Module, forwardRef } from '@nestjs/common';
 import { ReportsController } from './reports.controller';
 import { ReportsService } from './reports.service';
@@ -20,4 +31,7 @@ import { PublicReportsController } from './public-reports.controller';
   ],
   exports: [ReportsService, ReportDownloadLinkService],
 })
+/**
+ * Module NestJS `ReportsModule` configurant les dépendances, contrôleurs et services associés.
+ */
 export class ReportsModule {}

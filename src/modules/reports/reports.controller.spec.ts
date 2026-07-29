@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/reports/reports.controller.spec.ts
+ * RÔLE : Suite de tests unitaires pour le composant reports.controller.
+ * EXPLICATION :
+ * Ce fichier contient les tests automatisés validant le comportement et l'intégrité de reports.controller.
+ * 1. Vérifie le fonctionnement nominal et les cas d'erreur.
+ * 2. Garantit qu'aucune régression n'est introduite lors des évolutions du code.
+ * ============================================================================
+ */
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Test, TestingModule } from '@nestjs/testing';
 import { ReportsController } from './reports.controller';
@@ -78,6 +89,7 @@ describe('ReportsController', () => {
   // ticketReport() — POST
   // =========================================================================
   describe('POST /reports/ticket/:id', () => {
+    /** Test : doit dispatcher un job de rapport ticket et retourner 202 */
     it('doit dispatcher un job de rapport ticket et retourner 202', async () => {
       const result = await controller.ticketReport('ticket-001', mockUser);
 
@@ -87,10 +99,12 @@ describe('ReportsController', () => {
         data: { reportId: expect.any(String), ticketId: 'ticket-001', requestedBy: mockUser.sub },
       });
       expect(result).toEqual({
-        message: 'Rapport en cours de generation. Vous recevrez une notification.',
+        message: 'Rapport en cours de génération. Vous recevrez une notification.',
         reportId: expect.any(String),
       });
     });
+
+    /** Test : doit utiliser le sub du JWT comme requestedBy */
 
     it('doit utiliser le sub du JWT comme requestedBy', async () => {
       await controller.ticketReport('ticket-002', mockAdmin);
@@ -100,6 +114,8 @@ describe('ReportsController', () => {
         data: { reportId: expect.any(String), ticketId: 'ticket-002', requestedBy: mockAdmin.sub },
       });
     });
+
+    /** Test : doit propager les erreurs de BullMQ */
 
     it('doit propager les erreurs de BullMQ', async () => {
       (reportQueue.add as any).mockRejectedValue(new Error('Queue indisponible'));
@@ -119,6 +135,7 @@ describe('ReportsController', () => {
   // slaReport() — GET
   // =========================================================================
   describe('GET /reports/sla', () => {
+    /** Test : doit retourner le rapport SLA avec les dates fournies */
     it('doit retourner le rapport SLA avec les dates fournies', async () => {
       (reportsService.slaReport as any).mockResolvedValue(slaReportResult);
 
@@ -128,6 +145,8 @@ describe('ReportsController', () => {
       expect(result).toEqual(slaReportResult);
     });
 
+    /** Test : doit appeler le service sans dates (valeurs par défaut) */
+
     it('doit appeler le service sans dates (valeurs par défaut)', async () => {
       (reportsService.slaReport as any).mockResolvedValue(slaReportResult);
       const emptyRange: DateRangeDto = {};
@@ -136,6 +155,8 @@ describe('ReportsController', () => {
 
       expect(reportsService.slaReport).toHaveBeenCalledWith(undefined, undefined, undefined);
     });
+
+    /** Test : doit propager les erreurs du service */
 
     it('doit propager les erreurs du service', async () => {
       (reportsService.slaReport as any).mockRejectedValue(new Error('Erreur rapport SLA'));
@@ -148,6 +169,7 @@ describe('ReportsController', () => {
   // slaReportAsync() — POST
   // =========================================================================
   describe('POST /reports/sla', () => {
+    /** Test : doit dispatcher un job de rapport SLA et retourner 202 */
     it('doit dispatcher un job de rapport SLA et retourner 202', async () => {
       const result = await controller.slaReportAsync(defaultRange, mockUser);
 
@@ -162,10 +184,12 @@ describe('ReportsController', () => {
         },
       });
       expect(result).toEqual({
-        message: 'Rapport SLA en cours de generation. Vous recevrez une notification.',
+        message: 'Rapport SLA en cours de génération. Vous recevrez une notification.',
         reportId: expect.any(String),
       });
     });
+
+    /** Test : doit dispatcher un job avec des dates non définies */
 
     it('doit dispatcher un job avec des dates non définies', async () => {
       const emptyRange: DateRangeDto = {};
@@ -183,6 +207,8 @@ describe('ReportsController', () => {
         },
       });
     });
+
+    /** Test : doit propager les erreurs de BullMQ */
 
     it('doit propager les erreurs de BullMQ', async () => {
       (reportQueue.add as any).mockRejectedValue(new Error('Erreur file'));
@@ -210,6 +236,7 @@ describe('ReportsController', () => {
   // weeklyReportAsync() — POST
   // =========================================================================
   describe('POST /reports/weekly/generate', () => {
+    /** Test : doit dispatcher un job de rapport hebdomadaire et retourner 202 */
     it('doit dispatcher un job de rapport hebdomadaire et retourner 202', async () => {
       const result = await controller.weeklyReportAsync(mockAdmin);
 
@@ -221,10 +248,12 @@ describe('ReportsController', () => {
         },
       });
       expect(result).toEqual({
-        message: 'Rapport hebdomadaire en cours de generation. Vous recevrez une notification.',
+        message: 'Rapport hebdomadaire en cours de génération. Vous recevrez une notification.',
         reportId: expect.any(String),
       });
     });
+
+    /** Test : doit propager les erreurs de BullMQ */
 
     it('doit propager les erreurs de BullMQ', async () => {
       (reportQueue.add as any).mockRejectedValue(new Error('Erreur file'));
@@ -237,6 +266,7 @@ describe('ReportsController', () => {
   // listReports() — GET
   // =========================================================================
   describe('GET /reports', () => {
+    /** Test : doit lister les rapports générés via le service */
     it('doit lister les rapports générés via le service', async () => {
       const mockResult = { data: [], meta: { total: 0, page: 1, limit: 10, totalPages: 0 } };
       reportsService.listReports.mockResolvedValue(mockResult);
@@ -246,6 +276,8 @@ describe('ReportsController', () => {
       expect(reportsService.listReports).toHaveBeenCalledWith(1, 10, mockUser.sub);
       expect(result).toEqual(mockResult);
     });
+
+    /** Test : doit autoriser un administrateur à lister tous les rapports */
 
     it('doit autoriser un administrateur à lister tous les rapports', async () => {
       reportsService.listReports.mockResolvedValue({
@@ -280,6 +312,7 @@ describe('ReportsController', () => {
   // downloadReport() — GET
   // =========================================================================
   describe('GET /reports/:id/download', () => {
+    /** Test : doit rejeter si le demandeur est différent et pas admin */
     it('doit rejeter si le demandeur est différent et pas admin', async () => {
       (reportsService.getReport as any).mockResolvedValue({
         id: 'report-001',
@@ -290,9 +323,11 @@ describe('ReportsController', () => {
       } as any);
 
       await expect(controller.downloadReport('report-001', mockUser, {} as any)).rejects.toThrow(
-        "Vous n'avez pas l'autorisation de telecharger ce rapport.",
+        "Vous n'avez pas l'autorisation de télécharger ce rapport.",
       );
     });
+
+    /** Test : doit rejeter si le rapport est en cours ou en échec */
 
     it('doit rejeter si le rapport est en cours ou en échec', async () => {
       (reportsService.getReport as any).mockResolvedValue({
@@ -304,7 +339,7 @@ describe('ReportsController', () => {
       } as any);
 
       await expect(controller.downloadReport('report-001', mockUser, {} as any)).rejects.toThrow(
-        "Le rapport n'est pas encore prêt ou a echoue.",
+        "Le rapport n'est pas encore prêt ou a échoué.",
       );
     });
   });

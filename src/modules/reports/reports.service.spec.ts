@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/reports/reports.service.spec.ts
+ * RÔLE : Suite de tests unitaires pour le composant reports.service.
+ * EXPLICATION :
+ * Ce fichier contient les tests automatisés validant le comportement et l'intégrité de reports.service.
+ * 1. Vérifie le fonctionnement nominal et les cas d'erreur.
+ * 2. Garantit qu'aucune régression n'est introduite lors des évolutions du code.
+ * ============================================================================
+ */
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Test, TestingModule } from '@nestjs/testing';
 import { ReportsService } from './reports.service';
@@ -150,11 +161,15 @@ describe('ReportsService', () => {
       await expect(service.ticketReport('ticket-inexistant')).rejects.toThrow('Ticket introuvable');
     });
 
+    /** Test : doit lever une erreur si le ticket est soft-delete */
+
     it('doit lever une erreur si le ticket est soft-delete', async () => {
       mockSelectQuery.limit.mockResolvedValueOnce([]);
 
       await expect(service.ticketReport('ticket-supprime')).rejects.toThrow('Ticket introuvable');
     });
+
+    /** Test : doit faire une jointure avec la table departments */
 
     it('doit faire une jointure avec la table departments', async () => {
       mockSelectQuery.limit.mockResolvedValueOnce([mockTicket]);
@@ -171,6 +186,7 @@ describe('ReportsService', () => {
   // slaReport()
   // =========================================================================
   describe('slaReport() — Rapport SLA sur une période', () => {
+    /** Test : doit retourner le rapport SLA avec les dates fournies */
     it('doit retourner le rapport SLA avec les dates fournies', async () => {
       // slaReport fait DEUX requêtes :
       //   1. select(...).from(tickets).where(where)              → PAS de .limit()
@@ -194,6 +210,8 @@ describe('ReportsService', () => {
       expect(result.byPriority).toHaveLength(2);
     });
 
+    /** Test : doit utiliser les dates par défaut si non fournies */
+
     it('doit utiliser les dates par défaut si non fournies', async () => {
       mockSelectQuery.where = jest
         .fn()
@@ -207,6 +225,8 @@ describe('ReportsService', () => {
       expect(result.period.from).toBeDefined();
       expect(result.period.to).toBeDefined();
     });
+
+    /** Test : doit retourner un résumé avec des zéros si aucun ticket */
 
     it('doit retourner un résumé avec des zéros si aucun ticket', async () => {
       mockSelectQuery.where = jest
@@ -228,6 +248,7 @@ describe('ReportsService', () => {
   // generatePdf()
   // =========================================================================
   describe('generatePdf() — Génération PDF', () => {
+    /** Test : doit générer un buffer PDF avec un titre et des données */
     it('doit générer un buffer PDF avec un titre et des données', async () => {
       const reportData = {
         title: 'Rapport SLA - Juin 2026',
@@ -244,6 +265,8 @@ describe('ReportsService', () => {
       expect(result.length).toBeGreaterThan(0);
     });
 
+    /** Test : doit générer un PDF avec un seul enregistrement */
+
     it('doit générer un PDF avec un seul enregistrement', async () => {
       const reportData = {
         title: 'Rapport Ticket',
@@ -256,6 +279,8 @@ describe('ReportsService', () => {
       expect(result).toBeInstanceOf(Buffer);
     });
 
+    /** Test : doit générer un PDF avec des données vides (uniquement en-têtes) */
+
     it('doit générer un PDF avec des données vides (uniquement en-têtes)', async () => {
       const reportData = {
         title: 'Rapport Vide',
@@ -267,6 +292,8 @@ describe('ReportsService', () => {
 
       expect(result).toBeInstanceOf(Buffer);
     });
+
+    /** Test : doit retourner un buffer même avec un jeu de données minimal */
 
     it('doit retourner un buffer même avec un jeu de données minimal', async () => {
       const reportData = {
