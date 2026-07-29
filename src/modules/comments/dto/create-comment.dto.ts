@@ -1,7 +1,22 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/comments/dto/create-comment.dto.ts
+ * RÔLE : DTO de validation pour la création d'un commentaire public sur un ticket.
+ * EXPLICATION :
+ * Ce DTO valide le texte d'un commentaire public rédigé par un agent ou un client (POST /tickets/:ticketId/comments) :
+ * 1. `content` : Texte du message (de 1 à 5 000 caractères max).
+ * 2. Les commentaires publics sont visibles par l'ensemble des rôles ayant accès au ticket.
+ * ============================================================================
+ */
+
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString, MinLength, MaxLength } from 'class-validator';
 
+/**
+ * Objet DTO de création d'un commentaire public.
+ */
 export class CreateCommentDto {
+  /** Contenu textuel du commentaire public (1 à 5000 caractères). */
   @ApiProperty({
     description: 'Contenu du commentaire public',
     example: 'Information complémentaire sur la panne en cours — le technicien est sur place.',

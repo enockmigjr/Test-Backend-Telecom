@@ -1,3 +1,15 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/comments/comments.controller.ts
+ * RÔLE : Contrôleur REST de gestion des commentaires publics d'incidents.
+ * EXPLICATION :
+ * Ce contrôleur gère la communication publique autour d'un ticket :
+ * 1. `GET /tickets/:ticketId/comments` : Liste paginée chronologique des échanges publics sur un ticket visible.
+ * 2. `POST /tickets/:ticketId/comments` : Création d'un commentaire public par tout agent autorisé.
+ * 3. `PATCH /comments/:id` & `DELETE /comments/:id` : Modification et suppression restreintes à l'auteur du commentaire, un `SUPERVISOR` ou un `ADMINISTRATOR`.
+ * ============================================================================
+ */
+
 import { Controller, Get, Post, Patch, Delete, Body, Param, Query, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiQuery, ApiBody } from '@nestjs/swagger';
 import { CommentsService } from './comments.service';
@@ -7,12 +19,22 @@ import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 
+/**
+ * Contrôleur d'API pour les échanges et commentaires publics sur les tickets.
+ */
 @ApiTags('comments')
 @ApiBearerAuth()
 @Controller()
 export class CommentsController {
   constructor(private readonly commentsService: CommentsService) {}
 
+  /**
+   * Récupère la liste paginée des commentaires publics enregistrés sur un ticket.
+   *
+   * @param ticketId Identifiant UUIDv7 du ticket d'incident.
+   * @param pagination Paramètres de pagination (`page`, `limit`).
+   * @param user Utilisateur authentifié (contrôle de visibilité du ticket).
+   */
   @Get('tickets/:ticketId/comments')
   @ApiOperation({
     summary: "Commentaires publics d'un ticket",
@@ -40,6 +62,13 @@ export class CommentsController {
     return this.commentsService.findAll(ticketId, user, pagination.page, pagination.limit);
   }
 
+  /**
+   * Ajoute un nouveau commentaire public sur le ticket spécifié.
+   *
+   * @param ticketId Identifiant UUID du ticket.
+   * @param dto Contenu textuel du commentaire (1 à 5000 caractères).
+   * @param user Utilisateur auteur.
+   */
   @Post('tickets/:ticketId/comments')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
@@ -60,6 +89,13 @@ export class CommentsController {
     return this.commentsService.create(ticketId, user, dto.content);
   }
 
+  /**
+   * Modifie le texte d'un commentaire public existant.
+   *
+   * @param id Identifiant UUID du commentaire.
+   * @param dto Nouveau texte.
+   * @param user Utilisateur demandeur.
+   */
   @Patch('comments/:id')
   @ApiOperation({
     summary: 'Modifier un commentaire',
@@ -77,6 +113,12 @@ export class CommentsController {
     return this.commentsService.update(id, user, dto.content);
   }
 
+  /**
+   * Supprime un commentaire public.
+   *
+   * @param id Identifiant UUID du commentaire.
+   * @param user Utilisateur demandeur.
+   */
   @Delete('comments/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({

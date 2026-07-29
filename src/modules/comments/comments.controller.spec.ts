@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/comments/comments.controller.spec.ts
+ * RÔLE : Suite de tests unitaires pour le composant comments.controller.
+ * EXPLICATION :
+ * Ce fichier contient les tests automatisés validant le comportement et l'intégrité de comments.controller.
+ * 1. Vérifie le fonctionnement nominal et les cas d'erreur.
+ * 2. Garantit qu'aucune régression n'est introduite lors des évolutions du code.
+ * ============================================================================
+ */
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Test, TestingModule } from '@nestjs/testing';
 import { CommentsController } from './comments.controller';
@@ -93,6 +104,7 @@ describe('CommentsController', () => {
   // findAll()
   // =========================================================================
   describe('GET tickets/:ticketId/comments', () => {
+    /** Test : doit retourner la liste paginée des commentaires */
     it('doit retourner la liste paginée des commentaires', async () => {
       commentsService.findAll.mockResolvedValue(paginatedResult);
 
@@ -102,6 +114,8 @@ describe('CommentsController', () => {
       expect(result).toEqual(paginatedResult);
     });
 
+    /** Test : doit utiliser les valeurs par défaut de pagination */
+
     it('doit utiliser les valeurs par défaut de pagination', async () => {
       commentsService.findAll.mockResolvedValue(paginatedResult);
 
@@ -109,6 +123,8 @@ describe('CommentsController', () => {
 
       expect(commentsService.findAll).toHaveBeenCalledWith('ticket-001', mockUser, 1, 20);
     });
+
+    /** Test : doit transmettre la page demandée */
 
     it('doit transmettre la page demandée', async () => {
       commentsService.findAll.mockResolvedValue(paginatedResult);
@@ -123,6 +139,7 @@ describe('CommentsController', () => {
   // create()
   // =========================================================================
   describe('POST tickets/:ticketId/comments', () => {
+    /** Test : doit créer un commentaire et retourner 201 */
     it('doit créer un commentaire et retourner 201', async () => {
       commentsService.create.mockResolvedValue(createResult);
 
@@ -131,6 +148,8 @@ describe('CommentsController', () => {
       expect(commentsService.create).toHaveBeenCalledWith('ticket-001', mockUser, 'Nouveau commentaire');
       expect(result).toEqual(createResult);
     });
+
+    /** Test : doit utiliser le sub du JWT comme authorId */
 
     it('doit utiliser le sub du JWT comme authorId', async () => {
       commentsService.create.mockResolvedValue(createResult);
@@ -146,6 +165,7 @@ describe('CommentsController', () => {
   // update()
   // =========================================================================
   describe('PATCH comments/:id', () => {
+    /** Test : doit mettre à jour un commentaire */
     it('doit mettre à jour un commentaire', async () => {
       commentsService.update.mockResolvedValue(updateResult);
 
@@ -154,6 +174,8 @@ describe('CommentsController', () => {
       expect(commentsService.update).toHaveBeenCalledWith('comment-001', mockUser, 'Contenu modifié');
       expect(result).toEqual(updateResult);
     });
+
+    /** Test : doit utiliser le role ADMINISTRATOR pour les admin */
 
     it('doit utiliser le role ADMINISTRATOR pour les admin', async () => {
       commentsService.update.mockResolvedValue(updateResult);
@@ -168,6 +190,7 @@ describe('CommentsController', () => {
   // remove()
   // =========================================================================
   describe('DELETE comments/:id', () => {
+    /** Test : doit supprimer un commentaire et retourner 204 */
     it('doit supprimer un commentaire et retourner 204', async () => {
       commentsService.remove.mockResolvedValue(undefined);
 
@@ -177,6 +200,8 @@ describe('CommentsController', () => {
       expect(result).toBeUndefined();
     });
 
+    /** Test : doit gérer la suppression par un administrateur */
+
     it('doit gérer la suppression par un administrateur', async () => {
       commentsService.remove.mockResolvedValue(undefined);
 
@@ -184,6 +209,8 @@ describe('CommentsController', () => {
 
       expect(commentsService.remove).toHaveBeenCalledWith('comment-other', mockAdmin);
     });
+
+    /** Test : doit propager les erreurs du service (not found, forbidden) */
 
     it('doit propager les erreurs du service (not found, forbidden)', async () => {
       commentsService.remove.mockRejectedValue(new Error('Erreur du service'));

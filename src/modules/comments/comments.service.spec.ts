@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/comments/comments.service.spec.ts
+ * RÔLE : Suite de tests unitaires pour le composant comments.service.
+ * EXPLICATION :
+ * Ce fichier contient les tests automatisés validant le comportement et l'intégrité de comments.service.
+ * 1. Vérifie le fonctionnement nominal et les cas d'erreur.
+ * 2. Garantit qu'aucune régression n'est introduite lors des évolutions du code.
+ * ============================================================================
+ */
+
 import { ForbiddenException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { TicketAccessService } from '../../common/services/ticket-access.service';
@@ -48,11 +59,15 @@ describe('CommentsService - isolation ticket', () => {
     service = moduleRef.get(CommentsService);
   });
 
+  /** Test : refuse la liste avant toute lecture quand le ticket est hors scope */
+
   it('refuse la liste avant toute lecture quand le ticket est hors scope', async () => {
     ticketAccess.assertTicketVisible.mockRejectedValue(new ForbiddenException());
     await expect(service.findAll('ticket-other', user)).rejects.toBeInstanceOf(ForbiddenException);
     expect(select).not.toHaveBeenCalled();
   });
+
+  /** Test : borne la pagination et lit seulement apres autorisation */
 
   it('borne la pagination et lit seulement apres autorisation', async () => {
     const countQuery = query([{ count: 0 }]);
@@ -64,11 +79,15 @@ describe('CommentsService - isolation ticket', () => {
     expect(result.meta).toEqual({ page: 1, limit: 100, total: 0, totalPages: 0 });
   });
 
+  /** Test : refuse la creation hors scope sans insertion */
+
   it('refuse la creation hors scope sans insertion', async () => {
     ticketAccess.assertTicketVisible.mockRejectedValue(new ForbiddenException());
     await expect(service.create('ticket-other', user, 'Contenu')).rejects.toBeInstanceOf(ForbiddenException);
     expect(db.insert).not.toHaveBeenCalled();
   });
+
+  /** Test : refuse la modification hors scope avant toute ecriture */
 
   it('refuse la modification hors scope avant toute ecriture', async () => {
     select.mockReturnValueOnce(query([{ id: 'comment-001', ticketId: 'ticket-other', authorId: user.sub }]));
@@ -78,6 +97,8 @@ describe('CommentsService - isolation ticket', () => {
 
     expect(db.update).not.toHaveBeenCalled();
   });
+
+  /** Test : refuse la suppression hors scope avant toute ecriture */
 
   it('refuse la suppression hors scope avant toute ecriture', async () => {
     select.mockReturnValueOnce(query([{ id: 'comment-001', ticketId: 'ticket-other', authorId: user.sub }]));
