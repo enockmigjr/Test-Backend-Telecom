@@ -1,3 +1,16 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/email/email.service.ts
+ * RÔLE : Service de composition et d'expédition d'emails transactionnels (Nodemailer + Handlebars).
+ * EXPLICATION :
+ * Ce service assure la génération et l'envoi des notifications par courrier électronique :
+ * 1. Transporteur SMTP : Utilise Mailpit (`localhost:1025`) en développement et un serveur SMTP sécurisé en production.
+ * 2. Moteur de templates Handlebars : Charge de manière dynamique les gabarits `.hbs` dans `src/modules/email/templates/`, enregistre le layout global `base.hbs`, et applique une mise en forme visuelle (couleurs d'accentuation d'urgence pour SLA).
+ * 3. `sendTemplate` : Compile, injecte le contexte applicatif (liens, logo, pied de page) et expédie l'email.
+ * 4. `send` : Méthode bas niveau d'expédition HTML directe avec support des pièces jointes binaires (rapports PDF).
+ * ============================================================================
+ */
+
 import { Injectable, Logger } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 import type { Transporter } from 'nodemailer';
@@ -6,12 +19,7 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 
 /**
- * Service d'envoi d'emails avec compilation Handlebars.
- *
- * Dev: utilise Mailpit (SMTP localhost:1025, pas d'auth)
- * Prod: utilise le SMTP configuré via variables d'environnement
- *
- * Templates disponibles dans src/modules/email/templates/*.hbs
+ * Service gérant la mise en page HTML, la compilation Handlebars et l'envoi SMTP d'emails.
  */
 @Injectable()
 export class EmailService {
@@ -61,11 +69,12 @@ export class EmailService {
   }
 
   /**
-   * Compile un template Handlebars à partir du système de fichiers.
+   * Compile un template Handlebars à partir du système de fichiers en le convertissant en kebab-case.
+   *
+   * @param name Nom du template (ex: 'ticketCreated' -> 'ticket-created.hbs').
+   * @returns La fonction déléguée Handlebars compilée.
    */
   private compileTemplate(name: string): HandlebarsTemplateDelegate {
-    // Convertir les noms de template camelCase ou PascalCase en kebab-case
-    // Exemple: ticketCreated -> ticket-created, slaBreach -> sla-breach
     const kebabName = name.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
 
     if (!this.compiledTemplates.has(kebabName)) {
@@ -78,7 +87,13 @@ export class EmailService {
   }
 
   /**
-   * Envoie un email en utilisant un template Handlebars.
+   * Envoie un e-mail au format HTML en utilisant un modèle Handlebars précompilé et enrichi du contexte système.
+   *
+   * @param to Adresse email du destinataire.
+   * @param subject Objet de l'e-mail.
+   * @param templateName Nom du modèle Handlebars.
+   * @param data Variables d'injection pour le modèle.
+   * @param attachments Fichiers joints optionnels (ex: rapports PDF).
    */
   async sendTemplate(
     to: string,
@@ -89,18 +104,18 @@ export class EmailService {
   ): Promise<void> {
     const template = this.compileTemplate(templateName);
 
-    // Déterminer la couleur de l'accent et le texte de pied de page selon le type de template
+    // Déterminer la couleur de l'accentuation visuelle et le texte de pied de page selon le type de notification
     let accentColor = '#111111';
     let footerText = `Cet e-mail vous a été envoyé par la plateforme de gestion de tickets.`;
 
     if (templateName.toLowerCase().includes('breach')) {
-      accentColor = '#dc2626'; // Rouge pour les violations de SLA
+      accentColor = '#dc2626'; // Rouge d'urgence pour les violations de SLA
       footerText = `Alerte de dépassement générée automatiquement par le moteur SLA.`;
     } else if (templateName.toLowerCase().includes('warning')) {
-      accentColor = '#f59e0b'; // Orange/Ambre pour les avertissements SLA imminent
+      accentColor = '#f59e0b'; // Ambre préventif pour les avertissements SLA imminents
       footerText = `Notification préventive générée par le moteur SLA.`;
     } else if (templateName.toLowerCase().includes('deassigned') || templateName.toLowerCase().includes('deassign')) {
-      accentColor = '#dc2626'; // Rouge pour les désassignations d'urgence
+      accentColor = '#dc2626'; // Rouge pour les réallocations d'urgence
       footerText = `Notification de désassignation générée par le moteur d'auto-assignation.`;
     } else if (templateName.toLowerCase().includes('assign')) {
       footerText = `Vous recevez cet e-mail car vous êtes assigné à ce ticket.`;
@@ -136,7 +151,12 @@ export class EmailService {
   }
 
   /**
-   * Envoie un email avec HTML brut.
+   * Envoie directement un e-mail HTML au destinataire via le transporteur Nodemailer.
+   *
+   * @param to Adresse du destinataire.
+   * @param subject Sujet du courriel.
+   * @param html Contenu HTML compilé.
+   * @param attachments Liste optionnelle de fichiers joints.
    */
   async send(
     to: string,
