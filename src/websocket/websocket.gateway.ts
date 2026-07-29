@@ -1,3 +1,19 @@
+/**
+ * ============================================================================
+ * FICHIER : src/websocket/websocket.gateway.ts
+ * RÔLE : Passerelle WebSocket principale Socket.IO (Espace de noms `/ws`).
+ * EXPLICATION :
+ * Ce composant gère les communications bidirectionnelles temps réel entre le serveur backend et les clients web/mobile :
+ * 1. Authentification lors du Handshake WebSocket via le cookie d'accès HttpOnly ou le jeton Bearer (`WebSocketAuthService`).
+ * 2. Inscription automatique du socket client dans 3 salons d'événements (Rooms) :
+ *    - `user:{userId}` : Notifications individuelles et alertes personnelles.
+ *    - `department:{departmentId}` : Événements métier du département (nouveaux tickets, escalades, résolutions).
+ *    - `session:{jti}` : Canal d'invalidation immédiate en cas de déconnexion/révocation.
+ * 3. Suivi multi-onglets des connexions actives et mise à jour des métriques Prometheus (`wsConnections`, `activeUsers`).
+ * 4. Écoute des événements de domaine (`auth.session.revoked`, `auth.user-sessions.revoked`) pour couper instantanément les sockets révoqués.
+ * ============================================================================
+ */
+
 import {
   WebSocketGateway,
   WebSocketServer,
@@ -35,6 +51,7 @@ import { AuthSessionRevokedEvent, AuthUserSessionsRevokedEvent } from '../module
  *
  * Événements acceptés du client :
  * - ping → pong (heartbeat)
+ * Passerelle Socket.IO configurée sur le namespace `/ws` avec validation CORS et authentification JWT.
  */
 @WebSocketGateway({
   cors: { origin: websocketCorsOrigin, credentials: true },

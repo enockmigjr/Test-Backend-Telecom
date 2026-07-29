@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/websocket/websocket.gateway.spec.ts
+ * RÔLE : Suite de tests unitaires pour le composant websocket.gateway.
+ * EXPLICATION :
+ * Ce fichier contient les tests automatisés validant le comportement et l'intégrité de websocket.gateway.
+ * 1. Vérifie le fonctionnement nominal et les cas d'erreur.
+ * 2. Garantit qu'aucune régression n'est introduite lors des évolutions du code.
+ * ============================================================================
+ */
+
 import { Test } from '@nestjs/testing';
 import { Server, Socket } from 'socket.io';
 import { DeepMockProxy, mock, mockDeep, MockProxy } from 'jest-mock-extended';
@@ -55,6 +66,8 @@ describe('TelecomWebSocketGateway', () => {
     gateway.server = server as unknown as Server;
   });
 
+  /** Test : authentifie le cookie puis joint uniquement les rooms calculees par le serveur */
+
   it('authentifie le cookie puis joint uniquement les rooms calculees par le serveur', async () => {
     auth.authenticate.mockResolvedValue(payload);
     const client = makeSocket('access_token=jwt-value');
@@ -70,6 +83,8 @@ describe('TelecomWebSocketGateway', () => {
     expect(client.disconnect).not.toHaveBeenCalled();
   });
 
+  /** Test : rejette une connexion dont le cookie est absent ou invalide */
+
   it('rejette une connexion dont le cookie est absent ou invalide', async () => {
     auth.authenticate.mockRejectedValue(new Error('unauthorized'));
     const client = makeSocket();
@@ -80,10 +95,14 @@ describe('TelecomWebSocketGateway', () => {
     expect(client.join).not.toHaveBeenCalled();
   });
 
+  /** Test : ne decompte pas une connexion jamais authentifiee */
+
   it('ne decompte pas une connexion jamais authentifiee', () => {
     gateway.handleDisconnect(makeSocket() as unknown as Socket);
     expect(metrics.wsConnections.dec).not.toHaveBeenCalled();
   });
+
+  /** Test : suit plusieurs sockets legitimes du meme utilisateur */
 
   it('suit plusieurs sockets legitimes du meme utilisateur', async () => {
     auth.authenticate.mockResolvedValue(payload);
@@ -96,6 +115,8 @@ describe('TelecomWebSocketGateway', () => {
     expect(gateway.isUserConnected(payload.sub)).toBe(true);
     expect(gateway.getConnectionCount()).toBe(2);
   });
+
+  /** Test : deconnecte uniquement les sockets de la session revoquee */
 
   it('deconnecte uniquement les sockets de la session revoquee', async () => {
     const first = makeSocket('access_token=one');
@@ -123,11 +144,15 @@ describe('TelecomWebSocketGateway', () => {
     expect(disconnectSockets).toHaveBeenCalledWith(true);
   });
 
+  /** Test : emet uniquement depuis les APIs serveur */
+
   it('emet uniquement depuis les APIs serveur', () => {
     gateway.emitToUser('user-001', 'ticket.created', { id: 'ticket-001' });
     expect(server.to).toHaveBeenCalledWith('user:user-001');
     expect(server.emit).toHaveBeenCalledWith('ticket.created', { id: 'ticket-001' });
   });
+
+  /** Test : repond au heartbeat sans modifier les rooms */
 
   it('repond au heartbeat sans modifier les rooms', () => {
     expect(gateway.handlePing()).toEqual({ event: 'pong', data: expect.any(String) });

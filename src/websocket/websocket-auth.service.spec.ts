@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/websocket/websocket-auth.service.spec.ts
+ * RÔLE : Suite de tests unitaires pour le composant websocket-auth.service.
+ * EXPLICATION :
+ * Ce fichier contient les tests automatisés validant le comportement et l'intégrité de websocket-auth.service.
+ * 1. Vérifie le fonctionnement nominal et les cas d'erreur.
+ * 2. Garantit qu'aucune régression n'est introduite lors des évolutions du code.
+ * ============================================================================
+ */
+
 import { ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { mock, MockProxy } from 'jest-mock-extended';
@@ -35,6 +46,8 @@ describe('WebSocketAuthService', () => {
     process.env = originalEnv;
   });
 
+  /** Test : valide le JWT du cookie HttpOnly via la strategie HTTP complete */
+
   it('valide le JWT du cookie HttpOnly via la strategie HTTP complete', async () => {
     jwtService.verifyAsync.mockResolvedValue(validatedPayload);
     jwtStrategy.validate.mockResolvedValue(validatedPayload);
@@ -44,16 +57,22 @@ describe('WebSocketAuthService', () => {
     expect(jwtStrategy.validate).toHaveBeenCalledWith(validatedPayload);
   });
 
+  /** Test : rejette les tokens fournis hors cookie */
+
   it('rejette les tokens fournis hors cookie', async () => {
     await expect(service.authenticate(undefined)).rejects.toBeInstanceOf(UnauthorizedException);
     expect(jwtService.verifyAsync).not.toHaveBeenCalled();
   });
+
+  /** Test : rejette les cookies dupliques pour eviter une interpretation ambigue */
 
   it('rejette les cookies dupliques pour eviter une interpretation ambigue', async () => {
     await expect(service.authenticate('access_token=first; access_token=second')).rejects.toBeInstanceOf(
       UnauthorizedException,
     );
   });
+
+  /** Test : rejette le temps reel tant que le mot de passe temporaire doit etre change */
 
   it('rejette le temps reel tant que le mot de passe temporaire doit etre change', async () => {
     jwtService.verifyAsync.mockResolvedValue(validatedPayload);
@@ -62,6 +81,8 @@ describe('WebSocketAuthService', () => {
     await expect(service.authenticate('access_token=signed.jwt')).rejects.toBeInstanceOf(ForbiddenException);
   });
 
+  /** Test : utilise par defaut le meme cookie __Host que le BFF en production */
+
   it('utilise par defaut le meme cookie __Host que le BFF en production', async () => {
     process.env['NODE_ENV'] = 'production';
     jwtService.verifyAsync.mockResolvedValue(validatedPayload);
@@ -69,6 +90,8 @@ describe('WebSocketAuthService', () => {
 
     await expect(service.authenticate('__Host-access-token=signed.jwt')).resolves.toEqual(validatedPayload);
   });
+
+  /** Test : rejette un nom de cookie non durci en production */
 
   it('rejette un nom de cookie non durci en production', async () => {
     process.env['NODE_ENV'] = 'production';
