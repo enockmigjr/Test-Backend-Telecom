@@ -41,5 +41,5 @@ function sortJson(value: unknown): unknown {
  * @returns Chaîne JSON formatée et triée.
  */
 export function stableJson(value: unknown): string {
-  return `${JSON.stringify(sortJson(value))}\n`;
+  return `${JSON.stringify(sortJson(value), null, 2)}\n`;
 }

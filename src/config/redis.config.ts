@@ -23,7 +23,18 @@ export class RedisConfigService {
    */
   /** Getter `host` : Récupère la valeur de configuration correspondante. */
   get host(): string {
-    return process.env['REDIS_HOST'] || 'localhost';
+    if (process.env['REDIS_HOST']) {
+      return process.env['REDIS_HOST'] === 'localhost' ? '127.0.0.1' : process.env['REDIS_HOST'];
+    }
+    if (process.env['REDIS_URL']) {
+      try {
+        const parsed = new URL(process.env['REDIS_URL']);
+        if (parsed.hostname) {
+          return parsed.hostname === 'localhost' ? '127.0.0.1' : parsed.hostname;
+        }
+      } catch {}
+    }
+    return '127.0.0.1';
   }
 
   /**
@@ -31,7 +42,18 @@ export class RedisConfigService {
    */
   /** Getter `port` : Récupère la valeur de configuration correspondante. */
   get port(): number {
-    return parseInt(process.env['REDIS_PORT'] || '6379', 10);
+    if (process.env['REDIS_PORT']) {
+      return parseInt(process.env['REDIS_PORT'], 10);
+    }
+    if (process.env['REDIS_URL']) {
+      try {
+        const parsed = new URL(process.env['REDIS_URL']);
+        if (parsed.port) {
+          return parseInt(parsed.port, 10);
+        }
+      } catch {}
+    }
+    return 6379;
   }
 
   /**

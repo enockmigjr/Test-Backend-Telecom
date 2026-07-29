@@ -116,8 +116,10 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     env:
-      DATABASE_URL: postgresql://telecom:telecom_secret@localhost:5432/telecom_tickets_test
-      REDIS_URL: redis://localhost:6379
+      DATABASE_URL: postgresql://telecom:telecom_secret@127.0.0.1:5432/telecom_tickets_test
+      REDIS_URL: redis://127.0.0.1:6379
+      REDIS_HOST: 127.0.0.1
+      REDIS_PORT: 6379
       NODE_ENV: test
       JWT_ACCESS_SECRET: test-access-secret-min-32-chars!!
       JWT_REFRESH_SECRET: test-refresh-secret-min-32-chars!!
@@ -132,6 +134,10 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
+      - name: Push database schema
+        run: pnpm run db:push
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL }}
       - name: Vérifier le contrat et le snapshot OpenAPI
         run: |
           git ls-files --error-unmatch openapi.json
@@ -168,8 +174,10 @@ jobs:
           --health-retries 5
 
     env:
-      DATABASE_URL: postgresql://telecom:telecom_secret@localhost:5432/telecom_tickets_test
-      REDIS_URL: redis://localhost:6379
+      DATABASE_URL: postgresql://telecom:telecom_secret@127.0.0.1:5432/telecom_tickets_test
+      REDIS_URL: redis://127.0.0.1:6379
+      REDIS_HOST: 127.0.0.1
+      REDIS_PORT: 6379
       NODE_ENV: test
       JWT_ACCESS_SECRET: test-access-secret-min-32-chars!!
       JWT_REFRESH_SECRET: test-refresh-secret-min-32-chars!!
@@ -204,6 +212,8 @@ jobs:
         env:
           DATABASE_URL: ${{ env.DATABASE_URL }}
           REDIS_URL: ${{ env.REDIS_URL }}
+          REDIS_HOST: ${{ env.REDIS_HOST }}
+          REDIS_PORT: ${{ env.REDIS_PORT }}
           NODE_ENV: ${{ env.NODE_ENV }}
           JWT_ACCESS_SECRET: ${{ env.JWT_ACCESS_SECRET }}
           JWT_REFRESH_SECRET: ${{ env.JWT_REFRESH_SECRET }}
