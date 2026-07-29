@@ -2,11 +2,11 @@
 
 ## Vue d'ensemble
 
-| Type              | Nombre | Emplacement        | Commande              |
-| ----------------- | ------ | ------------------- | --------------------- |
-| Unitaires         | 453    | `src/**/*.spec.ts`  | `pnpm run test:unit`  |
-| End-to-End (E2E)  | 110    | `test/*.e2e-spec.ts`| `pnpm run test:e2e`   |
-| **Total**         | **563**| —                   | `pnpm run test:all`   |
+| Type             | Nombre  | Emplacement          | Commande             |
+| ---------------- | ------- | -------------------- | -------------------- |
+| Unitaires        | 453     | `src/**/*.spec.ts`   | `pnpm run test:unit` |
+| End-to-End (E2E) | 110     | `test/*.e2e-spec.ts` | `pnpm run test:e2e`  |
+| **Total**        | **563** | —                    | `pnpm run test:all`  |
 
 ## Commandes
 
@@ -48,10 +48,7 @@ describe('TicketsService', () => {
 
   beforeEach(async () => {
     const module = await Test.createTestingModule({
-      providers: [
-        TicketsService,
-        { provide: DRIZZLE_TOKEN, useValue: mockDeep<DrizzleDB>() },
-      ],
+      providers: [TicketsService, { provide: DRIZZLE_TOKEN, useValue: mockDeep<DrizzleDB>() }],
     }).compile();
 
     service = module.get(TicketsService);
@@ -141,23 +138,23 @@ describe('AuthController (e2e)', () => {
 
 ## Couverture de tests par module
 
-| Module          | Unitaires | E2E  |
-| --------------- | --------- | ---- |
-| Auth            | ✅ Service + Controller | ✅ Login, refresh, logout |
-| Users           | ✅ Service + Controller | ✅ CRUD + activation |
-| Tickets         | ✅ Service + Controller | ✅ CRUD + state machine |
-| Comments        | ✅ Service + Controller | ✅ CRUD |
-| Internal Notes  | ✅ Service + Controller | ✅ CRUD |
-| Departments     | ✅ Service + Controller | ✅ CRUD |
-| Categories      | ✅ Service + Controller | ✅ CRUD |
-| SLA             | ✅ Service + Controller | ✅ CRUD + engine |
-| Dashboard       | ✅ Service + Controller | ✅ 7 endpoints |
-| Audit Logs      | ✅ Service + Controller | ✅ Liste + filtres |
-| Notifications   | ✅ Service + Controller | ✅ CRUD + mark-read |
-| Settings        | ✅ Service + Controller | ✅ GET + PATCH |
-| Email           | ✅ Service              | — |
-| Reports         | ✅ Service + Controller | ✅ Génération |
-| Attachments     | ✅ Service + Controller | ✅ Upload/download |
+| Module         | Unitaires               | E2E                       |
+| -------------- | ----------------------- | ------------------------- |
+| Auth           | ✅ Service + Controller | ✅ Login, refresh, logout |
+| Users          | ✅ Service + Controller | ✅ CRUD + activation      |
+| Tickets        | ✅ Service + Controller | ✅ CRUD + state machine   |
+| Comments       | ✅ Service + Controller | ✅ CRUD                   |
+| Internal Notes | ✅ Service + Controller | ✅ CRUD                   |
+| Departments    | ✅ Service + Controller | ✅ CRUD                   |
+| Categories     | ✅ Service + Controller | ✅ CRUD                   |
+| SLA            | ✅ Service + Controller | ✅ CRUD + engine          |
+| Dashboard      | ✅ Service + Controller | ✅ 7 endpoints            |
+| Audit Logs     | ✅ Service + Controller | ✅ Liste + filtres        |
+| Notifications  | ✅ Service + Controller | ✅ CRUD + mark-read       |
+| Settings       | ✅ Service + Controller | ✅ GET + PATCH            |
+| Email          | ✅ Service              | —                         |
+| Reports        | ✅ Service + Controller | ✅ Génération             |
+| Attachments    | ✅ Service + Controller | ✅ Upload/download        |
 
 ## Bonnes pratiques
 

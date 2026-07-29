@@ -2,17 +2,17 @@
 
 ## Statuts
 
-| Statut                  | Code                    | Description                              |
-| ----------------------- | ----------------------- | ---------------------------------------- |
-| Nouveau                 | `NEW`                   | Ticket vient d'être créé                 |
-| Assigné                 | `ASSIGNED`              | Ticket assigné à un agent                |
-| En cours                | `IN_PROGRESS`           | Agent travaille sur le ticket            |
-| En attente client       | `PENDING_CUSTOMER`      | En attente d'information du client       |
-| En attente tiers        | `PENDING_THIRD_PARTY`   | En attente d'un prestataire externe      |
-| Résolu                  | `RESOLVED`              | Solution appliquée                       |
-| Clôturé                 | `CLOSED`                | Ticket fermé définitivement              |
-| Réouvert                | `REOPENED`              | Ticket réouvert après clôture            |
-| Annulé                  | `CANCELLED`             | Ticket annulé (n'a plus lieu d'être)     |
+| Statut            | Code                  | Description                          |
+| ----------------- | --------------------- | ------------------------------------ |
+| Nouveau           | `NEW`                 | Ticket vient d'être créé             |
+| Assigné           | `ASSIGNED`            | Ticket assigné à un agent            |
+| En cours          | `IN_PROGRESS`         | Agent travaille sur le ticket        |
+| En attente client | `PENDING_CUSTOMER`    | En attente d'information du client   |
+| En attente tiers  | `PENDING_THIRD_PARTY` | En attente d'un prestataire externe  |
+| Résolu            | `RESOLVED`            | Solution appliquée                   |
+| Clôturé           | `CLOSED`              | Ticket fermé définitivement          |
+| Réouvert          | `REOPENED`            | Ticket réouvert après clôture        |
+| Annulé            | `CANCELLED`           | Ticket annulé (n'a plus lieu d'être) |
 
 ---
 
@@ -60,19 +60,19 @@
 
 ## Règles de transition
 
-| De                    | Vers                           | Autorisé par                |
-| --------------------- | ------------------------------ | --------------------------- |
-| `NEW`                 | `ASSIGNED`                     | Supervisor, Admin, Auto-assignment |
-| `ASSIGNED`            | `IN_PROGRESS`                  | Agent assigné, Supervisor, Admin |
-| `IN_PROGRESS`         | `PENDING_CUSTOMER`             | Agent assigné, Supervisor, Admin |
-| `IN_PROGRESS`         | `PENDING_THIRD_PARTY`          | Agent assigné, Supervisor, Admin |
-| `PENDING_CUSTOMER`    | `IN_PROGRESS`                  | Agent assigné, Supervisor, Admin |
-| `PENDING_THIRD_PARTY` | `IN_PROGRESS`                  | Agent assigné, Supervisor, Admin |
-| `IN_PROGRESS`         | `RESOLVED`                     | Agent assigné, Supervisor, Admin |
-| `RESOLVED`            | `CLOSED`                       | Supervisor, Admin            |
-| `CLOSED`              | `REOPENED`                     | Supervisor, Admin            |
-| `REOPENED`            | `IN_PROGRESS`                  | Agent assigné, Supervisor, Admin |
-| Tout (sauf CLOSED/CANCELLED) | `CANCELLED`             | Supervisor, Admin            |
+| De                           | Vers                  | Autorisé par                       |
+| ---------------------------- | --------------------- | ---------------------------------- |
+| `NEW`                        | `ASSIGNED`            | Supervisor, Admin, Auto-assignment |
+| `ASSIGNED`                   | `IN_PROGRESS`         | Agent assigné, Supervisor, Admin   |
+| `IN_PROGRESS`                | `PENDING_CUSTOMER`    | Agent assigné, Supervisor, Admin   |
+| `IN_PROGRESS`                | `PENDING_THIRD_PARTY` | Agent assigné, Supervisor, Admin   |
+| `PENDING_CUSTOMER`           | `IN_PROGRESS`         | Agent assigné, Supervisor, Admin   |
+| `PENDING_THIRD_PARTY`        | `IN_PROGRESS`         | Agent assigné, Supervisor, Admin   |
+| `IN_PROGRESS`                | `RESOLVED`            | Agent assigné, Supervisor, Admin   |
+| `RESOLVED`                   | `CLOSED`              | Supervisor, Admin                  |
+| `CLOSED`                     | `REOPENED`            | Supervisor, Admin                  |
+| `REOPENED`                   | `IN_PROGRESS`         | Agent assigné, Supervisor, Admin   |
+| Tout (sauf CLOSED/CANCELLED) | `CANCELLED`           | Supervisor, Admin                  |
 
 ---
 

@@ -8,19 +8,19 @@ Le système utilise **EventEmitter2** pour découpler les opérations principale
 
 ## Événements émis
 
-| Événement                | Émetteur          | Payload                                        |
-| ------------------------ | ----------------- | ---------------------------------------------- |
-| `ticket.created`         | TicketsService    | `{ ticket, creator }`                          |
-| `ticket.status.changed`  | TicketsService    | `{ ticket, oldStatus, newStatus, changedBy }`  |
-| `ticket.assigned`        | TicketsService    | `{ ticket, fromUser, toUser, assignedBy }`     |
-| `ticket.resolved`        | TicketsService    | `{ ticket, resolvedBy }`                       |
-| `ticket.closed`          | TicketsService    | `{ ticket, closedBy }`                         |
-| `ticket.reopened`        | TicketsService    | `{ ticket, reopenedBy }`                       |
-| `comment.created`        | CommentsService   | `{ comment, ticket, author }`                  |
-| `internal-note.created`  | InternalNotesService | `{ note, ticket, author }`                  |
-| `sla.warning`            | SlaEngineService  | `{ ticket, type, deadline }`                   |
-| `sla.breached`           | SlaEngineService  | `{ ticket, type }`                             |
-| `user.created`           | UsersService      | `{ user, temporaryPassword }`                  |
+| Événement               | Émetteur             | Payload                                       |
+| ----------------------- | -------------------- | --------------------------------------------- |
+| `ticket.created`        | TicketsService       | `{ ticket, creator }`                         |
+| `ticket.status.changed` | TicketsService       | `{ ticket, oldStatus, newStatus, changedBy }` |
+| `ticket.assigned`       | TicketsService       | `{ ticket, fromUser, toUser, assignedBy }`    |
+| `ticket.resolved`       | TicketsService       | `{ ticket, resolvedBy }`                      |
+| `ticket.closed`         | TicketsService       | `{ ticket, closedBy }`                        |
+| `ticket.reopened`       | TicketsService       | `{ ticket, reopenedBy }`                      |
+| `comment.created`       | CommentsService      | `{ comment, ticket, author }`                 |
+| `internal-note.created` | InternalNotesService | `{ note, ticket, author }`                    |
+| `sla.warning`           | SlaEngineService     | `{ ticket, type, deadline }`                  |
+| `sla.breached`          | SlaEngineService     | `{ ticket, type }`                            |
+| `user.created`          | UsersService         | `{ user, temporaryPassword }`                 |
 
 ---
 

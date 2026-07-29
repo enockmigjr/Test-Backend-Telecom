@@ -30,47 +30,47 @@
 
 ## Agents Customer Care
 
-| Email                       | Mot de passe | Rôle                   | Département   |
-| --------------------------- | ------------ | ---------------------- | ------------- |
-| `agent-cc1@telecom.local`   | `Agent@1234` | CUSTOMER_SERVICE_AGENT | Customer Care |
-| `agent-cc2@telecom.local`   | `Agent@1234` | CUSTOMER_SERVICE_AGENT | Customer Care |
+| Email                     | Mot de passe | Rôle                   | Département   |
+| ------------------------- | ------------ | ---------------------- | ------------- |
+| `agent-cc1@telecom.local` | `Agent@1234` | CUSTOMER_SERVICE_AGENT | Customer Care |
+| `agent-cc2@telecom.local` | `Agent@1234` | CUSTOMER_SERVICE_AGENT | Customer Care |
 
 ---
 
 ## Ingénieurs NOC
 
-| Email                  | Mot de passe | Rôle         | Département |
-| ---------------------- | ------------ | ------------ | ----------- |
-| `noc1@telecom.local`   | `Agent@1234` | NOC_ENGINEER | NOC         |
-| `noc2@telecom.local`   | `Agent@1234` | NOC_ENGINEER | NOC         |
+| Email                | Mot de passe | Rôle         | Département |
+| -------------------- | ------------ | ------------ | ----------- |
+| `noc1@telecom.local` | `Agent@1234` | NOC_ENGINEER | NOC         |
+| `noc2@telecom.local` | `Agent@1234` | NOC_ENGINEER | NOC         |
 
 ---
 
 ## Agents Facturation
 
-| Email                      | Mot de passe | Rôle          | Département |
-| -------------------------- | ------------ | ------------- | ----------- |
-| `billing1@telecom.local`   | `Agent@1234` | BILLING_AGENT | Billing     |
-| `billing2@telecom.local`   | `Agent@1234` | BILLING_AGENT | Billing     |
+| Email                    | Mot de passe | Rôle          | Département |
+| ------------------------ | ------------ | ------------- | ----------- |
+| `billing1@telecom.local` | `Agent@1234` | BILLING_AGENT | Billing     |
+| `billing2@telecom.local` | `Agent@1234` | BILLING_AGENT | Billing     |
 
 ---
 
 ## Support Technique
 
-| Email                   | Mot de passe | Rôle                       | Département       |
-| ----------------------- | ------------ | -------------------------- | ----------------- |
-| `tech1@telecom.local`   | `Agent@1234` | TECHNICAL_SUPPORT_ENGINEER | Technical Support |
-| `tech2@telecom.local`   | `Agent@1234` | TECHNICAL_SUPPORT_ENGINEER | Technical Support |
-| `agent@telecom.local`   | `Agent@1234` | TECHNICAL_SUPPORT_ENGINEER | Technical Support |
+| Email                 | Mot de passe | Rôle                       | Département       |
+| --------------------- | ------------ | -------------------------- | ----------------- |
+| `tech1@telecom.local` | `Agent@1234` | TECHNICAL_SUPPORT_ENGINEER | Technical Support |
+| `tech2@telecom.local` | `Agent@1234` | TECHNICAL_SUPPORT_ENGINEER | Technical Support |
+| `agent@telecom.local` | `Agent@1234` | TECHNICAL_SUPPORT_ENGINEER | Technical Support |
 
 ---
 
 ## Techniciens Terrain
 
-| Email                   | Mot de passe | Rôle             | Département      |
-| ----------------------- | ------------ | ---------------- | ---------------- |
-| `field1@telecom.local`  | `Agent@1234` | FIELD_TECHNICIAN | Field Operations |
-| `field2@telecom.local`  | `Agent@1234` | FIELD_TECHNICIAN | Field Operations |
+| Email                  | Mot de passe | Rôle             | Département      |
+| ---------------------- | ------------ | ---------------- | ---------------- |
+| `field1@telecom.local` | `Agent@1234` | FIELD_TECHNICIAN | Field Operations |
+| `field2@telecom.local` | `Agent@1234` | FIELD_TECHNICIAN | Field Operations |
 
 > **Note** : Les `FIELD_TECHNICIAN` n'ont pas accès aux notes internes ni aux audit logs.
 

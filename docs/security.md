@@ -10,12 +10,13 @@ Ce document décrit les mesures de sécurité implémentées dans le backend.
 
 ### JWT (JSON Web Tokens)
 
-| Token         | Durée de vie | Stockage serveur        | Rotation     |
-| ------------- | ------------ | ----------------------- | ------------ |
-| Access Token  | 15 minutes   | N/A (stateless)         | À chaque refresh |
+| Token         | Durée de vie | Stockage serveur          | Rotation         |
+| ------------- | ------------ | ------------------------- | ---------------- |
+| Access Token  | 15 minutes   | N/A (stateless)           | À chaque refresh |
 | Refresh Token | 7 jours      | PostgreSQL (hash SHA-256) | À chaque refresh |
 
 **Argon2id** pour le hachage des mots de passe :
+
 - memory: 64 MB
 - time: 3 itérations
 - parallelism: 4 threads
@@ -23,6 +24,7 @@ Ce document décrit les mesures de sécurité implémentées dans le backend.
 ### Rotation des Refresh Tokens
 
 Chaque `POST /auth/refresh` :
+
 1. Vérifie le refresh token en base (hash SHA-256)
 2. Vérifie la correspondance IP + User-Agent
 3. Révoque l'ancien refresh token
@@ -76,11 +78,11 @@ Request → JwtAuthGuard → RolesGuard → DepartmentGuard → Controller
 
 Distribué via Redis (ThrottlerStorageRedisService) :
 
-| Route        | Limite                | Fenêtre     |
-| ------------ | --------------------- | ----------- |
-| Général      | 100 requêtes          | 15 minutes  |
-| `POST /auth/login` | 10 tentatives   | 1 heure/IP  |
-| `POST /auth/refresh` | 20 tentatives | 15 minutes  |
+| Route                | Limite        | Fenêtre    |
+| -------------------- | ------------- | ---------- |
+| Général              | 100 requêtes  | 15 minutes |
+| `POST /auth/login`   | 10 tentatives | 1 heure/IP |
+| `POST /auth/refresh` | 20 tentatives | 15 minutes |
 
 ### Réinitialiser (dev uniquement)
 
@@ -109,6 +111,7 @@ curl -X POST /api/v1/tickets \
 ## Headers de sécurité (Helmet)
 
 Helmet applique automatiquement les headers :
+
 - `X-Content-Type-Options: nosniff`
 - `X-Frame-Options: DENY`
 - `Strict-Transport-Security` (en production)
@@ -175,11 +178,11 @@ Les valeurs par défaut dans `.env.example` sont suffisantes. **Ne jamais commit
 
 Obligatoirement changer :
 
-| Variable               | Exigence                       |
-| ---------------------- | ------------------------------ |
-| `JWT_ACCESS_SECRET`    | ≥ 32 caractères aléatoires    |
-| `JWT_REFRESH_SECRET`   | ≥ 32 caractères aléatoires    |
-| `DATABASE_PASSWORD`    | Mot de passe fort              |
-| `REDIS_PASSWORD`       | Mot de passe fort              |
-| `SMTP_USER/PASSWORD`   | Credentials SMTP réels         |
-| `REPORT_DOWNLOAD_SECRET` | ≥ 32 caractères aléatoires  |
+| Variable                 | Exigence                   |
+| ------------------------ | -------------------------- |
+| `JWT_ACCESS_SECRET`      | ≥ 32 caractères aléatoires |
+| `JWT_REFRESH_SECRET`     | ≥ 32 caractères aléatoires |
+| `DATABASE_PASSWORD`      | Mot de passe fort          |
+| `REDIS_PASSWORD`         | Mot de passe fort          |
+| `SMTP_USER/PASSWORD`     | Credentials SMTP réels     |
+| `REPORT_DOWNLOAD_SECRET` | ≥ 32 caractères aléatoires |

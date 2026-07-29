@@ -82,12 +82,12 @@ curl -X POST http://localhost:3000/api/v1/auth/login \
 
 ## URLs importantes
 
-| Service    | URL                                  | Identifiants        |
-| ---------- | ------------------------------------ | ------------------- |
-| API REST   | `http://localhost:3000/api/v1`       | Bearer JWT          |
-| Swagger    | `http://localhost:3000/api/docs`     | Aucun               |
-| BullBoard  | `http://localhost:3000/admin/queues` | `admin`/`bullboard` |
-| Mailpit    | `http://localhost:8025`              | Aucun               |
+| Service   | URL                                  | Identifiants        |
+| --------- | ------------------------------------ | ------------------- |
+| API REST  | `http://localhost:3000/api/v1`       | Bearer JWT          |
+| Swagger   | `http://localhost:3000/api/docs`     | Aucun               |
+| BullBoard | `http://localhost:3000/admin/queues` | `admin`/`bullboard` |
+| Mailpit   | `http://localhost:8025`              | Aucun               |
 
 ---
 
