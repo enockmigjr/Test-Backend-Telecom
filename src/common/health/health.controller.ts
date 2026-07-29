@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/common/health/health.controller.ts
+ * RÔLE : Contrôleur de vérification de l'état de santé du serveur (Health Checks).
+ * EXPLICATION :
+ * Les répartiteurs de charge (Nginx, Kubernetes, Docker) interrogent régulièrement ces 2 routes :
+ * 1. `/health` (Liveness) : Vérifie que le serveur backend est démarré et répond.
+ * 2. `/health/ready` (Readiness) : Vérifie que la base de données PostgreSQL et Redis sont bien connectées et opérationnelles.
+ * ============================================================================
+ */
+
 import { Controller, Get } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { SkipThrottle } from '@nestjs/throttler';
@@ -5,9 +16,7 @@ import { Public } from '../decorators/public.decorator';
 import { HealthService } from './health.service';
 
 /**
- * Health checks pour Kubernetes/Docker health probes.
- * - /health : liveness (le processus tourne)
- * - /health/ready : readiness (DB + Redis connectés)
+ * Class HealthController
  */
 @ApiTags('health')
 @Controller('health')
@@ -15,6 +24,7 @@ import { HealthService } from './health.service';
 export class HealthController {
   constructor(private readonly healthService: HealthService) {}
 
+  /** Route publique `/health` (Test d'activité de l'application) */
   @Public()
   @SkipThrottle({ default: true, auth: true })
   @Get()
@@ -27,6 +37,7 @@ export class HealthController {
     };
   }
 
+  /** Route publique `/health/ready` (Test d'état des dépendances système) */
   @Public()
   @SkipThrottle({ default: true, auth: true })
   @Get('ready')

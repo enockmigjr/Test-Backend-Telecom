@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/common/interceptors/idempotency.interceptor.spec.ts
+ * RÔLE : Suite de tests unitaires pour le composant idempotency.interceptor.
+ * EXPLICATION :
+ * Ce fichier contient les tests automatisés validant le comportement et l'intégrité de idempotency.interceptor.
+ * 1. Vérifie le fonctionnement nominal et les cas d'erreur.
+ * 2. Garantit qu'aucune régression n'est introduite lors des évolutions du code.
+ * ============================================================================
+ */
+
 import { CallHandler, ConflictException, ExecutionContext } from '@nestjs/common';
 import { createHash } from 'crypto';
 import { Reflector } from '@nestjs/core';
@@ -36,6 +47,8 @@ describe('IdempotencyInterceptor', () => {
     interceptor = new IdempotencyInterceptor(reflector, { db, runInTransaction } as unknown as DrizzleProvider);
   });
 
+  /** Test : persiste la clé, la mutation et la réponse dans une même transaction */
+
   it('persiste la clé, la mutation et la réponse dans une même transaction', async () => {
     const result = await lastValueFrom(await interceptor.intercept(context(), handler({ id: 'ticket-1' })));
 
@@ -48,6 +61,8 @@ describe('IdempotencyInterceptor', () => {
     expect(updateWhere).toHaveBeenCalledTimes(1);
   });
 
+  /** Test : rejoue une réponse terminée sans rappeler le contrôleur */
+
   it('rejoue une réponse terminée sans rappeler le contrôleur', async () => {
     limit.mockResolvedValue([{ fingerprint: hashBody(), statusCode: 201, responseBody: { id: 'ticket-1' } }]);
     const next = handler({ id: 'ticket-2' });
@@ -58,6 +73,8 @@ describe('IdempotencyInterceptor', () => {
     expect(next.handle).not.toHaveBeenCalled();
   });
 
+  /** Test : refuse la réutilisation de la clé avec un autre contenu */
+
   it('refuse la réutilisation de la clé avec un autre contenu', async () => {
     limit.mockResolvedValue([{ fingerprint: 'different', statusCode: 201, responseBody: {} }]);
 
@@ -66,6 +83,8 @@ describe('IdempotencyInterceptor', () => {
     );
   });
 
+  /** Test : propage une erreur métier afin que la transaction annule aussi la clé */
+
   it('propage une erreur métier afin que la transaction annule aussi la clé', async () => {
     const failure = new Error('échec métier');
     const next: CallHandler = { handle: jest.fn(() => throwError(() => failure)) };
@@ -73,6 +92,8 @@ describe('IdempotencyInterceptor', () => {
     await expect(interceptor.intercept(context(), next)).rejects.toBe(failure);
     expect(updateWhere).not.toHaveBeenCalled();
   });
+
+  /** Test : rejoue le résultat du gagnant après un conflit unique concurrent */
 
   it('rejoue le résultat du gagnant après un conflit unique concurrent', async () => {
     limit
@@ -86,6 +107,8 @@ describe('IdempotencyInterceptor', () => {
 
     expect(result).toEqual({ id: 'winner' });
   });
+
+  /** Test : ne masque pas une violation unique provenant de la mutation métier */
 
   it('ne masque pas une violation unique provenant de la mutation métier', async () => {
     const businessViolation = Object.assign(new Error('ticket number duplicate'), {

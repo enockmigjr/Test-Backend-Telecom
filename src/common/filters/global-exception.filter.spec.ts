@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/common/filters/global-exception.filter.spec.ts
+ * RÔLE : Suite de tests unitaires pour le composant global-exception.filter.
+ * EXPLICATION :
+ * Ce fichier contient les tests automatisés validant le comportement et l'intégrité de global-exception.filter.
+ * 1. Vérifie le fonctionnement nominal et les cas d'erreur.
+ * 2. Garantit qu'aucune régression n'est introduite lors des évolutions du code.
+ * ============================================================================
+ */
+
 import { HttpException, HttpStatus, ArgumentsHost } from '@nestjs/common';
 import { GlobalExceptionFilter } from './global-exception.filter';
 import { ERROR_CODES } from '../constants/error-codes.constant';
@@ -44,6 +55,7 @@ describe('GlobalExceptionFilter', () => {
   });
 
   describe('HttpException — Erreurs HTTP standard', () => {
+    /** Test : doit retourner 400 + INVALID_INPUT pour une BadRequestException */
     it('doit retourner 400 + INVALID_INPUT pour une BadRequestException', () => {
       const exception = new HttpException('Donnees invalides', HttpStatus.BAD_REQUEST);
 
@@ -60,6 +72,8 @@ describe('GlobalExceptionFilter', () => {
         }),
       );
     });
+
+    /** Test : doit retourner 404 + NOT_FOUND pour une NotFoundException */
 
     it('doit retourner 404 + NOT_FOUND pour une NotFoundException', () => {
       const exception = new HttpException('Ticket non trouve', HttpStatus.NOT_FOUND);
@@ -78,6 +92,8 @@ describe('GlobalExceptionFilter', () => {
       );
     });
 
+    /** Test : doit retourner 401 + UNAUTHORIZED pour une UnauthorizedException */
+
     it('doit retourner 401 + UNAUTHORIZED pour une UnauthorizedException', () => {
       const exception = new HttpException('Non autorise', HttpStatus.UNAUTHORIZED);
 
@@ -94,6 +110,8 @@ describe('GlobalExceptionFilter', () => {
         }),
       );
     });
+
+    /** Test : doit retourner 403 + FORBIDDEN pour une ForbiddenException */
 
     it('doit retourner 403 + FORBIDDEN pour une ForbiddenException', () => {
       const exception = new HttpException('Acces interdit', HttpStatus.FORBIDDEN);
@@ -112,6 +130,8 @@ describe('GlobalExceptionFilter', () => {
       );
     });
 
+    /** Test : doit retourner 409 + CONFLICT pour une ConflictException */
+
     it('doit retourner 409 + CONFLICT pour une ConflictException', () => {
       const exception = new HttpException('Email deja utilise', HttpStatus.CONFLICT);
 
@@ -128,6 +148,8 @@ describe('GlobalExceptionFilter', () => {
         }),
       );
     });
+
+    /** Test : doit inclure les details de validation quand presents */
 
     it('doit inclure les details de validation quand presents', () => {
       const exception = new HttpException(
@@ -158,6 +180,7 @@ describe('GlobalExceptionFilter', () => {
   });
 
   describe('Erreur non-Http — Erreurs de programmation', () => {
+    /** Test : doit retourner 500 + INTERNAL_ERROR pour une Error generique */
     it('doit retourner 500 + INTERNAL_ERROR pour une Error generique', () => {
       const exception = new Error('Erreur interne inattendue');
 
@@ -174,6 +197,8 @@ describe('GlobalExceptionFilter', () => {
         }),
       );
     });
+
+    /** Test : doit retourner 500 + INTERNAL_ERROR pour une exception inconnue (non Error) */
 
     it('doit retourner 500 + INTERNAL_ERROR pour une exception inconnue (non Error)', () => {
       const exception = 'Chaine de caractere inattendue';
@@ -224,6 +249,7 @@ describe('GlobalExceptionFilter', () => {
   });
 
   describe("Timestamp — Horodatage de l'erreur", () => {
+    /** Test : doit inclure un timestamp ISO 8601 dans la reponse */
     it('doit inclure un timestamp ISO 8601 dans la reponse', () => {
       const exception = new HttpException('Test', HttpStatus.BAD_REQUEST);
 
@@ -240,6 +266,7 @@ describe('GlobalExceptionFilter', () => {
   });
 
   describe('Format de reponse — Conformite au standard', () => {
+    /** Test : doit retourner une reponse avec success=false et error */
     it('doit retourner une reponse avec success=false et error', () => {
       const exception = new HttpException('Erreur', HttpStatus.BAD_REQUEST);
 

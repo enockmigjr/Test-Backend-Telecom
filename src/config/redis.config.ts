@@ -46,4 +46,3 @@ export class RedisConfigService {
     return process.env['REDIS_URL'] || `redis://${this.host}:${this.port}`;
   }
 }
-

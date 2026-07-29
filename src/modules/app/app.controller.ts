@@ -1,15 +1,25 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/app/app.controller.ts
+ * RÔLE : Contrôleur racine (`/api/v1`).
+ * EXPLICATION (Pour non-développeurs) :
+ * Ce contrôleur répond à la racine de l'API avec une fiche d'information synthétique :
+ * le nom du système, la version actuelle, et les adresses vers la documentation Swagger
+ * et les bilans de santé.
+ * ============================================================================
+ */
+
 import { Controller, Get } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Public } from '../../common/decorators/public.decorator';
 
 /**
- * Contrôleur racine de l'API.
- * Fournit les informations de base sur la plateforme.
- * Les health checks sont gérés par HealthController (GET /api/v1/health, /api/v1/health/ready).
+ * Class AppController
  */
 @ApiTags('root')
 @Controller()
 export class AppController {
+  /** Route publique affichant les méta-informations de l'API Telecom */
   @Public()
   @Get()
   @ApiOperation({ summary: "Informations sur l'API" })

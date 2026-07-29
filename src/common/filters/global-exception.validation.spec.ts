@@ -1,7 +1,19 @@
+/**
+ * ============================================================================
+ * FICHIER : src/common/filters/global-exception.validation.spec.ts
+ * RÔLE : Suite de tests unitaires pour le composant global-exception.validation.
+ * EXPLICATION :
+ * Ce fichier contient les tests automatisés validant le comportement et l'intégrité de global-exception.validation.
+ * 1. Vérifie le fonctionnement nominal et les cas d'erreur.
+ * 2. Garantit qu'aucune régression n'est introduite lors des évolutions du code.
+ * ============================================================================
+ */
+
 import { ArgumentsHost, BadRequestException } from '@nestjs/common';
 import { GlobalExceptionFilter } from './global-exception.filter';
 
 describe('GlobalExceptionFilter validation payload', () => {
+  /** Test : normalise les messages class-validator en message texte et details structures */
   it('normalise les messages class-validator en message texte et details structures', () => {
     const json = jest.fn();
     const status = jest.fn().mockReturnValue({ json });

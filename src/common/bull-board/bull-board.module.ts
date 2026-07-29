@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/common/bull-board/bull-board.module.ts
+ * RÔLE : Module NestJS organisant le composant bull-board.
+ * EXPLICATION :
+ * Ce module regroupe et configure les contrôleurs, services, répertoires et dépendances de bull-board.
+ * 1. Définit les éléments internes du domaine fonctionnel.
+ * 2. Rend les services accessibles aux autres modules ayant importé celui-ci.
+ * ============================================================================
+ */
+
 import { Module, NestModule, MiddlewareConsumer, Logger, Inject } from '@nestjs/common';
 import { createBullBoard } from '@bull-board/api';
 import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
@@ -42,6 +53,9 @@ function basicAuthMiddleware(req: Request, res: Response, next: NextFunction): v
  * Configurer BULLBOARD_USER / BULLBOARD_PASSWORD dans le .env.
  */
 @Module({})
+/**
+ * Module NestJS `BullBoardModule` configurant les dépendances, contrôleurs et services associés.
+ */
 export class BullBoardModule implements NestModule {
   private readonly logger = new Logger(BullBoardModule.name);
 

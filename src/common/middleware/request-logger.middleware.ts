@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/common/middleware/request-logger.middleware.ts
+ * RÔLE : Middleware NestJS de pré-traitement des requêtes.
+ * EXPLICATION :
+ * Ce middleware s'exécute sur les requêtes entrantes avant qu'elles n'atteignent les contrôleurs.
+ * 1. Injecte des données de contexte (ex: Correlation ID, Request Logger).
+ * 2. Effectue des validations ou des transformations préliminaires.
+ * ============================================================================
+ */
+
 import { Injectable, NestMiddleware, Logger } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 

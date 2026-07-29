@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/common/interceptors/transform.interceptor.spec.ts
+ * RÔLE : Suite de tests unitaires pour le composant transform.interceptor.
+ * EXPLICATION :
+ * Ce fichier contient les tests automatisés validant le comportement et l'intégrité de transform.interceptor.
+ * 1. Vérifie le fonctionnement nominal et les cas d'erreur.
+ * 2. Garantit qu'aucune régression n'est introduite lors des évolutions du code.
+ * ============================================================================
+ */
+
 import { TransformInterceptor } from './transform.interceptor';
 import { ExecutionContext, CallHandler } from '@nestjs/common';
 import { of } from 'rxjs';
@@ -22,10 +33,14 @@ describe('TransformInterceptor', () => {
     return { handle: () => of(data) } as CallHandler;
   }
 
+  /** Test : doit wrapper une réponse simple dans { success: true, data } */
+
   it('doit wrapper une réponse simple dans { success: true, data }', async () => {
     const result = await interceptor.intercept(mockContext(200), mockCallHandler({ id: '1' })).toPromise();
     expect(result).toEqual({ success: true, statusCode: 200, data: { id: '1' } });
   });
+
+  /** Test : doit wrapper un tableau dans { success: true, data } */
 
   it('doit wrapper un tableau dans { success: true, data }', async () => {
     const result = await interceptor
@@ -34,11 +49,15 @@ describe('TransformInterceptor', () => {
     expect(result).toEqual({ success: true, statusCode: 200, data: [{ id: '1' }, { id: '2' }] });
   });
 
+  /** Test : ne doit pas re-wrapper une réponse déjà au format standard */
+
   it('ne doit pas re-wrapper une réponse déjà au format standard', async () => {
     const alreadyWrapped = { success: true, data: { id: '1' } };
     const result = await interceptor.intercept(mockContext(200), mockCallHandler(alreadyWrapped)).toPromise();
     expect(result).toEqual(alreadyWrapped);
   });
+
+  /** Test : doit préserver le message si présent dans la réponse */
 
   it('doit préserver le message si présent dans la réponse', async () => {
     const withMessage = { message: 'OK', data: { id: '1' } };
@@ -46,11 +65,15 @@ describe('TransformInterceptor', () => {
     expect(result).toEqual({ success: true, statusCode: 201, message: 'OK', data: { id: '1' } });
   });
 
+  /** Test : doit préserver la pagination au niveau racine */
+
   it('doit préserver la pagination au niveau racine', async () => {
     const paginated = { data: [{ id: '1' }], meta: { page: 1, limit: 20, total: 1, totalPages: 1 } };
     const result = await interceptor.intercept(mockContext(200), mockCallHandler(paginated)).toPromise();
     expect(result).toEqual({ success: true, statusCode: 200, ...paginated });
   });
+
+  /** Test : doit éviter une double enveloppe pour un détail déjà sous data */
 
   it('doit éviter une double enveloppe pour un détail déjà sous data', async () => {
     const detailed = { data: { id: '1', assignmentHistory: { data: [], meta: { total: 0 } } } };
@@ -58,15 +81,21 @@ describe('TransformInterceptor', () => {
     expect(result).toEqual({ success: true, statusCode: 200, ...detailed });
   });
 
+  /** Test : doit préserver un message sans créer de data imbriqué */
+
   it('doit préserver un message sans créer de data imbriqué', async () => {
     const result = await interceptor.intercept(mockContext(200), mockCallHandler({ message: 'Terminé' })).toPromise();
     expect(result).toEqual({ success: true, statusCode: 200, message: 'Terminé' });
   });
 
+  /** Test : doit gérer une réponse null */
+
   it('doit gérer une réponse null', async () => {
     const result = await interceptor.intercept(mockContext(204), mockCallHandler(null)).toPromise();
     expect(result).toEqual({ success: true, statusCode: 204, data: null });
   });
+
+  /** Test : doit gérer une réponse string */
 
   it('doit gérer une réponse string', async () => {
     const result = await interceptor.intercept(mockContext(200), mockCallHandler('hello')).toPromise();

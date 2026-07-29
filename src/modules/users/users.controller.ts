@@ -1,3 +1,15 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/users/users.controller.ts
+ * RÔLE : Contrôleur REST pour la gestion des utilisateurs (`/api/v1/users`).
+ * EXPLICATION (Pour non-développeurs) :
+ * Ce contrôleur gère la création des comptes employés, leur modification,
+ * leur désactivation ou leur réactivation, ainsi que la recherche et la consultation
+ * des détails des agents et techniciens. Seuls les administrateurs et superviseurs
+ * y ont accès selon la matrice de droits (RBAC).
+ * ============================================================================
+ */
+
 import { Controller, Get, Post, Patch, Body, Param, Query, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiQuery, ApiBody } from '@nestjs/swagger';
 
@@ -10,6 +22,9 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 
+/**
+ * Class UsersController
+ */
 @ApiTags('users')
 @ApiBearerAuth()
 @Controller('users')
@@ -17,6 +32,7 @@ import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  /** Route de liste paginée de tous les utilisateurs */
   @Get()
   @Roles('ADMINISTRATOR', 'SUPERVISOR')
   @ApiOperation({
@@ -40,6 +56,7 @@ export class UsersController {
     return this.usersService.findAll(pagination, currentUser);
   }
 
+  /** Route d'accès à son propre profil */
   @Get('me')
   @ApiOperation({
     summary: "Profil de l'utilisateur connecté",
@@ -54,6 +71,7 @@ export class UsersController {
     return this.usersService.findOne(user.sub);
   }
 
+  /** Route de consultation des détails d'un utilisateur par son ID */
   @Get(':id')
   @Roles('ADMINISTRATOR', 'SUPERVISOR')
   @ApiOperation({
@@ -83,6 +101,7 @@ export class UsersController {
     return this.usersService.findOne(id);
   }
 
+  /** Route de création d'un nouveau compte utilisateur (ADMIN uniquement) */
   @Post()
   @Roles('ADMINISTRATOR')
   @HttpCode(HttpStatus.CREATED)
@@ -120,6 +139,7 @@ export class UsersController {
     return this.usersService.create(dto);
   }
 
+  /** Route de mise à jour partielle des informations d'un utilisateur */
   @Patch(':id')
   @Roles('ADMINISTRATOR', 'SUPERVISOR')
   @ApiOperation({
@@ -138,6 +158,7 @@ export class UsersController {
     return this.usersService.update(id, dto, currentUser);
   }
 
+  /** Route de désactivation du compte d'un utilisateur */
   @Patch(':id/deactivate')
   @Roles('ADMINISTRATOR')
   @ApiOperation({
@@ -155,6 +176,7 @@ export class UsersController {
     return this.usersService.deactivate(id);
   }
 
+  /** Route de réactivation d'un compte utilisateur */
   @Patch(':id/activate')
   @Roles('ADMINISTRATOR')
   @ApiOperation({

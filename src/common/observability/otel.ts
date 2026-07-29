@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/common/observability/otel.ts
+ * RÔLE : Initialisation d'OpenTelemetry pour le traçage et les métriques.
+ * EXPLICATION :
+ * Ce fichier configure l'exportation des traces et métriques de performance vers Grafana Tempo et Prometheus.
+ * 1. Instrumente automatiquement HTTP, Express, PostgreSQL, Redis et NestJS.
+ * 2. Permet de suivre le parcours complet d'une requête dans l'architecture.
+ * ============================================================================
+ */
+
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';

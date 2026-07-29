@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/common/helpers/pagination.helper.spec.ts
+ * RÔLE : Suite de tests unitaires pour le composant pagination.helper.
+ * EXPLICATION :
+ * Ce fichier contient les tests automatisés validant le comportement et l'intégrité de pagination.helper.
+ * 1. Vérifie le fonctionnement nominal et les cas d'erreur.
+ * 2. Garantit qu'aucune régression n'est introduite lors des évolutions du code.
+ * ============================================================================
+ */
+
 import { PaginationHelper } from './pagination.helper';
 
 /**
@@ -9,6 +20,7 @@ import { PaginationHelper } from './pagination.helper';
  */
 describe('PaginationHelper', () => {
   describe('buildMeta() — Metadonnees de pagination', () => {
+    /** Test : doit retourner page=1, limit=20, total=100, totalPages=5 */
     it('doit retourner page=1, limit=20, total=100, totalPages=5', () => {
       const meta = PaginationHelper.buildMeta(1, 20, 100);
 
@@ -26,17 +38,23 @@ describe('PaginationHelper', () => {
       expect(meta.totalPages).toBe(6); // Math.ceil(101/20) = 6
     });
 
+    /** Test : doit retourner totalPages=0 quand total=0 */
+
     it('doit retourner totalPages=0 quand total=0', () => {
       const meta = PaginationHelper.buildMeta(1, 20, 0);
 
       expect(meta.totalPages).toBe(0);
     });
 
+    /** Test : doit retourner totalPages=1 quand total <= limit */
+
     it('doit retourner totalPages=1 quand total <= limit', () => {
       const meta = PaginationHelper.buildMeta(1, 20, 15);
 
       expect(meta.totalPages).toBe(1);
     });
+
+    /** Test : doit supporter une grande page et un grand total */
 
     it('doit supporter une grande page et un grand total', () => {
       const meta = PaginationHelper.buildMeta(50, 100, 5000);
@@ -49,15 +67,20 @@ describe('PaginationHelper', () => {
   });
 
   describe("getOffset() — Calcul d'offset SQL", () => {
+    /** Test : doit retourner 0 pour la page 1 avec limit 20 */
     it('doit retourner 0 pour la page 1 avec limit 20', () => {
       const offset = PaginationHelper.getOffset(1, 20);
       expect(offset).toBe(0);
     });
 
+    /** Test : doit retourner 20 pour la page 2 avec limit 20 */
+
     it('doit retourner 20 pour la page 2 avec limit 20', () => {
       const offset = PaginationHelper.getOffset(2, 20);
       expect(offset).toBe(20);
     });
+
+    /** Test : doit retourner 100 pour la page 6 avec limit 20 */
 
     it('doit retourner 100 pour la page 6 avec limit 20', () => {
       const offset = PaginationHelper.getOffset(6, 20);
@@ -70,6 +93,8 @@ describe('PaginationHelper', () => {
       expect(PaginationHelper.getOffset(1, 100)).toBe(0);
     });
 
+    /** Test : doit gérer page=0 comme page=1 (offset=0) */
+
     it('doit gérer page=0 comme page=1 (offset=0)', () => {
       const offset = PaginationHelper.getOffset(0, 20);
       expect(offset).toBe(-20); // Comportement non protege, page 0 donne -20
@@ -81,6 +106,8 @@ describe('PaginationHelper', () => {
       { id: '1', name: 'Item A' },
       { id: '2', name: 'Item B' },
     ];
+
+    /** Test : doit retourner { data, meta } avec les bonnes valeurs */
 
     it('doit retourner { data, meta } avec les bonnes valeurs', () => {
       const result = PaginationHelper.paginate(mockData, 100, 1, 20);
@@ -103,6 +130,8 @@ describe('PaginationHelper', () => {
       expect(result.meta.total).toBe(0);
       expect(result.meta.totalPages).toBe(0);
     });
+
+    /** Test : doit encapsuler les donnees sans les modifier */
 
     it('doit encapsuler les donnees sans les modifier', () => {
       const data = [{ id: 'x' }, { id: 'y' }, { id: 'z' }];

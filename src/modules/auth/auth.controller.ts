@@ -1,3 +1,18 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/auth/auth.controller.ts
+ * RÔLE : Contrôleur REST des routes d'authentification (`/api/v1/auth`).
+ * EXPLICATION (Pour non-développeurs) :
+ * Ce fichier gère tous les échanges de connexion, déconnexion et gestion des jetons :
+ * - `POST /auth/login` : Connexion avec email et mot de passe.
+ * - `POST /auth/refresh` : Renouvellement des jetons d'accès expiré (rotation).
+ * - `POST /auth/logout` : Déconnexion d'un appareil (invalidation du jeton).
+ * - `POST /auth/logout-all` : Déconnexion de toutes les sessions actives (tous les appareils).
+ * - `GET /auth/me` : Lecture des informations du profil connecté.
+ * - `PUT /auth/change-password` : Modification du mot de passe.
+ * ============================================================================
+ */
+
 import { Controller, Post, Body, Req, HttpCode, HttpStatus, Get, Put } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { Request } from 'express';
@@ -12,11 +27,15 @@ import { JwtPayload } from './interfaces/jwt-payload.interface';
 import { AllowPasswordChangePending } from '../../common/decorators/allow-password-change-pending.decorator';
 import { AuthRateLimited } from '../../common/decorators/auth-rate-limited.decorator';
 
+/**
+ * Class AuthController
+ */
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  /** Route publique de connexion */
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
@@ -32,6 +51,7 @@ export class AuthController {
     return this.authService.login(dto.email, dto.password, ipAddress, userAgent);
   }
 
+  /** Route publique de rafraîchissement des tokens */
   @Public()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
@@ -44,6 +64,7 @@ export class AuthController {
     return this.authService.refresh(dto.refreshToken, ipAddress, userAgent);
   }
 
+  /** Route de déconnexion simple */
   @Post('logout')
   @AllowPasswordChangePending()
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -54,6 +75,7 @@ export class AuthController {
     await this.authService.logout(dto.refreshToken, user.jti, user.sub);
   }
 
+  /** Route de déconnexion de toutes les sessions actives (tous les appareils) */
   @Post('logout-all')
   @AllowPasswordChangePending()
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -64,6 +86,7 @@ export class AuthController {
     await this.authService.logoutAll(user.sub, user.jti);
   }
 
+  /** Route de lecture des informations de la session courante */
   @Get('me')
   @AllowPasswordChangePending()
   @ApiBearerAuth()
@@ -72,6 +95,7 @@ export class AuthController {
     return user;
   }
 
+  /** Route de modification du mot de passe */
   @Put('change-password')
   @AllowPasswordChangePending()
   @HttpCode(HttpStatus.OK)

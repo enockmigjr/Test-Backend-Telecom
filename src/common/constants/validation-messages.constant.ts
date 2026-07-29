@@ -1,7 +1,15 @@
 /**
- * Messages de validation en français.
- * Centralisés pour garantir la cohérence de toutes les erreurs de validation.
+ * ============================================================================
+ * FICHIER : src/common/constants/validation-messages.constant.ts
+ * RÔLE : Messages de validation en français pour les formulaires et DTOs.
+ * EXPLICATION :
+ * Ce fichier contient les phrases exactes en français qui s'affichent lorsqu'un
+ * utilisateur remplit mal un formulaire (ex: email manquant, mot de passe trop court,
+ * fichier trop grand).
+ * ============================================================================
  */
+
+/** Constante `VALIDATION_MESSAGES` du système. */
 export const VALIDATION_MESSAGES = {
   // Messages génériques
   REQUIRED: '{field} est requis.',

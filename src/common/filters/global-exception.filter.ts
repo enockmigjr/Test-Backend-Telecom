@@ -1,21 +1,36 @@
+/**
+ * ============================================================================
+ * FICHIER : src/common/filters/global-exception.filter.ts
+ * RÔLE : Gestionnaire centralisé de toutes les erreurs HTTP du backend NestJS.
+ * EXPLICATION :
+ * Lorsqu'un problème survient n'importe où dans l'application (base de données inaccessible,
+ * mot de passe invalide, champ manquant), ce filtre attrape l'erreur et la transforme
+ * en un objet JSON standardisé très propre avec un code d'erreur, un message explicatif,
+ * la date et un identifiant unique (correlationId) pour retrouver le problème dans les logs.
+ * ============================================================================
+ */
+
 import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { generateUuid } from '../../common/helpers/uuidv7.helper';
 import { ERROR_CODES } from '../constants/error-codes.constant';
 
 /**
- * Filtre d'exception global qui standardise toutes les réponses d'erreur.
- * Format : { success: false, error: { code, message, details?, correlationId, timestamp } }
+ * Filtre d'exception global s'appliquant à toutes les requêtes entrant dans le système.
  */
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(GlobalExceptionFilter.name);
 
+  /**
+   * Méthode principale `catch` interceptant toutes les exceptions non capturées.
+   */
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
 
+    // Identifiant unique de requête pour le suivi des requêtes (Traçabilité)
     const correlationId = (request['correlationId'] as string) || generateUuid();
 
     let status: number;
@@ -39,14 +54,14 @@ export class GlobalExceptionFilter implements ExceptionFilter {
           details = resp['errors'] ?? resp['details'] ?? undefined;
         }
 
-        // Déterminer le code d'erreur
+        // Déterminer le code d'erreur standardisé
         code = this.mapHttpStatusToErrorCode(status, resp['code'] as string | undefined);
       } else {
         message = exceptionResponse as string;
         code = this.mapHttpStatusToErrorCode(status);
       }
     } else if (exception instanceof Error) {
-      // Erreurs de programmation (bugs imprévus)
+      // Erreurs de programmation imprévues (Bugs)
       status = HttpStatus.INTERNAL_SERVER_ERROR;
       code = ERROR_CODES.INTERNAL_ERROR;
       message = 'Une erreur interne est survenue.';
@@ -58,6 +73,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       message = 'Une erreur inconnue est survenue.';
     }
 
+    // Réponse HTTP uniformisée
     response.status(status).json({
       success: false,
       error: {
@@ -70,6 +86,9 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     });
   }
 
+  /**
+   * Méthode d'aide associant chaque statut HTTP à un code d'erreur compréhensible.
+   */
   private mapHttpStatusToErrorCode(status: number, existingCode?: string): string {
     if (existingCode) return existingCode;
 
