@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/sla/sla-alert-processor.service.spec.ts
+ * RÔLE : Suite de tests unitaires pour le composant sla-alert-processor.service.
+ * EXPLICATION :
+ * Ce fichier contient les tests automatisés validant le comportement et l'intégrité de sla-alert-processor.service.
+ * 1. Vérifie le fonctionnement nominal et les cas d'erreur.
+ * 2. Garantit qu'aucune régression n'est introduite lors des évolutions du code.
+ * ============================================================================
+ */
+
 import { DrizzleProvider } from '../../database/drizzle.provider';
 import { SlaAlertNotifierService } from './sla-alert-notifier.service';
 import { SlaAlertProcessorService } from './sla-alert-processor.service';
@@ -67,6 +78,8 @@ describe('SlaAlertProcessorService', () => {
     );
   });
 
+  /** Test : suit independamment warnings et breaches des deux objectifs */
+
   it('suit independamment warnings et breaches des deux objectifs', async () => {
     const firstResponseBreach = ticket('first-breach');
     const resolutionBreach = ticket('resolution-breach');
@@ -90,6 +103,8 @@ describe('SlaAlertProcessorService', () => {
     expect(notifier.notifyWarning).toHaveBeenNthCalledWith(2, resolutionWarning, 'RESOLUTION', expect.any(Date));
   });
 
+  /** Test : n emet rien lorsqu aucune alerte n est due */
+
   it('n emet rien lorsqu aucune alerte n est due', async () => {
     selectQuery.limit.mockResolvedValue([]);
 
@@ -100,6 +115,8 @@ describe('SlaAlertProcessorService', () => {
     expect(notifier.notifyWarning).not.toHaveBeenCalled();
   });
 
+  /** Test : ignore une alerte deja reclamee par une autre instance */
+
   it('ignore une alerte deja reclamee par une autre instance', async () => {
     selectQuery.limit.mockResolvedValueOnce([ticket('concurrent')]).mockResolvedValue([]);
     updateQuery.returning.mockResolvedValueOnce([]);
@@ -108,6 +125,8 @@ describe('SlaAlertProcessorService', () => {
 
     expect(notifier.notifyBreach).not.toHaveBeenCalled();
   });
+
+  /** Test : libere le claim pour permettre un retry si la notification echoue */
 
   it('libere le claim pour permettre un retry si la notification echoue', async () => {
     selectQuery.limit.mockResolvedValueOnce([ticket('retryable')]).mockResolvedValue([]);

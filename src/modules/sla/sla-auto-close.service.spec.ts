@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/sla/sla-auto-close.service.spec.ts
+ * RÔLE : Suite de tests unitaires pour le composant sla-auto-close.service.
+ * EXPLICATION :
+ * Ce fichier contient les tests automatisés validant le comportement et l'intégrité de sla-auto-close.service.
+ * 1. Vérifie le fonctionnement nominal et les cas d'erreur.
+ * 2. Garantit qu'aucune régression n'est introduite lors des évolutions du code.
+ * ============================================================================
+ */
+
 import { Test } from '@nestjs/testing';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { MetricsService } from '../../common/metrics/metrics.service';
@@ -37,6 +48,8 @@ describe('SlaAutoCloseService', () => {
     service = moduleRef.get(SlaAutoCloseService);
   });
 
+  /** Test : ne produit aucun effet si une autre instance a deja reclame le ticket */
+
   it('ne produit aucun effet si une autre instance a deja reclame le ticket', async () => {
     select.mockReturnValue(selectQuery([[{ id: 'ticket-1', ticketNumber: 'INC-1' }], [{ id: 'admin-1' }]]));
     const insert = jest.fn();
@@ -56,6 +69,8 @@ describe('SlaAutoCloseService', () => {
     expect(emit).not.toHaveBeenCalled();
     expect(ticketsActive.dec).not.toHaveBeenCalled();
   });
+
+  /** Test : ecrit l historique dans la transaction avant les effets externes */
 
   it('ecrit l historique dans la transaction avant les effets externes', async () => {
     select.mockReturnValue(selectQuery([[{ id: 'ticket-1', ticketNumber: 'INC-1' }], [{ id: 'admin-1' }]]));

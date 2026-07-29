@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/sla/sla-alert-notifier.service.spec.ts
+ * RÔLE : Suite de tests unitaires pour le composant sla-alert-notifier.service.
+ * EXPLICATION :
+ * Ce fichier contient les tests automatisés validant le comportement et l'intégrité de sla-alert-notifier.service.
+ * 1. Vérifie le fonctionnement nominal et les cas d'erreur.
+ * 2. Garantit qu'aucune régression n'est introduite lors des évolutions du code.
+ * ============================================================================
+ */
+
 import { MetricsService } from '../../common/metrics/metrics.service';
 import { BullMqQueues } from '../../queues/queues.types';
 import { TelecomWebSocketGateway } from '../../websocket/websocket.gateway';
@@ -36,12 +47,16 @@ describe('SlaAlertNotifierService', () => {
     );
   });
 
+  /** Test : borne les warnings au departement du ticket et a son assigne */
+
   it('borne les warnings au departement du ticket et a son assigne', async () => {
     await service.notifyWarning(ticket, 'RESOLUTION', new Date('2026-07-22T11:45:00Z'));
 
     expect(wsGateway.emitToDepartment).toHaveBeenCalledWith('dept-noc', 'ticket.sla_warning', expect.any(Object));
     expect(wsGateway.emitToUser).toHaveBeenCalledWith('agent-001', 'ticket.sla_warning', expect.any(Object));
   });
+
+  /** Test : borne les breaches au departement du ticket et a son assigne */
 
   it('borne les breaches au departement du ticket et a son assigne', async () => {
     await service.notifyBreach(ticket, 'RESOLUTION', new Date('2026-07-22T12:15:00Z'));

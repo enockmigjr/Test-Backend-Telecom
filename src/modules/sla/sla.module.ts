@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/sla/sla.module.ts
+ * RÔLE : Module NestJS organisant le composant sla.
+ * EXPLICATION :
+ * Ce module regroupe et configure les contrôleurs, services, répertoires et dépendances de sla.
+ * 1. Définit les éléments internes du domaine fonctionnel.
+ * 2. Rend les services accessibles aux autres modules ayant importé celui-ci.
+ * ============================================================================
+ */
+
 import { Module } from '@nestjs/common';
 import { SlaPoliciesController } from './sla-policies.controller';
 import { SlaPoliciesService } from './sla-policies.service';
@@ -24,4 +35,7 @@ import { SlaAutoCloseService } from './sla-auto-close.service';
   ],
   exports: [SlaPoliciesService, SlaEngineService],
 })
+/**
+ * Module NestJS `SlaModule` configurant les dépendances, contrôleurs et services associés.
+ */
 export class SlaModule {}

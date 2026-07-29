@@ -1,3 +1,16 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/sla/sla-alert-processor.service.ts
+ * RÔLE : Moteur d'évaluation et de détection automatique des dépassements de délais SLA.
+ * EXPLICATION :
+ * Ce service analyse régulièrement les tickets ouverts pour détecter les alertes imminentes et les violations :
+ * 1. `process` : Évalue séquentiellement les 4 cas de figure (dépassement réponse, dépassement résolution, alerte réponse <30 min, alerte résolution <30 min).
+ * 2. `findCandidates` : Requête les tickets non fermés (`NOT IN ('RESOLVED','CLOSED','CANCELLED')`) et non mis en pause.
+ * 3. `claimAlert` : Verrouille l'alerte via une mise à jour SQL atomique (`UPDATE ... RETURNING id`) pour éviter que deux instances parallèles ne traitent le même incident.
+ * 4. `releaseAlert` : Réinitialise l'état du ticket si l'envoi de la notification échoue, permettant une nouvelle tentative.
+ * ============================================================================
+ */
+
 import { Injectable, Logger } from '@nestjs/common';
 import { and, eq, gte, isNull, lt, notInArray, sql } from 'drizzle-orm';
 import { DrizzleProvider } from '../../database/drizzle.provider';
@@ -7,6 +20,9 @@ import { SlaAlertTicket, SlaTarget } from './sla-alert.types';
 
 type AlertKind = 'WARNING' | 'BREACH';
 
+/**
+ * Service de traitement des alertes et des violations de contrats de service (SLA).
+ */
 @Injectable()
 export class SlaAlertProcessorService {
   private readonly logger = new Logger(SlaAlertProcessorService.name);
@@ -21,9 +37,12 @@ export class SlaAlertProcessorService {
     private readonly notifier: SlaAlertNotifierService,
   ) {}
 
+  /**
+   * Balaye l'ensemble des tickets d'incidents pour appliquer la détection des alertes et retards SLA.
+   */
   async process(): Promise<void> {
     const now = new Date();
-    const warningThreshold = new Date(now.getTime() + 30 * 60 * 1000);
+    const warningThreshold = new Date(now.getTime() + 30 * 60 * 1000); // Seuil d'avertissement fixé à 30 minutes
 
     await this.processTarget('FIRST_RESPONSE', 'BREACH', now, warningThreshold);
     await this.processTarget('RESOLUTION', 'BREACH', now, warningThreshold);
@@ -31,6 +50,9 @@ export class SlaAlertProcessorService {
     await this.processTarget('RESOLUTION', 'WARNING', now, warningThreshold);
   }
 
+  /**
+   * Recherche et traite les tickets candidats pour un type d'alerte donné.
+   */
   private async processTarget(target: SlaTarget, kind: AlertKind, now: Date, threshold: Date): Promise<void> {
     const candidates = await this.findCandidates(target, kind, now, threshold);
 
@@ -52,6 +74,9 @@ export class SlaAlertProcessorService {
     }
   }
 
+  /**
+   * Extrait jusqu'à 100 tickets éligibles à un avertissement ou une pénalité SLA.
+   */
   private async findCandidates(
     target: SlaTarget,
     kind: AlertKind,
@@ -73,6 +98,7 @@ export class SlaAlertProcessorService {
     } else {
       conditions.push(isNull(tickets.slaPausedAt));
     }
+
     if (kind === 'BREACH') {
       conditions.push(lt(dueAt, now));
     } else {
@@ -104,6 +130,9 @@ export class SlaAlertProcessorService {
       .limit(100);
   }
 
+  /**
+   * Revendique de manière atomique l'alerte sur un ticket en mettant à jour son horodatage.
+   */
   private async claimAlert(
     id: string,
     target: SlaTarget,
@@ -130,6 +159,7 @@ export class SlaAlertProcessorService {
         .returning({ id: tickets.id });
       return rows.length > 0;
     }
+
     if (target === 'RESOLUTION' && kind === 'BREACH') {
       const rows = await this.drizzle.db
         .update(tickets)
@@ -138,6 +168,7 @@ export class SlaAlertProcessorService {
         .returning({ id: tickets.id });
       return rows.length > 0;
     }
+
     if (target === 'FIRST_RESPONSE') {
       const rows = await this.drizzle.db
         .update(tickets)
@@ -155,6 +186,9 @@ export class SlaAlertProcessorService {
     return rows.length > 0;
   }
 
+  /**
+   * Libère le statut d'alerte d'un ticket en cas d'erreur de traitement pour permettre un réessai.
+   */
   private async releaseAlert(id: string, target: SlaTarget, kind: AlertKind): Promise<void> {
     if (kind === 'WARNING') {
       const warningField = target === 'FIRST_RESPONSE' ? 'firstResponseWarningSentAt' : 'resolutionWarningSentAt';

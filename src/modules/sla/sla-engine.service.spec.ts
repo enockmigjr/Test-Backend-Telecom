@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/sla/sla-engine.service.spec.ts
+ * RÔLE : Suite de tests unitaires pour le composant sla-engine.service.
+ * EXPLICATION :
+ * Ce fichier contient les tests automatisés validant le comportement et l'intégrité de sla-engine.service.
+ * 1. Vérifie le fonctionnement nominal et les cas d'erreur.
+ * 2. Garantit qu'aucune régression n'est introduite lors des évolutions du code.
+ * ============================================================================
+ */
+
 import { SettingsService } from '../settings/settings.service';
 import { SlaAlertProcessorService } from './sla-alert-processor.service';
 import { SlaAutoCloseService } from './sla-auto-close.service';
@@ -25,6 +36,8 @@ describe('SlaEngineService', () => {
     );
   });
 
+  /** Test : traite les deux objectifs SLA avant la cloture automatique */
+
   it('traite les deux objectifs SLA avant la cloture automatique', async () => {
     await service.checkSla();
 
@@ -34,6 +47,8 @@ describe('SlaEngineService', () => {
       autoCloseService.process.mock.invocationCallOrder[0],
     );
   });
+
+  /** Test : calcule une echeance 24/7 sans muter la date source */
 
   it('calcule une echeance 24/7 sans muter la date source', async () => {
     const createdAt = new Date('2026-06-26T10:00:00Z');

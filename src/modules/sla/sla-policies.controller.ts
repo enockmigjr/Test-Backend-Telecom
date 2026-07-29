@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/sla/sla-policies.controller.ts
+ * RÔLE : Contrôleur REST de gestion des politiques contractuelles de service SLA (`/api/v1/sla-policies`).
+ * EXPLICATION :
+ * Ce contrôleur permet la consultation et la configuration des engagements de service :
+ * 1. Consultation (`GET /`, `GET /:id`) : Permet à tous les agents de consulter les délais cibles de réponse et de résolution par catégorie/priorité.
+ * 2. Création et Édition (`POST`, `PATCH`) : Réservé aux administrateurs (`@Roles('ADMINISTRATOR')`). Garantit l'unicité du couple (catégorie, priorité).
+ * ============================================================================
+ */
+
 import { Controller, Get, Post, Patch, Body, Param, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { SlaPoliciesService } from './sla-policies.service';
@@ -5,6 +16,9 @@ import { CreateSlaPolicyDto, UpdateSlaPolicyDto } from './dto/sla-policy.dto';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../auth/guards/roles.guard';
 
+/**
+ * Contrôleur d'API pour l'administration des règles contractuelles SLA.
+ */
 @ApiTags('sla')
 @ApiBearerAuth()
 @Controller('sla-policies')
@@ -12,6 +26,9 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 export class SlaPoliciesController {
   constructor(private readonly slaPoliciesService: SlaPoliciesService) {}
 
+  /**
+   * Extrait la liste complète des politiques SLA définies sur la plateforme.
+   */
   @Get()
   @ApiOperation({
     summary: 'Liste des politiques SLA',
@@ -28,6 +45,11 @@ export class SlaPoliciesController {
     return this.slaPoliciesService.findAll();
   }
 
+  /**
+   * Recherche le détail d'une politique SLA par son identifiant UUIDv7.
+   *
+   * @param id UUID de la politique.
+   */
   @Get(':id')
   @ApiOperation({
     summary: "Détails d'une politique SLA",
@@ -43,6 +65,11 @@ export class SlaPoliciesController {
     return this.slaPoliciesService.findOne(id);
   }
 
+  /**
+   * Enregistre une nouvelle règle de contrat SLA pour un couple catégorie/priorité.
+   *
+   * @param dto Paramètres de la politique SLA (délais en minutes, mode 24_7 ou BUSINESS_HOURS).
+   */
   @Post()
   @Roles('ADMINISTRATOR')
   @HttpCode(HttpStatus.CREATED)
@@ -62,6 +89,12 @@ export class SlaPoliciesController {
     return this.slaPoliciesService.create(dto);
   }
 
+  /**
+   * Modifie les délais cibles d'une politique SLA existante.
+   *
+   * @param id UUID de la politique SLA.
+   * @param dto Nouveaux délais de réponse et résolution.
+   */
   @Patch(':id')
   @Roles('ADMINISTRATOR')
   @ApiOperation({

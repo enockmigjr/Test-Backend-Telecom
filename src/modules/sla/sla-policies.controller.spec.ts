@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/sla/sla-policies.controller.spec.ts
+ * RÔLE : Suite de tests unitaires pour le composant sla-policies.controller.
+ * EXPLICATION :
+ * Ce fichier contient les tests automatisés validant le comportement et l'intégrité de sla-policies.controller.
+ * 1. Vérifie le fonctionnement nominal et les cas d'erreur.
+ * 2. Garantit qu'aucune régression n'est introduite lors des évolutions du code.
+ * ============================================================================
+ */
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Test, TestingModule } from '@nestjs/testing';
 import { SlaPoliciesController } from './sla-policies.controller';
@@ -121,6 +132,7 @@ describe('SlaPoliciesController', () => {
   // findAll()
   // =========================================================================
   describe('GET /sla-policies', () => {
+    /** Test : doit retourner la liste de toutes les politiques SLA */
     it('doit retourner la liste de toutes les politiques SLA', async () => {
       slaPoliciesService.findAll.mockResolvedValue(slaPoliciesList);
 
@@ -131,6 +143,8 @@ describe('SlaPoliciesController', () => {
       expect(result).toHaveLength(3);
     });
 
+    /** Test : doit retourner un tableau vide si aucune politique */
+
     it('doit retourner un tableau vide si aucune politique', async () => {
       slaPoliciesService.findAll.mockResolvedValue([]);
 
@@ -138,6 +152,8 @@ describe('SlaPoliciesController', () => {
 
       expect(result).toEqual([]);
     });
+
+    /** Test : doit propager les erreurs du service */
 
     it('doit propager les erreurs du service', async () => {
       slaPoliciesService.findAll.mockRejectedValue(new Error('Erreur base de données'));
@@ -150,6 +166,7 @@ describe('SlaPoliciesController', () => {
   // findOne()
   // =========================================================================
   describe('GET /sla-policies/:id', () => {
+    /** Test : doit retourner une politique SLA par son ID */
     it('doit retourner une politique SLA par son ID', async () => {
       slaPoliciesService.findOne.mockResolvedValue(singlePolicy);
 
@@ -172,9 +189,12 @@ describe('SlaPoliciesController', () => {
   // create()
   // =========================================================================
   describe('POST /sla-policies (Admin uniquement)', () => {
+    /** Test : reserve explicitement la creation a ADMINISTRATOR */
     it('reserve explicitement la creation a ADMINISTRATOR', () => {
       expect(Reflect.getMetadata(ROLES_KEY, controller.create)).toEqual(['ADMINISTRATOR']);
     });
+
+    /** Test : doit créer une politique SLA et retourner 201 */
 
     it('doit créer une politique SLA et retourner 201', async () => {
       slaPoliciesService.create.mockResolvedValue(createResult);
@@ -184,6 +204,8 @@ describe('SlaPoliciesController', () => {
       expect(slaPoliciesService.create).toHaveBeenCalledWith(createDto);
       expect(result).toEqual(createResult);
     });
+
+    /** Test : doit propager ConflictException si la combinaison catégorie/priorité existe */
 
     it('doit propager ConflictException si la combinaison catégorie/priorité existe', async () => {
       slaPoliciesService.create.mockRejectedValue(
@@ -200,6 +222,7 @@ describe('SlaPoliciesController', () => {
   // update()
   // =========================================================================
   describe('PATCH /sla-policies/:id (Admin uniquement)', () => {
+    /** Test : reserve explicitement la modification a ADMINISTRATOR */
     it('reserve explicitement la modification a ADMINISTRATOR', () => {
       expect(Reflect.getMetadata(ROLES_KEY, controller.update)).toEqual(['ADMINISTRATOR']);
     });
@@ -213,6 +236,8 @@ describe('SlaPoliciesController', () => {
       expect(result).toEqual(updateResult);
     });
 
+    /** Test : doit mettre à jour uniquement firstResponseMinutes */
+
     it('doit mettre à jour uniquement firstResponseMinutes', async () => {
       slaPoliciesService.update.mockResolvedValue(updateResult);
       const partialUpdate: UpdateSlaPolicyDto = { firstResponseMinutes: 20 };
@@ -221,6 +246,8 @@ describe('SlaPoliciesController', () => {
 
       expect(slaPoliciesService.update).toHaveBeenCalledWith('sla-001', partialUpdate);
     });
+
+    /** Test : doit mettre à jour uniquement resolutionMinutes */
 
     it('doit mettre à jour uniquement resolutionMinutes', async () => {
       slaPoliciesService.update.mockResolvedValue(updateResult);
