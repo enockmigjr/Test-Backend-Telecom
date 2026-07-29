@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/queues/workers/sla.worker.ts
+ * RÔLE : Travailleur asynchrone BullMQ (Queue Worker).
+ * EXPLICATION :
+ * Ce composant dépile et exécute en arrière-plan les tâches différées de la file d'attente.
+ * 1. Traite les travaux d'arrière-plan de manière résiliente.
+ * 2. Gère les réessais en cas de panne temporaire d'un service externe.
+ * ============================================================================
+ */
+
 import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { Worker, Job } from 'bullmq';
 import { redisConfig } from '../../common/providers/redis.config';

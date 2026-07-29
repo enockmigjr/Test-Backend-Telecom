@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/queues/queues.module.spec.ts
+ * RÔLE : Suite de tests unitaires pour le composant queues.module.
+ * EXPLICATION :
+ * Ce fichier contient les tests automatisés validant le comportement et l'intégrité de queues.module.
+ * 1. Vérifie le fonctionnement nominal et les cas d'erreur.
+ * 2. Garantit qu'aucune régression n'est introduite lors des évolutions du code.
+ * ============================================================================
+ */
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Test, TestingModule } from '@nestjs/testing';
 import { Logger } from '@nestjs/common';
@@ -80,21 +91,30 @@ describe('QueuesModule', () => {
   // ─── Constantes de files ───────────────────────────────────────────────────
 
   describe('constantes de noms de files', () => {
+    /** Test : doit exporter EMAIL_QUEUE */
     it('doit exporter EMAIL_QUEUE', () => {
       expect(EMAIL_QUEUE).toBe('email-queue');
     });
+
+    /** Test : doit exporter NOTIFICATION_QUEUE */
 
     it('doit exporter NOTIFICATION_QUEUE', () => {
       expect(NOTIFICATION_QUEUE).toBe('notification-queue');
     });
 
+    /** Test : doit exporter SLA_QUEUE */
+
     it('doit exporter SLA_QUEUE', () => {
       expect(SLA_QUEUE).toBe('sla-queue');
     });
 
+    /** Test : doit exporter AUDIT_QUEUE */
+
     it('doit exporter AUDIT_QUEUE', () => {
       expect(AUDIT_QUEUE).toBe('audit-queue');
     });
+
+    /** Test : doit exporter REPORT_QUEUE */
 
     it('doit exporter REPORT_QUEUE', () => {
       expect(REPORT_QUEUE).toBe('report-queue');
@@ -104,11 +124,14 @@ describe('QueuesModule', () => {
   // ─── Résolution des providers ──────────────────────────────────────────────
 
   describe('résolution des workers', () => {
+    /** Test : doit résoudre EmailWorker */
     it('doit résoudre EmailWorker', () => {
       const emailWorker = moduleRef.get<EmailWorker>(EmailWorker);
       expect(emailWorker).toBeDefined();
       expect(emailWorker).toBeInstanceOf(EmailWorker);
     });
+
+    /** Test : doit résoudre NotificationWorker */
 
     it('doit résoudre NotificationWorker', () => {
       const notificationWorker = moduleRef.get<NotificationWorker>(NotificationWorker);
@@ -116,17 +139,23 @@ describe('QueuesModule', () => {
       expect(notificationWorker).toBeInstanceOf(NotificationWorker);
     });
 
+    /** Test : doit résoudre SlaWorker */
+
     it('doit résoudre SlaWorker', () => {
       const slaWorker = moduleRef.get<SlaWorker>(SlaWorker);
       expect(slaWorker).toBeDefined();
       expect(slaWorker).toBeInstanceOf(SlaWorker);
     });
 
+    /** Test : doit résoudre AuditWorker */
+
     it('doit résoudre AuditWorker', () => {
       const auditWorker = moduleRef.get<AuditWorker>(AuditWorker);
       expect(auditWorker).toBeDefined();
       expect(auditWorker).toBeInstanceOf(AuditWorker);
     });
+
+    /** Test : doit résoudre ReportWorker */
 
     it('doit résoudre ReportWorker', () => {
       const reportWorker = moduleRef.get<ReportWorker>(ReportWorker);
@@ -138,6 +167,7 @@ describe('QueuesModule', () => {
   // ─── Injection token BullMQ_Queues ────────────────────────────────────────
 
   describe('BullMQ_Queues', () => {
+    /** Test : doit résoudre le token BullMQ_Queues avec 6 queues */
     it('doit résoudre le token BullMQ_Queues avec 6 queues', () => {
       const queues = moduleRef.get<Record<string, Queue>>('BullMQ_Queues');
       expect(queues).toBeDefined();
@@ -153,10 +183,13 @@ describe('QueuesModule', () => {
   // ─── Injection des dépendances ─────────────────────────────────────────────
 
   describe('injection des dépendances', () => {
+    /** Test : EmailWorker reçoit EmailService */
     it('EmailWorker reçoit EmailService', () => {
       const emailWorker = moduleRef.get<EmailWorker>(EmailWorker);
       expect((emailWorker as any).emailService).toBeDefined();
     });
+
+    /** Test : NotificationWorker reçoit DrizzleProvider et WebSocketGateway */
 
     it('NotificationWorker reçoit DrizzleProvider et WebSocketGateway', () => {
       const notifWorker = moduleRef.get<NotificationWorker>(NotificationWorker);
@@ -164,15 +197,21 @@ describe('QueuesModule', () => {
       expect((notifWorker as any).wsGateway).toBeDefined();
     });
 
+    /** Test : SlaWorker reçoit DrizzleProvider */
+
     it('SlaWorker reçoit DrizzleProvider', () => {
       const slaWorker = moduleRef.get<SlaWorker>(SlaWorker);
       expect((slaWorker as any).drizzle).toBeDefined();
     });
 
+    /** Test : AuditWorker reçoit DrizzleProvider */
+
     it('AuditWorker reçoit DrizzleProvider', () => {
       const auditWorker = moduleRef.get<AuditWorker>(AuditWorker);
       expect((auditWorker as any).drizzle).toBeDefined();
     });
+
+    /** Test : ReportWorker reçoit DrizzleProvider et BullMQ_Queues */
 
     it('ReportWorker reçoit DrizzleProvider et BullMQ_Queues', () => {
       const reportWorker = moduleRef.get<ReportWorker>(ReportWorker);

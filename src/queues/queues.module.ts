@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/queues/queues.module.ts
+ * RÔLE : Module NestJS organisant le composant queues.
+ * EXPLICATION :
+ * Ce module regroupe et configure les contrôleurs, services, répertoires et dépendances de queues.
+ * 1. Définit les éléments internes du domaine fonctionnel.
+ * 2. Rend les services accessibles aux autres modules ayant importé celui-ci.
+ * ============================================================================
+ */
+
 import { Module, Global, OnModuleInit, Logger, forwardRef } from '@nestjs/common';
 import { Queue } from 'bullmq';
 import { redisConfig } from '../common/providers/redis.config';
@@ -63,6 +74,9 @@ import { TicketsModule } from '../modules/tickets/tickets.module';
   ],
   exports: ['BullMQ_Queues'],
 })
+/**
+ * Module NestJS `QueuesModule` configurant les dépendances, contrôleurs et services associés.
+ */
 export class QueuesModule implements OnModuleInit {
   private readonly logger = new Logger(QueuesModule.name);
 
