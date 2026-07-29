@@ -1,3 +1,16 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/users/users.service.ts
+ * RÔLE : Service de gestion de l'annuaire des comptes utilisateurs et agents.
+ * EXPLICATION :
+ * Ce service regroupe toutes les opérations sur les comptes utilisateurs et techniciens :
+ * 1. Création de compte avec mot de passe temporaire aléatoire (12 octets hex), haché en Argon2id et envoi d'email via BullMQ (`sendWelcomeEmail`).
+ * 2. Consultation des profils simples (`findOne`) et détaillés (`findOneDetailed` avec métriques de tickets créés, assignés, résolus et SLA franchis).
+ * 3. Mise à jour sous contraintes RBAC/ABAC : Les superviseurs sont cantonnés à leur département et ne peuvent pas nommer d'autres superviseurs ou administrateurs.
+ * 4. Activation, désactivation et suppression logique (`deletedAt`).
+ * ============================================================================
+ */
+
 import {
   Injectable,
   NotFoundException,
@@ -20,6 +33,9 @@ import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { BullMqQueues } from '../../queues/queues.types';
 import { CreateUserInput, UpdateUserInput } from './interfaces/user-service.interfaces';
 
+/**
+ * Service gérant le cycle de vie, les autorisations et les statistiques des utilisateurs.
+ */
 @Injectable()
 export class UsersService {
   private readonly logger = new Logger(UsersService.name);
@@ -29,6 +45,13 @@ export class UsersService {
     @Inject('BullMQ_Queues') private readonly queues: BullMqQueues,
   ) {}
 
+  /**
+   * Récupère la liste paginée des utilisateurs du système (filtrée par département pour les superviseurs).
+   *
+   * @param dto Paramètres de pagination (page, limit, order).
+   * @param currentUser Contexte de l'utilisateur connecté.
+   * @returns Liste des utilisateurs et métadonnées de pagination.
+   */
   async findAll(dto: PaginationDto, currentUser?: JwtPayload) {
     const { page = 1, limit = 20, order = 'desc' } = dto;
     const offset = PaginationHelper.getOffset(page, limit);
@@ -68,7 +91,11 @@ export class UsersService {
   }
 
   /**
-   * Profil basique d'un utilisateur — inclut le département.
+   * Récupère le profil individuel d'un utilisateur par son identifiant.
+   *
+   * @param id Identifiant UUIDv7 de l'utilisateur.
+   * @returns Profil utilisateur avec les informations relatives à son département.
+   * @throws NotFoundException Si l'utilisateur n'existe pas ou a été supprimé.
    */
   async findOne(id: string) {
     const [user] = await this.drizzle.db
@@ -103,8 +130,10 @@ export class UsersService {
   }
 
   /**
-   * Profil détaillé d'un utilisateur — inclut département + statistiques tickets.
-   * Utilisé par GET /users/:id?detail=full
+   * Récupère la fiche détaillée d'un agent avec ses métriques et son historique récent de tickets.
+   *
+   * @param id Identifiant de l'utilisateur.
+   * @returns Profil enrichi avec statistiques de tickets (créés, assignés, ouverts, résolus, dépassements SLA).
    */
   async findOneDetailed(id: string) {
     const user = await this.findOne(id);
@@ -150,6 +179,14 @@ export class UsersService {
     };
   }
 
+  /**
+   * Crée un nouvel utilisateur dans le système avec génération d'un mot de passe temporaire.
+   *
+   * @param dto Données de création (email, nom, prénom, rôle, département).
+   * @returns Un message de confirmation avec les détails du compte créé.
+   * @throws ConflictException Si l'adresse email est déjà enregistrée.
+   * @throws BadRequestException Si le département spécifié n'existe pas.
+   */
   async create(dto: CreateUserInput) {
     const [existing] = await this.drizzle.db
       .select({ id: users.id })
@@ -214,21 +251,29 @@ export class UsersService {
     };
   }
 
+  /**
+   * Met à jour les informations d'un utilisateur en appliquant les restrictions RBAC selon le rôle de l'opérateur.
+   *
+   * @param id Identifiant de l'utilisateur à modifier.
+   * @param dto Champs à modifier (nom, prénom, rôle, département).
+   * @param currentUser Utilisateur effectuant l'opération.
+   * @throws ForbiddenException Si les règles de sécurité/hiérarchie sont enfreintes.
+   */
   async update(id: string, dto: UpdateUserInput, currentUser?: JwtPayload) {
     const userToUpdate = await this.findOne(id);
 
     if (currentUser?.role === 'SUPERVISOR') {
       if (userToUpdate.departmentId !== currentUser.departmentId) {
         throw new ForbiddenException(
-          "Vous n'avez pas le droit de modifier un utilisateur en dehors de votre departement.",
+          "Vous n'avez pas le droit de modifier un utilisateur en dehors de votre département.",
         );
       }
       if (dto.departmentId && dto.departmentId !== currentUser.departmentId) {
-        throw new ForbiddenException('Un superviseur ne peut pas deplacer un utilisateur vers un departement tiers.');
+        throw new ForbiddenException('Un superviseur ne peut pas déplacer un utilisateur vers un département tiers.');
       }
       if (dto.role && ['ADMINISTRATOR', 'SUPERVISOR'].includes(dto.role)) {
         throw new ForbiddenException(
-          "Un superviseur ne peut pas attribuer un role d'administrateur ou de superviseur.",
+          "Un superviseur ne peut pas attribuer un rôle d'administrateur ou de superviseur.",
         );
       }
     }
@@ -240,7 +285,7 @@ export class UsersService {
     if (dto.departmentId !== undefined) updateData['departmentId'] = dto.departmentId;
 
     if (Object.keys(updateData).length === 0) {
-      throw new BadRequestException('Aucune donnee a mettre a jour.');
+      throw new BadRequestException('Aucune donnée à mettre à jour.');
     }
 
     await this.drizzle.db.update(users).set(updateData).where(eq(users.id, id));
@@ -251,6 +296,12 @@ export class UsersService {
     return { message: 'Utilisateur mis à jour avec succès.', data: updated };
   }
 
+  /**
+   * Désactive un compte utilisateur (interdit les connexions futures sans supprimer le compte).
+   *
+   * @param id Identifiant de l'utilisateur.
+   * @throws BadRequestException Si l'utilisateur est déjà désactivé.
+   */
   async deactivate(id: string) {
     const user = await this.findOne(id);
 
@@ -264,6 +315,12 @@ export class UsersService {
     return { message: 'Utilisateur désactivé avec succès.' };
   }
 
+  /**
+   * Réactive un compte utilisateur désactivé.
+   *
+   * @param id Identifiant de l'utilisateur.
+   * @throws BadRequestException Si l'utilisateur est déjà actif.
+   */
   async activate(id: string) {
     const user = await this.findOne(id);
 
@@ -278,8 +335,7 @@ export class UsersService {
   }
 
   /**
-   * Envoie l'email de bienvenue avec le mot de passe temporaire
-   * via la file d'attente BullMQ (non-bloquant).
+   * Envoie l'email de bienvenue avec le mot de passe temporaire via la file d'attente BullMQ.
    */
   private async sendWelcomeEmail(
     to: string,

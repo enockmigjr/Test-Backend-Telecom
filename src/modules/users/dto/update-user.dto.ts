@@ -1,6 +1,19 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/users/dto/update-user.dto.ts
+ * RÔLE : DTO de validation pour la mise à jour partielle des informations d'un utilisateur.
+ * EXPLICATION :
+ * Ce DTO permet de modifier facultativement un ou plusieurs champs du profil d'un employé (PATCH /users/:id) :
+ * 1. `firstName` & `lastName` : Modification facultative de l'état civil.
+ * 2. `role` : Modification du rôle RBAC (exige les droits ADMINISTRATOR ou SUPERVISOR).
+ * 3. `departmentId` : Réaffectation à un autre département télécom.
+ * ============================================================================
+ */
+
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsString, IsUUID, IsIn, MaxLength, IsOptional } from 'class-validator';
 
+/** Liste canonique des 7 rôles autorisés dans l'application. */
 const VALID_ROLES = [
   'ADMINISTRATOR',
   'SUPERVISOR',
@@ -11,27 +24,34 @@ const VALID_ROLES = [
   'FIELD_TECHNICIAN',
 ] as const;
 
+/**
+ * Objet DTO de mise à jour partielle d'un compte utilisateur.
+ */
 export class UpdateUserDto {
-  @ApiPropertyOptional({ description: 'Prénom' })
+  /** Prénom de l'utilisateur (facultatif). */
+  @ApiPropertyOptional({ description: 'Prénom', example: 'Jean' })
   @IsOptional()
   @IsString()
   @MaxLength(100)
   firstName?: string;
 
-  @ApiPropertyOptional({ description: 'Nom de famille' })
+  /** Nom de famille de l'utilisateur (facultatif). */
+  @ApiPropertyOptional({ description: 'Nom de famille', example: 'Dupont' })
   @IsOptional()
   @IsString()
   @MaxLength(100)
   lastName?: string;
 
-  @ApiPropertyOptional({ description: 'Rôle', enum: VALID_ROLES })
+  /** Rôle d'accès RBAC (facultatif). */
+  @ApiPropertyOptional({ description: 'Rôle RBAC', enum: VALID_ROLES, example: 'TECHNICAL_SUPPORT_ENGINEER' })
   @IsOptional()
   @IsString()
-  @IsIn(VALID_ROLES)
+  @IsIn(VALID_ROLES, { message: 'Rôle invalide.' })
   role?: string;
 
-  @ApiPropertyOptional({ description: 'ID du département (UUID)' })
+  /** Identifiant UUID du nouveau département de rattachement (facultatif). */
+  @ApiPropertyOptional({ description: 'ID du département (UUID)', example: '018b3d6f-7e8c-7123-89ab-cdef01234567' })
   @IsOptional()
-  @IsUUID('all')
+  @IsUUID('all', { message: "L'identifiant du département doit être un UUID valide." })
   departmentId?: string;
 }

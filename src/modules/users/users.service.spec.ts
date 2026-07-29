@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/users/users.service.spec.ts
+ * RÔLE : Suite de tests unitaires pour le composant users.service.
+ * EXPLICATION :
+ * Ce fichier contient les tests automatisés validant le comportement et l'intégrité de users.service.
+ * 1. Vérifie le fonctionnement nominal et les cas d'erreur.
+ * 2. Garantit qu'aucune régression n'est introduite lors des évolutions du code.
+ * ============================================================================
+ */
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Test, TestingModule } from '@nestjs/testing';
 import { UsersService } from './users.service';
@@ -47,6 +58,8 @@ describe('UsersService', () => {
     service = module.get<UsersService>(UsersService);
   });
 
+  /** Test : findOne doit retourner un utilisateur existant */
+
   it('findOne doit retourner un utilisateur existant', async () => {
     const mockUser = {
       id: '1',
@@ -63,10 +76,14 @@ describe('UsersService', () => {
     expect(result).toBeDefined();
   });
 
+  /** Test : findOne doit lancer NotFoundException si utilisateur inexistant */
+
   it('findOne doit lancer NotFoundException si utilisateur inexistant', async () => {
     (mockDb.db as any).where.mockReturnValueOnce({ limit: jest.fn().mockResolvedValueOnce([]) });
     await expect(service.findOne('inexistant')).rejects.toThrow(NotFoundException);
   });
+
+  /** Test : deactivate doit désactiver un utilisateur actif */
 
   it('deactivate doit désactiver un utilisateur actif', async () => {
     const mockUser = {
@@ -85,6 +102,8 @@ describe('UsersService', () => {
     expect(result.message).toContain('désactivé');
     expect(result.message).toContain('succès');
   });
+
+  /** Test : activate doit réactiver un utilisateur inactif */
 
   it('activate doit réactiver un utilisateur inactif', async () => {
     const mockUser = {

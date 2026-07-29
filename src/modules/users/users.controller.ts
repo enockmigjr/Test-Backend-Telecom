@@ -2,7 +2,7 @@
  * ============================================================================
  * FICHIER : src/modules/users/users.controller.ts
  * RÔLE : Contrôleur REST pour la gestion des utilisateurs (`/api/v1/users`).
- * EXPLICATION (Pour non-développeurs) :
+ * EXPLICATION :
  * Ce contrôleur gère la création des comptes employés, leur modification,
  * leur désactivation ou leur réactivation, ainsi que la recherche et la consultation
  * des détails des agents et techniciens. Seuls les administrateurs et superviseurs
