@@ -1,3 +1,16 @@
+/**
+ * ============================================================================
+ * FICHIER : src/app.module.ts
+ * RÔLE : Module racine de l'application backend NestJS.
+ * EXPLICATION (Pour non-développeurs) :
+ * Ce fichier agit comme le "chef d'orchestre" de l'application. Il assemble et
+ * connecte tous les modules spécialisés du projet :
+ * 1. Les modules d'infrastructures (base de données, Redis, logs, sécurité).
+ * 2. Les modules métier (authentification, tickets, utilisateurs, notifications, SLA, etc.).
+ * 3. Les règles de sécurité globales (pare-feu anti-brute force, vérification JWT).
+ * ============================================================================
+ */
+
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
@@ -12,7 +25,7 @@ import { AppConfigService } from './config/app.config';
 import { CommonModule } from './common/common.module';
 import { DatabaseModule } from './database/database.module';
 
-// Modules métier
+// Importation des 16 modules métier du backend
 import { AuthModule } from './modules/auth/auth.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { PasswordChangeRequiredGuard } from './modules/auth/guards/password-change-required.guard';
@@ -40,16 +53,19 @@ import { SettingsModule } from './modules/settings/settings.module';
 import { IdempotencyInterceptor } from './common/interceptors/idempotency.interceptor';
 import { isAuthRateLimited } from './common/decorators/auth-rate-limited.decorator';
 
+/**
+ * Décorateur @Module indiquant à NestJS l'organisation et la structure de l'application.
+ */
 @Module({
   imports: [
-    // Configuration
+    // 1. Module de chargement des variables d'environnement (.env)
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: ['.env.local', '.env'],
     }),
     AppConfigModule,
 
-    // Logger Pino
+    // 2. Logger structuré Pino (gestion avancée des journaux d'événements)
     LoggerModule.forRootAsync({
       imports: [AppConfigModule],
       inject: [AppConfigService],
@@ -68,7 +84,7 @@ import { isAuthRateLimited } from './common/decorators/auth-rate-limited.decorat
       }),
     }),
 
-    // Rate Limiting avec stockage Redis (distribué)
+    // 3. Limitation du nombre de requêtes par minute (Anti-DDoS et protection Brute-Force via Redis)
     ThrottlerModule.forRootAsync({
       imports: [AppConfigModule],
       inject: [AppConfigService],
@@ -90,10 +106,10 @@ import { isAuthRateLimited } from './common/decorators/auth-rate-limited.decorat
       }),
     }),
 
-    // Planification (@Cron, @Interval)
+    // 4. Planificateur de tâches récurrentes (@Cron, tâches d'arrière-plan automatisées)
     ScheduleModule.forRoot(),
 
-    // Event Emitter pour Domain Events
+    // 5. Gestionnaire d'événements internes (Domain Events asynchrones)
     EventEmitterModule.forRoot({
       wildcard: false,
       delimiter: '.',
@@ -101,11 +117,11 @@ import { isAuthRateLimited } from './common/decorators/auth-rate-limited.decorat
       verboseMemoryLeak: false,
     }),
 
-    // Modules internes
+    // 6. Socle d'infrastructures communes et accès base de données
     DatabaseModule,
     CommonModule,
 
-    // Modules métier
+    // 7. Assemblage de l'ensemble des modules fonctionnels et métier du système
     AppInfoModule,
     HealthModule,
     MetricsModule,
@@ -130,18 +146,22 @@ import { isAuthRateLimited } from './common/decorators/auth-rate-limited.decorat
     SettingsModule,
   ],
   providers: [
+    // Protection globale contre le surdimensionnement des requêtes (Rate Limiting)
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
     },
+    // Protection globale par authentification JWT (bloque tout accès non authentifié par défaut)
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
     },
+    // Vérification globale forçant le changement du mot de passe temporaire
     {
       provide: APP_GUARD,
       useClass: PasswordChangeRequiredGuard,
     },
+    // Prévention des requêtes envoyées plusieurs fois par erreur (Idempotence)
     {
       provide: APP_INTERCEPTOR,
       useClass: IdempotencyInterceptor,
@@ -150,3 +170,4 @@ import { isAuthRateLimited } from './common/decorators/auth-rate-limited.decorat
   controllers: [],
 })
 export class AppModule {}
+
