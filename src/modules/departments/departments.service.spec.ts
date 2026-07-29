@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/departments/departments.service.spec.ts
+ * RÔLE : Suite de tests unitaires pour le composant departments.service.
+ * EXPLICATION :
+ * Ce fichier contient les tests automatisés validant le comportement et l'intégrité de departments.service.
+ * 1. Vérifie le fonctionnement nominal et les cas d'erreur.
+ * 2. Garantit qu'aucune régression n'est introduite lors des évolutions du code.
+ * ============================================================================
+ */
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Test, TestingModule } from '@nestjs/testing';
 import { DepartmentsService } from './departments.service';
@@ -97,6 +108,7 @@ describe('DepartmentsService', () => {
   // findAll()
   // =========================================================================
   describe('findAll() — Liste des departements', () => {
+    /** Test : doit retourner tous les departements tries par nom */
     it('doit retourner tous les departements tries par nom', async () => {
       const builder = createMockQueryBuilder([mockDepartment, mockDepartment2]);
       mockDb.select.mockReturnValueOnce(builder);
@@ -108,6 +120,8 @@ describe('DepartmentsService', () => {
       expect(result[1].name).toBe('NOC');
     });
 
+    /** Test : doit retourner une liste vide si aucun departement */
+
     it('doit retourner une liste vide si aucun departement', async () => {
       const builder = createMockQueryBuilder([]);
       mockDb.select.mockReturnValueOnce(builder);
@@ -116,6 +130,8 @@ describe('DepartmentsService', () => {
 
       expect(result).toHaveLength(0);
     });
+
+    /** Test : doit selectionner depuis la table departments avec orderBy name */
 
     it('doit selectionner depuis la table departments avec orderBy name', async () => {
       const builder = createMockQueryBuilder([mockDepartment, mockDepartment2]);
@@ -133,6 +149,7 @@ describe('DepartmentsService', () => {
   // findOne()
   // =========================================================================
   describe('findOne() — Recherche par ID', () => {
+    /** Test : doit retourner un departement existant */
     it('doit retourner un departement existant', async () => {
       const builder = createMockQueryBuilder([mockDepartment]);
       mockDb.select.mockReturnValueOnce(builder);
@@ -149,6 +166,8 @@ describe('DepartmentsService', () => {
 
       await expect(service.findOne('inexistant')).rejects.toThrow(NotFoundException);
     });
+
+    /** Test : doit appliquer un filtre where avec le bon id */
 
     it('doit appliquer un filtre where avec le bon id', async () => {
       const builder = createMockQueryBuilder([mockDepartment]);
@@ -167,6 +186,7 @@ describe('DepartmentsService', () => {
   // create()
   // =========================================================================
   describe('create() — Creation', () => {
+    /** Test : doit creer un nouveau departement */
     it('doit creer un nouveau departement', async () => {
       const checkBuilder = createMockQueryBuilder([]);
       const createdBuilder = createMockQueryBuilder([mockDepartment]);
@@ -187,6 +207,8 @@ describe('DepartmentsService', () => {
       expect(result.data).toEqual(mockDepartment);
     });
 
+    /** Test : doit creer un departement sans description */
+
     it('doit creer un departement sans description', async () => {
       const checkBuilder = createMockQueryBuilder([]);
       const deptNoDesc = { ...mockDepartment, description: null };
@@ -199,6 +221,8 @@ describe('DepartmentsService', () => {
       expect(result.data.description).toBeNull();
     });
 
+    /** Test : doit lancer ConflictException si le nom existe deja */
+
     it('doit lancer ConflictException si le nom existe deja', async () => {
       const builder = createMockQueryBuilder([{ id: 'existing-id' }]);
       mockDb.select.mockReturnValue(builder);
@@ -206,6 +230,8 @@ describe('DepartmentsService', () => {
       await expect(service.create({ name: 'Support Technique' })).rejects.toThrow(ConflictException);
       expect(mockDb.insert).not.toHaveBeenCalled();
     });
+
+    /** Test : doit verifier l unicite par nom avant creation */
 
     it('doit verifier l unicite par nom avant creation', async () => {
       const builder = createMockQueryBuilder([]);
@@ -233,6 +259,7 @@ describe('DepartmentsService', () => {
   // update()
   // =========================================================================
   describe('update() — Mise a jour', () => {
+    /** Test : doit mettre a jour un departement existant */
     it('doit mettre a jour un departement existant', async () => {
       const findBuilder = createMockQueryBuilder([mockDepartment]);
       const updatedDept = {
@@ -266,6 +293,8 @@ describe('DepartmentsService', () => {
       expect(mockDb.update).not.toHaveBeenCalled();
     });
 
+    /** Test : doit mettre a jour seulement les champs fournis */
+
     it('doit mettre a jour seulement les champs fournis', async () => {
       const findBuilder = createMockQueryBuilder([mockDepartment]);
       const updatedDept = { ...mockDepartment, description: 'Nouvelle description' };
@@ -277,6 +306,8 @@ describe('DepartmentsService', () => {
       expect(mockDb.update().set).toHaveBeenCalledWith({ description: 'Nouvelle description' });
     });
 
+    /** Test : doit mettre a jour uniquement le nom si seuleument name fourni */
+
     it('doit mettre a jour uniquement le nom si seuleument name fourni', async () => {
       const findBuilder = createMockQueryBuilder([mockDepartment]);
       const updatedDept = { ...mockDepartment, name: 'New Name' };
@@ -287,6 +318,8 @@ describe('DepartmentsService', () => {
 
       expect(mockDb.update().set).toHaveBeenCalledWith({ name: 'New Name' });
     });
+
+    /** Test : doit verifier l existence du departement avant mise a jour */
 
     it('doit verifier l existence du departement avant mise a jour', async () => {
       const findBuilder = createMockQueryBuilder([mockDepartment]);
@@ -304,6 +337,7 @@ describe('DepartmentsService', () => {
   // remove()
   // =========================================================================
   describe('remove() — Suppression (soft delete)', () => {
+    /** Test : doit effectuer un soft delete si aucun utilisateur ou ticket lie */
     it('doit effectuer un soft delete si aucun utilisateur ou ticket lie', async () => {
       const findBuilder = createMockQueryBuilder([mockDepartment]);
       const userCountBuilder = createMockQueryBuilder([{ count: 0 }]);
@@ -320,6 +354,8 @@ describe('DepartmentsService', () => {
       expect(mockDb.update().set().where).toHaveBeenCalledWith(eq(departments.id, mockDepartment.id));
     });
 
+    /** Test : doit lancer ConflictException si des utilisateurs sont lies */
+
     it('doit lancer ConflictException si des utilisateurs sont lies', async () => {
       const findBuilder = createMockQueryBuilder([mockDepartment]);
       const userCountBuilder = createMockQueryBuilder([{ count: 3 }]);
@@ -328,6 +364,8 @@ describe('DepartmentsService', () => {
       await expect(service.remove(mockDepartment.id)).rejects.toThrow(ConflictException);
       expect(mockDb.update).not.toHaveBeenCalled();
     });
+
+    /** Test : doit lancer ConflictException si des tickets sont lies */
 
     it('doit lancer ConflictException si des tickets sont lies', async () => {
       const findBuilder = createMockQueryBuilder([mockDepartment]);
@@ -350,6 +388,8 @@ describe('DepartmentsService', () => {
       expect(mockDb.update).not.toHaveBeenCalled();
     });
 
+    /** Test : doit verifier les utilisateurs lies avant les tickets lies */
+
     it('doit verifier les utilisateurs lies avant les tickets lies', async () => {
       const findBuilder = createMockQueryBuilder([mockDepartment]);
       const userCountBuilder = createMockQueryBuilder([{ count: 0 }]);
@@ -367,6 +407,8 @@ describe('DepartmentsService', () => {
       const ticketSelect = (mockDb.select as jest.Mock).mock.results[2].value;
       expect(ticketSelect.from).toHaveBeenCalledWith(tickets);
     });
+
+    /** Test : doit utiliser sql count(*) pour compter les enregistrements lies */
 
     it('doit utiliser sql count(*) pour compter les enregistrements lies', async () => {
       const findBuilder = createMockQueryBuilder([mockDepartment]);

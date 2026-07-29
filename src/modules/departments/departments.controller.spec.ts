@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/departments/departments.controller.spec.ts
+ * RÔLE : Suite de tests unitaires pour le composant departments.controller.
+ * EXPLICATION :
+ * Ce fichier contient les tests automatisés validant le comportement et l'intégrité de departments.controller.
+ * 1. Vérifie le fonctionnement nominal et les cas d'erreur.
+ * 2. Garantit qu'aucune régression n'est introduite lors des évolutions du code.
+ * ============================================================================
+ */
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Test, TestingModule } from '@nestjs/testing';
 import { DepartmentsController } from './departments.controller';
@@ -124,6 +135,7 @@ describe('DepartmentsController', () => {
   // findAll()
   // =========================================================================
   describe('GET /departments (public)', () => {
+    /** Test : doit retourner la liste de tous les départements */
     it('doit retourner la liste de tous les départements', async () => {
       departmentsService.findAll.mockResolvedValue(departmentsList);
 
@@ -134,6 +146,8 @@ describe('DepartmentsController', () => {
       expect(result).toHaveLength(3);
     });
 
+    /** Test : doit retourner un tableau vide si aucun département */
+
     it('doit retourner un tableau vide si aucun département', async () => {
       departmentsService.findAll.mockResolvedValue([]);
 
@@ -141,6 +155,8 @@ describe('DepartmentsController', () => {
 
       expect(result).toEqual([]);
     });
+
+    /** Test : doit propager les erreurs du service */
 
     it('doit propager les erreurs du service', async () => {
       departmentsService.findAll.mockRejectedValue(new Error('Erreur base de données'));
@@ -153,6 +169,7 @@ describe('DepartmentsController', () => {
   // findOne()
   // =========================================================================
   describe('GET /departments/:id', () => {
+    /** Test : doit retourner un département par son ID */
     it('doit retourner un département par son ID', async () => {
       departmentsService.findOne.mockResolvedValue(singleDepartment);
 
@@ -174,6 +191,7 @@ describe('DepartmentsController', () => {
   // create()
   // =========================================================================
   describe('POST /departments (Admin uniquement)', () => {
+    /** Test : doit créer un département et retourner 201 */
     it('doit créer un département et retourner 201', async () => {
       departmentsService.create.mockResolvedValue(createResult);
 
@@ -183,6 +201,8 @@ describe('DepartmentsController', () => {
       expect(result).toEqual(createResult);
       expect(result.data.name).toBe('Billing');
     });
+
+    /** Test : doit propager ConflictException si le nom existe déjà */
 
     it('doit propager ConflictException si le nom existe déjà', async () => {
       departmentsService.create.mockRejectedValue(new Error('Un département avec ce nom existe déjà.'));
@@ -195,6 +215,7 @@ describe('DepartmentsController', () => {
   // update()
   // =========================================================================
   describe('PATCH /departments/:id (Admin uniquement)', () => {
+    /** Test : doit mettre à jour un département */
     it('doit mettre à jour un département', async () => {
       departmentsService.update.mockResolvedValue(updateResult);
 
@@ -216,6 +237,7 @@ describe('DepartmentsController', () => {
   // remove()
   // =========================================================================
   describe('DELETE /departments/:id (Admin uniquement)', () => {
+    /** Test : doit supprimer un département et retourner 204 */
     it('doit supprimer un département et retourner 204', async () => {
       departmentsService.remove.mockResolvedValue(undefined);
 
@@ -231,6 +253,8 @@ describe('DepartmentsController', () => {
       await expect(controller.remove('dept-inexistant')).rejects.toThrow('Département non trouvé.');
     });
 
+    /** Test : doit propager ConflictException si des utilisateurs sont liés */
+
     it('doit propager ConflictException si des utilisateurs sont liés', async () => {
       departmentsService.remove.mockRejectedValue(
         new Error('Impossible de supprimer : des utilisateurs sont liés à ce département.'),
@@ -238,6 +262,8 @@ describe('DepartmentsController', () => {
 
       await expect(controller.remove('dept-001')).rejects.toThrow('des utilisateurs sont liés');
     });
+
+    /** Test : doit propager ConflictException si des tickets sont liés */
 
     it('doit propager ConflictException si des tickets sont liés', async () => {
       departmentsService.remove.mockRejectedValue(
