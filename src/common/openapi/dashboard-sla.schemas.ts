@@ -1,7 +1,19 @@
+/**
+ * ============================================================================
+ * FICHIER : src/common/openapi/dashboard-sla.schemas.ts
+ * RÔLE : Définitions OpenAPI Swagger pour le suivi des SLA et temps de résolution.
+ * EXPLICATION :
+ * Ce module répertorie les schémas Swagger décrivant les performances SLA et temporelles :
+ * 1. `DashboardSlaCompliance` : Taux global de conformité SLA (première réponse & résolution), ventilation par priorité et catégorie.
+ * 2. `DashboardResolutionTime` : Métriques de temps de résolution (moyenne, médiane, centile P90) et tendance temporelle.
+ * ============================================================================
+ */
+
 import { SchemaObject } from '@nestjs/swagger/dist/interfaces/open-api-spec.interface';
 
 import { priority } from './schema-helpers';
 
+/** Propriétés communes réutilisables pour le suivi de conformité SLA. */
 const complianceFields: Record<string, SchemaObject> = {
   totalTracked: { type: 'integer' },
   compliant: { type: 'integer' },
@@ -9,6 +21,9 @@ const complianceFields: Record<string, SchemaObject> = {
   complianceRate: { type: 'number', minimum: 0, maximum: 100 },
 };
 
+/**
+ * Schémas OpenAPI Swagger exportés pour les rapports SLA et de résolution.
+ */
 export const DASHBOARD_SLA_SCHEMAS: Record<string, SchemaObject> = {
   DashboardSlaCompliance: {
     type: 'object',

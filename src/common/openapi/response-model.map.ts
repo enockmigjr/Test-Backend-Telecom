@@ -1,15 +1,34 @@
+/**
+ * ============================================================================
+ * FICHIER : src/common/openapi/response-model.map.ts
+ * RÔLE : Cartographie des modèles de réponses HTTP par identifiant d'opération NestJS.
+ * EXPLICATION :
+ * Ce module associe chaque méthode de contrôleur (`operationId`) au type de réponse OpenAPI correspondant :
+ * 1. `item(schema)` : Retourne un objet unique enveloppé dans `data`.
+ * 2. `array(schema)` : Retourne une liste non paginée d'objets dans `data`.
+ * 3. `page(schema)` : Retourne une liste paginée avec métadonnées dans `data` et `meta`.
+ * 4. `action` : Retourne un message de succès `{ success: true, message: "..." }`.
+ * ============================================================================
+ */
+
+/** Type de format d'enveloppe OpenAPI. */
 export type ResponseKind = 'item' | 'array' | 'page' | 'action' | 'prewrapped-array' | 'prewrapped-action';
 
+/** Structure décrivant le modèle de réponse associé à une opération. */
 export interface ResponseModel {
   readonly kind: ResponseKind;
   readonly schema?: string;
 }
 
+// Helpers de création d'objets ResponseModel
 const item = (schema: string): ResponseModel => ({ kind: 'item', schema });
 const array = (schema: string): ResponseModel => ({ kind: 'array', schema });
 const page = (schema: string): ResponseModel => ({ kind: 'page', schema });
 const action: ResponseModel = { kind: 'action' };
 
+/**
+ * Table de correspondance exhaustive associant les 60+ routes des contrôleurs REST à leur schéma Swagger.
+ */
 export const RELEASE_RESPONSE_MODELS: Readonly<Record<string, ResponseModel>> = {
   AuthController_login: item('LoginData'),
   AuthController_refresh: item('TokenPair'),

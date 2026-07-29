@@ -1,7 +1,22 @@
+/**
+ * ============================================================================
+ * FICHIER : src/common/openapi/core-domain.schemas.ts
+ * RÔLE : Définitions OpenAPI Swagger pour le domaine cœur (Utilisateurs, Départements, SLA, Authentification).
+ * EXPLICATION :
+ * Ce module contient les schémas JSON Schema pour Swagger UI décrivant les entités fondamentales :
+ * 1. `Department` & `Category` : Départements télécom et catégories d'incidents.
+ * 2. `User`, `CreatedUser`, `CurrentUser` : Modèles utilisateur avec rôles RBAC (7 rôles), départements et métriques.
+ * 3. `TokenPair` & `LoginData` : Paires de jetons JWT (access_token, refresh_token) et payload de connexion.
+ * 4. `SlaPolicy` : Règles d'échéance temporelle (première réponse et résolution en minutes).
+ * 5. `Setting` : Paramètres système dynamiques enregistrés en base.
+ * ============================================================================
+ */
+
 import { SchemaObject } from '@nestjs/swagger/dist/interfaces/open-api-spec.interface';
 
 import { dateTime, nullableDateTime, nullableString, priority, ticketStatus, uuid } from './schema-helpers';
 
+/** Définition OpenAPI réutilisable de l'énumération des 7 rôles RBAC du système. */
 const role: SchemaObject = {
   type: 'string',
   enum: [
@@ -15,6 +30,9 @@ const role: SchemaObject = {
   ],
 };
 
+/**
+ * Schémas OpenAPI Swagger exportés pour le domaine cœur.
+ */
 export const CORE_DOMAIN_SCHEMAS: Record<string, SchemaObject> = {
   Department: {
     type: 'object',

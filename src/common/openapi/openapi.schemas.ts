@@ -1,3 +1,18 @@
+/**
+ * ============================================================================
+ * FICHIER : src/common/openapi/openapi.schemas.ts
+ * RÔLE : Registre central des schémas d'enveloppe HTTP et modèles métier OpenAPI Swagger.
+ * EXPLICATION :
+ * Ce fichier fusionne l'ensemble des définitions de schémas Swagger réutilisables :
+ * 1. Intègre les sous-schémas par domaine (`CORE`, `TICKET`, `COLLABORATION`, `DASHBOARD`, `REPORT`).
+ * 2. Définit les schémas d'enveloppe standardisés :
+ *    - `ApiSuccessResponse` : Enveloppe de réponse de succès générique `{ success: true, data }`.
+ *    - `PaginationMeta` & `ApiPaginatedResponse` : Métadonnées et liste paginée `{ page, limit, total, totalPages }`.
+ *    - `ApiCollectionResponse` : Liste simple non paginée.
+ *    - `ApiErrorResponse` & `ApiErrorDetail` : Structure standard d'erreur HTTP `{ success: false, error: { code, message, correlationId, timestamp } }`.
+ * ============================================================================
+ */
+
 import { SchemaObject } from '@nestjs/swagger/dist/interfaces/open-api-spec.interface';
 import { COLLABORATION_DOMAIN_SCHEMAS } from './collaboration-domain.schemas';
 import { CORE_DOMAIN_SCHEMAS } from './core-domain.schemas';
@@ -6,6 +21,9 @@ import { DASHBOARD_SLA_SCHEMAS } from './dashboard-sla.schemas';
 import { REPORT_DOMAIN_SCHEMAS } from './report-domain.schemas';
 import { TICKET_DOMAIN_SCHEMAS } from './ticket-domain.schemas';
 
+/**
+ * Registre global des schémas OpenAPI référencés par `$ref: '#/components/schemas/...'`.
+ */
 export const OPENAPI_SCHEMAS: Record<string, SchemaObject> = {
   ...CORE_DOMAIN_SCHEMAS,
   ...TICKET_DOMAIN_SCHEMAS,

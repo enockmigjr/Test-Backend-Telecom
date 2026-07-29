@@ -1,3 +1,16 @@
+/**
+ * ============================================================================
+ * FICHIER : src/common/openapi/report-domain.schemas.ts
+ * RÔLE : Définitions OpenAPI Swagger pour le domaine de génération des rapports PDF et statistiques.
+ * EXPLICATION :
+ * Ce module contient les schémas JSON Schema pour Swagger UI décrivant les entités de rapports :
+ * 1. `Report` & `ReportJob` : État d'avancement des tâches de génération asynchrone (BullMQ worker + stockage S3/MinIO).
+ * 2. `TicketReport` : Structure détaillée d'un rapport d'incident individuel exporté au format PDF.
+ * 3. `SlaReport` : Rapport synthétique de conformité SLA pour les décideurs.
+ * 4. `DatePeriod` : Période temporelle de filtrage (`from` à `to`).
+ * ============================================================================
+ */
+
 import { SchemaObject } from '@nestjs/swagger/dist/interfaces/open-api-spec.interface';
 
 import {
@@ -11,6 +24,9 @@ import {
   uuid,
 } from './schema-helpers';
 
+/**
+ * Schémas OpenAPI Swagger exportés pour les rapports.
+ */
 export const REPORT_DOMAIN_SCHEMAS: Record<string, SchemaObject> = {
   Report: {
     type: 'object',

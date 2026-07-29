@@ -1,3 +1,17 @@
+/**
+ * ============================================================================
+ * FICHIER : src/common/openapi/ticket-domain.schemas.ts
+ * RÔLE : Définitions OpenAPI Swagger pour le domaine des Tickets d'incidents Télécom.
+ * EXPLICATION :
+ * Ce module répertorie les schémas JSON Schema décrivant l'entité centrale des Tickets d'incidents :
+ * 1. `TicketListItem` : Version allégée d'un ticket pour les affichages en liste et tableaux de bord.
+ * 2. `Ticket` : Représentation détaillée avec relations Drizzle (catégorie, département, créateur, assigné, échéances SLA, compteurs).
+ * 3. `TicketRelationCounts` : Compteurs d'associations de second niveau (`commentCount`, `assignmentCount`).
+ * 4. `Assignment` & `AssignmentPage` : Enregistrement et pagination de l'historique des réassignations et escalades.
+ * 5. `TicketHistory` : Journal des modifications de champs d'un ticket (actions, instantanés avant/après).
+ * ============================================================================
+ */
+
 import { SchemaObject } from '@nestjs/swagger/dist/interfaces/open-api-spec.interface';
 
 import {
@@ -11,6 +25,7 @@ import {
   uuid,
 } from './schema-helpers';
 
+/** Propriétés de base d'un ticket dans un affichage en liste. */
 const ticketListProperties: Record<string, SchemaObject> = {
   id: uuid,
   ticketNumber: { type: 'string' },
@@ -26,6 +41,9 @@ const ticketListProperties: Record<string, SchemaObject> = {
   updatedAt: dateTime,
 };
 
+/**
+ * Schémas OpenAPI Swagger exportés pour les tickets d'incidents.
+ */
 export const TICKET_DOMAIN_SCHEMAS: Record<string, SchemaObject> = {
   TicketListItem: {
     type: 'object',

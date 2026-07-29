@@ -1,7 +1,22 @@
+/**
+ * ============================================================================
+ * FICHIER : src/common/openapi/collaboration-domain.schemas.ts
+ * RÔLE : Définitions OpenAPI Swagger pour le domaine de collaboration et de traçabilité.
+ * EXPLICATION :
+ * Ce module contient les schémas JSON Schema pour Swagger UI décrivant les entités de collaboration :
+ * 1. `TicketComment` : Commentaires publics visibles par le client et les techniciens.
+ * 2. `InternalNote` : Notes de travail internes confidentielles (masquées pour FIELD_TECHNICIAN).
+ * 3. `Attachment` : Métadonnées des fichiers joints (nom d'origine, type MIME, taille, clé S3/MinIO).
+ * 4. `Notification` : Alertes et messages in-app adressés aux utilisateurs.
+ * 5. `AuditLog` : Entrées du journal d'audit immuable (action, entité, instantanés oldValue/newValue).
+ * ============================================================================
+ */
+
 import { SchemaObject } from '@nestjs/swagger/dist/interfaces/open-api-spec.interface';
 
 import { dateTime, jsonValue, nullableDateTime, nullableString, uuid } from './schema-helpers';
 
+/** Propriétés communes réutilisées pour les messages (Commentaires publics et Notes internes). */
 const messageProperties: Record<string, SchemaObject> = {
   id: uuid,
   ticketId: uuid,
@@ -14,6 +29,9 @@ const messageProperties: Record<string, SchemaObject> = {
   authorRole: { type: 'string' },
 };
 
+/**
+ * Schémas OpenAPI Swagger exportés pour le domaine de collaboration.
+ */
 export const COLLABORATION_DOMAIN_SCHEMAS: Record<string, SchemaObject> = {
   TicketComment: {
     type: 'object',

@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/common/openapi/openapi-document.completer.spec.ts
+ * RÔLE : Suite de tests unitaires pour le composant openapi-document.completer.
+ * EXPLICATION :
+ * Ce fichier contient les tests automatisés validant le comportement et l'intégrité de openapi-document.completer.
+ * 1. Vérifie le fonctionnement nominal et les cas d'erreur.
+ * 2. Garantit qu'aucune régression n'est introduite lors des évolutions du code.
+ * ============================================================================
+ */
+
 import { OpenAPIObject } from '@nestjs/swagger';
 
 import { completeOpenApiDocument } from './openapi-document.completer';
@@ -29,6 +40,7 @@ function fixture(): OpenAPIObject {
 }
 
 describe('completeOpenApiDocument', () => {
+  /** Test : ajoute les enveloppes succès, erreur et pagination */
   it('ajoute les enveloppes succès, erreur et pagination', () => {
     const document = completeOpenApiDocument(fixture());
     const list = document.paths['/items'].get;
@@ -47,6 +59,8 @@ describe('completeOpenApiDocument', () => {
     );
     expect(list?.responses.default).toBeDefined();
   });
+
+  /** Test : préserve 204 sans contenu et documente les téléchargements binaires */
 
   it('préserve 204 sans contenu et documente les téléchargements binaires', () => {
     const document = completeOpenApiDocument(fixture());

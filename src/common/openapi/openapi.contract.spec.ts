@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/common/openapi/openapi.contract.spec.ts
+ * RÔLE : Suite de tests unitaires pour le composant openapi.contract.
+ * EXPLICATION :
+ * Ce fichier contient les tests automatisés validant le comportement et l'intégrité de openapi.contract.
+ * 1. Vérifie le fonctionnement nominal et les cas d'erreur.
+ * 2. Garantit qu'aucune régression n'est introduite lors des évolutions du code.
+ * ============================================================================
+ */
+
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { RELEASE_RESPONSE_MODELS } from './response-model.map';
@@ -64,12 +75,16 @@ describe('contrat openapi.json', () => {
   const document = loadDocument();
   const apiOperations = operations(document);
 
+  /** Test : contient les 83 opérations actuelles avec des operationId uniques */
+
   it('contient les 83 opérations actuelles avec des operationId uniques', () => {
     const operationIds = apiOperations.map((operation) => operation['operationId']);
     expect(apiOperations).toHaveLength(83);
     expect(operationIds.every((id) => typeof id === 'string' && id.length > 0)).toBe(true);
     expect(new Set(operationIds).size).toBe(operationIds.length);
   });
+
+  /** Test : documente chaque réponse JSON 2xx et chaque erreur déclarée */
 
   it('documente chaque réponse JSON 2xx et chaque erreur déclarée', () => {
     for (const operation of apiOperations) {
@@ -83,6 +98,8 @@ describe('contrat openapi.json', () => {
     }
   });
 
+  /** Test : publie les enveloppes communes nécessaires au client typé */
+
   it('publie les enveloppes communes nécessaires au client typé', () => {
     expect(document).toHaveProperty('components.schemas.ApiSuccessResponse');
     expect(document).toHaveProperty('components.schemas.ApiCollectionResponse');
@@ -90,6 +107,8 @@ describe('contrat openapi.json', () => {
     expect(document).toHaveProperty('components.schemas.ApiErrorResponse');
     expect(document).toHaveProperty('components.schemas.PaginationMeta');
   });
+
+  /** Test : utilise un modèle métier explicite pour chaque opération Release 1 */
 
   it('utilise un modèle métier explicite pour chaque opération Release 1', () => {
     const byId = new Map(apiOperations.map((operation) => [operation['operationId'], operation]));
@@ -123,6 +142,8 @@ describe('contrat openapi.json', () => {
       }
     }
   });
+
+  /** Test : reste fidèle aux enums, enveloppes et types binaires runtime */
 
   it('reste fidèle aux enums, enveloppes et types binaires runtime', () => {
     const byId = new Map(apiOperations.map((operation) => [operation['operationId'], operation]));

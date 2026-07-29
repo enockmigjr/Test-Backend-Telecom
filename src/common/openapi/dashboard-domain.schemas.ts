@@ -1,9 +1,28 @@
+/**
+ * ============================================================================
+ * FICHIER : src/common/openapi/dashboard-domain.schemas.ts
+ * RÔLE : Définitions OpenAPI Swagger pour le domaine du Tableau de Bord (Dashboard).
+ * EXPLICATION :
+ * Ce module répertorie les schémas Swagger pour les 7 endpoints de supervision du Dashboard :
+ * 1. `DashboardOverview` : Vue d'ensemble du volume de tickets, répartition par statut, priorité et taux d'adéquation SLA.
+ * 2. `DashboardStatusSeries` : Distribution statistique et âge moyen des tickets par statut.
+ * 3. `DashboardPrioritySeries` : Distribution et nombre de violations SLA par niveau de priorité.
+ * 4. `DashboardDepartments` : Métriques consolidées de performance et temps moyen de résolution par département.
+ * 5. `DashboardWorkload` : Charge de travail en temps réel par agent technico-commercial (tickets ouverts, critiques, en risque).
+ * ============================================================================
+ */
+
 import { SchemaObject } from '@nestjs/swagger/dist/interfaces/open-api-spec.interface';
 
 import { dateTime, nullableString, priority, ticketStatus, uuid } from './schema-helpers';
 
+/** Schéma OpenAPI réutilisable pour les pourcentages (0 à 100). */
 const percentage: SchemaObject = { type: 'number', minimum: 0, maximum: 100 };
+
+/** Schéma OpenAPI réutilisable pour les nombres entiers. */
 const integer: SchemaObject = { type: 'integer' };
+
+/** Schéma de comptage des tickets ventilés par les 9 statuts. */
 const statusCounts: SchemaObject = {
   type: 'object',
   properties: Object.fromEntries(
@@ -20,15 +39,22 @@ const statusCounts: SchemaObject = {
     ].map((name) => [name, integer]),
   ),
 };
+
+/** Schéma de comptage ventilé par les 4 niveaux de priorité. */
 const priorityCounts: SchemaObject = {
   type: 'object',
   properties: { LOW: integer, MEDIUM: integer, HIGH: integer, CRITICAL: integer },
 };
+
+/** Schéma de comptage ventilé par les 4 niveaux de sévérité. */
 const severityCounts: SchemaObject = {
   type: 'object',
   properties: { S1: integer, S2: integer, S3: integer, S4: integer },
 };
 
+/**
+ * Schémas OpenAPI Swagger exportés pour le tableau de bord principal.
+ */
 export const DASHBOARD_DOMAIN_SCHEMAS: Record<string, SchemaObject> = {
   DashboardOverview: {
     type: 'object',
