@@ -2,7 +2,7 @@
  * ============================================================================
  * FICHIER : src/main.ts
  * RÔLE : Point d'entrée principal du serveur backend NestJS.
- * EXPLICATION (Pour non-développeurs) :
+ * EXPLICATION :
  * Ce fichier est le "bouton de démarrage" de toute l'application. C'est ici que :
  * 1. Le système de traçabilité et métriques (OpenTelemetry) est initialisé.
  * 2. L'application NestJS est créée et configurée.
