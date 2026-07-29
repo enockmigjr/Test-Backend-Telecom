@@ -1,38 +1,69 @@
+/**
+ * ============================================================================
+ * FICHIER : src/config/jwt.config.ts
+ * RÔLE : Configuration et gestion des jetons de sécurité JWT (JSON Web Tokens).
+ * EXPLICATION (Pour non-développeurs) :
+ * Les jetons JWT sont comme des "badges d'accès numériques".
+ * Quand un utilisateur se connecte, l'API lui délivre :
+ * 1. Un "Access Token" (durée courte, ex: 15 min) pour accéder aux données.
+ * 2. Un "Refresh Token" (durée longue, ex: 7 jours) pour renouveler le badge sans retaper le mot de passe.
+ * Ce fichier vérifie la sécurité des clés secrètes servant à signer ces badges.
+ * ============================================================================
+ */
+
 import { Injectable } from '@nestjs/common';
 
 /**
- * Configuration JWT.
+ * Service JwtConfigService
+ * Centralise les paramètres de génération et de validation des jetons JWT.
  */
 @Injectable()
 export class JwtConfigService {
+  /**
+   * Clé secrète de signature pour les jetons d'accès courts (Access Tokens).
+   */
   get accessSecret(): string {
     return this.getSecret('JWT_ACCESS_SECRET', 'dev-access-secret-change-in-production');
   }
 
+  /**
+   * Clé secrète de signature pour les jetons de rafraîchissement longs (Refresh Tokens).
+   */
   get refreshSecret(): string {
     return this.getSecret('JWT_REFRESH_SECRET', 'dev-refresh-secret-change-in-production');
   }
 
+  /**
+   * Durée de validité de l'access token exprimée sous forme de texte (ex: "15m" pour 15 minutes).
+   */
   get accessExpiration(): string {
     return process.env['JWT_ACCESS_EXPIRATION'] || '15m';
   }
 
+  /**
+   * Durée de validité du refresh token exprimée sous forme de texte (ex: "7d" pour 7 jours).
+   */
   get refreshExpiration(): string {
     return process.env['JWT_REFRESH_EXPIRATION'] || '7d';
   }
 
   /**
-   * Durée de vie de l'access token en secondes (pour le TTL Redis de la blacklist).
-   * Supporte les formats : '15m', '1h', '30s', '1d'.
+   * Durée de vie de l'access token convertie en secondes (utilisée pour purger Redis).
    */
   get accessExpirationSeconds(): number {
     return this.parseDuration(this.accessExpiration, 900);
   }
 
+  /**
+   * Durée de vie du refresh token convertie en secondes (utilisée pour purger Redis).
+   */
   get refreshExpirationSeconds(): number {
     return this.parseDuration(this.refreshExpiration, 604800);
   }
 
+  /**
+   * Méthode privée vérifiant qu'en production la clé secrète fait au moins 32 caractères.
+   */
   private getSecret(name: 'JWT_ACCESS_SECRET' | 'JWT_REFRESH_SECRET', developmentFallback: string): string {
     const value = process.env[name];
     if (process.env['NODE_ENV'] === 'production') {
@@ -45,6 +76,9 @@ export class JwtConfigService {
     return value || developmentFallback;
   }
 
+  /**
+   * Méthode privée permettant de convertir une durée sous forme de texte ("15m", "1h", "7d") en nombre total de secondes.
+   */
   private parseDuration(raw: string, fallback: number): number {
     const match = raw.match(/^(\d+)([smhd])$/);
     if (!match) return fallback;
