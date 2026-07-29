@@ -1,4 +1,28 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, Query, HttpCode, HttpStatus } from '@nestjs/common';
+/**
+ * ============================================================================
+ * FICHIER : src/modules/internal-notes/internal-notes.controller.ts
+ * RÔLE : Contrôleur REST de gestion des notes internes confidentielles d'incidents.
+ * EXPLICATION :
+ * Ce contrôleur gère la communication confidentielle inter-équipes sur un ticket (`/tickets/:ticketId/internal-notes`) :
+ * 1. Isolation stricte : Exclut totalement les techniciens de terrain (`FIELD_TECHNICIAN`) via la déclaration d'accès au niveau de la classe (`@Roles(...)`).
+ * 2. `GET` & `POST` : Permettent de consulter et d'ajouter des notes internes réservées au NOC, au Support Technique et à la Facturation.
+ * 3. `PATCH` & `DELETE` : Édition et suppression restreintes à l'auteur de la note, à un `SUPERVISOR` ou à un `ADMINISTRATOR`.
+ * ============================================================================
+ */
+
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  Query,
+  HttpCode,
+  HttpStatus,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiQuery, ApiBody } from '@nestjs/swagger';
 import { InternalNotesService } from './internal-notes.service';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -9,8 +33,10 @@ import { PaginationDto } from '../../common/dto/pagination.dto';
 
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../auth/guards/roles.guard';
-import { UseGuards } from '@nestjs/common';
 
+/**
+ * Contrôleur d'API pour les notes internes confidentielles (masquées aux techniciens terrain).
+ */
 @ApiTags('internal-notes')
 @ApiBearerAuth()
 @UseGuards(RolesGuard)
@@ -26,6 +52,13 @@ import { UseGuards } from '@nestjs/common';
 export class InternalNotesController {
   constructor(private readonly notesService: InternalNotesService) {}
 
+  /**
+   * Récupère la liste paginée des notes internes d'un ticket.
+   *
+   * @param ticketId Identifiant UUIDv7 du ticket.
+   * @param p Objet de pagination.
+   * @param user Utilisateur authentifié.
+   */
   @Get('tickets/:ticketId/internal-notes')
   @ApiOperation({
     summary: "Notes internes d'un ticket",
@@ -50,6 +83,13 @@ export class InternalNotesController {
     return this.notesService.findAll(ticketId, user, p.page, p.limit);
   }
 
+  /**
+   * Crée une nouvelle note interne sur un ticket.
+   *
+   * @param ticketId Identifiant UUID du ticket concerné.
+   * @param dto Contenu textuel de la note.
+   * @param user Utilisateur auteur.
+   */
   @Post('tickets/:ticketId/internal-notes')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
@@ -75,6 +115,13 @@ export class InternalNotesController {
     return this.notesService.create(ticketId, user, dto.content);
   }
 
+  /**
+   * Modifie le contenu d'une note interne existante.
+   *
+   * @param id UUID de la note interne.
+   * @param dto Nouveau texte.
+   * @param user Utilisateur émetteur.
+   */
   @Patch('internal-notes/:id')
   @ApiOperation({
     summary: 'Modifier une note interne',
@@ -92,6 +139,12 @@ export class InternalNotesController {
     return this.notesService.update(id, user, dto.content);
   }
 
+  /**
+   * Supprime une note interne.
+   *
+   * @param id UUID de la note interne à supprimer.
+   * @param user Utilisateur demandeur.
+   */
   @Delete('internal-notes/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({

@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/internal-notes/internal-notes.controller.spec.ts
+ * RÔLE : Suite de tests unitaires pour le composant internal-notes.controller.
+ * EXPLICATION :
+ * Ce fichier contient les tests automatisés validant le comportement et l'intégrité de internal-notes.controller.
+ * 1. Vérifie le fonctionnement nominal et les cas d'erreur.
+ * 2. Garantit qu'aucune régression n'est introduite lors des évolutions du code.
+ * ============================================================================
+ */
+
 import { Test } from '@nestjs/testing';
 import { mock, MockProxy } from 'jest-mock-extended';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
@@ -34,11 +45,15 @@ describe('InternalNotesController', () => {
     controller = moduleRef.get(InternalNotesController);
   });
 
+  /** Test : transmet utilisateur et pagination pour la liste */
+
   it('transmet utilisateur et pagination pour la liste', async () => {
     service.findAll.mockResolvedValue({ data: [], meta: { page: 2, limit: 10, total: 0, totalPages: 0 } });
     await controller.findAll('ticket-001', { page: 2, limit: 10 }, user);
     expect(service.findAll).toHaveBeenCalledWith('ticket-001', user, 2, 10);
   });
+
+  /** Test : transmet le contexte utilisateur pour la creation */
 
   it('transmet le contexte utilisateur pour la creation', async () => {
     service.create.mockResolvedValue({ message: 'Note interne ajoutee.', data: note });
@@ -46,11 +61,15 @@ describe('InternalNotesController', () => {
     expect(service.create).toHaveBeenCalledWith('ticket-001', user, 'Diagnostic interne');
   });
 
+  /** Test : transmet le contexte utilisateur pour la modification */
+
   it('transmet le contexte utilisateur pour la modification', async () => {
     service.update.mockResolvedValue({ message: 'Note interne mise a jour.', data: note });
     await controller.update('note-001', { content: 'Diagnostic corrige' }, user);
     expect(service.update).toHaveBeenCalledWith('note-001', user, 'Diagnostic corrige');
   });
+
+  /** Test : transmet le contexte utilisateur pour la suppression */
 
   it('transmet le contexte utilisateur pour la suppression', async () => {
     service.remove.mockResolvedValue(undefined);

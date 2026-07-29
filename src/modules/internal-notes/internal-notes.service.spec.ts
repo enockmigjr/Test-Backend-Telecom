@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/internal-notes/internal-notes.service.spec.ts
+ * RÔLE : Suite de tests unitaires pour le composant internal-notes.service.
+ * EXPLICATION :
+ * Ce fichier contient les tests automatisés validant le comportement et l'intégrité de internal-notes.service.
+ * 1. Vérifie le fonctionnement nominal et les cas d'erreur.
+ * 2. Garantit qu'aucune régression n'est introduite lors des évolutions du code.
+ * ============================================================================
+ */
+
 import { ForbiddenException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { TicketAccessService } from '../../common/services/ticket-access.service';
@@ -43,17 +54,23 @@ describe('InternalNotesService - isolation ticket', () => {
     service = moduleRef.get(InternalNotesService);
   });
 
+  /** Test : refuse toujours un technicien terrain avant la base */
+
   it('refuse toujours un technicien terrain avant la base', async () => {
     await expect(service.findAll('ticket-001', fieldTechnician)).rejects.toBeInstanceOf(ForbiddenException);
     expect(ticketAccess.assertTicketVisible).not.toHaveBeenCalled();
     expect(select).not.toHaveBeenCalled();
   });
 
+  /** Test : refuse une liste hors scope avant de lire les notes */
+
   it('refuse une liste hors scope avant de lire les notes', async () => {
     ticketAccess.assertTicketVisible.mockRejectedValue(new ForbiddenException());
     await expect(service.findAll('ticket-other', agent)).rejects.toBeInstanceOf(ForbiddenException);
     expect(select).not.toHaveBeenCalled();
   });
+
+  /** Test : borne la pagination autorisee a cent notes */
 
   it('borne la pagination autorisee a cent notes', async () => {
     const countQuery = query([{ count: 0 }]);
@@ -65,6 +82,8 @@ describe('InternalNotesService - isolation ticket', () => {
     expect(result.meta.limit).toBe(100);
   });
 
+  /** Test : refuse une creation hors scope avant toute insertion */
+
   it('refuse une creation hors scope avant toute insertion', async () => {
     ticketAccess.assertTicketVisible.mockRejectedValue(new ForbiddenException());
 
@@ -72,6 +91,8 @@ describe('InternalNotesService - isolation ticket', () => {
 
     expect(db.insert).not.toHaveBeenCalled();
   });
+
+  /** Test : refuse la modification hors scope avant toute ecriture */
 
   it('refuse la modification hors scope avant toute ecriture', async () => {
     select.mockReturnValueOnce(query([{ id: 'note-001', ticketId: 'ticket-other', authorId: agent.sub }]));
@@ -81,6 +102,8 @@ describe('InternalNotesService - isolation ticket', () => {
 
     expect(db.update).not.toHaveBeenCalled();
   });
+
+  /** Test : refuse la suppression hors scope avant toute ecriture */
 
   it('refuse la suppression hors scope avant toute ecriture', async () => {
     select.mockReturnValueOnce(query([{ id: 'note-001', ticketId: 'ticket-other', authorId: agent.sub }]));
