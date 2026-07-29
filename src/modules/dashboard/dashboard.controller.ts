@@ -1,3 +1,20 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/dashboard/dashboard.controller.ts
+ * RÔLE : Contrôleur REST de restitution des indicateurs clés de performance (KPIs) et des tableaux de bord.
+ * EXPLICATION :
+ * Ce contrôleur expose les 7 endpoints d'analyse décisionnelle et statistique (`/api/v1/dashboard`) :
+ * 1. `overview` : KPIs globaux (volumes, statuts, conformité SLA).
+ * 2. `tickets-by-status` : Ventilation par statut avec calcul de l'âge moyen en minutes.
+ * 3. `tickets-by-priority` : Ventilation par priorité et comptage des violations SLA.
+ * 4. `departments` : Rapport de performance comparative des départements.
+ * 5. `sla-compliance` : Taux de respect des engagements de service par priorité et catégorie.
+ * 6. `workload` : Charge de travail des agents, tickets à risque SLA et compteur de tickets en attente.
+ * 7. `resolution-time` : Temps moyen, médian et 90ème centile (P90) de résolution.
+ * Accessible uniquement aux rôles `ADMINISTRATOR` et `SUPERVISOR` avec cloisonnement automatique pour les superviseurs.
+ * ============================================================================
+ */
+
 import { Controller, Get, Query, UseGuards, UseInterceptors } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { DashboardService } from './dashboard.service';
@@ -8,6 +25,9 @@ import { FieldProjectionInterceptor } from '../../common/interceptors/field-proj
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 
+/**
+ * Contrôleur d'API pour les tableaux de bord et métriques décisionnelles.
+ */
 @ApiTags('dashboard')
 @ApiBearerAuth()
 @Controller('dashboard')
@@ -16,6 +36,9 @@ import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) {}
 
+  /**
+   * Synthèse globale des indicateurs clés de performance (KPIs).
+   */
   @Get('overview')
   @Roles('ADMINISTRATOR', 'SUPERVISOR')
   @ApiOperation({
@@ -30,6 +53,9 @@ export class DashboardController {
     return this.dashboardService.overview(range.from, range.to, currentUser);
   }
 
+  /**
+   * Répartition des tickets par statut avec l'âge moyen des incidents ouverts.
+   */
   @Get('tickets-by-status')
   @Roles('ADMINISTRATOR', 'SUPERVISOR')
   @ApiOperation({
@@ -54,6 +80,9 @@ export class DashboardController {
     return this.dashboardService.ticketsByStatus(range.from, range.to, departmentId, currentUser);
   }
 
+  /**
+   * Répartition des tickets par niveau de priorité et taux de dépassement SLA.
+   */
   @Get('tickets-by-priority')
   @Roles('ADMINISTRATOR', 'SUPERVISOR')
   @ApiOperation({
@@ -78,6 +107,9 @@ export class DashboardController {
     return this.dashboardService.ticketsByPriority(range.from, range.to, status, currentUser);
   }
 
+  /**
+   * Rapport de performance comparatif entre les différents départements opérationnels.
+   */
   @Get('departments')
   @Roles('ADMINISTRATOR', 'SUPERVISOR')
   @ApiOperation({
@@ -96,6 +128,9 @@ export class DashboardController {
     return this.dashboardService.departmentsReport(range.from, range.to, currentUser);
   }
 
+  /**
+   * Analyse détaillée du respect des engagements de service SLA.
+   */
   @Get('sla-compliance')
   @Roles('ADMINISTRATOR', 'SUPERVISOR')
   @ApiOperation({
@@ -128,6 +163,9 @@ export class DashboardController {
     return this.dashboardService.slaCompliance(range.from, range.to, departmentId, priority, category, currentUser);
   }
 
+  /**
+   * Analyse de la charge de travail individuelle des agents et volume des tickets non assignés.
+   */
   @Get('workload')
   @Roles('ADMINISTRATOR', 'SUPERVISOR')
   @ApiOperation({
@@ -147,6 +185,9 @@ export class DashboardController {
     return this.dashboardService.workload(departmentId, currentUser);
   }
 
+  /**
+   * Distribution statistique des temps de résolution des tickets d'incidents (moyenne, médiane, P90).
+   */
   @Get('resolution-time')
   @Roles('ADMINISTRATOR', 'SUPERVISOR')
   @ApiOperation({

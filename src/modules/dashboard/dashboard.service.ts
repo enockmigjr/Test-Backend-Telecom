@@ -1,3 +1,17 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/dashboard/dashboard.service.ts
+ * RÔLE : Service de calcul des métriques décisionnelles et des tableaux de bord analytiques.
+ * EXPLICATION :
+ * Ce service exécute des agrégations complexes et optimisées sur PostgreSQL via Drizzle ORM :
+ * 1. `enforceSupervisorScope` : Applique l'isolation des données pour le rôle `SUPERVISOR` (interdit la consultation des métriques d'autres départements).
+ * 2. `overview` : Calcule en parallèle (`Promise.all`) les volumes de tickets, les ouvertures/fermetures du jour, les incidents à risque SLA (dans les 30 min) et les taux de conformité.
+ * 3. `ticketsByStatus` & `ticketsByPriority` : Calcule l'âge moyen des tickets en minutes (`AVG(EXTRACT(EPOCH...))`) et les violations de contrats de service.
+ * 4. `workload` : Agrège la charge de travail par agent (tickets ouverts, critiques, à risque) et compte les tickets non assignés.
+ * 5. `resolutionTime` : Utilise les fonctions d'interpolation statistiques PostgreSQL (`PERCENTILE_CONT(0.5)` pour la médiane et `PERCENTILE_CONT(0.9)` pour le P90) avec découpage temporel (`DATE_TRUNC`).
+ * ============================================================================
+ */
+
 import { Injectable, ForbiddenException } from '@nestjs/common';
 import { and, gte, lt, lte, eq, sql, isNull, count, SQL } from 'drizzle-orm';
 import { DrizzleProvider } from '../../database/drizzle.provider';
@@ -7,6 +21,9 @@ import { DashboardSlaService } from './dashboard-sla.service';
 
 type ResolutionGroupBy = 'day' | 'week' | 'month';
 
+/**
+ * Construit l'expression SQL `DATE_TRUNC` pour le regroupement temporel du temps de résolution.
+ */
 function resolutionPeriod(groupBy: string | undefined): SQL<Date | string> {
   const safeGroupBy: ResolutionGroupBy = groupBy === 'week' || groupBy === 'month' ? groupBy : 'day';
   const expressions: Record<ResolutionGroupBy, SQL<Date | string>> = {
@@ -17,6 +34,9 @@ function resolutionPeriod(groupBy: string | undefined): SQL<Date | string> {
   return expressions[safeGroupBy];
 }
 
+/**
+ * Service calculant les indicateurs statistiques et rapports décisionnels.
+ */
 @Injectable()
 export class DashboardService {
   constructor(
@@ -24,17 +44,31 @@ export class DashboardService {
     private readonly dashboardSla: DashboardSlaService,
   ) {}
 
+  /**
+   * Applique le contrôle du périmètre d'accès pour les superviseurs.
+   *
+   * @param departmentId Identifiant de département demandé dans la requête.
+   * @param currentUser Utilisateur authentifié.
+   * @returns Le département forcé de l'utilisateur s'il est superviseur, ou le département demandé sinon.
+   * @throws ForbiddenException Si un superviseur tente de consulter un autre département.
+   */
   private enforceSupervisorScope(departmentId: string | undefined, currentUser?: JwtPayload): string | undefined {
     if (currentUser?.role === 'SUPERVISOR') {
       if (departmentId && departmentId !== currentUser.departmentId) {
-        throw new ForbiddenException("Un superviseur ne peut pas acceder aux statistiques d'un autre departement.");
+        throw new ForbiddenException("Un superviseur ne peut pas accéder aux statistiques d'un autre département.");
       }
       return currentUser.departmentId;
     }
     return departmentId;
   }
 
-  /** KPIs globaux de la plateforme */
+  /**
+   * Génère les KPIs globaux de performance de la plateforme télécom.
+   *
+   * @param from Date de début de la plage d'analyse.
+   * @param to Date de fin de la plage d'analyse.
+   * @param currentUser Utilisateur authentifié pour le cloisonnement.
+   */
   async overview(from?: string, to?: string, currentUser?: JwtPayload) {
     const fromDate = from ? new Date(from) : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
     const toDate = to ? new Date(to) : new Date();
@@ -54,6 +88,7 @@ export class DashboardService {
       todayScope.push(eq(tickets.assignedTeamId, currentUser.departmentId));
     }
 
+    // Exécution parallèle des 7 requêtes d'agrégation d'indicateurs
     const [[totals], [openTickets], [], [resolvedToday], [createdToday], [breachedCount], [atRiskCount]] =
       await Promise.all([
         this.drizzle.db.select({ total: count() }).from(tickets).where(rangeWhere),
@@ -126,7 +161,9 @@ export class DashboardService {
     };
   }
 
-  /** Tickets par statut avec âge moyen */
+  /**
+   * Calcule la répartition des tickets par statut et l'âge moyen d'ouverture.
+   */
   async ticketsByStatus(from?: string, to?: string, departmentId?: string, currentUser?: JwtPayload) {
     const fromDate = from ? new Date(from) : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
     const toDate = to ? new Date(to) : new Date();
@@ -159,7 +196,9 @@ export class DashboardService {
     };
   }
 
-  /** Tickets par priorité */
+  /**
+   * Répartition des tickets par priorité et comptage des pénalités SLA.
+   */
   async ticketsByPriority(
     from?: string,
     to?: string,
@@ -200,7 +239,9 @@ export class DashboardService {
     };
   }
 
-  /** Performance par département */
+  /**
+   * Construit le rapport de performance et de respect SLA par département.
+   */
   async departmentsReport(from?: string, to?: string, currentUser?: JwtPayload) {
     const fromDate = from ? new Date(from) : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
     const toDate = to ? new Date(to) : new Date();
@@ -230,7 +271,9 @@ export class DashboardService {
     };
   }
 
-  /** Conformité SLA */
+  /**
+   * Délégué au service SLA dédié pour l'analyse de conformité.
+   */
   async slaCompliance(
     from?: string,
     to?: string,
@@ -242,7 +285,9 @@ export class DashboardService {
     return this.dashboardSla.compliance(from, to, departmentId, priority, categoryId, currentUser);
   }
 
-  /** Charge des agents */
+  /**
+   * Analyse la charge de travail individuelle des agents et mesure le volume de tickets non assignés.
+   */
   async workload(departmentId?: string, currentUser?: JwtPayload) {
     const targetDeptId = this.enforceSupervisorScope(departmentId, currentUser);
 
@@ -303,7 +348,9 @@ export class DashboardService {
     };
   }
 
-  /** Temps de résolution */
+  /**
+   * Calcule les métriques statistiques de temps de résolution (moyenne, médiane P50, 90ème centile P90) et l'évolution temporelle.
+   */
   async resolutionTime(
     from?: string,
     to?: string,
@@ -329,6 +376,7 @@ export class DashboardService {
     const periodExpression = resolutionPeriod(groupBy);
     const durationMinutes = sql<number>`EXTRACT(EPOCH FROM (${tickets.resolvedAt} - ${tickets.createdAt})) / 60`;
 
+    // Calcul des agrégations statistiques PostgreSQL
     const [stats] = await this.drizzle.db
       .select({
         avgMinutes: sql<number>`COALESCE(AVG(${durationMinutes}), 0)`,

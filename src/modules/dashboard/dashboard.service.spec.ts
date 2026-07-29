@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/dashboard/dashboard.service.spec.ts
+ * RÔLE : Suite de tests unitaires pour le composant dashboard.service.
+ * EXPLICATION :
+ * Ce fichier contient les tests automatisés validant le comportement et l'intégrité de dashboard.service.
+ * 1. Vérifie le fonctionnement nominal et les cas d'erreur.
+ * 2. Garantit qu'aucune régression n'est introduite lors des évolutions du code.
+ * ============================================================================
+ */
+
 import { SQL } from 'drizzle-orm';
 import { PgDialect } from 'drizzle-orm/pg-core';
 
@@ -75,6 +86,8 @@ describe('DashboardService', () => {
     jest.useRealTimers();
   });
 
+  /** Test : workload retourne la structure attendue */
+
   it('workload retourne la structure attendue', async () => {
     const { service } = createService();
     const result = await service.workload();
@@ -83,6 +96,8 @@ describe('DashboardService', () => {
     expect(result.generatedAt).toBeDefined();
   });
 
+  /** Test : ticketsByStatus retourne une période et ses données */
+
   it('ticketsByStatus retourne une période et ses données', async () => {
     const { service } = createService();
     const result = await service.ticketsByStatus();
@@ -90,6 +105,8 @@ describe('DashboardService', () => {
     expect(result.period).toBeDefined();
     expect(result.data).toEqual([]);
   });
+
+  /** Test : ticketsByPriority retourne une période et ses données */
 
   it('ticketsByPriority retourne une période et ses données', async () => {
     const { service } = createService();
@@ -114,6 +131,8 @@ describe('DashboardService', () => {
     expect(scopeQuery.sql).toContain('assigned_team_id');
     expect(scopeQuery.params).toContain('department-1');
   });
+
+  /** Test : calcule createdToday et resolvedToday sur les vraies bornes du jour */
 
   it('calcule createdToday et resolvedToday sur les vraies bornes du jour', async () => {
     jest.useFakeTimers().setSystemTime(new Date('2026-07-22T14:30:00.000Z'));
@@ -140,6 +159,8 @@ describe('DashboardService', () => {
       expect(sqlQuery(condition).params.map(String)).toEqual(expectedDayBounds);
     }
   });
+
+  /** Test : retourne les percentiles SQL et une tendance hebdomadaire réelle */
 
   it('retourne les percentiles SQL et une tendance hebdomadaire réelle', async () => {
     const results: readonly (readonly QueryRow[])[] = [

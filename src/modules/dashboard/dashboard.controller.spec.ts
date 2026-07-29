@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/dashboard/dashboard.controller.spec.ts
+ * RÔLE : Suite de tests unitaires pour le composant dashboard.controller.
+ * EXPLICATION :
+ * Ce fichier contient les tests automatisés validant le comportement et l'intégrité de dashboard.controller.
+ * 1. Vérifie le fonctionnement nominal et les cas d'erreur.
+ * 2. Garantit qu'aucune régression n'est introduite lors des évolutions du code.
+ * ============================================================================
+ */
+
 import { Test, TestingModule } from '@nestjs/testing';
 import { DashboardController } from './dashboard.controller';
 import { DashboardService } from './dashboard.service';
@@ -151,6 +162,7 @@ describe('DashboardController', () => {
   // overview()
   // =========================================================================
   describe('GET /dashboard/overview', () => {
+    /** Test : doit retourner les KPIs globaux avec les dates fournies */
     it('doit retourner les KPIs globaux avec les dates fournies', async () => {
       dashboardService.overview.mockResolvedValue(overviewResult);
 
@@ -162,6 +174,8 @@ describe('DashboardController', () => {
       expect(result.sla.complianceRate).toBe(96.67);
     });
 
+    /** Test : doit appeler le service sans dates (valeurs par défaut) */
+
     it('doit appeler le service sans dates (valeurs par défaut)', async () => {
       dashboardService.overview.mockResolvedValue(overviewResult);
 
@@ -169,6 +183,8 @@ describe('DashboardController', () => {
 
       expect(dashboardService.overview).toHaveBeenCalledWith(undefined, undefined, mockUser);
     });
+
+    /** Test : doit propager les erreurs du service */
 
     it('doit propager les erreurs du service', async () => {
       dashboardService.overview.mockRejectedValue(new Error('Erreur base de données'));
@@ -181,6 +197,7 @@ describe('DashboardController', () => {
   // ticketsByStatus()
   // =========================================================================
   describe('GET /dashboard/tickets-by-status', () => {
+    /** Test : doit retourner la répartition par statut sans filtre département */
     it('doit retourner la répartition par statut sans filtre département', async () => {
       dashboardService.ticketsByStatus.mockResolvedValue(ticketsByStatusResult);
 
@@ -195,6 +212,8 @@ describe('DashboardController', () => {
       expect(result).toEqual(ticketsByStatusResult);
     });
 
+    /** Test : doit filtrer par département quand departmentId est fourni */
+
     it('doit filtrer par département quand departmentId est fourni', async () => {
       dashboardService.ticketsByStatus.mockResolvedValue(ticketsByStatusResult);
 
@@ -208,6 +227,8 @@ describe('DashboardController', () => {
       );
     });
 
+    /** Test : doit propager les erreurs du service */
+
     it('doit propager les erreurs du service', async () => {
       dashboardService.ticketsByStatus.mockRejectedValue(new Error('Erreur requête'));
 
@@ -219,6 +240,7 @@ describe('DashboardController', () => {
   // ticketsByPriority()
   // =========================================================================
   describe('GET /dashboard/tickets-by-priority', () => {
+    /** Test : doit retourner la répartition par priorité sans filtre statut */
     it('doit retourner la répartition par priorité sans filtre statut', async () => {
       dashboardService.ticketsByPriority.mockResolvedValue(ticketsByPriorityResult);
 
@@ -233,6 +255,8 @@ describe('DashboardController', () => {
       expect(result).toEqual(ticketsByPriorityResult);
     });
 
+    /** Test : doit filtrer par statut OPEN */
+
     it('doit filtrer par statut OPEN', async () => {
       dashboardService.ticketsByPriority.mockResolvedValue(ticketsByPriorityResult);
 
@@ -245,6 +269,8 @@ describe('DashboardController', () => {
         mockUser,
       );
     });
+
+    /** Test : doit filtrer par statut RESOLVED */
 
     it('doit filtrer par statut RESOLVED', async () => {
       dashboardService.ticketsByPriority.mockResolvedValue(ticketsByPriorityResult);
@@ -264,6 +290,7 @@ describe('DashboardController', () => {
   // departments()
   // =========================================================================
   describe('GET /dashboard/departments', () => {
+    /** Test : doit retourner la performance par département avec les dates */
     it('doit retourner la performance par département avec les dates', async () => {
       dashboardService.departmentsReport.mockResolvedValue(departmentsResult);
 
@@ -272,6 +299,8 @@ describe('DashboardController', () => {
       expect(dashboardService.departmentsReport).toHaveBeenCalledWith(defaultRange.from, defaultRange.to, mockUser);
       expect(result).toEqual(departmentsResult);
     });
+
+    /** Test : doit appeler le service sans dates */
 
     it('doit appeler le service sans dates', async () => {
       dashboardService.departmentsReport.mockResolvedValue(departmentsResult);
@@ -286,6 +315,7 @@ describe('DashboardController', () => {
   // slaCompliance()
   // =========================================================================
   describe('GET /dashboard/sla-compliance', () => {
+    /** Test : doit retourner la conformité SLA sans filtres supplémentaires */
     it('doit retourner la conformité SLA sans filtres supplémentaires', async () => {
       dashboardService.slaCompliance.mockResolvedValue(slaComplianceResult);
 
@@ -301,6 +331,8 @@ describe('DashboardController', () => {
       );
       expect(result).toEqual(slaComplianceResult);
     });
+
+    /** Test : doit filtrer par département, priorité et catégorie */
 
     it('doit filtrer par département, priorité et catégorie', async () => {
       dashboardService.slaCompliance.mockResolvedValue(slaComplianceResult);
@@ -322,6 +354,7 @@ describe('DashboardController', () => {
   // workload()
   // =========================================================================
   describe('GET /dashboard/workload', () => {
+    /** Test : doit retourner la charge des agents sans filtre département */
     it('doit retourner la charge des agents sans filtre département', async () => {
       dashboardService.workload.mockResolvedValue(workloadResult);
 
@@ -330,6 +363,8 @@ describe('DashboardController', () => {
       expect(dashboardService.workload).toHaveBeenCalledWith(undefined, mockUser);
       expect(result).toEqual(workloadResult);
     });
+
+    /** Test : doit filtrer la charge par département */
 
     it('doit filtrer la charge par département', async () => {
       dashboardService.workload.mockResolvedValue(workloadResult);
@@ -344,6 +379,7 @@ describe('DashboardController', () => {
   // resolutionTime()
   // =========================================================================
   describe('GET /dashboard/resolution-time', () => {
+    /** Test : doit retourner les statistiques de temps de résolution */
     it('doit retourner les statistiques de temps de résolution', async () => {
       dashboardService.resolutionTime.mockResolvedValue(resolutionTimeResult);
 
@@ -360,6 +396,8 @@ describe('DashboardController', () => {
       expect(result).toEqual(resolutionTimeResult);
     });
 
+    /** Test : doit appliquer les filtres groupBy, departmentId et priority */
+
     it('doit appliquer les filtres groupBy, departmentId et priority', async () => {
       dashboardService.resolutionTime.mockResolvedValue(resolutionTimeResult);
 
@@ -374,6 +412,8 @@ describe('DashboardController', () => {
         mockUser,
       );
     });
+
+    /** Test : doit propager les erreurs du service */
 
     it('doit propager les erreurs du service', async () => {
       dashboardService.resolutionTime.mockRejectedValue(new Error('Erreur statistiques'));
