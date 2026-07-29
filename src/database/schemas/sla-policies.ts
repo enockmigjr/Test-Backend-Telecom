@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/database/schemas/sla-policies.ts
+ * RÔLE : Schéma de base de données PostgreSQL Drizzle ORM.
+ * EXPLICATION :
+ * Ce fichier décrit la structure d'une table PostgreSQL et ses contraintes.
+ * 1. Définit les colonnes, types, clés primaires et relations.
+ * 2. Assure un typage strict entre la base de données et le code TypeScript.
+ * ============================================================================
+ */
+
 import { pgTable, uuid, integer, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { ticketPriorityEnum } from './enums';
@@ -7,6 +18,7 @@ import { categories } from './categories';
  * Politiques SLA définissant les délais de réponse et résolution
  * pour chaque combinaison catégorie + priorité.
  */
+/** Table PostgreSQL `slaPolicies` : Définition des colonnes, contraintes et index. */
 export const slaPolicies = pgTable(
   'sla_policies',
   {
@@ -31,6 +43,7 @@ export const slaPolicies = pgTable(
   }),
 );
 
+/** Relations ORM `slaPoliciesRelations` : Définition des jointures et associations Drizzle. */
 export const slaPoliciesRelations = relations(slaPolicies, ({ one }) => ({
   category: one(categories, {
     fields: [slaPolicies.categoryId],

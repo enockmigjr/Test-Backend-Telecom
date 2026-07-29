@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/database/schemas/refresh-tokens.ts
+ * RÔLE : Schéma de base de données PostgreSQL Drizzle ORM.
+ * EXPLICATION :
+ * Ce fichier décrit la structure d'une table PostgreSQL et ses contraintes.
+ * 1. Définit les colonnes, types, clés primaires et relations.
+ * 2. Assure un typage strict entre la base de données et le code TypeScript.
+ * ============================================================================
+ */
+
 import { pgTable, uuid, text, varchar, timestamp, index } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { users } from './users';
@@ -6,6 +17,7 @@ import { users } from './users';
  * Refresh tokens actifs.
  * Les tokens sont hachés (SHA-256) avant stockage.
  */
+/** Table PostgreSQL `refreshTokens` : Définition des colonnes, contraintes et index. */
 export const refreshTokens = pgTable(
   'refresh_tokens',
   {
@@ -28,6 +40,7 @@ export const refreshTokens = pgTable(
   }),
 );
 
+/** Relations ORM `refreshTokensRelations` : Définition des jointures et associations Drizzle. */
 export const refreshTokensRelations = relations(refreshTokens, ({ one }) => ({
   user: one(users, {
     fields: [refreshTokens.userId],

@@ -2,7 +2,7 @@
  * ============================================================================
  * FICHIER : src/database/schemas/users.ts
  * RÔLE : Schéma Drizzle ORM de la table PostgreSQL `users`.
- * EXPLICATION (Pour non-développeurs) :
+ * EXPLICATION :
  * Cette table stocke les comptes des employés et intervenants de l'entreprise.
  * Elle contient leurs informations personnelles (nom, prénom, email), leur mot de passe haché,
  * leur rôle, leur département, ainsi que des informations de disponibilité pour l'attribution
@@ -18,6 +18,7 @@ import { roleEnum } from './enums';
 /**
  * Table `users` (Utilisateurs)
  */
+/** Table PostgreSQL `users` : Définition des colonnes, contraintes et index. */
 export const users = pgTable(
   'users',
   {
@@ -72,6 +73,7 @@ export const users = pgTable(
 /**
  * Déclaration de la relation Drizzle entre un Utilisateur et son Département.
  */
+/** Relations ORM `usersRelations` : Définition des jointures et associations Drizzle. */
 export const usersRelations = relations(users, ({ one }) => ({
   department: one(departments, {
     fields: [users.departmentId],

@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/database/schemas/departments.ts
+ * RÔLE : Schéma de base de données PostgreSQL Drizzle ORM.
+ * EXPLICATION :
+ * Ce fichier décrit la structure d'une table PostgreSQL et ses contraintes.
+ * 1. Définit les colonnes, types, clés primaires et relations.
+ * 2. Assure un typage strict entre la base de données et le code TypeScript.
+ * ============================================================================
+ */
+
 import { pgTable, uuid, varchar, text, timestamp, boolean, integer, jsonb } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { users } from './users';
@@ -6,6 +17,7 @@ import { tickets } from './tickets';
 /**
  * Départements de l'organisation télécom.
  */
+/** Table PostgreSQL `departments` : Définition des colonnes, contraintes et index. */
 export const departments = pgTable('departments', {
   id: uuid('id').primaryKey(),
   name: varchar('name', { length: 100 }).notNull().unique(),
@@ -22,6 +34,7 @@ export const departments = pgTable('departments', {
   deletedAt: timestamp('deleted_at', { withTimezone: true }),
 });
 
+/** Relations ORM `departmentsRelations` : Définition des jointures et associations Drizzle. */
 export const departmentsRelations = relations(departments, ({ many }) => ({
   users: many(users),
   ownedTickets: many(tickets, { relationName: 'department_owner' }),

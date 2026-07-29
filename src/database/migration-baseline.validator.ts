@@ -1,3 +1,15 @@
+/**
+ * ============================================================================
+ * FICHIER : src/database/migration-baseline.validator.ts
+ * RÔLE : Validateur d'empreinte de schéma PostgreSQL et de compatibilité Baseline Drizzle.
+ * EXPLICATION :
+ * Ce module vérifie que la base de données PostgreSQL de production est conforme au schéma Drizzle :
+ * 1. Inspecte les catalogues système PostgreSQL (`pg_attribute`, `pg_constraint`, `pg_index`).
+ * 2. Compare les colonnes, types de données, contraintes d'intégrité (PK, FK, Unique) et index avec le fichier d'empreinte Drizzle (`0000_snapshot.json`).
+ * 3. Lève une erreur si la base existante présente une structure incompatible ou partielle avant de marquer la baseline comme exécutée.
+ * ============================================================================
+ */
+
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import postgres from 'postgres';
@@ -58,14 +70,23 @@ interface ActualIndex {
   columns: string[];
 }
 
+/** Colonnes exemptées de validation stricte pour rétrocompatibilité lors des migrations évolutives. */
 const COMPAT_COLUMNS = new Set([
   'tickets.first_response_warning_sent_at',
   'tickets.first_response_breached_at',
   'tickets.resolution_warning_sent_at',
   'tickets.resolution_breached_at',
 ]);
+
+/** Index exemptés de validation stricte pour rétrocompatibilité. */
 const COMPAT_INDEXES = new Set(['idx_tickets_first_response_breached', 'idx_tickets_resolution_breached']);
 
+/**
+ * Valide que la base de données PostgreSQL est compatible avec l'empreinte snapshot Drizzle.
+ *
+ * @param client Client SQL `postgres` connecté.
+ * @throws Error si des incompatibilités structurelles (colonnes, types, clés, index) sont détectées.
+ */
 export async function assertBaselineCompatible(client: postgres.Sql): Promise<void> {
   const tables = Object.values(readSnapshot().tables);
   const columns = await actualColumns(client);
@@ -130,6 +151,7 @@ export async function assertBaselineCompatible(client: postgres.Sql): Promise<vo
   if (problems.length > 0) throw new Error('La base existante est partielle ou incompatible; baseline refusée.');
 }
 
+/** Interroge le catalogue `pg_attribute` de PostgreSQL pour extraire les colonnes et types effectifs. */
 async function actualColumns(client: postgres.Sql): Promise<ActualColumn[]> {
   return client<ActualColumn[]>`
     SELECT c.relname AS "tableName", a.attname AS "columnName",
@@ -142,6 +164,7 @@ async function actualColumns(client: postgres.Sql): Promise<ActualColumn[]> {
   `;
 }
 
+/** Interroge le catalogue `pg_constraint` pour extraire les contraintes PK, FK et Uniques. */
 async function actualConstraints(client: postgres.Sql): Promise<ActualConstraint[]> {
   return client<ActualConstraint[]>`
     SELECT con.conname AS name, con.contype AS type, source.relname AS "tableName",
@@ -156,6 +179,7 @@ async function actualConstraints(client: postgres.Sql): Promise<ActualConstraint
   `;
 }
 
+/** Interroge le catalogue `pg_index` pour extraire les index et leurs colonnes associées. */
 async function actualIndexes(client: postgres.Sql): Promise<ActualIndex[]> {
   return client<ActualIndex[]>`
     SELECT idx.relname AS name, tbl.relname AS "tableName", i.indisunique AS "isUnique", am.amname AS method,
@@ -167,6 +191,7 @@ async function actualIndexes(client: postgres.Sql): Promise<ActualIndex[]> {
   `;
 }
 
+/** Vérifie si une contrainte correspond aux paramètres attendus. */
 function matchesConstraint(
   all: ActualConstraint[],
   type: ActualConstraint['type'],
@@ -186,15 +211,23 @@ function matchesConstraint(
       (to.length === 0 || same(item.targetColumns, to)),
   );
 }
+
+/** Compare la stricte égalité de deux tableaux de chaînes de caractères. */
 function same(left: string[], right: string[]): boolean {
   return left.length === right.length && left.every((value, index) => value === right[index]);
 }
+
+/** Normalise la représentation textuelle d'un type SQL. */
 function normalizeType(value: string): string {
   return value.toLowerCase().replace('character varying', 'varchar').replaceAll('"', '');
 }
+
+/** Normalise la représentation textuelle d'une expression d'index SQL. */
 function normalizeExpression(value: string): string {
   return value.replaceAll('"', '').replaceAll(' ', '').toLowerCase();
 }
+
+/** Normalise la valeur par défaut d'une colonne SQL. */
 function normalizeDefault(value: unknown): string {
   return String(value ?? '')
     .replace(/::[\w\s".\[\]]+/g, '')
@@ -203,12 +236,15 @@ function normalizeDefault(value: unknown): string {
     .toLowerCase();
 }
 
+/** Lit et décode le fichier d'empreinte snapshot Drizzle `0000_snapshot.json`. */
 function readSnapshot(): Snapshot {
   const path = join(process.cwd(), 'src/database/migrations/meta/0000_snapshot.json');
   const parsed: unknown = JSON.parse(readFileSync(path, 'utf8'));
   if (!isSnapshot(parsed)) throw new Error('Empreinte de baseline invalide.');
   return parsed;
 }
+
+/** Prédicat de validation de la structure du fichier JSON snapshot. */
 function isSnapshot(value: unknown): value is Snapshot {
   if (
     typeof value !== 'object' ||

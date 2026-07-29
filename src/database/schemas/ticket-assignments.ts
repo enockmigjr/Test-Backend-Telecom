@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/database/schemas/ticket-assignments.ts
+ * RÔLE : Schéma de base de données PostgreSQL Drizzle ORM.
+ * EXPLICATION :
+ * Ce fichier décrit la structure d'une table PostgreSQL et ses contraintes.
+ * 1. Définit les colonnes, types, clés primaires et relations.
+ * 2. Assure un typage strict entre la base de données et le code TypeScript.
+ * ============================================================================
+ */
+
 import { pgTable, uuid, text, timestamp } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { tickets } from './tickets';
@@ -8,6 +19,7 @@ import { departments } from './departments';
  * Historique des affectations de tickets.
  * Chaque changement d'assigné ou de département crée un nouvel enregistrement.
  */
+/** Table PostgreSQL `ticketAssignments` : Définition des colonnes, contraintes et index. */
 export const ticketAssignments = pgTable('ticket_assignments', {
   id: uuid('id').primaryKey(),
   ticketId: uuid('ticket_id')
@@ -28,6 +40,7 @@ export const ticketAssignments = pgTable('ticket_assignments', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
+/** Relations ORM `ticketAssignmentsRelations` : Définition des jointures et associations Drizzle. */
 export const ticketAssignmentsRelations = relations(ticketAssignments, ({ one }) => ({
   ticket: one(tickets, {
     fields: [ticketAssignments.ticketId],

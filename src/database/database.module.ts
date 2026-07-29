@@ -2,7 +2,7 @@
  * ============================================================================
  * FICHIER : src/database/database.module.ts
  * RÔLE : Module NestJS global gérant l'accès à la base de données PostgreSQL.
- * EXPLICATION (Pour non-développeurs) :
+ * EXPLICATION :
  * Ce module rend l'accès à la base de données disponible dans TOUTE l'application
  * via le fournisseur DrizzleProvider.
  * ============================================================================
@@ -19,4 +19,7 @@ import { DrizzleProvider } from './drizzle.provider';
   providers: [DrizzleProvider],
   exports: [DrizzleProvider],
 })
+/**
+ * Module NestJS `DatabaseModule` configurant les dépendances, contrôleurs et services associés.
+ */
 export class DatabaseModule {}

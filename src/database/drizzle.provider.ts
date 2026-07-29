@@ -2,7 +2,7 @@
  * ============================================================================
  * FICHIER : src/database/drizzle.provider.ts
  * RÔLE : Fournisseur de l'ORM Drizzle et gestionnaire de transactions SQL.
- * EXPLICATION (Pour non-développeurs) :
+ * EXPLICATION :
  * Ce composant crée et gère le pont entre le code NestJS et la base de données PostgreSQL.
  * Il offre également la possibilité d'exécuter des requêtes regroupées dans des "transactions"
  * (si une étape échoue, toute l'opération est annulée pour ne pas corrompre les données).

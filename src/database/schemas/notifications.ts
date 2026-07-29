@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/database/schemas/notifications.ts
+ * RÔLE : Schéma de base de données PostgreSQL Drizzle ORM.
+ * EXPLICATION :
+ * Ce fichier décrit la structure d'une table PostgreSQL et ses contraintes.
+ * 1. Définit les colonnes, types, clés primaires et relations.
+ * 2. Assure un typage strict entre la base de données et le code TypeScript.
+ * ============================================================================
+ */
+
 import { pgTable, uuid, varchar, text, boolean, timestamp, index } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { users } from './users';
@@ -7,6 +18,7 @@ import { notificationTypeEnum } from './enums';
  * Notifications persistantes. Source de vérité du système de notification.
  * Les WebSockets servent uniquement à la diffusion temps réel.
  */
+/** Table PostgreSQL `notifications` : Définition des colonnes, contraintes et index. */
 export const notifications = pgTable(
   'notifications',
   {
@@ -29,6 +41,7 @@ export const notifications = pgTable(
   }),
 );
 
+/** Relations ORM `notificationsRelations` : Définition des jointures et associations Drizzle. */
 export const notificationsRelations = relations(notifications, ({ one }) => ({
   user: one(users, {
     fields: [notifications.userId],

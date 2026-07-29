@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/database/schemas/ticket-comments.ts
+ * RÔLE : Schéma de base de données PostgreSQL Drizzle ORM.
+ * EXPLICATION :
+ * Ce fichier décrit la structure d'une table PostgreSQL et ses contraintes.
+ * 1. Définit les colonnes, types, clés primaires et relations.
+ * 2. Assure un typage strict entre la base de données et le code TypeScript.
+ * ============================================================================
+ */
+
 import { pgTable, uuid, text, timestamp, index } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { tickets } from './tickets';
@@ -6,6 +17,7 @@ import { users } from './users';
 /**
  * Commentaires publics visibles dans le suivi standard du ticket.
  */
+/** Table PostgreSQL `ticketComments` : Définition des colonnes, contraintes et index. */
 export const ticketComments = pgTable(
   'ticket_comments',
   {
@@ -28,6 +40,7 @@ export const ticketComments = pgTable(
   }),
 );
 
+/** Relations ORM `ticketCommentsRelations` : Définition des jointures et associations Drizzle. */
 export const ticketCommentsRelations = relations(ticketComments, ({ one }) => ({
   ticket: one(tickets, {
     fields: [ticketComments.ticketId],

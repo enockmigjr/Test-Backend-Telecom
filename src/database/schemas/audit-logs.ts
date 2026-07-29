@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/database/schemas/audit-logs.ts
+ * RÔLE : Schéma de base de données PostgreSQL Drizzle ORM.
+ * EXPLICATION :
+ * Ce fichier décrit la structure d'une table PostgreSQL et ses contraintes.
+ * 1. Définit les colonnes, types, clés primaires et relations.
+ * 2. Assure un typage strict entre la base de données et le code TypeScript.
+ * ============================================================================
+ */
+
 import { pgTable, uuid, varchar, text, jsonb, timestamp, index } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { users } from './users';
@@ -7,6 +18,7 @@ import { users } from './users';
  * Couvre l'ensemble du système (pas uniquement les tickets).
  * Immuable : pas d'UPDATE ni de DELETE.
  */
+/** Table PostgreSQL `auditLogs` : Définition des colonnes, contraintes et index. */
 export const auditLogs = pgTable(
   'audit_logs',
   {
@@ -31,6 +43,7 @@ export const auditLogs = pgTable(
   }),
 );
 
+/** Relations ORM `auditLogsRelations` : Définition des jointures et associations Drizzle. */
 export const auditLogsRelations = relations(auditLogs, ({ one }) => ({
   user: one(users, {
     fields: [auditLogs.userId],

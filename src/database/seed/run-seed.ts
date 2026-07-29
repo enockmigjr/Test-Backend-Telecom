@@ -1,3 +1,17 @@
+/**
+ * ============================================================================
+ * FICHIER : src/database/seed/run-seed.ts
+ * RÔLE : Script d'initialisation (Seeder) de la base de données de dev/test.
+ * EXPLICATION :
+ * Ce script préremplit la base de données avec des jeux de données réalistes pour le développement et les tests E2E :
+ * 1. 6 Départements télécom (NOC, Customer Care, Billing, Technical Support, Field Operations, Administration).
+ * 2. 6 Catégories d'incidents (NETWORK, BILLING, TECHNICAL, HARDWARE, SOFTWARE, OTHER).
+ * 3. 24 Politiques SLA adaptées par catégorie et par priorité.
+ * 4. 14 Utilisateurs répartis sur les 7 rôles du système avec mots de passe sécurisés Argon2id.
+ * 5. 20 Tickets d'incidents avec historique de statut, assignations, commentaires publics, notes internes et journaux d'audit.
+ * ============================================================================
+ */
+
 import { drizzle } from 'drizzle-orm/postgres-js';
 import { sql } from 'drizzle-orm';
 import postgres from 'postgres';
@@ -8,16 +22,21 @@ import * as schema from '../schemas';
 const DATABASE_URL =
   process.env['DATABASE_URL'] || 'postgresql://telecom:telecom_secret@localhost:5432/telecom_tickets';
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// ─── Helpers d'horodatage pour le seed ──────────────────────────────────────
 
+/** Génère un objet Date reculé de `n` jours par rapport à l'instant présent. */
 function daysAgo(n: number): Date {
   return new Date(Date.now() - n * 24 * 60 * 60 * 1000);
 }
 
+/** Génère un objet Date reculé de `n` heures par rapport à l'instant présent. */
 function hoursAgo(n: number): Date {
   return new Date(Date.now() - n * 60 * 60 * 1000);
 }
 
+/**
+ * Fonction d'exécution principale du peuplement de la base de données.
+ */
 async function seed() {
   const client = postgres(DATABASE_URL);
   const db = drizzle(client, { schema });

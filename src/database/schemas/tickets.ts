@@ -2,7 +2,7 @@
  * ============================================================================
  * FICHIER : src/database/schemas/tickets.ts
  * RÔLE : Schéma Drizzle ORM de la table PostgreSQL `tickets`.
- * EXPLICATION (Pour non-développeurs) :
+ * EXPLICATION :
  * Cette table est le cœur de la plateforme. Chaque ligne correspond à un ticket
  * d'incident télécom (ex: défaillance réseau, problème de facturation, coupure de fibre).
  * Elle contient l'historique complet des statuts, les priorités, le client concerné,
@@ -33,6 +33,7 @@ import { ticketStatusEnum, ticketPriorityEnum, ticketSeverityEnum } from './enum
 /**
  * Table `tickets` (Tickets d'incidents telecom)
  */
+/** Table PostgreSQL `tickets` : Définition des colonnes, contraintes et index. */
 export const tickets = pgTable(
   'tickets',
   {
@@ -136,6 +137,7 @@ export const tickets = pgTable(
 /**
  * Relations Drizzle du ticket avec son créateur, son sous-traitant, sa catégorie, son département, etc.
  */
+/** Relations ORM `ticketsRelations` : Définition des jointures et associations Drizzle. */
 export const ticketsRelations = relations(tickets, ({ one }) => ({
   department: one(departments, {
     fields: [tickets.departmentId],

@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/database/schemas/attachments.ts
+ * RÔLE : Schéma de base de données PostgreSQL Drizzle ORM.
+ * EXPLICATION :
+ * Ce fichier décrit la structure d'une table PostgreSQL et ses contraintes.
+ * 1. Définit les colonnes, types, clés primaires et relations.
+ * 2. Assure un typage strict entre la base de données et le code TypeScript.
+ * ============================================================================
+ */
+
 import { pgTable, uuid, text, varchar, bigint, timestamp, index } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { tickets } from './tickets';
@@ -10,6 +21,7 @@ import { users } from './users';
  * Le stockage réel est délégué à un service de stockage abstrait.
  * Contrainte CHECK : au moins un des trois (ticket_id, comment_id, internal_note_id) doit être non-null.
  */
+/** Table PostgreSQL `attachments` : Définition des colonnes, contraintes et index. */
 export const attachments = pgTable(
   'attachments',
   {
@@ -33,6 +45,7 @@ export const attachments = pgTable(
   }),
 );
 
+/** Relations ORM `attachmentsRelations` : Définition des jointures et associations Drizzle. */
 export const attachmentsRelations = relations(attachments, ({ one }) => ({
   ticket: one(tickets, {
     fields: [attachments.ticketId],

@@ -2,7 +2,7 @@
  * ============================================================================
  * FICHIER : src/database/schemas/enums.ts
  * RÔLE : Définition des types énumérés (ENUMs) PostgreSQL.
- * EXPLICATION (Pour non-développeurs) :
+ * EXPLICATION :
  * Les ENUMs sont des "listes de choix fermées" au niveau de la base de données.
  * Elles permettent d'interdire la saisie de valeurs incorrectes ou non reconnues
  * (ex: un statut de ticket inexistant, un rôle utilisateur inconnu, etc.).
