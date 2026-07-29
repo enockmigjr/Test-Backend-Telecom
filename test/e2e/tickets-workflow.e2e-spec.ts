@@ -3,7 +3,7 @@ import request from 'supertest';
 import { createTestApp } from '../setup';
 import { DrizzleProvider } from '../../src/database/drizzle.provider';
 import { departments, users } from '../../src/database/schemas';
-import { and, eq } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
 
 describe('Tickets — Workflow E2E complet', () => {
@@ -26,15 +26,14 @@ describe('Tickets — Workflow E2E complet', () => {
     app = testApp;
 
     const drizzle = app.get(DrizzleProvider);
-    const { categories, slaPolicies } = await import('../../src/database/schemas');
-    const [existingCategory] = await drizzle.db.select().from(categories).limit(1);
-    categoryId = existingCategory ? existingCategory.id : '';
+    const { slaPolicies } = await import('../../src/database/schemas');
     const [policy] = await drizzle.db
-      .select({ resolutionMinutes: slaPolicies.resolutionMinutes })
+      .select({ categoryId: slaPolicies.categoryId, resolutionMinutes: slaPolicies.resolutionMinutes })
       .from(slaPolicies)
-      .where(and(eq(slaPolicies.categoryId, categoryId), eq(slaPolicies.priority, 'HIGH')))
+      .where(eq(slaPolicies.priority, 'HIGH'))
       .limit(1);
     if (!policy) throw new Error('Politique SLA HIGH requise pour le test.');
+    categoryId = policy.categoryId;
     resolutionMinutes = policy.resolutionMinutes;
 
     const depts = await drizzle.db.select().from(departments).limit(2);

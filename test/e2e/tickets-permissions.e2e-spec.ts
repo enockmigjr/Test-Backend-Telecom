@@ -47,13 +47,16 @@ describe('Tickets Permissions — E2E fine checks', () => {
 
       const priorities = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] as const;
       for (const p of priorities) {
-        await drizzle.db.insert(slaPolicies).values({
-          id: generateUuid(),
-          categoryId: testCatId,
-          priority: p,
-          firstResponseMinutes: 60,
-          resolutionMinutes: 480,
-        });
+        await drizzle.db
+          .insert(slaPolicies)
+          .values({
+            id: generateUuid(),
+            categoryId: testCatId,
+            priority: p,
+            firstResponseMinutes: 60,
+            resolutionMinutes: 480,
+          })
+          .onConflictDoNothing();
       }
     }
 
