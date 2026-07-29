@@ -1,3 +1,16 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/tickets/services/auto-assignment.cron.ts
+ * RÔLE : Tâche planifiée (Cron Job) d'auto-assignation, routage et consolidation de la charge.
+ * EXPLICATION :
+ * Ce composant s'exécute automatiquement toutes les 2 minutes en arrière-plan :
+ * 1. Rafraîchit de manière concurrente la vue matérialisée `materialized_workload_view` PostgreSQL.
+ * 2. Réactive automatiquement les agents dont la période d'absence planifiée (`absenceEndsAt`) est expirée.
+ * 3. Ré-attribue ou désassigne les tickets bloqués sur des agents désactivés ou absents lorsque l'échéance SLA approche (< 1 heure restante).
+ * 4. Dépile les tickets en attente d'assignation (`NEW`, `REOPENED`) triés par priorité (CRITICAL → LOW) et sévérité (S1 → S4), puis les achemine par lots de 10 via `AssignmentEngineService`.
+ * ============================================================================
+ */
+
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { eq, and, isNull, or, inArray, sql, lte, gt } from 'drizzle-orm';
@@ -7,6 +20,9 @@ import { AssignmentEngineService } from './assignment-engine.service';
 import { generateUuid } from '../../../common/helpers/uuidv7.helper';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 
+/**
+ * Service gérant le cycle de planification et d'acheminement automatique des tickets télécom.
+ */
 @Injectable()
 export class AutoAssignmentCron {
   private readonly logger = new Logger(AutoAssignmentCron.name);
@@ -19,9 +35,9 @@ export class AutoAssignmentCron {
   ) {}
 
   /**
-   * Job principal d'assignation automatique et de consolidation.
-   * S'exécute toutes les 2 minutes en arrière-plan.
+   * Job principal d'assignation automatique exécuté toutes les 2 minutes par `@nestjs/schedule`.
    */
+
   @Cron('*/2 * * * *')
   async runAutoAssignment(): Promise<void> {
     if (this.isProcessing) {

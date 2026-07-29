@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/tickets/listeners/ticket-notification.listener.spec.ts
+ * RÔLE : Suite de tests unitaires pour le composant ticket-notification.listener.
+ * EXPLICATION :
+ * Ce fichier contient les tests automatisés validant le comportement et l'intégrité de ticket-notification.listener.
+ * 1. Vérifie le fonctionnement nominal et les cas d'erreur.
+ * 2. Garantit qu'aucune régression n'est introduite lors des évolutions du code.
+ * ============================================================================
+ */
+
 import { DrizzleProvider } from '../../../database/drizzle.provider';
 import { TelecomWebSocketGateway } from '../../../websocket/websocket.gateway';
 import { TicketCreatedEvent } from '../domain/ticket.events';

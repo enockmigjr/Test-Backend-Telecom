@@ -1,3 +1,16 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/tickets/services/tickets-search.service.ts
+ * RÔLE : Service de recherche multicritère, filtrage et tri paginé des tickets d'incidents.
+ * EXPLICATION :
+ * Ce service offre un moteur de recherche puissant sur le catalogue des tickets :
+ * 1. Isolation RBAC/ABAC : Applique `ticketVisibilityCondition(user)` pour restreindre le périmètre de recherche au rôle et département de l'utilisateur.
+ * 2. Filtrage multicritère : Statut, priorité, sévérité, catégorie, agent assigné, équipe, dates de création (`from`/`to`).
+ * 3. Recherche textuelle floue (`ILIKE`) : Balaye le titre, la description, la référence `ticketNumber`, le nom du client et son numéro de compte.
+ * 4. Tri dynamique et pagination standardisée.
+ * ============================================================================
+ */
+
 import { Injectable } from '@nestjs/common';
 import { and, asc, desc, eq, gte, ilike, isNull, lte, or, sql, SQL } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
@@ -8,6 +21,7 @@ import { DrizzleProvider } from '../../../database/drizzle.provider';
 import { categories, departments, tickets, users } from '../../../database/schemas';
 import { JwtPayload } from '../../auth/interfaces/jwt-payload.interface';
 
+/** Interface décrivant tous les filtres applicables à la recherche de tickets. */
 export interface TicketSearchFilters {
   status?: string;
   priority?: string;
@@ -29,10 +43,19 @@ export interface TicketSearchFilters {
 const assignedTeam = alias(departments, 'search_assigned_team');
 const assignee = alias(users, 'search_assignee');
 
+/**
+ * Service gérant les requêtes complexes de recherche et de filtrage de tickets.
+ */
 @Injectable()
 export class TicketsSearchService {
   constructor(private readonly drizzle: DrizzleProvider) {}
 
+  /**
+   * Exécute une recherche paginée de tickets filtrée selon le périmètre de l'utilisateur connecté.
+   *
+   * @param filters Ensemble des critères de recherche et paramètres de tri/pagination.
+   * @param user Payload JWT de l'utilisateur demandeur (pour le filtrage ABAC/RBAC).
+   */
   async search(filters: TicketSearchFilters, user: JwtPayload) {
     const pagination = normalizePagination(filters.page, filters.limit);
     const conditions: SQL<unknown>[] = [isNull(tickets.deletedAt)];
@@ -88,6 +111,9 @@ export class TicketsSearchService {
     return PaginationHelper.paginate(data, Number(total?.count ?? 0), pagination.page, pagination.limit);
   }
 
+  /**
+   * Construit dynamiquement le tableau de clauses SQL WHERE à partir des filtres reçus.
+   */
   private addFilters(conditions: SQL<unknown>[], filters: TicketSearchFilters): void {
     if (filters.status) conditions.push(eq(tickets.status, filters.status as typeof tickets.$inferSelect.status));
     if (filters.priority) {

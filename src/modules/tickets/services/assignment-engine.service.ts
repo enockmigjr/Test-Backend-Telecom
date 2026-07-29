@@ -1,3 +1,16 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/tickets/services/assignment-engine.service.ts
+ * RÔLE : Moteur d'assignation et de routage automatique des tickets d'incidents aux agents télécoms.
+ * EXPLICATION :
+ * Ce service gère l'attribution intelligente et équitable des tickets entrants aux agents disponibles :
+ * 1. `routeTicket` : Transaction PostgreSQL avec verrous pessimistes (`SELECT FOR UPDATE`) prévenant toute concurrence d'assignation.
+ * 2. Stratégies d'assignation : `ROUND_ROBIN` (sélectionne l'agent avec le plus ancien `lastAssignedAt`) ou `LEAST_LOADED` (sélectionne l'agent avec le score de charge pondéré le plus bas).
+ * 3. Contrôles de capacité : Exclut les agents indisponibles/absents et ceux ayant atteint leur limite de tickets simultanés (`maxConcurrentTickets`) ou de charge globale (`maxWorkloadPerAgent`).
+ * 4. Poids et rôle technique : Applique des pénalités de charge virtuelles si le rôle de l'agent ne correspond pas au `targetRole` configuré sur la catégorie de l'incident.
+ * ============================================================================
+ */
+
 import { Injectable, Logger } from '@nestjs/common';
 import { eq, and, isNull, or, inArray, lte, notInArray } from 'drizzle-orm';
 import { DrizzleProvider } from '../../../database/drizzle.provider';
@@ -24,12 +37,14 @@ function isWorkloadWeightsConfig(value: unknown): value is WorkloadWeightsConfig
   return isPriorityValid && isSeverityValid;
 }
 
+/**
+ * Service gérant les règles métier et l'algorithme d'assignation automatique des incidents.
+ */
 @Injectable()
 export class AssignmentEngineService {
   private readonly logger = new Logger(AssignmentEngineService.name);
 
   // Statuts considérés comme "actifs" pour calculer la charge en cours d'un agent.
-  // Typage explicite avec le type union Drizzle inféré de la colonne `tickets.status`.
   private static readonly ACTIVE_STATUSES: ReadonlyArray<typeof tickets.$inferSelect.status> = [
     'ASSIGNED',
     'IN_PROGRESS',
@@ -45,8 +60,10 @@ export class AssignmentEngineService {
   ) {}
 
   /**
-   * Tente d'assigner automatiquement un ticket.
-   * Protégé contre les conditions de concurrence via des verrous de base de données (transactions + FOR UPDATE).
+   * Tente d'assigner automatiquement un ticket à l'agent le plus qualifié et le moins chargé du département.
+   *
+   * @param ticketId UUID du ticket à router.
+   * @returns `true` si le ticket a été assigné avec succès, `false` sinon.
    */
   async routeTicket(ticketId: string): Promise<boolean> {
     try {
@@ -59,14 +76,14 @@ export class AssignmentEngineService {
           .for('update'); // SELECT FOR UPDATE
 
         if (!ticket) {
-          this.logger.warn(`Tentative de routage d'un ticket inexistant ou supprime : ${ticketId}`);
+          this.logger.warn(`Tentative de routage d'un ticket inexistant ou supprimé : ${ticketId}`);
           return false;
         }
 
         // Si le ticket est déjà assigné ou résolu/clos, on ne fait rien
         if (ticket.assignedTo || !['NEW', 'REOPENED'].includes(ticket.status)) {
           this.logger.debug(
-            `Le ticket ${ticket.ticketNumber} est deja assigne ou n'est plus a assigner (statut: ${ticket.status})`,
+            `Le ticket ${ticket.ticketNumber} est déjà assigné ou n'est plus à assigner (statut: ${ticket.status})`,
           );
           return false;
         }
@@ -76,13 +93,13 @@ export class AssignmentEngineService {
 
         if (!dept) {
           this.logger.error(
-            `Departement assigne introuvable (${ticket.assignedTeamId}) pour le ticket ${ticket.ticketNumber}`,
+            `Département assigné introuvable (${ticket.assignedTeamId}) pour le ticket ${ticket.ticketNumber}`,
           );
           return false;
         }
 
         if (!dept.autoAssignmentEnabled) {
-          this.logger.log(`Assignation automatique desactivee pour le departement ${dept.name}`);
+          this.logger.log(`Assignation automatique désactivée pour le département ${dept.name}`);
           return false;
         }
 
@@ -103,7 +120,7 @@ export class AssignmentEngineService {
 
         if (eligibleAgents.length === 0) {
           this.logger.warn(
-            `Aucun agent disponible dans le departement ${dept.name} pour le ticket ${ticket.ticketNumber}`,
+            `Aucun agent disponible dans le département ${dept.name} pour le ticket ${ticket.ticketNumber}`,
           );
           return false;
         }
@@ -138,6 +155,7 @@ export class AssignmentEngineService {
           // Si l'agent a atteint ou dépassé sa limite de tickets actifs concomitants, on l'exclut
           const maxConcurrentGlobal = await this.settingsService.getMaxConcurrentTickets();
           const maxConcurrentLimit = agent.maxConcurrentTickets ?? maxConcurrentGlobal;
+
           if (activeCount >= maxConcurrentLimit) {
             continue;
           }
@@ -168,7 +186,7 @@ export class AssignmentEngineService {
 
         if (candidates.length === 0) {
           this.logger.warn(
-            `Tous les agents du departement ${dept.name} sont satures (maxConcurrentTickets ou maxWorkload atteint).`,
+            `Tous les agents du département ${dept.name} sont saturés (maxConcurrentTickets ou maxWorkload atteint).`,
           );
           return false;
         }
@@ -231,7 +249,7 @@ export class AssignmentEngineService {
           fromDepartmentId: null,
           toDepartmentId: dept.id,
           assignedBy: systemUserId,
-          reason: `Assignation automatique par le systeme (Strategie: ${dept.assignmentStrategy})`,
+          reason: `Assignation automatique par le système (Stratégie: ${dept.assignmentStrategy})`,
           createdAt: now,
         });
 
@@ -248,7 +266,7 @@ export class AssignmentEngineService {
           },
         });
 
-        this.logger.log(`Ticket ${ticket.ticketNumber} assigne automatiquement a l'agent ${selectedAgent.email}`);
+        this.logger.log(`Ticket ${ticket.ticketNumber} assigné automatiquement à l'agent ${selectedAgent.email}`);
 
         // 8. Émettre l'événement sémantique
         this.eventEmitter.emit('ticket.assigned', new TicketAssignedEvent(ticket.id, selectedAgent.id, systemUserId));
@@ -264,7 +282,11 @@ export class AssignmentEngineService {
   }
 
   /**
-   * Calcule la charge pondérée totale d'une liste de tickets d'un agent.
+   * Calcule le score de charge pondéré cumulé pour l'ensemble des tickets actifs gérés par un agent.
+   *
+   * @param agentTickets Liste des tickets actuellement en cours d'un agent.
+   * @param weightsConfig Matrice facultative de pondération par priorité et sévérité.
+   * @returns Le score de charge numérique cumulé.
    */
   private calculateWorkloadScore(
     agentTickets: Array<typeof tickets.$inferSelect>,

@@ -1,3 +1,15 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/tickets/listeners/ticket-notification.listener.ts
+ * RÔLE : Écouteur d'événements pour la diffusion multi-canal des notifications de tickets.
+ * EXPLICATION :
+ * Ce composant réagit à l'ensemble du cycle de vie des tickets et applique une stratégie de notification à 3 niveaux :
+ * 1. WebSockets temps réel (`wsGateway.emitToDepartment` / `emitToUser`) : Informe instantanément les utilisateurs connectés.
+ * 2. File `NOTIFICATION_QUEUE` (BullMQ) : Persiste la notification en base de données (consultable même en cas de connexion ultérieure).
+ * 3. File `EMAIL_QUEUE` (BullMQ) : Déclenche l'envoi d'emails stylisés Handlebars pour les événements critiques (`ticketCreated`, `ticketAssigned`, `ticketDeassigned`).
+ * ============================================================================
+ */
+
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { Queue } from 'bullmq';
@@ -30,16 +42,7 @@ interface TicketEmailContext {
 }
 
 /**
- * Listener de notifications pour les événements de domaine Ticket.
- *
- * Stratégie de notification :
- * 1. WebSocket → temps réel si l'utilisateur est connecté
- * 2. NOTIFICATION_QUEUE → persistance en DB (lue au prochain login si offline)
- * 3. EMAIL_QUEUE → email asynchrone pour les événements critiques
- *
- * RESILIENCE : Tous les appels BullMQ sont protégés par try/catch.
- * Une indisponibilité Redis (ex: tests E2E, environnement de dev sans Redis)
- * ne doit jamais provoquer un 500 sur la requête HTTP principale.
+ * Listener de notifications multi-canal pour les événements de domaine Ticket.
  */
 @Injectable()
 export class TicketNotificationListener {
@@ -77,7 +80,7 @@ export class TicketNotificationListener {
     }
   }
 
-  /** Récupère uniquement l'email (rétrocompatibilité interne) */
+  /** Récupère uniquement l'email d'un utilisateur */
   private async getUserEmail(userId: string): Promise<string | null> {
     const info = await this.getUserInfo(userId);
     return info?.email ?? null;
@@ -91,11 +94,11 @@ export class TicketNotificationListener {
         year: 'numeric',
         hour: '2-digit',
         minute: '2-digit',
-      }) ?? 'Non renseigne'
+      }) ?? 'Non renseigné'
     );
   }
 
-  /** Récupère les champs utilises par les templates email de ticket */
+  /** Récupère les champs utilisés par les templates email de ticket */
   private async getTicketEmailContext(ticketId: string): Promise<TicketEmailContext | null> {
     try {
       const [ticket] = await this.drizzle.db
@@ -122,7 +125,7 @@ export class TicketNotificationListener {
         priority: ticket.priority as string,
         severity: ticket.severity as string,
         category: ticket.category as string,
-        department: (ticket.department as string | null) ?? 'Non renseigne',
+        department: (ticket.department as string | null) ?? 'Non renseigné',
         slaDueAt: this.formatDateTime(ticket.resolutionDueAt as Date | null),
       };
     } catch {
@@ -140,7 +143,7 @@ export class TicketNotificationListener {
     if (ticket) this.wsGateway.emitToDepartment(ticket.assignedTeamId, event, payload);
   }
 
-  /** Enqueue un job email de façon résiliente */
+  /** Enfile un job email de façon résiliente */
   private async sendEmail(data: Record<string, unknown>): Promise<void> {
     try {
       await this.emailQueue.add('send-email', data);
@@ -149,7 +152,7 @@ export class TicketNotificationListener {
     }
   }
 
-  /** Enqueue une notification de façon résiliente */
+  /** Enfile une notification de façon résiliente */
   private async createNotification(data: Record<string, unknown>): Promise<void> {
     try {
       await this.notificationQueue.add('create-notification', data);
@@ -158,6 +161,9 @@ export class TicketNotificationListener {
     }
   }
 
+  /**
+   * Notifie la création d'un ticket au département et envoie un email de confirmation au créateur.
+   */
   @OnEvent('ticket.created')
   async handleTicketCreated(event: TicketCreatedEvent): Promise<void> {
     const ticketNumber = event.ticket['ticketNumber'] as string;
@@ -197,6 +203,9 @@ export class TicketNotificationListener {
     }
   }
 
+  /**
+   * Notifie l'assignation d'un ticket à l'agent destinataire (WebSocket + In-App DB + Email).
+   */
   @OnEvent('ticket.assigned')
   async handleTicketAssigned(event: TicketAssignedEvent): Promise<void> {
     this.logger.log(`Notification: ticket ${event.ticketId} assigné à ${event.assignedTo}`);
@@ -232,11 +241,11 @@ export class TicketNotificationListener {
           supervisorName: supervisorInfo?.fullName ?? 'Un superviseur',
           ticketNumber: ticket?.ticketNumber ?? event.ticketId,
           ticketTitle: ticket?.title ?? 'Sans titre',
-          category: ticket?.category ?? 'Non renseigne',
-          severity: ticket?.severity ?? 'Non renseigne',
-          priority: ticket?.priority ?? 'Non renseigne',
-          department: ticket?.department ?? 'Non renseigne',
-          slaDueAt: ticket?.slaDueAt ?? 'Non renseigne',
+          category: ticket?.category ?? 'Non renseigné',
+          severity: ticket?.severity ?? 'Non renseigné',
+          priority: ticket?.priority ?? 'Non renseigné',
+          department: ticket?.department ?? 'Non renseigné',
+          slaDueAt: ticket?.slaDueAt ?? 'Non renseigné',
           description: ticket?.description ?? null,
           ticketUrl: `${appUrl}/tickets/${event.ticketId}`,
         },
@@ -244,6 +253,9 @@ export class TicketNotificationListener {
     }
   }
 
+  /**
+   * Notifie l'escalade d'un ticket vers un nouvel agent ou une nouvelle équipe.
+   */
   @OnEvent('ticket.escalated')
   async handleTicketEscalated(event: TicketEscalatedEvent): Promise<void> {
     this.logger.log(`Notification: ticket ${event.ticketId} escaladé à ${event.escalatedTo}`);
@@ -278,18 +290,18 @@ export class TicketNotificationListener {
       const appUrl = process.env['APP_URL'] || 'http://localhost:3000';
       await this.sendEmail({
         to: escalatedToInfo.email,
-        subject: `⚠�? Ticket escaladé — ${ticket?.ticketNumber ?? event.ticketId}`,
+        subject: `⚠️ Ticket escaladé — ${ticket?.ticketNumber ?? event.ticketId}`,
         template: 'ticketAssigned',
         data: {
           assigneeName: escalatedToInfo.fullName,
           supervisorName: escalatedByInfo?.fullName ?? 'Un superviseur',
           ticketNumber: ticket?.ticketNumber ?? event.ticketId,
           ticketTitle: ticket?.title ?? 'Sans titre',
-          category: ticket?.category ?? 'Non renseigne',
-          severity: ticket?.severity ?? 'Non renseigne',
-          priority: ticket?.priority ?? 'Non renseigne',
-          department: ticket?.department ?? 'Non renseigne',
-          slaDueAt: ticket?.slaDueAt ?? 'Non renseigne',
+          category: ticket?.category ?? 'Non renseigné',
+          severity: ticket?.severity ?? 'Non renseigné',
+          priority: ticket?.priority ?? 'Non renseigné',
+          department: ticket?.department ?? 'Non renseigné',
+          slaDueAt: ticket?.slaDueAt ?? 'Non renseigné',
           description: ticket?.description ?? null,
           ticketUrl: `${appUrl}/tickets/${event.ticketId}`,
         },
@@ -297,6 +309,9 @@ export class TicketNotificationListener {
     }
   }
 
+  /**
+   * Notifie la résolution d'un ticket.
+   */
   @OnEvent('ticket.resolved')
   async handleTicketResolved(event: TicketResolvedEvent): Promise<void> {
     this.logger.log(`Notification: ticket ${event.ticketId} résolu`);
@@ -322,6 +337,9 @@ export class TicketNotificationListener {
     });
   }
 
+  /**
+   * Notifie la clôture définitive d'un ticket aux parties prenantes.
+   */
   @OnEvent('ticket.closed')
   async handleTicketClosed(event: TicketClosedEvent): Promise<void> {
     const [ticket] = await this.drizzle.db
@@ -356,9 +374,12 @@ export class TicketNotificationListener {
     }
   }
 
+  /**
+   * Notifie la réouverture d'un ticket à l'agent assigné.
+   */
   @OnEvent('ticket.reopened')
   async handleTicketReopened(event: TicketReopenedEvent): Promise<void> {
-    this.logger.log(`Notification: ticket ${event.ticketId} reouvert par ${event.reopenedBy}`);
+    this.logger.log(`Notification: ticket ${event.ticketId} réouvert par ${event.reopenedBy}`);
 
     const ticket = await this.drizzle.db
       .select({
@@ -390,15 +411,15 @@ export class TicketNotificationListener {
 
     this.wsGateway.emitToDepartment(ticket.assignedTeamId, 'ticket.reopened', payload);
 
-    // WebSocket + Notification + Email → assigne
+    // WebSocket + Notification + Email → assigné
     if (ticket.assignedTo) {
       this.wsGateway.emitToUser(ticket.assignedTo, 'ticket.reopened', payload);
 
       await this.createNotification({
         userId: ticket.assignedTo,
-        type: 'COMMENT_ADDED', // utiliser un type existant ou generic pour eviter les problemes d'enum
-        title: `Ticket reouvert — ${ticket.ticketNumber}`,
-        message: `Le ticket a ete reouvert par l'agent CS.`,
+        type: 'COMMENT_ADDED',
+        title: `Ticket réouvert — ${ticket.ticketNumber}`,
+        message: `Le ticket a été réouvert par l'agent CS.`,
         referenceType: 'ticket',
         referenceId: event.ticketId,
       });
@@ -409,17 +430,17 @@ export class TicketNotificationListener {
       if (assigneeInfo) {
         await this.sendEmail({
           to: assigneeInfo.email,
-          subject: `⚠ Ticket réouvert — ${ticket.ticketNumber}`,
+          subject: `⚠️ Ticket réouvert — ${ticket.ticketNumber}`,
           template: 'ticketAssigned',
           data: {
             assigneeName: assigneeInfo.fullName,
             supervisorName: reopenerInfo?.fullName ?? 'Un agent',
             ticketNumber: ticket.ticketNumber,
             ticketTitle: ticket.title ?? 'Sans titre',
-            category: ticket.category ?? 'Non renseigne',
-            severity: ticket.severity ?? 'Non renseigne',
-            priority: ticket.priority ?? 'Non renseigne',
-            department: ticket.department ?? 'Non renseigne',
+            category: ticket.category ?? 'Non renseigné',
+            severity: ticket.severity ?? 'Non renseigné',
+            priority: ticket.priority ?? 'Non renseigné',
+            department: ticket.department ?? 'Non renseigné',
             slaDueAt: this.formatDateTime(ticket.resolutionDueAt),
             description: ticket.description ?? null,
             ticketUrl: `${appUrl}/tickets/${event.ticketId}`,
@@ -429,6 +450,9 @@ export class TicketNotificationListener {
     }
   }
 
+  /**
+   * Notifie au département le changement de statut d'un ticket.
+   */
   @OnEvent('ticket.status_changed')
   async handleStatusChanged(event: TicketStatusChangedEvent): Promise<void> {
     await this.emitToTicketDepartment(event.ticketId, 'ticket.status_changed', {
@@ -438,6 +462,9 @@ export class TicketNotificationListener {
     });
   }
 
+  /**
+   * Notifie l'agent et les superviseurs de la désassignation d'urgence d'un ticket.
+   */
   @OnEvent('ticket.deassigned')
   async handleTicketDeassigned(event: TicketDeassignedEvent): Promise<void> {
     const ticketCtx = await this.getTicketEmailContext(event.ticketId);
@@ -451,11 +478,8 @@ export class TicketNotificationListener {
     };
 
     this.wsGateway.emitToDepartment(event.departmentId, 'ticket.deassigned', payload);
-
-    // WS à l'agent indisponible
     this.wsGateway.emitToUser(event.deassignedAgentId, 'ticket.deassigned', payload);
 
-    // Notification persistante en DB pour l'agent indisponible
     await this.createNotification({
       userId: event.deassignedAgentId,
       type: 'TICKET_ASSIGNED',
@@ -465,7 +489,6 @@ export class TicketNotificationListener {
       referenceId: event.ticketId,
     });
 
-    // Envoyer l'email à l'agent
     const agentInfo = await this.getUserInfo(event.deassignedAgentId);
     if (agentInfo) {
       await this.sendEmail({
@@ -481,7 +504,6 @@ export class TicketNotificationListener {
       });
     }
 
-    // Trouver les superviseurs du département pour les notifier aussi par mail/notification
     if (event.departmentId) {
       const supervisors = await this.drizzle.db
         .select()
@@ -489,7 +511,6 @@ export class TicketNotificationListener {
         .where(and(eq(users.departmentId, event.departmentId), eq(users.role, 'SUPERVISOR'), eq(users.isActive, true)));
 
       for (const sup of supervisors) {
-        // Notification DB
         await this.createNotification({
           userId: sup.id,
           type: 'TICKET_ASSIGNED',
@@ -499,7 +520,6 @@ export class TicketNotificationListener {
           referenceId: event.ticketId,
         });
 
-        // Email
         await this.sendEmail({
           to: sup.email,
           subject: `📋 Alerte Désassignation d'urgence — ${ticketCtx.ticketNumber}`,

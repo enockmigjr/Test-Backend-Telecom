@@ -1,3 +1,17 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/tickets/services/tickets.service.ts
+ * RÔLE : Service principal de gestion du cycle de vie des tickets d'incidents télécom.
+ * EXPLICATION :
+ * Ce service orchestre l'ensemble des opérations métiers sur les tickets d'incidents :
+ * 1. Création de tickets avec calcul dynamique des échéances SLA (heures ouvrables / 24h/24 7j/7).
+ * 2. Moteur de transition de statut (NEW -> ASSIGNED -> IN_PROGRESS -> PENDING -> RESOLVED -> CLOSED).
+ * 3. Gestion fine des autorisations basées sur la propriété et les rôles (ABAC/RBAC).
+ * 4. Assignation, auto-assignation et escalade hiérarchique ou fonctionnelle.
+ * 5. Émission d'événements de domaine (Domain Events) post-transaction PostgreSQL.
+ * ============================================================================
+ */
+
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { eq, and, isNull, sql } from 'drizzle-orm';
@@ -32,6 +46,9 @@ const creator = alias(users, 'ticket_creator');
 const assignee = alias(users, 'ticket_assignee');
 const assignedTeam = alias(departments, 'ticket_assigned_team');
 
+/**
+ * Service orchestrateur du domaine des tickets d'incidents.
+ */
 @Injectable()
 export class TicketsService {
   private readonly logger = new Logger(TicketsService.name);
@@ -49,7 +66,12 @@ export class TicketsService {
   ) {}
 
   /**
-   * Crée un nouveau ticket d'incident.
+   * Crée un nouveau ticket d'incident télécom avec calcul des dates limites SLA.
+   *
+   * @param dto Données du ticket (titre, description, priorité, sévérité, catégorie, client).
+   * @param createdBy Identifiant de l'utilisateur créateur.
+   * @returns Le ticket créé et un message de confirmation.
+   * @throws BadRequestException Si aucune politique SLA ne correspond au couple (catégorie, priorité).
    */
   async create(dto: CreateTicketInput, createdBy: string) {
     // Trouver la politique SLA correspondante
@@ -66,7 +88,7 @@ export class TicketsService {
 
     if (!policy) {
       throw new BadRequestException(
-        `Aucune politique SLA trouvee pour cette categorie et cette priorite. Verifiez les politiques SLA disponibles.`,
+        `Aucune politique SLA trouvée pour cette catégorie et cette priorité. Vérifiez les politiques SLA disponibles.`,
       );
     }
 
@@ -136,7 +158,11 @@ export class TicketsService {
   }
 
   /**
-   * Récupère un ticket par son ID.
+   * Récupère les détails d'un ticket par son identifiant unique UUIDv7.
+   *
+   * @param id Identifiant du ticket.
+   * @returns Un objet enveloppant les détails du ticket.
+   * @throws TicketNotFoundException Si le ticket n'existe pas ou est supprimé.
    */
   async findById(id: string) {
     const ticket = await this.findTicketById(id);
@@ -144,7 +170,12 @@ export class TicketsService {
   }
 
   /**
-   * Met à jour les informations d'un ticket avec validation fine (ownership-based).
+   * Met à jour les informations d'un ticket après validation des permissions de l'utilisateur.
+   *
+   * @param id Identifiant du ticket.
+   * @param dto Données à modifier.
+   * @param user Utilisateur effectuant la requête.
+   * @returns Le ticket mis à jour.
    */
   async update(id: string, dto: UpdateTicketInput, user: JwtPayload) {
     const ticket = await this.findTicketById(id);
@@ -170,7 +201,13 @@ export class TicketsService {
   }
 
   /**
-   * Change le statut d'un ticket en validant la transition de statut ET la permission (ownership-based).
+   * Effectue un changement de statut sur un ticket en appliquant les règles de transition et de calcul SLA.
+   *
+   * @param id Identifiant du ticket.
+   * @param newStatus Nouveau statut visé (ex: IN_PROGRESS, RESOLVED, PENDING_CUSTOMER).
+   * @param user Utilisateur effectuant la transition.
+   * @param reason Motif du changement de statut (obligatoire pour réouverture ou résolution).
+   * @returns Le ticket avec son statut mis à jour.
    */
   async changeStatus(id: string, newStatus: TicketStatus, user: JwtPayload, reason?: string) {
     const ticket = await this.findTicketById(id);
@@ -211,11 +248,16 @@ export class TicketsService {
     }
 
     const updated = await this.findTicketById(id);
-    return { message: `Statut change : ${oldStatus} -> ${newStatus}`, data: updated };
+    return { message: `Statut changé : ${oldStatus} -> ${newStatus}`, data: updated };
   }
 
   /**
-   * Assigne ou réassigne un ticket à un agent avec validation fine (ownership-based).
+   * Assigne un ticket à un agent ou permet à un agent de s'auto-assigner un ticket.
+   *
+   * @param id Identifiant du ticket.
+   * @param toUserId Identifiant de l'agent destinataire.
+   * @param user Utilisateur effectuant l'attribution.
+   * @param reason Motif d'assignation facultatif.
    */
   async assign(id: string, toUserId: string, user: JwtPayload, reason?: string) {
     const ticket = await this.findTicketById(id);
@@ -254,17 +296,23 @@ export class TicketsService {
     );
 
     this.emitAfterCommit('ticket.assigned', new TicketAssignedEvent(id, toUserId, user.sub));
-    this.logger.log(`Ticket ${ticket.ticketNumber} assigne a ${toUserId} par ${user.sub} (auto: ${isAutoAssign})`);
+    this.logger.log(`Ticket ${ticket.ticketNumber} assigné à ${toUserId} par ${user.sub} (auto: ${isAutoAssign})`);
 
     const updated = await this.findTicketById(id);
     return {
-      message: isAutoAssign ? 'Ticket auto-assigne avec succes.' : 'Ticket assigne avec succes.',
+      message: isAutoAssign ? 'Ticket auto-assigné avec succès.' : 'Ticket assigné avec succès.',
       data: updated,
     };
   }
 
   /**
-   * Escalade un ticket vers un autre agent/département avec validation fine (ownership-based).
+   * Escalade un ticket d'incident vers un autre agent ou un autre département.
+   *
+   * @param id Identifiant du ticket.
+   * @param toUserId Nouvel agent cible.
+   * @param toDepartmentId Nouveau département ou équipe réseau cible.
+   * @param user Utilisateur à l'origine de l'escalade.
+   * @param reason Raison de l'escalade.
    */
   async escalate(id: string, toUserId: string, toDepartmentId: string, user: JwtPayload, reason?: string) {
     const ticket = await this.findTicketById(id);
@@ -300,28 +348,33 @@ export class TicketsService {
 
     this.emitAfterCommit('ticket.escalated', new TicketEscalatedEvent(id, toUserId, user.sub));
     this.logger.log(
-      `Ticket ${ticket.ticketNumber} escalade par ${user.sub} (type: ${isHierarchical ? 'hierarchical' : 'functional'})`,
+      `Ticket ${ticket.ticketNumber} escaladé par ${user.sub} (type: ${isHierarchical ? 'hierarchical' : 'functional'})`,
     );
 
     const updated = await this.findTicketById(id);
     return {
-      message: `Ticket escalade avec succes (${isHierarchical ? 'hierarchique' : 'fonctionnelle'}).`,
+      message: `Ticket escaladé avec succès (${isHierarchical ? 'hiérarchique' : 'fonctionnelle'}).`,
       data: updated,
     };
   }
 
   /**
-   * Suppression logique (soft delete).
+   * Effectue la suppression logique (soft delete) d'un ticket.
+   *
+   * @param id Identifiant du ticket à archiver.
    */
   async softDelete(id: string) {
     const ticket = await this.findTicketById(id);
     await this.drizzle.db.update(tickets).set({ deletedAt: new Date() }).where(eq(tickets.id, id));
 
-    this.logger.log(`Ticket ${ticket.ticketNumber} supprime (soft delete)`);
+    this.logger.log(`Ticket ${ticket.ticketNumber} supprimé (soft delete)`);
   }
 
   /**
-   * Récupère l'historique complet d'un ticket.
+   * Récupère l'historique complet des événements et modifications subis par le ticket.
+   *
+   * @param id Identifiant du ticket.
+   * @returns Liste chronologique des actions enregistrées sur le ticket.
    */
   async getHistory(id: string) {
     await this.findTicketById(id); // Vérifie l'existence
@@ -343,12 +396,12 @@ export class TicketsService {
   ): Promise<Record<string, unknown>> {
     const fields: Record<string, unknown> = { status: newStatus };
 
-    // PAUSE — passage en attente
+    // PAUSE — passage en attente client ou tiers
     if (newStatus === 'PENDING_CUSTOMER' || newStatus === 'PENDING_THIRD_PARTY') {
       fields['slaPausedAt'] = now;
     }
 
-    // RESUME — retour de PENDING vers ASSIGNED ou IN_PROGRESS
+    // RESUME — retour de PENDING vers ASSIGNED ou IN_PROGRESS (recalcul dynamique de resolutionDueAt)
     if (
       (oldStatus === 'PENDING_CUSTOMER' || oldStatus === 'PENDING_THIRD_PARTY') &&
       (newStatus === 'ASSIGNED' || newStatus === 'IN_PROGRESS')
@@ -363,12 +416,12 @@ export class TicketsService {
       }
     }
 
-    // STOP — nettoyage de la pause sur clôture
+    // STOP — nettoyage de la pause sur clôture/résolution
     if (newStatus === 'RESOLVED' || newStatus === 'CLOSED' || newStatus === 'CANCELLED') {
       fields['slaPausedAt'] = null;
     }
 
-    // Timestamps spécifiques au statut cible
+    // Horodatages spécifiques au statut cible
     if (newStatus === 'IN_PROGRESS' && !ticket.firstResponseAt) {
       fields['firstResponseAt'] = now;
     }
@@ -384,13 +437,16 @@ export class TicketsService {
       fields['closedAt'] = null;
       const businessHours = await this.settingsService.getBusinessHours();
       const businessDays = await this.settingsService.getBusinessDays();
-      // +4h ouvrables de rallonge sur réouverture
+      // +4h ouvrables de rallonge sur réouverture d'incident
       fields['resolutionDueAt'] = calculateSlaDueDate(now, 240, 'BUSINESS_HOURS', businessHours, businessDays);
     }
 
     return fields;
   }
 
+  /**
+   * Effectue la requête SQL avec jointures (créateur, assigné, département, équipe, catégorie) pour rapatrier un ticket.
+   */
   private async findTicketById(id: string) {
     const result = await this.drizzle.db
       .select({
@@ -445,6 +501,9 @@ export class TicketsService {
     return result[0];
   }
 
+  /**
+   * Émet l'événement de domaine approprié selon le statut vers lequel le ticket a basculé.
+   */
   private emitStatusEvent(newStatus: TicketStatus, id: string, userId: string): void {
     switch (newStatus) {
       case 'RESOLVED':
@@ -462,6 +521,9 @@ export class TicketsService {
     }
   }
 
+  /**
+   * Émet un événement de domaine de façon sécurisée après la validation définitive (commit) de la transaction PostgreSQL.
+   */
   private emitAfterCommit(event: string, payload: object): void {
     const effect = () => {
       this.eventEmitter.emit(event, payload);

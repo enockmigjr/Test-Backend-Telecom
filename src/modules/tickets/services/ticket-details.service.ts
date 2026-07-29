@@ -1,3 +1,15 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/tickets/services/ticket-details.service.ts
+ * RÔLE : Service d'agrégation avancée des détails d'un ticket d'incident.
+ * EXPLICATION :
+ * Ce service enrichit la fiche unitaire d'un ticket avec ses métadonnées connexes :
+ * 1. `findById` : Récupère les données principales du ticket via `TicketsService`.
+ * 2. Exécution parallèle (`Promise.all`) : Compte le nombre de commentaires publics (`ticketComments`) et le nombre de réassignations (`ticketAssignments`).
+ * 3. Historique d'assignations : Extrait la liste chronologique paginée des mutations d'assignation subies par le ticket.
+ * ============================================================================
+ */
+
 import { Injectable } from '@nestjs/common';
 import { count, eq, sql } from 'drizzle-orm';
 import { normalizePagination } from '../../../common/helpers/normalized-pagination.helper';
@@ -6,6 +18,9 @@ import { DrizzleProvider } from '../../../database/drizzle.provider';
 import { ticketAssignments, ticketComments } from '../../../database/schemas';
 import { TicketsService } from './tickets.service';
 
+/**
+ * Service d'agrégation d'informations détaillées pour la vue fiche-ticket.
+ */
 @Injectable()
 export class TicketDetailsService {
   constructor(
@@ -13,6 +28,13 @@ export class TicketDetailsService {
     private readonly ticketsService: TicketsService,
   ) {}
 
+  /**
+   * Extrait le détail complet d'un ticket avec son historique d'assignations paginé et le nombre de commentaires.
+   *
+   * @param id UUID du ticket.
+   * @param page Page pour l'historique d'assignation.
+   * @param limit Nombre d'éléments par page d'historique.
+   */
   async findById(id: string, page = 1, limit = 20) {
     const { data: ticket } = await this.ticketsService.findById(id);
     const pagination = normalizePagination(page, limit);

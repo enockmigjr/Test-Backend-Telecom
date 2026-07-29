@@ -1,3 +1,16 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/tickets/tickets.controller.ts
+ * RÔLE : Contrôleur REST d'exposition des routes de gestion des tickets (`/api/v1/tickets`).
+ * EXPLICATION :
+ * Ce contrôleur gère toutes les interactions REST relatives aux tickets d'incidents télécom :
+ * 1. Création, mise à jour, recherche multi-critères et consultation détaillée de tickets.
+ * 2. Workflow d'assignation, de réassignation et d'escalade fonctionnelle ou hiérarchique.
+ * 3. Transitions de statut (démarrage, mise en attente client/tiers, résolution, clôture, réouverture).
+ * 4. Suppression logique (soft delete réservé aux administrateurs) et consultation d'historique.
+ * ============================================================================
+ */
+
 import {
   Controller,
   Get,
@@ -33,6 +46,9 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { DepartmentAbacGuard } from '../../common/guards/department-abac.guard';
 import { FieldProjectionInterceptor } from '../../common/interceptors/field-projection.interceptor';
 
+/**
+ * Contrôleur REST exposant l'ensemble des fonctionnalités du système de tickets télécom.
+ */
 @ApiTags('tickets')
 @ApiBearerAuth()
 @Controller('tickets')
@@ -44,6 +60,13 @@ export class TicketsController {
     private readonly ticketDetails: TicketDetailsService,
   ) {}
 
+  /**
+   * Endpoint POST /tickets : Crée un nouveau ticket d'incident.
+   *
+   * @param dto Corps de la requête contenant les informations du ticket.
+   * @param user Utilisateur authentifié créateur du ticket.
+   * @returns Le ticket créé.
+   */
   @Post()
   @Idempotent()
   @HttpCode(HttpStatus.CREATED)
@@ -61,6 +84,13 @@ export class TicketsController {
     return this.ticketsService.create(dto, user.sub);
   }
 
+  /**
+   * Endpoint GET /tickets : Recherche multi-critères paginée avec filtrage selon le rôle.
+   *
+   * @param filters Critères de filtrage et pagination.
+   * @param user Utilisateur effectuant la recherche.
+   * @returns Liste paginée de tickets autorisés.
+   */
   @Get()
   @UseInterceptors(FieldProjectionInterceptor)
   @ApiOperation({
@@ -86,6 +116,14 @@ export class TicketsController {
     return this.searchService.search(filters, user);
   }
 
+  /**
+   * Endpoint GET /tickets/:id : Récupère les informations simples ou détaillées d'un ticket.
+   *
+   * @param id Identifiant UUIDv7 du ticket.
+   * @param detail Si égal à 'full', retourne les jointures détaillées et l'historique d'assignation.
+   * @param assignmentPage Numéro de page d'assignation si detail=full.
+   * @param assignmentLimit Limite de pagination d'assignation si detail=full.
+   */
   @Get(':id')
   @ApiOperation({
     summary: "Détails d'un ticket",
@@ -108,6 +146,13 @@ export class TicketsController {
     return this.ticketsService.findById(id);
   }
 
+  /**
+   * Endpoint PATCH /tickets/:id : Met à jour partiellement un ticket d'incident.
+   *
+   * @param id Identifiant du ticket.
+   * @param dto Champs à modifier.
+   * @param user Utilisateur effectuant la modification.
+   */
   @Patch(':id')
   @ApiOperation({
     summary: 'Mettre à jour un ticket',
@@ -124,6 +169,13 @@ export class TicketsController {
     return this.ticketsService.update(id, dto, user);
   }
 
+  /**
+   * Endpoint POST /tickets/:id/assign : Assigne un ticket à un agent.
+   *
+   * @param id Identifiant du ticket.
+   * @param dto Identifiant de l'agent cible et raison facultative.
+   * @param user Agent ou superviseur attribuant le ticket.
+   */
   @Post(':id/assign')
   @Idempotent()
   @HttpCode(HttpStatus.OK)
@@ -141,6 +193,13 @@ export class TicketsController {
     return this.ticketsService.assign(id, dto.userId, user, dto.reason);
   }
 
+  /**
+   * Endpoint POST /tickets/:id/reassign : Réassigne un ticket à un autre technicien.
+   *
+   * @param id Identifiant du ticket.
+   * @param dto Nouvel agent cible et raison.
+   * @param user Utilisateur effectuant la réassignation.
+   */
   @Post(':id/reassign')
   @Idempotent()
   @HttpCode(HttpStatus.OK)
@@ -158,6 +217,13 @@ export class TicketsController {
     return this.ticketsService.assign(id, dto.userId, user, dto.reason);
   }
 
+  /**
+   * Endpoint POST /tickets/:id/escalate : Escalade un ticket vers un nouveau département/agent.
+   *
+   * @param id Identifiant du ticket.
+   * @param dto Agent et département cibles.
+   * @param user Utilisateur déclenchant l'escalade.
+   */
   @Post(':id/escalate')
   @Idempotent()
   @HttpCode(HttpStatus.OK)
@@ -175,6 +241,12 @@ export class TicketsController {
     return this.ticketsService.escalate(id, dto.userId, dto.departmentId, user, dto.reason);
   }
 
+  /**
+   * Endpoint POST /tickets/:id/start : Démarre le traitement d'un ticket (statut IN_PROGRESS).
+   *
+   * @param id Identifiant du ticket.
+   * @param user Agent démarrant la prise en charge.
+   */
   @Post(':id/start')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -190,6 +262,13 @@ export class TicketsController {
     return this.ticketsService.changeStatus(id, 'IN_PROGRESS', user);
   }
 
+  /**
+   * Endpoint POST /tickets/:id/resolve : Marque un ticket comme résolu avec synthèse.
+   *
+   * @param id Identifiant du ticket.
+   * @param dto Résumé de la solution apportée.
+   * @param user Agent résolvant l'incident.
+   */
   @Post(':id/resolve')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -206,6 +285,12 @@ export class TicketsController {
     return this.ticketsService.changeStatus(id, 'RESOLVED', user, dto.resolutionSummary);
   }
 
+  /**
+   * Endpoint POST /tickets/:id/close : Clôture définitivement un ticket résolu.
+   *
+   * @param id Identifiant du ticket.
+   * @param user Utilisateur clôturant le ticket.
+   */
   @Post(':id/close')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -221,6 +306,13 @@ export class TicketsController {
     return this.ticketsService.changeStatus(id, 'CLOSED', user);
   }
 
+  /**
+   * Endpoint POST /tickets/:id/reopen : Réouvre un ticket fermé de moins de 30 jours.
+   *
+   * @param id Identifiant du ticket.
+   * @param dto Motif explicatif de réouverture.
+   * @param user Créateur, superviseur ou administrateur.
+   */
   @Post(':id/reopen')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -237,6 +329,13 @@ export class TicketsController {
     return this.ticketsService.changeStatus(id, 'REOPENED', user, dto.reason);
   }
 
+  /**
+   * Endpoint POST /tickets/:id/pending-customer : Met le ticket en attente d'une information client (suspend le SLA).
+   *
+   * @param id Identifiant du ticket.
+   * @param dto Raison de la mise en attente.
+   * @param user Agent gérant le ticket.
+   */
   @Post(':id/pending-customer')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -252,6 +351,13 @@ export class TicketsController {
     return this.ticketsService.changeStatus(id, 'PENDING_CUSTOMER', user, dto.reason);
   }
 
+  /**
+   * Endpoint POST /tickets/:id/pending-third-party : Met le ticket en attente d'un sous-traitant (suspend le SLA).
+   *
+   * @param id Identifiant du ticket.
+   * @param dto Raison de la mise en attente tiers.
+   * @param user Agent gérant le ticket.
+   */
   @Post(':id/pending-third-party')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -267,6 +373,11 @@ export class TicketsController {
     return this.ticketsService.changeStatus(id, 'PENDING_THIRD_PARTY', user, dto.reason);
   }
 
+  /**
+   * Endpoint GET /tickets/:id/history : Consulte l'historique complet d'un ticket.
+   *
+   * @param id Identifiant du ticket.
+   */
   @Get(':id/history')
   @ApiOperation({
     summary: "Historique complet d'un ticket",
@@ -279,6 +390,11 @@ export class TicketsController {
     return this.ticketsService.getHistory(id);
   }
 
+  /**
+   * Endpoint DELETE /tickets/:id : Suppression logique d'un ticket (Administrateur uniquement).
+   *
+   * @param id Identifiant du ticket à archiver.
+   */
   @Delete(':id')
   @Roles('ADMINISTRATOR')
   @HttpCode(HttpStatus.NO_CONTENT)

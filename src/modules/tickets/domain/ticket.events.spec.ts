@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/tickets/domain/ticket.events.spec.ts
+ * RÔLE : Suite de tests unitaires pour le composant ticket.events.
+ * EXPLICATION :
+ * Ce fichier contient les tests automatisés validant le comportement et l'intégrité de ticket.events.
+ * 1. Vérifie le fonctionnement nominal et les cas d'erreur.
+ * 2. Garantit qu'aucune régression n'est introduite lors des évolutions du code.
+ * ============================================================================
+ */
+
 import {
   TicketCreatedEvent,
   TicketStatusChangedEvent,
@@ -23,12 +34,15 @@ describe('Ticket Events — Evenements de domaine', () => {
   const fakeTicket = { id: fakeTicketId, title: 'Incident Test' } as Record<string, unknown>;
 
   describe('TicketCreatedEvent', () => {
+    /** Test : doit accepter un ticket et un userId */
     it('doit accepter un ticket et un userId', () => {
       const event = new TicketCreatedEvent(fakeTicket, fakeUserId);
 
       expect(event.ticket).toBe(fakeTicket);
       expect(event.userId).toBe(fakeUserId);
     });
+
+    /** Test : doit exposer les proprietes en readonly */
 
     it('doit exposer les proprietes en readonly', () => {
       const event = new TicketCreatedEvent(fakeTicket, fakeUserId);
@@ -39,6 +53,7 @@ describe('Ticket Events — Evenements de domaine', () => {
   });
 
   describe('TicketStatusChangedEvent', () => {
+    /** Test : doit accepter ticketId, oldStatus, newStatus et userId */
     it('doit accepter ticketId, oldStatus, newStatus et userId', () => {
       const event = new TicketStatusChangedEvent(fakeTicketId, 'NEW', 'ASSIGNED', fakeUserId);
 
@@ -57,6 +72,7 @@ describe('Ticket Events — Evenements de domaine', () => {
   });
 
   describe('TicketAssignedEvent', () => {
+    /** Test : doit accepter ticketId, assignedTo et assignedBy */
     it('doit accepter ticketId, assignedTo et assignedBy', () => {
       const event = new TicketAssignedEvent(fakeTicketId, 'agent-1', 'supervisor-1');
 
@@ -67,6 +83,7 @@ describe('Ticket Events — Evenements de domaine', () => {
   });
 
   describe('TicketEscalatedEvent', () => {
+    /** Test : doit accepter ticketId, escalatedTo et escalatedBy */
     it('doit accepter ticketId, escalatedTo et escalatedBy', () => {
       const event = new TicketEscalatedEvent(fakeTicketId, 'senior-engineer', 'supervisor-1');
 
@@ -77,6 +94,7 @@ describe('Ticket Events — Evenements de domaine', () => {
   });
 
   describe('TicketResolvedEvent', () => {
+    /** Test : doit accepter ticketId et resolvedBy */
     it('doit accepter ticketId et resolvedBy', () => {
       const event = new TicketResolvedEvent(fakeTicketId, 'noc-engineer');
 
@@ -86,6 +104,7 @@ describe('Ticket Events — Evenements de domaine', () => {
   });
 
   describe('TicketClosedEvent', () => {
+    /** Test : doit accepter ticketId et closedBy */
     it('doit accepter ticketId et closedBy', () => {
       const event = new TicketClosedEvent(fakeTicketId, 'supervisor-1');
 
@@ -95,6 +114,7 @@ describe('Ticket Events — Evenements de domaine', () => {
   });
 
   describe('TicketReopenedEvent', () => {
+    /** Test : doit accepter ticketId et reopenedBy */
     it('doit accepter ticketId et reopenedBy', () => {
       const event = new TicketReopenedEvent(fakeTicketId, 'agent-1');
 
@@ -104,6 +124,7 @@ describe('Ticket Events — Evenements de domaine', () => {
   });
 
   describe('TicketCancelledEvent', () => {
+    /** Test : doit accepter ticketId et cancelledBy */
     it('doit accepter ticketId et cancelledBy', () => {
       const event = new TicketCancelledEvent(fakeTicketId, 'supervisor-1');
 
@@ -113,6 +134,7 @@ describe('Ticket Events — Evenements de domaine', () => {
   });
 
   describe('Tous les evenements — Interface commune', () => {
+    /** Test : doit etre des instances de leur classe respective */
     it('doit etre des instances de leur classe respective', () => {
       expect(new TicketCreatedEvent(fakeTicket, fakeUserId)).toBeInstanceOf(TicketCreatedEvent);
       expect(new TicketStatusChangedEvent(fakeTicketId, 'A', 'B', fakeUserId)).toBeInstanceOf(TicketStatusChangedEvent);

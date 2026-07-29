@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/tickets/domain/ticket-status-transitions.spec.ts
+ * RÔLE : Suite de tests unitaires pour le composant ticket-status-transitions.
+ * EXPLICATION :
+ * Ce fichier contient les tests automatisés validant le comportement et l'intégrité de ticket-status-transitions.
+ * 1. Vérifie le fonctionnement nominal et les cas d'erreur.
+ * 2. Garantit qu'aucune régression n'est introduite lors des évolutions du code.
+ * ============================================================================
+ */
+
 import { Test, TestingModule } from '@nestjs/testing';
 import { TicketStateMachine, TICKET_TRANSITIONS, TicketStatus } from './ticket-status-transitions';
 import { InvalidStatusTransitionException } from './exceptions/invalid-status-transition.exception';
@@ -24,38 +35,55 @@ describe('TicketStateMachine', () => {
   });
 
   describe('TICKET_TRANSITIONS — Map des transitions', () => {
+    /** Test : doit avoir exactement 9 statuts définis */
     it('doit avoir exactement 9 statuts définis', () => {
       const statuses = Object.keys(TICKET_TRANSITIONS);
       expect(statuses).toHaveLength(9);
     });
 
+    /** Test : NEW doit pouvoir aller vers ASSIGNED et CANCELLED uniquement */
+
     it('NEW doit pouvoir aller vers ASSIGNED et CANCELLED uniquement', () => {
       expect(TICKET_TRANSITIONS['NEW']).toEqual(['ASSIGNED', 'CANCELLED']);
     });
+
+    /** Test : ASSIGNED doit pouvoir aller vers IN_PROGRESS et CANCELLED uniquement */
 
     it('ASSIGNED doit pouvoir aller vers IN_PROGRESS et CANCELLED uniquement', () => {
       expect(TICKET_TRANSITIONS['ASSIGNED']).toEqual(['IN_PROGRESS', 'CANCELLED']);
     });
 
+    /** Test : IN_PROGRESS doit pouvoir aller vers PENDING_CUSTOMER, PENDING_THIRD_PARTY, et RESOLVED */
+
     it('IN_PROGRESS doit pouvoir aller vers PENDING_CUSTOMER, PENDING_THIRD_PARTY, et RESOLVED', () => {
       expect(TICKET_TRANSITIONS['IN_PROGRESS']).toEqual(['PENDING_CUSTOMER', 'PENDING_THIRD_PARTY', 'RESOLVED']);
     });
+
+    /** Test : RESOLVED doit pouvoir aller vers CLOSED et REOPENED */
 
     it('RESOLVED doit pouvoir aller vers CLOSED et REOPENED', () => {
       expect(TICKET_TRANSITIONS['RESOLVED']).toEqual(['CLOSED', 'REOPENED']);
     });
 
+    /** Test : CLOSED doit pouvoir aller vers REOPENED uniquement */
+
     it('CLOSED doit pouvoir aller vers REOPENED uniquement', () => {
       expect(TICKET_TRANSITIONS['CLOSED']).toEqual(['REOPENED']);
     });
+
+    /** Test : CANCELLED ne doit permettre aucune transition (état terminal) */
 
     it('CANCELLED ne doit permettre aucune transition (état terminal)', () => {
       expect(TICKET_TRANSITIONS['CANCELLED']).toEqual([]);
     });
 
+    /** Test : REOPENED doit pouvoir aller vers IN_PROGRESS et CANCELLED */
+
     it('REOPENED doit pouvoir aller vers IN_PROGRESS et CANCELLED', () => {
       expect(TICKET_TRANSITIONS['REOPENED']).toEqual(['IN_PROGRESS', 'CANCELLED']);
     });
+
+    /** Test : doit être immuable — toute modification doit être impossible */
 
     it('doit être immuable — toute modification doit être impossible', () => {
       // Vérifier que la map est gelée conceptuellement
@@ -66,33 +94,48 @@ describe('TicketStateMachine', () => {
   });
 
   describe('canTransition() — Vérification booléenne', () => {
+    /** Test : doit autoriser NEW → ASSIGNED */
     it('doit autoriser NEW → ASSIGNED', () => {
       expect(stateMachine.canTransition('NEW', 'ASSIGNED')).toBe(true);
     });
+
+    /** Test : doit autoriser IN_PROGRESS → RESOLVED */
 
     it('doit autoriser IN_PROGRESS → RESOLVED', () => {
       expect(stateMachine.canTransition('IN_PROGRESS', 'RESOLVED')).toBe(true);
     });
 
+    /** Test : doit autoriser RESOLVED → CLOSED */
+
     it('doit autoriser RESOLVED → CLOSED', () => {
       expect(stateMachine.canTransition('RESOLVED', 'CLOSED')).toBe(true);
     });
+
+    /** Test : doit autoriser CLOSED → REOPENED */
 
     it('doit autoriser CLOSED → REOPENED', () => {
       expect(stateMachine.canTransition('CLOSED', 'REOPENED')).toBe(true);
     });
 
+    /** Test : doit refuser NEW → IN_PROGRESS (doit passer par ASSIGNED) */
+
     it('doit refuser NEW → IN_PROGRESS (doit passer par ASSIGNED)', () => {
       expect(stateMachine.canTransition('NEW', 'IN_PROGRESS')).toBe(false);
     });
+
+    /** Test : doit refuser NEW → RESOLVED (doit passer par tout le cycle) */
 
     it('doit refuser NEW → RESOLVED (doit passer par tout le cycle)', () => {
       expect(stateMachine.canTransition('NEW', 'RESOLVED')).toBe(false);
     });
 
+    /** Test : doit refuser ASSIGNED → CLOSED (doit être résolu avant) */
+
     it('doit refuser ASSIGNED → CLOSED (doit être résolu avant)', () => {
       expect(stateMachine.canTransition('ASSIGNED', 'CLOSED')).toBe(false);
     });
+
+    /** Test : doit refuser RESOLVED → CANCELLED (pas de chemin direct) */
 
     it('doit refuser RESOLVED → CANCELLED (pas de chemin direct)', () => {
       expect(stateMachine.canTransition('RESOLVED', 'CANCELLED')).toBe(false);
@@ -123,6 +166,8 @@ describe('TicketStateMachine', () => {
       expect(() => stateMachine.validateTransition('RESOLVED', 'CLOSED')).not.toThrow();
     });
 
+    /** Test : doit lancer InvalidStatusTransitionException pour une transition invalide */
+
     it('doit lancer InvalidStatusTransitionException pour une transition invalide', () => {
       expect(() => stateMachine.validateTransition('NEW', 'CLOSED')).toThrow(InvalidStatusTransitionException);
     });
@@ -143,6 +188,7 @@ describe('TicketStateMachine', () => {
   });
 
   describe('getAllowedTransitions() — Transitions autorisées', () => {
+    /** Test : doit retourner les transitions pour NEW */
     it('doit retourner les transitions pour NEW', () => {
       const allowed = stateMachine.getAllowedTransitions('NEW');
       expect(allowed).toContain('ASSIGNED');
@@ -150,12 +196,15 @@ describe('TicketStateMachine', () => {
       expect(allowed).toHaveLength(2);
     });
 
+    /** Test : doit retourner un tableau vide pour CANCELLED */
+
     it('doit retourner un tableau vide pour CANCELLED', () => {
       expect(stateMachine.getAllowedTransitions('CANCELLED')).toEqual([]);
     });
   });
 
   describe('Workflow complet — Scénario nominal', () => {
+    /** Test : doit permettre le cycle complet: NEW → ASSIGNED → IN_PROGRESS → RESOLVED → CLOSED */
     it('doit permettre le cycle complet: NEW → ASSIGNED → IN_PROGRESS → RESOLVED → CLOSED', () => {
       const workflow: Array<[TicketStatus, TicketStatus]> = [
         ['NEW', 'ASSIGNED'],
@@ -168,6 +217,8 @@ describe('TicketStateMachine', () => {
         expect(stateMachine.canTransition(from, to)).toBe(true);
       }
     });
+
+    /** Test : doit permettre la réouverture: CLOSED → REOPENED → IN_PROGRESS → RESOLVED → CLOSED */
 
     it('doit permettre la réouverture: CLOSED → REOPENED → IN_PROGRESS → RESOLVED → CLOSED', () => {
       const workflow: Array<[TicketStatus, TicketStatus]> = [

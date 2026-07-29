@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/tickets/tickets.module.ts
+ * RÔLE : Module NestJS organisant le composant tickets.
+ * EXPLICATION :
+ * Ce module regroupe et configure les contrôleurs, services, répertoires et dépendances de tickets.
+ * 1. Définit les éléments internes du domaine fonctionnel.
+ * 2. Rend les services accessibles aux autres modules ayant importé celui-ci.
+ * ============================================================================
+ */
+
 import { Module } from '@nestjs/common';
 import { TicketsController } from './tickets.controller';
 import { TicketsService } from './services/tickets.service';
@@ -48,4 +59,7 @@ import { TicketAssignmentTargetService } from './services/ticket-assignment-targ
   ],
   exports: [TicketsService, TicketsSearchService, TicketHistoryService, TicketPermissions, AssignmentEngineService],
 })
+/**
+ * Module NestJS `TicketsModule` configurant les dépendances, contrôleurs et services associés.
+ */
 export class TicketsModule {}

@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/tickets/listeners/ticket-audit.listener.ts
+ * RÔLE : Écouteur d'événements pour la transmission asynchrone des traces d'audit dans BullMQ.
+ * EXPLICATION :
+ * Ce composant réagit aux événements de domaine (`ticket.created`, `ticket.assigned`, `ticket.status_changed`, `ticket.closed`, `ticket.reopened`) :
+ * 1. Enfilage résilient (`enqueue`) : Envoie chaque action d'audit à la file `AUDIT_QUEUE` sous forme de job `audit-log`.
+ * 2. Non-bloquant : Encapsulé dans un try/catch pour qu'une défaillance Redis n'impacte jamais la réponse HTTP du client.
+ * ============================================================================
+ */
+
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { Queue } from 'bullmq';
@@ -37,6 +48,9 @@ export class TicketAuditListener {
     return this.queues[AUDIT_QUEUE] ?? this.queues['audit'];
   }
 
+  /**
+   * Enfile un job d'audit de manière résiliente sans interrompre la requête en cas d'échec.
+   */
   private async enqueue(jobName: string, data: Record<string, unknown>): Promise<void> {
     try {
       await this.auditQueue.add(jobName, data);
@@ -46,6 +60,9 @@ export class TicketAuditListener {
     }
   }
 
+  /**
+   * Transmet un journal d'audit lors de la création d'un ticket.
+   */
   @OnEvent('ticket.created')
   async handleCreated(event: TicketCreatedEvent): Promise<void> {
     await this.enqueue('audit-log', {
@@ -61,6 +78,9 @@ export class TicketAuditListener {
     });
   }
 
+  /**
+   * Transmet un journal d'audit lors de l'assignation d'un ticket.
+   */
   @OnEvent('ticket.assigned')
   async handleAssigned(event: TicketAssignedEvent): Promise<void> {
     await this.enqueue('audit-log', {
@@ -72,6 +92,9 @@ export class TicketAuditListener {
     });
   }
 
+  /**
+   * Transmet un journal d'audit lors du changement de statut d'un ticket.
+   */
   @OnEvent('ticket.status_changed')
   async handleStatusChanged(event: TicketStatusChangedEvent): Promise<void> {
     await this.enqueue('audit-log', {
@@ -84,6 +107,9 @@ export class TicketAuditListener {
     });
   }
 
+  /**
+   * Transmet un journal d'audit lors de la clôture d'un ticket.
+   */
   @OnEvent('ticket.closed')
   async handleClosed(event: TicketClosedEvent): Promise<void> {
     await this.enqueue('audit-log', {
@@ -94,6 +120,9 @@ export class TicketAuditListener {
     });
   }
 
+  /**
+   * Transmet un journal d'audit lors de la réouverture d'un ticket.
+   */
   @OnEvent('ticket.reopened')
   async handleReopened(event: TicketReopenedEvent): Promise<void> {
     await this.enqueue('audit-log', {

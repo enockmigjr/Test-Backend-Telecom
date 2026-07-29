@@ -1,12 +1,33 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/tickets/services/ticket-assignment-target.service.ts
+ * RÔLE : Service de validation de l'éligibilité d'un agent cible pour l'assignation d'un ticket.
+ * EXPLICATION :
+ * Ce service garantit qu'un ticket ne peut être assigné qu'à un utilisateur valide :
+ * 1. `assertEligible` : Vérifie que l'agent est actif (`isActive = true`), non supprimé (`deletedAt IS NULL`), et rattaché au département destinataire (`departmentId`).
+ * 2. Lève une exception `BadRequestException` si l'agent ne remplit pas ces critères.
+ * ============================================================================
+ */
+
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { and, eq, isNull } from 'drizzle-orm';
 import { DrizzleProvider } from '../../../database/drizzle.provider';
 import { users } from '../../../database/schemas';
 
+/**
+ * Service de contrôle de validité des destinataires d'assignation de tickets.
+ */
 @Injectable()
 export class TicketAssignmentTargetService {
   constructor(private readonly drizzle: DrizzleProvider) {}
 
+  /**
+   * Vérifie que l'agent ciblé est actif, présent et membre du département destinataire.
+   *
+   * @param userId UUID de l'agent destinataire.
+   * @param departmentId UUID du département assigné au ticket.
+   * @throws BadRequestException si l'agent est inactif ou n'appartient pas au département.
+   */
   async assertEligible(userId: string, departmentId: string): Promise<void> {
     const [target] = await this.drizzle.db
       .select({ id: users.id })
@@ -22,7 +43,7 @@ export class TicketAssignmentTargetService {
       .limit(1);
 
     if (!target) {
-      throw new BadRequestException("L'utilisateur cible doit etre actif et appartenir au departement assigne.");
+      throw new BadRequestException("L'utilisateur cible doit être actif et appartenir au département assigné.");
     }
   }
 }
