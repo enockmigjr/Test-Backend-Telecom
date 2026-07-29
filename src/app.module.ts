@@ -2,7 +2,7 @@
  * ============================================================================
  * FICHIER : src/app.module.ts
  * RÔLE : Module racine de l'application backend NestJS.
- * EXPLICATION (Pour non-développeurs) :
+ * EXPLICATION :
  * Ce fichier agit comme le "chef d'orchestre" de l'application. Il assemble et
  * connecte tous les modules spécialisés du projet :
  * 1. Les modules d'infrastructures (base de données, Redis, logs, sécurité).
@@ -169,4 +169,7 @@ import { isAuthRateLimited } from './common/decorators/auth-rate-limited.decorat
   ],
   controllers: [],
 })
+/**
+ * Module NestJS `AppModule` configurant les dépendances, contrôleurs et services associés.
+ */
 export class AppModule {}
