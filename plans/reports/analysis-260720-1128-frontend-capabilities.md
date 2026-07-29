@@ -24,17 +24,17 @@ La Release 1 validée couvre le ticketing, le temps réel, les dashboards et les
 
 ## Limites restantes après fermeture des gates backend
 
-| Besoin            | Support actuel                                    | Manque avant UI complète                                               |
-| ----------------- | ------------------------------------------------- | ---------------------------------------------------------------------- |
-| Recherche tickets | Scope, filtres, tri et recherche textuelle        | Recherche client, tolérance aux fautes et multi-tri avancé.            |
-| Détail ticket     | Projection complète et compteurs                  | Pagination dédiée des timelines très volumineuses.                     |
-| Pièces jointes    | Listing/upload/download/delete avec visibilité    | Preview, reprise d'upload et analyse antivirus.                        |
-| SLA               | Première réponse et résolution séparées           | Explication historique, jours fériés et fuseaux configurables.         |
-| Workload          | Capacité, disponibilité, absence, RR/least-loaded | Congés structurés, secours, justification détaillée et équité auditée. |
+| Besoin            | Support actuel                                    | Manque avant UI complète                                                 |
+| ----------------- | ------------------------------------------------- | ------------------------------------------------------------------------ |
+| Recherche tickets | Scope, filtres, tri et recherche textuelle        | Recherche client, tolérance aux fautes et multi-tri avancé.              |
+| Détail ticket     | Projection complète et compteurs                  | Pagination dédiée des timelines très volumineuses.                       |
+| Pièces jointes    | Listing/upload/download/delete avec visibilité    | Preview, reprise d'upload et analyse antivirus.                          |
+| SLA               | Première réponse et résolution séparées           | Explication historique, jours fériés et fuseaux configurables.           |
+| Workload          | Capacité, disponibilité, absence, RR/least-loaded | Congés structurés, secours, justification détaillée et équité auditée.   |
 | Realtime          | Rooms utilisateur/département autorisées serveur  | Identifiants d'événement stables, payloads versionnés et replay serveur. |
-| Rapports async    | Création + notification finale                    | Statut individuel accessible au demandeur et progression normalisée.   |
-| Préférences UI    | Settings globaux clé/valeur                       | Préférences utilisateur, rôle ou département avec schéma versionné.    |
-| Annulation ticket | Le statut métier `CANCELLED` existe               | Aucune route HTTP d’annulation n’est exposée dans le contrat OpenAPI.   |
+| Rapports async    | Création + notification finale                    | Statut individuel accessible au demandeur et progression normalisée.     |
+| Préférences UI    | Settings globaux clé/valeur                       | Préférences utilisateur, rôle ou département avec schéma versionné.      |
+| Annulation ticket | Le statut métier `CANCELLED` existe               | Aucune route HTTP d’annulation n’est exposée dans le contrat OpenAPI.    |
 
 ## Absent : évolution backend obligatoire
 

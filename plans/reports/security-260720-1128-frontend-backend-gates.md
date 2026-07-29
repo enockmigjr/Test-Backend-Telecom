@@ -37,15 +37,15 @@ Les capacités produit absentes qui nécessitent de nouveaux modèles backend re
 
 ## Priorité P0 — contrat et intégrité
 
-| ID    | Constat vérifié                                                                                  | Risque                                                     | Preuve de fermeture                                                    |
-| ----- | ------------------------------------------------------------------------------------------------ | ---------------------------------------------------------- | ---------------------------------------------------------------------- |
-| P0-09 | OpenAPI runtime contient 79 opérations mais presque aucun schéma de réponse.                     | Client généré faiblement typé et dérive frontend/backend.  | DTOs/enveloppes documentés, snapshot déterministe et contract test CI. |
-| P0-10 | Les réponses succès ont plusieurs formes, dont pagination imbriquée et rapports déjà enveloppés. | Normalisation fragile et erreurs runtime.                  | Une enveloppe canonique par type de réponse et tests sérialisation.    |
-| P0-11 | L'idempotence est décorée mais le middleware n'est pas enregistré.                               | Double création ou double action sous retry/clic multiple. | Intercepteur PostgreSQL atomique, rejeu concurrent et rollback testés. |
-| P0-12 | Update ticket accepte `category` mais le service attend `categoryId`.                            | Succès apparent sans modification.                         | DTO/service alignés sur catégorie dynamique et E2E de mise à jour.     |
-| P0-13 | Projection ticket utilise un alias utilisateur ambigu pour créateur/assigné.                     | Mauvaise identité affichée.                                | Deux alias SQL distincts et test avec créateur différent de l'assigné. |
+| ID    | Constat vérifié                                                                                  | Risque                                                     | Preuve de fermeture                                                           |
+| ----- | ------------------------------------------------------------------------------------------------ | ---------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| P0-09 | OpenAPI runtime contient 79 opérations mais presque aucun schéma de réponse.                     | Client généré faiblement typé et dérive frontend/backend.  | DTOs/enveloppes documentés, snapshot déterministe et contract test CI.        |
+| P0-10 | Les réponses succès ont plusieurs formes, dont pagination imbriquée et rapports déjà enveloppés. | Normalisation fragile et erreurs runtime.                  | Une enveloppe canonique par type de réponse et tests sérialisation.           |
+| P0-11 | L'idempotence est décorée mais le middleware n'est pas enregistré.                               | Double création ou double action sous retry/clic multiple. | Intercepteur PostgreSQL atomique, rejeu concurrent et rollback testés.        |
+| P0-12 | Update ticket accepte `category` mais le service attend `categoryId`.                            | Succès apparent sans modification.                         | DTO/service alignés sur catégorie dynamique et E2E de mise à jour.            |
+| P0-13 | Projection ticket utilise un alias utilisateur ambigu pour créateur/assigné.                     | Mauvaise identité affichée.                                | Deux alias SQL distincts et test avec créateur différent de l'assigné.        |
 | P0-14 | `mustChangePassword` n'est pas garanti dans la session frontend.                                 | Contournement du parcours de changement initial.           | Guard backend global, exemptions minimales, WebSocket bloqué et E2E négatifs. |
-| P0-15 | Aucun listing de pièces jointes et upload multipart divergent de Swagger.                        | `FileAttachmentList` impossible et intégration erronée.    | Route/listing ou inclusion typée; contrat multipart testé.             |
+| P0-15 | Aucun listing de pièces jointes et upload multipart divergent de Swagger.                        | `FileAttachmentList` impossible et intégration erronée.    | Route/listing ou inclusion typée; contrat multipart testé.                    |
 
 ## Priorité P1 — fidélité fonctionnelle
 
