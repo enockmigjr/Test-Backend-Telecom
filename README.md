@@ -33,12 +33,12 @@ Utilisé par le Service Client, NOC, Facturation, Support Technique et Opératio
 
 ## ✅ Prérequis
 
-| Outil       | Version minimale | Vérification              |
-| ----------- | ---------------- | ------------------------- |
-| **Node.js** | ≥ 18.x           | `node -v`                 |
-| **pnpm**    | ≥ 8.x            | `pnpm -v`                 |
-| **Docker**  | ≥ 24.x           | `docker -v`               |
-| **Compose** | ≥ 2.20           | `docker compose version`  |
+| Outil       | Version minimale | Vérification             |
+| ----------- | ---------------- | ------------------------ |
+| **Node.js** | ≥ 18.x           | `node -v`                |
+| **pnpm**    | ≥ 8.x            | `pnpm -v`                |
+| **Docker**  | ≥ 24.x           | `docker -v`              |
+| **Compose** | ≥ 2.20           | `docker compose version` |
 
 > ⚠️ **Toujours utiliser `pnpm`**, pas `npm` ni `yarn`.
 
@@ -108,52 +108,52 @@ pnpm run test:all
 
 ### Administrateur
 
-| Email                 | Nom            | Rôle          | Département     | Mot de passe |
-| --------------------- | -------------- | ------------- | --------------- | ------------ |
-| `admin@telecom.local` | Admin Système  | ADMINISTRATOR | Administration  | `Admin@1234` |
+| Email                 | Nom           | Rôle          | Département    | Mot de passe |
+| --------------------- | ------------- | ------------- | -------------- | ------------ |
+| `admin@telecom.local` | Admin Système | ADMINISTRATOR | Administration | `Admin@1234` |
 
 ### Superviseurs
 
-| Email                          | Nom            | Rôle       | Département   | Mot de passe  |
-| ------------------------------ | -------------- | ---------- | ------------- | ------------- |
-| `supervisor@telecom.local`     | Sophie Laurent | SUPERVISOR | Customer Care | `Super@1234`  |
-| `supervisor-noc@telecom.local` | Marc Bernard   | SUPERVISOR | NOC           | `Super@1234`  |
+| Email                          | Nom            | Rôle       | Département   | Mot de passe |
+| ------------------------------ | -------------- | ---------- | ------------- | ------------ |
+| `supervisor@telecom.local`     | Sophie Laurent | SUPERVISOR | Customer Care | `Super@1234` |
+| `supervisor-noc@telecom.local` | Marc Bernard   | SUPERVISOR | NOC           | `Super@1234` |
 
 ### Agents Customer Care
 
-| Email                       | Nom            | Rôle                   | Département   | Mot de passe  |
-| --------------------------- | -------------- | ---------------------- | ------------- | ------------- |
-| `agent-cc1@telecom.local`   | Alice Dupont   | CUSTOMER_SERVICE_AGENT | Customer Care | `Agent@1234`  |
-| `agent-cc2@telecom.local`   | Thomas Lebrun  | CUSTOMER_SERVICE_AGENT | Customer Care | `Agent@1234`  |
+| Email                     | Nom           | Rôle                   | Département   | Mot de passe |
+| ------------------------- | ------------- | ---------------------- | ------------- | ------------ |
+| `agent-cc1@telecom.local` | Alice Dupont  | CUSTOMER_SERVICE_AGENT | Customer Care | `Agent@1234` |
+| `agent-cc2@telecom.local` | Thomas Lebrun | CUSTOMER_SERVICE_AGENT | Customer Care | `Agent@1234` |
 
 ### Ingénieurs NOC
 
-| Email                  | Nom          | Rôle         | Département | Mot de passe |
-| ---------------------- | ------------ | ------------ | ----------- | ------------ |
-| `noc1@telecom.local`   | Bob Martin   | NOC_ENGINEER | NOC         | `Agent@1234` |
-| `noc2@telecom.local`   | Julie Simon  | NOC_ENGINEER | NOC         | `Agent@1234` |
+| Email                | Nom         | Rôle         | Département | Mot de passe |
+| -------------------- | ----------- | ------------ | ----------- | ------------ |
+| `noc1@telecom.local` | Bob Martin  | NOC_ENGINEER | NOC         | `Agent@1234` |
+| `noc2@telecom.local` | Julie Simon | NOC_ENGINEER | NOC         | `Agent@1234` |
 
 ### Agents Facturation
 
-| Email                      | Nom           | Rôle          | Département | Mot de passe |
-| -------------------------- | ------------- | ------------- | ----------- | ------------ |
-| `billing1@telecom.local`   | Claire Petit  | BILLING_AGENT | Billing     | `Agent@1234` |
-| `billing2@telecom.local`   | Luc Garnier   | BILLING_AGENT | Billing     | `Agent@1234` |
+| Email                    | Nom          | Rôle          | Département | Mot de passe |
+| ------------------------ | ------------ | ------------- | ----------- | ------------ |
+| `billing1@telecom.local` | Claire Petit | BILLING_AGENT | Billing     | `Agent@1234` |
+| `billing2@telecom.local` | Luc Garnier  | BILLING_AGENT | Billing     | `Agent@1234` |
 
 ### Support Technique
 
-| Email                   | Nom          | Rôle                         | Département       | Mot de passe |
-| ----------------------- | ------------ | ---------------------------- | ----------------- | ------------ |
-| `tech1@telecom.local`   | David Roux   | TECHNICAL_SUPPORT_ENGINEER   | Technical Support | `Agent@1234` |
-| `tech2@telecom.local`   | Nina Morel   | TECHNICAL_SUPPORT_ENGINEER   | Technical Support | `Agent@1234` |
-| `agent@telecom.local`   | Test Agent   | TECHNICAL_SUPPORT_ENGINEER   | Technical Support | `Agent@1234` |
+| Email                 | Nom        | Rôle                       | Département       | Mot de passe |
+| --------------------- | ---------- | -------------------------- | ----------------- | ------------ |
+| `tech1@telecom.local` | David Roux | TECHNICAL_SUPPORT_ENGINEER | Technical Support | `Agent@1234` |
+| `tech2@telecom.local` | Nina Morel | TECHNICAL_SUPPORT_ENGINEER | Technical Support | `Agent@1234` |
+| `agent@telecom.local` | Test Agent | TECHNICAL_SUPPORT_ENGINEER | Technical Support | `Agent@1234` |
 
 ### Techniciens Terrain
 
-| Email                   | Nom          | Rôle             | Département      | Mot de passe |
-| ----------------------- | ------------ | ---------------- | ---------------- | ------------ |
-| `field1@telecom.local`  | Emma Moreau  | FIELD_TECHNICIAN | Field Operations | `Agent@1234` |
-| `field2@telecom.local`  | Kevin Blanc  | FIELD_TECHNICIAN | Field Operations | `Agent@1234` |
+| Email                  | Nom         | Rôle             | Département      | Mot de passe |
+| ---------------------- | ----------- | ---------------- | ---------------- | ------------ |
+| `field1@telecom.local` | Emma Moreau | FIELD_TECHNICIAN | Field Operations | `Agent@1234` |
+| `field2@telecom.local` | Kevin Blanc | FIELD_TECHNICIAN | Field Operations | `Agent@1234` |
 
 ### Exemple de connexion via cURL
 
@@ -173,15 +173,15 @@ curl http://localhost:3000/api/v1/users \
 
 ### Outils de monitoring
 
-| URL                                  | Service        | Identifiants        |
-| ------------------------------------ | -------------- | ------------------- |
-| `http://localhost:3000/api/v1`       | API REST       | Bearer token JWT    |
-| `http://localhost:3000/api/docs`     | Swagger        | Aucun               |
-| `http://localhost:3000/admin/queues` | BullBoard      | `admin`/`bullboard` |
-| `http://localhost:8025`              | Mailpit (mail) | Aucun               |
-| `http://localhost:3001`              | Grafana        | `admin`/`admin`     |
-| `http://localhost:9090`              | Prometheus     | Aucun               |
-| `http://localhost:3002`              | Uptime Kuma    | Aucun (à configurer)|
+| URL                                  | Service        | Identifiants         |
+| ------------------------------------ | -------------- | -------------------- |
+| `http://localhost:3000/api/v1`       | API REST       | Bearer token JWT     |
+| `http://localhost:3000/api/docs`     | Swagger        | Aucun                |
+| `http://localhost:3000/admin/queues` | BullBoard      | `admin`/`bullboard`  |
+| `http://localhost:8025`              | Mailpit (mail) | Aucun                |
+| `http://localhost:3001`              | Grafana        | `admin`/`admin`      |
+| `http://localhost:9090`              | Prometheus     | Aucun                |
+| `http://localhost:3002`              | Uptime Kuma    | Aucun (à configurer) |
 
 ---
 
@@ -222,7 +222,7 @@ flowchart LR
 | `users`          | CRUD 7 rôles, activation/désactivation, mot de passe temporaire                              |
 | `departments`    | 6 départements, soft delete                                                                  |
 | `categories`     | Catégories de tickets avec `targetRole` dynamique pour auto-assignation                      |
-| `tickets`        | State machine 9 statuts + 2 pending, ownership-based RBAC, INC-AAAA-NNNNNN, auto-clôture 48h|
+| `tickets`        | State machine 9 statuts + 2 pending, ownership-based RBAC, INC-AAAA-NNNNNN, auto-clôture 48h |
 | `comments`       | Commentaires publics (auteur/supervisor/admin)                                               |
 | `internal-notes` | Notes internes (restriction FIELD_TECHNICIAN)                                                |
 | `attachments`    | Upload/download streaming, interface abstraite IStorageService                               |
@@ -318,19 +318,19 @@ make up-full
 make down
 ```
 
-| Service       | Port       | Description              |
-| ------------- | ---------- | ------------------------ |
-| API NestJS    | 3000       | Backend REST API         |
-| PostgreSQL 16 | 5432       | Base de données          |
-| Redis 7       | 6379       | Cache + sessions + queues|
-| Nginx         | 80, 443    | Reverse proxy            |
-| Mailpit       | 1025, 8025 | SMTP de test (dev)       |
-| Prometheus    | 9090       | Métriques                |
-| Grafana       | 3001       | Visualisation            |
-| Loki          | 3100       | Agrégation logs          |
-| Tempo         | 3200       | Tracing distribué        |
-| Promtail      | 9080       | Collecteur logs          |
-| Uptime Kuma   | 3002       | Monitoring uptime        |
+| Service       | Port       | Description               |
+| ------------- | ---------- | ------------------------- |
+| API NestJS    | 3000       | Backend REST API          |
+| PostgreSQL 16 | 5432       | Base de données           |
+| Redis 7       | 6379       | Cache + sessions + queues |
+| Nginx         | 80, 443    | Reverse proxy             |
+| Mailpit       | 1025, 8025 | SMTP de test (dev)        |
+| Prometheus    | 9090       | Métriques                 |
+| Grafana       | 3001       | Visualisation             |
+| Loki          | 3100       | Agrégation logs           |
+| Tempo         | 3200       | Tracing distribué         |
+| Promtail      | 9080       | Collecteur logs           |
+| Uptime Kuma   | 3002       | Monitoring uptime         |
 
 ---
 
@@ -374,45 +374,45 @@ pnpm dev
 
 ### Scripts pnpm
 
-| Commande                  | Description                              |
-| ------------------------- | ---------------------------------------- |
-| `pnpm run start:dev`      | Développement hot-reload                 |
-| `pnpm run build`          | Compilation TypeScript                   |
-| `pnpm run test`           | Tests unitaires (453 tests)              |
-| `pnpm run test:unit`      | Tests unitaires (chemin src/)            |
-| `pnpm run test:e2e`       | Tests end-to-end (110 tests)             |
-| `pnpm run test:all`       | Tous les tests (563 tests)               |
-| `pnpm run test:cov`       | Tests avec couverture                    |
-| `pnpm run db:push`        | Pousser schéma Drizzle                   |
-| `pnpm run db:seed`        | Données de test (14 utilisateurs)        |
-| `pnpm run db:reset`       | db:push + db:seed                        |
-| `pnpm run db:studio`      | Drizzle Studio (UI visuelle)             |
-| `pnpm run openapi:export` | Exporter le schéma OpenAPI               |
-| `pnpm run lint`           | ESLint                                   |
-| `pnpm run format`         | Prettier                                 |
+| Commande                  | Description                       |
+| ------------------------- | --------------------------------- |
+| `pnpm run start:dev`      | Développement hot-reload          |
+| `pnpm run build`          | Compilation TypeScript            |
+| `pnpm run test`           | Tests unitaires (453 tests)       |
+| `pnpm run test:unit`      | Tests unitaires (chemin src/)     |
+| `pnpm run test:e2e`       | Tests end-to-end (110 tests)      |
+| `pnpm run test:all`       | Tous les tests (563 tests)        |
+| `pnpm run test:cov`       | Tests avec couverture             |
+| `pnpm run db:push`        | Pousser schéma Drizzle            |
+| `pnpm run db:seed`        | Données de test (14 utilisateurs) |
+| `pnpm run db:reset`       | db:push + db:seed                 |
+| `pnpm run db:studio`      | Drizzle Studio (UI visuelle)      |
+| `pnpm run openapi:export` | Exporter le schéma OpenAPI        |
+| `pnpm run lint`           | ESLint                            |
+| `pnpm run format`         | Prettier                          |
 
 ### Commandes Makefile
 
-| Commande       | Description                                        |
-| -------------- | -------------------------------------------------- |
-| `make help`    | Affiche toutes les commandes disponibles            |
-| `make up`      | Démarrer tous les services Docker                   |
-| `make down`    | Arrêter tous les services                           |
-| `make restart` | Redémarrer                                          |
-| `make logs`    | Suivre les logs de l'API                            |
-| `make ps`      | État des conteneurs                                 |
-| `make db-push` | Pousser le schéma Drizzle                           |
-| `make db-seed` | Insérer les données de test                         |
-| `make db-reset`| Réinitialiser complètement la DB                    |
-| `make db-studio`| Drizzle Studio                                     |
-| `make dev`     | Lancer l'API en mode watch                          |
-| `make build`   | Compiler le projet                                  |
-| `make test`    | Lancer tous les tests                               |
-| `make test-e2e`| Tests end-to-end                                    |
-| `make lint`    | ESLint                                              |
-| `make format`  | Prettier                                            |
-| `make up-full` | Tout démarrer avec monitoring                       |
-| `make clean`   | Nettoyer dist/ et coverage/                         |
+| Commande         | Description                              |
+| ---------------- | ---------------------------------------- |
+| `make help`      | Affiche toutes les commandes disponibles |
+| `make up`        | Démarrer tous les services Docker        |
+| `make down`      | Arrêter tous les services                |
+| `make restart`   | Redémarrer                               |
+| `make logs`      | Suivre les logs de l'API                 |
+| `make ps`        | État des conteneurs                      |
+| `make db-push`   | Pousser le schéma Drizzle                |
+| `make db-seed`   | Insérer les données de test              |
+| `make db-reset`  | Réinitialiser complètement la DB         |
+| `make db-studio` | Drizzle Studio                           |
+| `make dev`       | Lancer l'API en mode watch               |
+| `make build`     | Compiler le projet                       |
+| `make test`      | Lancer tous les tests                    |
+| `make test-e2e`  | Tests end-to-end                         |
+| `make lint`      | ESLint                                   |
+| `make format`    | Prettier                                 |
+| `make up-full`   | Tout démarrer avec monitoring            |
+| `make clean`     | Nettoyer dist/ et coverage/              |
 
 ---
 
@@ -473,28 +473,27 @@ pnpm run start:dev
 
 ## 📚 Documentation
 
-| Fichier                                   | Contenu                                            |
-| ----------------------------------------- | -------------------------------------------------- |
-| [CHANGELOG.md](CHANGELOG.md)              | Historique complet des versions (v1.0.0 → v1.4.2)  |
-| [CONTRIBUTING.md](CONTRIBUTING.md)        | Guide de contribution                               |
-| [docs/quick-start.md](docs/quick-start.md)| Guide de démarrage rapide (5 min)                   |
-| [docs/routes.md](docs/routes.md)          | Catalogue complet des 60 routes API                 |
-| [docs/architecture-flows.md](docs/architecture-flows.md) | 10 diagrammes Mermaid                |
-| [docs/database-schema.md](docs/database-schema.md) | Schéma de base de données (15 tables)       |
-| [docs/ticket-lifecycle.md](docs/ticket-lifecycle.md) | Machine à états des tickets (9 statuts)    |
-| [docs/domain-events.md](docs/domain-events.md) | Événements domaine EventEmitter2               |
-| [docs/security.md](docs/security.md)      | Guide de sécurité (auth, RBAC, rate limiting)       |
-| [docs/test-accounts.md](docs/test-accounts.md) | Comptes de test et identifiants                |
-| [docs/testing.md](docs/testing.md)        | Guide des tests (563 tests)                         |
-| [docs/environment-variables.md](docs/environment-variables.md) | Référence variables d'env     |
-| [docs/deployment.md](docs/deployment.md)  | Guide de déploiement production                     |
-| [docs/emails.md](docs/emails.md)          | Architecture email, templates, flux                 |
-| [docs/observability.md](docs/observability.md) | Prometheus, Loki, Tempo, Grafana, alertes       |
-| [docs/websockets.md](docs/websockets.md)  | WebSocket temps réel, rooms, scaling                |
-| [docs/jobs-and-workers.md](docs/jobs-and-workers.md) | Architecture BullMQ et 6 workers            |
-| [docs/workers.md](docs/workers.md)        | Détail des 6 workers BullMQ                         |
-| [docs/troubleshooting.md](docs/troubleshooting.md) | Résolution des erreurs courantes           |
-| [docs/implementation-status.md](docs/implementation-status.md) | État production-readiness          |
-| [docs/detailed-design-assignment-sla.md](docs/detailed-design-assignment-sla.md) | Choix d'archi SLA & Auto-Assignation |
-| [.env.example](.env.example)              | 70+ variables d'environnement documentées           |
-
+| Fichier                                                                          | Contenu                                           |
+| -------------------------------------------------------------------------------- | ------------------------------------------------- |
+| [CHANGELOG.md](CHANGELOG.md)                                                     | Historique complet des versions (v1.0.0 → v1.4.2) |
+| [CONTRIBUTING.md](CONTRIBUTING.md)                                               | Guide de contribution                             |
+| [docs/quick-start.md](docs/quick-start.md)                                       | Guide de démarrage rapide (5 min)                 |
+| [docs/routes.md](docs/routes.md)                                                 | Catalogue complet des 60 routes API               |
+| [docs/architecture-flows.md](docs/architecture-flows.md)                         | 10 diagrammes Mermaid                             |
+| [docs/database-schema.md](docs/database-schema.md)                               | Schéma de base de données (15 tables)             |
+| [docs/ticket-lifecycle.md](docs/ticket-lifecycle.md)                             | Machine à états des tickets (9 statuts)           |
+| [docs/domain-events.md](docs/domain-events.md)                                   | Événements domaine EventEmitter2                  |
+| [docs/security.md](docs/security.md)                                             | Guide de sécurité (auth, RBAC, rate limiting)     |
+| [docs/test-accounts.md](docs/test-accounts.md)                                   | Comptes de test et identifiants                   |
+| [docs/testing.md](docs/testing.md)                                               | Guide des tests (563 tests)                       |
+| [docs/environment-variables.md](docs/environment-variables.md)                   | Référence variables d'env                         |
+| [docs/deployment.md](docs/deployment.md)                                         | Guide de déploiement production                   |
+| [docs/emails.md](docs/emails.md)                                                 | Architecture email, templates, flux               |
+| [docs/observability.md](docs/observability.md)                                   | Prometheus, Loki, Tempo, Grafana, alertes         |
+| [docs/websockets.md](docs/websockets.md)                                         | WebSocket temps réel, rooms, scaling              |
+| [docs/jobs-and-workers.md](docs/jobs-and-workers.md)                             | Architecture BullMQ et 6 workers                  |
+| [docs/workers.md](docs/workers.md)                                               | Détail des 6 workers BullMQ                       |
+| [docs/troubleshooting.md](docs/troubleshooting.md)                               | Résolution des erreurs courantes                  |
+| [docs/implementation-status.md](docs/implementation-status.md)                   | État production-readiness                         |
+| [docs/detailed-design-assignment-sla.md](docs/detailed-design-assignment-sla.md) | Choix d'archi SLA & Auto-Assignation              |
+| [.env.example](.env.example)                                                     | 70+ variables d'environnement documentées         |
