@@ -2,7 +2,7 @@
  * ============================================================================
  * FICHIER : src/modules/app/app.controller.ts
  * RÔLE : Contrôleur racine (`/api/v1`).
- * EXPLICATION (Pour non-développeurs) :
+ * EXPLICATION :
  * Ce contrôleur répond à la racine de l'API avec une fiche d'information synthétique :
  * le nom du système, la version actuelle, et les adresses vers la documentation Swagger
  * et les bilans de santé.
