@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/attachments/storage/local-storage.service.spec.ts
+ * RÔLE : Suite de tests unitaires pour le composant local-storage.service.
+ * EXPLICATION :
+ * Ce fichier contient les tests automatisés validant le comportement et l'intégrité de local-storage.service.
+ * 1. Vérifie le fonctionnement nominal et les cas d'erreur.
+ * 2. Garantit qu'aucune régression n'est introduite lors des évolutions du code.
+ * ============================================================================
+ */
+
 import { LocalStorageService } from './local-storage.service';
 import { promises as fs } from 'fs';
 import * as path from 'path';
@@ -32,6 +43,8 @@ describe('LocalStorageService', () => {
       expect(fs.writeFile).toHaveBeenCalledWith(path.resolve(mockBasePath, objectKey), mockFile.buffer);
     });
 
+    /** Test : doit lever une erreur si la clé contient un retour de répertoire (Path Traversal) */
+
     it('doit lever une erreur si la clé contient un retour de répertoire (Path Traversal)', async () => {
       const mockFile = { buffer: Buffer.from('data') } as Express.Multer.File;
       const dangerousKey = '../../etc/passwd';
@@ -40,6 +53,8 @@ describe('LocalStorageService', () => {
       expect(fs.writeFile).not.toHaveBeenCalled();
     });
 
+    /** Test : doit rejeter les tentatives de Path Traversal lors du téléchargement */
+
     it('doit rejeter les tentatives de Path Traversal lors du téléchargement', async () => {
       const dangerousKey = '..\\..\\windows\\win.ini';
 
@@ -47,12 +62,16 @@ describe('LocalStorageService', () => {
       expect(fs.readFile).not.toHaveBeenCalled();
     });
 
+    /** Test : doit rejeter les tentatives de Path Traversal lors de la suppression */
+
     it('doit rejeter les tentatives de Path Traversal lors de la suppression', async () => {
       const dangerousKey = 'folder/../../../some-file.txt';
 
       await expect(service.delete(dangerousKey)).rejects.toThrow('Access Denied: Path Traversal Detected');
       expect(fs.unlink).not.toHaveBeenCalled();
     });
+
+    /** Test : doit nettoyer les octets nuls pour bloquer les contournements */
 
     it('doit nettoyer les octets nuls pour bloquer les contournements', async () => {
       const dangerousKey = 'file.png\0.txt';

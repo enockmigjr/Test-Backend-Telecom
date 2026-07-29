@@ -1,3 +1,14 @@
+/**
+ * ============================================================================
+ * FICHIER : src/modules/attachments/attachments.service.spec.ts
+ * RÔLE : Suite de tests unitaires pour le composant attachments.service.
+ * EXPLICATION :
+ * Ce fichier contient les tests automatisés validant le comportement et l'intégrité de attachments.service.
+ * 1. Vérifie le fonctionnement nominal et les cas d'erreur.
+ * 2. Garantit qu'aucune régression n'est introduite lors des évolutions du code.
+ * ============================================================================
+ */
+
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { TicketAccessService } from '../../common/services/ticket-access.service';
@@ -54,6 +65,8 @@ describe('AttachmentsService - controle parent', () => {
     service = moduleRef.get(AttachmentsService);
   });
 
+  /** Test : refuse un upload sans fichier */
+
   it('refuse un upload sans fichier', async () => {
     await expect(service.upload(undefined, user, { ticketId: 'ticket-001' })).rejects.toBeInstanceOf(
       BadRequestException,
@@ -61,12 +74,16 @@ describe('AttachmentsService - controle parent', () => {
     expect(access.resolveVisibleParent).not.toHaveBeenCalled();
   });
 
+  /** Test : refuse le telechargement quand la ressource parente est hors scope */
+
   it('refuse le telechargement quand la ressource parente est hors scope', async () => {
     select.mockReturnValueOnce(query([attachment]));
     access.resolveVisibleParent.mockRejectedValue(new ForbiddenException());
     await expect(service.findOneForUser('attachment-001', user)).rejects.toBeInstanceOf(ForbiddenException);
     expect(access.resolveVisibleParent).toHaveBeenCalledWith(attachment, user);
   });
+
+  /** Test : verifie la visibilite parent avant toute suppression */
 
   it('verifie la visibilite parent avant toute suppression', async () => {
     select.mockReturnValueOnce(query([attachment]));
