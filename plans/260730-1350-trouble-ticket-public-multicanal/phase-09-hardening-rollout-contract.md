@@ -1,0 +1,66 @@
+# Phase 09 — Durcissement, rollout et migration finale
+
+## Contexte
+
+Toutes les capacités existent derrière des flags. La dernière phase prouve sécurité, résilience et compatibilité avant d’enlever les colonnes de transition.
+
+## Vue d’ensemble
+
+Valider les contraintes, tester les pannes, activer PhotoVault progressivement, fixer l’exploitation et préparer les prochains canaux sans les implémenter prématurément.
+
+## Exigences
+
+- Rollback par flags et compatibilité, jamais par suppression urgente de données.
+- Contraintes finales seulement après preuve de disparition des anciens lecteurs.
+- Manifest de release avec SHA de chaque dépôt.
+- Aucun label métrique à haute cardinalité.
+- Rétention, anonymisation, sauvegarde et réponse incident documentées.
+- WhatsApp reste hors production sans compte Meta, consentement et modèles approuvés.
+
+## Architecture
+
+Activation : backend sombre, portail/email pilote, widget PhotoVault, bot pilote, puis autres intégrations. Les migrations finales valident d’abord les `CHECK NOT VALID`; la suppression de `created_by` est une opération ultérieure distincte.
+
+## Étapes
+
+1. Exécuter vérifications SQL de cohérence acteur, intégration, identité, outbox et livraisons.
+2. Ajouter puis valider les contraintes acteur dans une migration dédiée, sans verrou long non évalué.
+3. Prouver par recherche de code, métriques et logs que `created_by` n’est plus le seul lecteur avant migration legacy.
+4. Conserver une fenêtre de compatibilité de release complète avant toute suppression de colonne.
+5. Tester pannes PostgreSQL partielles, Redis, BullMQ, email, ClamAV, WebSocket, WordPress et fournisseur IA.
+6. Vérifier reprise outbox, déduplication locale et visibilité de toute ambiguïté fournisseur ; ne pas prétendre à exactly-once.
+7. Tester sécurité : IDOR, CSRF, CORS, CSWSH, rejeu, enumeration, quotas, XSS, uploads et fuite de notes.
+8. Valider sauvegarde/restauration des nouvelles tables et révocation de secrets compromise.
+9. Finaliser dashboards : admission, vérification, première réponse, SLA, outbox, livraison, scan, bot et abus.
+10. Définir SLO, alertes, runbooks, rétention et anonymisation avec responsables métier.
+11. Activer une intégration PhotoVault pilote, observer, puis élargir par feature flag.
+12. Créer des tests de contrat pour un adaptateur futur ; ne créer `whatsapp-channel.adapter.ts` qu’au démarrage du projet WhatsApp réel.
+13. Vérifier `git ls-files` dans chaque dépôt ; refuser le manifest si le plugin WordPress actif ou son miroir ne sont pas suivis.
+14. Produire le manifest des SHA backend, frontend interne, public frontend, WordPress et des hashes des deux contrats OpenAPI.
+
+## Gates de validation
+
+Backend : lint sans correction implicite, typecheck, unitaires, intégration, E2E, OpenAPI et build.
+
+Frontend interne et public : contrat, lint, typecheck, unitaires, build et Playwright sur navigateurs supportés.
+
+WordPress : syntaxe, runtime réel, miroirs, Makefile/CI et scénarios navigateur PhotoVault.
+
+Infrastructure : images, migrations de staging, healthchecks, alertes, sauvegarde/restauration et rollback par flag.
+
+## Todo
+
+- [ ] Toutes les décisions de production de phase 00 sont closes.
+- [ ] Tests complets verts une fois sur les SHA de release.
+- [ ] Pilote PhotoVault sans régression mesurée.
+- [ ] Contraintes SQL validées et colonne legacy encore conservée durant observation.
+- [ ] Runbooks et manifest signés par les responsables.
+- [ ] Le SHA WordPress contient le plugin réellement exécuté, pas seulement les scripts d’infrastructure.
+
+## Critères de succès
+
+- Une panne de canal ne bloque ni ticketing interne ni formulaire public.
+- Une réponse externe est dédupliquée localement, livrée au moins une fois lorsqu’elle est confirmée, ou marquée `DELIVERY_UNKNOWN` pour réconciliation manuelle.
+- Aucun accès inter-demandeur ou inter-intégration n’est possible.
+- Le retrait ultérieur du legacy est prouvé sûr, pas seulement supposé.
+- Ajouter un canal nécessite un adaptateur et ses politiques, pas une modification du cœur ticket.
