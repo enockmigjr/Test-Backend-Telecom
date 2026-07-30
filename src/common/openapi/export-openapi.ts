@@ -11,14 +11,43 @@
  * ============================================================================
  */
 
-import { writeFile } from 'fs/promises';
+import { rename, rm, writeFile } from 'fs/promises';
 import { resolve } from 'path';
 import { NestFactory } from '@nestjs/core';
 
 import { AppModule } from '../../app.module';
 import { AppConfigService } from '../../config/app.config';
 import { createOpenApiDocument } from './openapi.config';
+import { projectPublicOpenApi } from './public-openapi';
 import { stableJson } from './stable-json';
+
+interface ContractOutput {
+  readonly path: string;
+  readonly content: string;
+}
+
+async function writeContractSet(outputs: readonly ContractOutput[]): Promise<void> {
+  const staged = outputs.map((output) => ({ ...output, temporaryPath: `${output.path}.tmp-${process.pid}` }));
+  try {
+    await Promise.all(
+      staged.map((output) => {
+        // Les chemins proviennent uniquement des deux destinations locales fixées par cet exporteur.
+        // eslint-disable-next-line security/detect-non-literal-fs-filename
+        return writeFile(output.temporaryPath, output.content, 'utf8');
+      }),
+    );
+    await Promise.all(
+      staged.map((output) => {
+        // Aucune partie de ces chemins ne provient d'une requête ou d'une entrée utilisateur.
+        // eslint-disable-next-line security/detect-non-literal-fs-filename
+        return rename(output.temporaryPath, output.path);
+      }),
+    );
+  } catch (error: unknown) {
+    await Promise.all(staged.map((output) => rm(output.temporaryPath, { force: true })));
+    throw error;
+  }
+}
 
 /**
  * Fonction asynchrone principale instanciant l'application NestJS et extrayant la spécification OpenAPI.
@@ -35,9 +64,15 @@ async function exportOpenApi(): Promise<void> {
   app.setGlobalPrefix(config.apiPrefix);
 
   // Génération du document OpenAPI et sérialisation déterministe (tri des clés JSON pour éviter les diffs Git inutiles)
-  const outputPath = resolve(process.cwd(), 'openapi.json');
-  await writeFile(outputPath, stableJson(createOpenApiDocument(app)), 'utf8');
-  process.stdout.write(`OpenAPI exporté vers ${outputPath}\n`);
+  const document = createOpenApiDocument(app);
+  const internalPath = resolve(process.cwd(), 'openapi.json');
+  const publicPath = resolve(process.cwd(), 'openapi.public.json');
+  await writeContractSet([
+    { path: internalPath, content: stableJson(document) },
+    { path: publicPath, content: stableJson(projectPublicOpenApi(document)) },
+  ]);
+  process.stdout.write(`OpenAPI interne exporté vers ${internalPath}\n`);
+  process.stdout.write(`OpenAPI public exporté vers ${publicPath}\n`);
 
   // Fermeture propre du contexte d'application NestJS avec un garde de délai d'expiration de 2 secondes
   await Promise.race([app.close(), new Promise<void>((resolveClose) => setTimeout(resolveClose, 2000))]);

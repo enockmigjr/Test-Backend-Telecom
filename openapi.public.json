@@ -1,0 +1,11 @@
+{
+  "info": {
+    "contact": {},
+    "description": "Contrat borné du portail public, du widget et des adaptateurs de support.",
+    "title": "Telecom Public Support API",
+    "version": "1.0"
+  },
+  "openapi": "3.0.0",
+  "paths": {},
+  "tags": []
+}

@@ -50,14 +50,22 @@ Le backend et le frontend interne fonctionnent déjà en production logique. La 
 
 ## Todo
 
-- [ ] Contrats et matrice de statuts approuvés.
-- [ ] Topologie et limites réseau documentées.
-- [ ] Décisions de production assignées à un responsable.
-- [ ] Snapshot OpenAPI actuel vérifié.
-- [ ] Projection publique déterministe et hashable définie.
+- [x] Contrats et matrice de statuts approuvés.
+- [x] Topologie et limites réseau documentées.
+- [x] Décisions de production assignées à un rôle responsable.
+- [x] Snapshot OpenAPI actuel vérifié.
+- [x] Projection publique déterministe et hashable définie.
 
 ## Critères de succès
 
 - Aucun endpoint ou champ frontend n’est inventé.
 - Les frontières de cookies, audiences, origines et dépôts sont explicites.
 - Les décisions encore métier bloquent seulement l’activation production, pas les fondations.
+
+## État d’exécution
+
+- Contrat interne : 83 opérations, hash inchangé.
+- Contrat public : 0 opération, projection opt-in sans composant interne.
+- Validations : ESLint ciblé, TypeScript strict, projection 3 tests et contrats 7 tests réussis.
+- Revues indépendantes : aucun P0/P1 restant.
+- Clôture Git : artefacts inclus dans le commit de phase 00.
