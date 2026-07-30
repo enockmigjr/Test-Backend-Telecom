@@ -9,8 +9,11 @@
  * ============================================================================
  */
 
-import { pgTable, uuid, text, timestamp, index } from 'drizzle-orm/pg-core';
-import { relations } from 'drizzle-orm';
+import { relations, sql } from 'drizzle-orm';
+import { check, foreignKey, index, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
+import { actorTypeEnum } from './enums';
+import { externalRequesters } from './external-requesters';
+import { supportIntegrations } from './support-integrations';
 import { tickets } from './tickets';
 import { users } from './users';
 
@@ -25,9 +28,12 @@ export const ticketComments = pgTable(
     ticketId: uuid('ticket_id')
       .notNull()
       .references(() => tickets.id),
-    authorId: uuid('author_id')
-      .notNull()
-      .references(() => users.id),
+    authorId: uuid('author_id').references(() => users.id),
+    actorType: actorTypeEnum('actor_type').notNull().default('INTERNAL'),
+    externalRequesterId: uuid('external_requester_id'),
+    supportIntegrationId: uuid('support_integration_id').references(() => supportIntegrations.id, {
+      onDelete: 'restrict',
+    }),
     content: text('content').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true })
@@ -37,6 +43,28 @@ export const ticketComments = pgTable(
   },
   (table) => ({
     idxCommentsTicket: index('idx_comments_ticket').on(table.ticketId),
+    idxCommentsRequester: index('idx_comments_requester').on(table.supportIntegrationId, table.externalRequesterId),
+    integrationIdentityUnique: uniqueIndex('uq_ticket_comments_id_integration').on(
+      table.id,
+      table.supportIntegrationId,
+    ),
+    requesterIntegrationForeignKey: foreignKey({
+      columns: [table.externalRequesterId, table.supportIntegrationId],
+      foreignColumns: [externalRequesters.id, externalRequesters.supportIntegrationId],
+      name: 'ticket_comments_requester_integration_fk',
+    }).onDelete('restrict'),
+    ticketIntegrationForeignKey: foreignKey({
+      columns: [table.ticketId, table.supportIntegrationId],
+      foreignColumns: [tickets.id, tickets.supportIntegrationId],
+      name: 'ticket_comments_ticket_integration_fk',
+    }).onDelete('restrict'),
+    actorVariantCheck: check(
+      'ticket_comments_actor_variant_check',
+      sql`(${table.actorType} = 'INTERNAL' AND ${table.authorId} IS NOT NULL AND ${table.externalRequesterId} IS NULL)
+        OR (${table.actorType} = 'EXTERNAL_REQUESTER' AND ${table.authorId} IS NULL
+          AND ${table.externalRequesterId} IS NOT NULL AND ${table.supportIntegrationId} IS NOT NULL)
+        OR (${table.actorType} = 'SYSTEM' AND ${table.authorId} IS NULL AND ${table.externalRequesterId} IS NULL)`,
+    ),
   }),
 );
 
@@ -49,6 +77,10 @@ export const ticketCommentsRelations = relations(ticketComments, ({ one }) => ({
   author: one(users, {
     fields: [ticketComments.authorId],
     references: [users.id],
+  }),
+  requester: one(externalRequesters, {
+    fields: [ticketComments.externalRequesterId],
+    references: [externalRequesters.id],
   }),
 }));
 

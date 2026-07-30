@@ -12,14 +12,15 @@
  */
 
 import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { normalizePagination } from '../../common/helpers/normalized-pagination.helper';
 import { PaginationHelper } from '../../common/helpers/pagination.helper';
 import { generateUuid } from '../../common/helpers/uuidv7.helper';
 import { TicketAccessService } from '../../common/services/ticket-access.service';
 import { DrizzleProvider } from '../../database/drizzle.provider';
-import { ticketComments, users } from '../../database/schemas';
+import { externalRequesters, ticketComments, tickets, users } from '../../database/schemas';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
+import { internalActor, TicketActor, toTicketActorColumns } from '../tickets/domain/ticket-actor';
 
 /**
  * Service orchestrant la persistance et la gestion des droits sur les commentaires publics.
@@ -56,15 +57,26 @@ export class CommentsService {
         id: ticketComments.id,
         ticketId: ticketComments.ticketId,
         authorId: ticketComments.authorId,
+        actorType: ticketComments.actorType,
+        externalRequesterId: ticketComments.externalRequesterId,
+        supportIntegrationId: ticketComments.supportIntegrationId,
         content: ticketComments.content,
         createdAt: ticketComments.createdAt,
         updatedAt: ticketComments.updatedAt,
         authorFirstName: users.firstName,
         authorLastName: users.lastName,
         authorRole: users.role,
+        requesterName: externalRequesters.displayName,
       })
       .from(ticketComments)
       .leftJoin(users, eq(ticketComments.authorId, users.id))
+      .leftJoin(
+        externalRequesters,
+        and(
+          eq(ticketComments.externalRequesterId, externalRequesters.id),
+          eq(ticketComments.supportIntegrationId, externalRequesters.supportIntegrationId),
+        ),
+      )
       .where(where)
       .orderBy(ticketComments.createdAt)
       .limit(pagination.limit)
@@ -82,8 +94,23 @@ export class CommentsService {
    */
   async create(ticketId: string, user: JwtPayload, content: string) {
     await this.ticketAccess.assertTicketVisible(ticketId, user);
+    const [ticket] = await this.drizzle.db
+      .select({ supportIntegrationId: tickets.supportIntegrationId })
+      .from(tickets)
+      .where(eq(tickets.id, ticketId))
+      .limit(1);
+    return this.createByActor(ticketId, internalActor(user.sub), content, ticket?.supportIntegrationId ?? undefined);
+  }
+
+  /** Persiste un commentaire après que le cas d'usage appelant a autorisé l'acteur. */
+  async createByActor(ticketId: string, actor: TicketActor, content: string, contextIntegrationId?: string) {
     const id = generateUuid();
-    await this.drizzle.db.insert(ticketComments).values({ id, ticketId, authorId: user.sub, content });
+    await this.drizzle.db.insert(ticketComments).values({
+      id,
+      ticketId,
+      ...toTicketActorColumns(actor, contextIntegrationId),
+      content,
+    });
     const [created] = await this.drizzle.db.select().from(ticketComments).where(eq(ticketComments.id, id)).limit(1);
     return { message: 'Commentaire ajouté avec succès.', data: created };
   }
@@ -130,7 +157,7 @@ export class CommentsService {
    * Vérifie que l'utilisateur possède les droits requis pour modifier ou supprimer un commentaire.
    * Autorisé pour l'auteur d'origine, un superviseur ou un administrateur.
    */
-  private assertCanModify(authorId: string, user: JwtPayload, action: 'modifier' | 'supprimer'): void {
+  private assertCanModify(authorId: string | null, user: JwtPayload, action: 'modifier' | 'supprimer'): void {
     if (authorId === user.sub || user.role === 'ADMINISTRATOR' || user.role === 'SUPERVISOR') return;
     throw new ForbiddenException(`Vous ne pouvez ${action} que vos propres commentaires.`);
   }

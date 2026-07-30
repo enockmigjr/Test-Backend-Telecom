@@ -1,59 +1,73 @@
-/**
- * ============================================================================
- * FICHIER : src/database/run-migrations.ts
- * RÔLE : Script d'exécution et d'alignement des migrations Drizzle ORM sur PostgreSQL.
- * EXPLICATION :
- * Ce script CLI (exécutable via `pnpm run db:migrate`) gère le schéma PostgreSQL :
- * 1. Applique les fichiers SQL du dossier `src/database/migrations` dans l'ordre chronologique.
- * 2. Si le drapeau `--baseline-existing` est transmis, vérifie la compatibilité de la base existante
- *    puis inscrit l'empreinte de la première migration dans la table `drizzle.__drizzle_migrations` sans la ré-exécuter.
- * 3. Ferme proprement le pool de connexion `postgres` en fin de traitement.
- * ============================================================================
- */
-
-import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import { drizzle } from 'drizzle-orm/postgres-js';
+import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import { readMigrationFiles } from 'drizzle-orm/migrator';
 import postgres from 'postgres';
 import { DatabaseConfigService } from '../config/database.config';
-import { assertBaselineCompatible } from './migration-baseline.validator';
+import {
+  assertBaselineCompatible,
+  assertLatestPublicInvariants,
+  assertLatestSchemaCompatible,
+  assertPublicExpandInvariants,
+  assertPublicExpandSchemaCompatible,
+  hasParentIntegrationGuards,
+} from './migration-baseline.validator';
 
-/**
- * Exécute l'ensemble des migrations SQL Drizzle pendant la phase de déploiement.
- *
- * @param databaseUrl URI de connexion à la base PostgreSQL.
- * @param baselineExisting Si `true`, marque la base existante comme à jour sans rejouer la 1ère migration.
- */
+const BASELINE_MIGRATION_COUNT = 1;
+const PUBLIC_EXPAND_MIGRATION_COUNT = 5;
+const PUBLIC_BACKFILL_MIGRATION_COUNT = 6;
+const OUTBOX_ENVELOPE_MIGRATION_COUNT = 8;
+const PARENT_GUARD_MIGRATION_COUNT = 9;
+
 export async function runMigrations(
   databaseUrl = new DatabaseConfigService().url,
   baselineExisting = false,
 ): Promise<void> {
   const client = postgres(databaseUrl, { max: 1 });
-
   try {
-    if (baselineExisting) {
-      await baselineExistingSchema(client);
-    }
+    if (baselineExisting) await baselineExistingSchema(client);
     await migrate(drizzle(client), { migrationsFolder: 'src/database/migrations' });
-    process.stdout.write('Migrations appliquées avec succès.\n');
+    process.stdout.write('Migrations appliquees avec succes.\n');
   } finally {
     await client.end();
   }
 }
 
-/**
- * Aligne la table système `drizzle.__drizzle_migrations` sur la base de données existante.
- *
- * @param client Instance SQL `postgres` active.
- */
 export async function baselineExistingSchema(client: postgres.Sql): Promise<void> {
-  // Validation stricte du schéma existant par rapport au snapshot
-  await assertBaselineCompatible(client);
+  const migrations = readMigrationFiles({ migrationsFolder: 'src/database/migrations' });
+  if (migrations.length < PARENT_GUARD_MIGRATION_COUNT) {
+    throw new Error('Catalogue de migrations incomplet.');
+  }
+  let appliedMigrations = migrations.slice(0, BASELINE_MIGRATION_COUNT);
+  try {
+    await assertLatestSchemaCompatible(client);
+    const backfillComplete = await assertLatestPublicInvariants(client);
+    const parentGuardsComplete = await hasParentIntegrationGuards(client);
+    appliedMigrations = backfillComplete
+      ? migrations.slice(0, parentGuardsComplete ? PARENT_GUARD_MIGRATION_COUNT : OUTBOX_ENVELOPE_MIGRATION_COUNT)
+      : migrations.slice(0, PUBLIC_EXPAND_MIGRATION_COUNT);
+  } catch {
+    try {
+      await assertPublicExpandSchemaCompatible(client);
+      const backfillComplete = await assertPublicExpandInvariants(client);
+      appliedMigrations = migrations.slice(
+        0,
+        backfillComplete ? PUBLIC_BACKFILL_MIGRATION_COUNT : PUBLIC_EXPAND_MIGRATION_COUNT,
+      );
+    } catch (publicError: unknown) {
+      if (await hasPublicExpandArtifacts(client)) {
+        const message = publicError instanceof Error ? publicError.message : String(publicError);
+        throw new Error(`Schema public partiellement migre; baseline refusee. ${message}`);
+      }
+      await assertBaselineCompatible(client);
+    }
+  }
+  await journalAppliedMigrations(client, appliedMigrations);
+}
 
-  const [baseline] = readMigrationFiles({ migrationsFolder: 'src/database/migrations' });
-  if (!baseline) throw new Error('Migration baseline introuvable.');
-
-  // Transaction atomique d'enregistrement du hash de baseline
+async function journalAppliedMigrations(
+  client: postgres.Sql,
+  migrations: ReturnType<typeof readMigrationFiles>,
+): Promise<void> {
   await client.begin(async (transaction) => {
     await transaction`CREATE SCHEMA IF NOT EXISTS drizzle`;
     await transaction`
@@ -66,20 +80,31 @@ export async function baselineExistingSchema(client: postgres.Sql): Promise<void
     const [existing] = await transaction<{ count: number }[]>`
       SELECT COUNT(*)::int AS count FROM drizzle.__drizzle_migrations
     `;
-    if ((existing?.count ?? 0) === 0) {
+    if ((existing?.count ?? 0) > 0) return;
+    for (const migration of migrations) {
       await transaction`
         INSERT INTO drizzle.__drizzle_migrations (hash, created_at)
-        VALUES (${baseline.hash}, ${baseline.folderMillis})
+        VALUES (${migration.hash}, ${migration.folderMillis})
       `;
     }
   });
 }
 
-// Exécution directe CLI si invoqué depuis la ligne de commande
+async function hasPublicExpandArtifacts(client: postgres.Sql): Promise<boolean> {
+  const [result] = await client<{ exists: boolean }[]>`
+    SELECT to_regclass('public.support_integrations') IS NOT NULL
+      OR EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'tickets' AND column_name = 'opened_by_user_id'
+      ) AS exists
+  `;
+  return result?.exists ?? false;
+}
+
 if (require.main === module) {
   runMigrations(undefined, process.argv.includes('--baseline-existing')).catch((error: unknown) => {
     const message = error instanceof Error ? error.message : String(error);
-    process.stderr.write(`Échec des migrations: ${message}\n`);
+    process.stderr.write(`Echec des migrations: ${message}\n`);
     process.exitCode = 1;
   });
 }

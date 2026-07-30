@@ -14,6 +14,7 @@ import { eq } from 'drizzle-orm';
 import { generateUuid } from '../../../common/helpers/uuidv7.helper';
 import { DrizzleProvider } from '../../../database/drizzle.provider';
 import { ticketHistory } from '../../../database/schemas';
+import { internalActor, TicketActor, toTicketActorColumns } from '../domain/ticket-actor';
 
 /**
  * Service gérant la traçabilité des modifications et l'audit trail des tickets.
@@ -42,10 +43,24 @@ export class TicketHistoryService {
     newValue?: unknown,
     metadata?: unknown,
   ): Promise<void> {
+    return this.recordByActor(ticketId, internalActor(userId), action, oldValue, newValue, metadata);
+  }
+
+  /** Variante canonique acceptant un acteur interne, externe ou système. */
+  async recordByActor(
+    ticketId: string,
+    actor: TicketActor,
+    action: string,
+    oldValue?: unknown,
+    newValue?: unknown,
+    metadata?: unknown,
+    contextIntegrationId?: string,
+  ): Promise<void> {
+    const actorColumns = toTicketActorColumns(actor, contextIntegrationId);
     await this.drizzle.db.insert(ticketHistory).values({
       id: generateUuid(),
       ticketId,
-      userId,
+      ...actorColumns,
       action,
       oldValue: oldValue ? JSON.parse(JSON.stringify(oldValue)) : null,
       newValue: newValue ? JSON.parse(JSON.stringify(newValue)) : null,

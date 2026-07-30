@@ -18,6 +18,7 @@ import { auditLogs, users, tickets } from '../../database/schemas';
 import { PaginationHelper } from '../../common/helpers/pagination.helper';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { normalizePagination } from '../../common/helpers/normalized-pagination.helper';
+import { internalActor, TicketActor, toTicketActorColumns } from '../tickets/domain/ticket-actor';
 
 /**
  * Service gérant la persistance et la consultation des journaux d'audit immuables.
@@ -50,9 +51,33 @@ export class AuditLogsService {
     ipAddress?: string,
     userAgent?: string,
   ) {
+    return this.createByActor(
+      internalActor(userId),
+      action,
+      entityType,
+      entityId,
+      oldValue,
+      newValue,
+      ipAddress,
+      userAgent,
+    );
+  }
+
+  /** Variante canonique permettant les actions externes et système sans faux utilisateur. */
+  async createByActor(
+    actor: TicketActor,
+    action: string,
+    entityType: string,
+    entityId: string,
+    oldValue?: unknown,
+    newValue?: unknown,
+    ipAddress?: string,
+    userAgent?: string,
+    contextIntegrationId?: string,
+  ) {
     await this.drizzle.db.insert(auditLogs).values({
       id: generateUuid(),
-      userId,
+      ...toTicketActorColumns(actor, contextIntegrationId),
       action,
       entityType,
       entityId,

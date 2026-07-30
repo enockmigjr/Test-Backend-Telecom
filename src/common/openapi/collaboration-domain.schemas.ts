@@ -16,17 +16,27 @@ import { SchemaObject } from '@nestjs/swagger/dist/interfaces/open-api-spec.inte
 
 import { dateTime, jsonValue, nullableDateTime, nullableString, uuid } from './schema-helpers';
 
+const actorType: SchemaObject = {
+  type: 'string',
+  enum: ['INTERNAL', 'EXTERNAL_REQUESTER', 'SYSTEM'],
+};
+const nullableUuid: SchemaObject = { ...uuid, nullable: true };
+
 /** Propriétés communes réutilisées pour les messages (Commentaires publics et Notes internes). */
 const messageProperties: Record<string, SchemaObject> = {
   id: uuid,
   ticketId: uuid,
-  authorId: uuid,
+  authorId: nullableUuid,
+  actorType,
+  externalRequesterId: nullableUuid,
+  supportIntegrationId: nullableUuid,
   content: { type: 'string' },
   createdAt: dateTime,
   updatedAt: dateTime,
-  authorFirstName: { type: 'string' },
-  authorLastName: { type: 'string' },
-  authorRole: { type: 'string' },
+  authorFirstName: nullableString,
+  authorLastName: nullableString,
+  authorRole: nullableString,
+  requesterName: nullableString,
 };
 
 /**
@@ -35,7 +45,7 @@ const messageProperties: Record<string, SchemaObject> = {
 export const COLLABORATION_DOMAIN_SCHEMAS: Record<string, SchemaObject> = {
   TicketComment: {
     type: 'object',
-    required: ['id', 'ticketId', 'authorId', 'content', 'createdAt', 'updatedAt'],
+    required: ['id', 'ticketId', 'authorId', 'actorType', 'content', 'createdAt', 'updatedAt'],
     properties: messageProperties,
   },
   InternalNote: {
@@ -45,13 +55,27 @@ export const COLLABORATION_DOMAIN_SCHEMAS: Record<string, SchemaObject> = {
   },
   Attachment: {
     type: 'object',
-    required: ['id', 'uploadedBy', 'objectKey', 'bucketName', 'originalFilename', 'mimeType', 'fileSize', 'createdAt'],
+    required: [
+      'id',
+      'uploadedBy',
+      'actorType',
+      'objectKey',
+      'bucketName',
+      'originalFilename',
+      'mimeType',
+      'fileSize',
+      'createdAt',
+    ],
     properties: {
       id: uuid,
       ticketId: { ...uuid, nullable: true },
       commentId: { ...uuid, nullable: true },
       internalNoteId: { ...uuid, nullable: true },
-      uploadedBy: uuid,
+      supportMessageId: nullableUuid,
+      uploadedBy: nullableUuid,
+      actorType,
+      externalRequesterId: nullableUuid,
+      supportIntegrationId: nullableUuid,
       objectKey: { type: 'string' },
       bucketName: { type: 'string' },
       originalFilename: { type: 'string' },
@@ -78,10 +102,13 @@ export const COLLABORATION_DOMAIN_SCHEMAS: Record<string, SchemaObject> = {
   },
   AuditLog: {
     type: 'object',
-    required: ['id', 'userId', 'action', 'entityType', 'entityId', 'createdAt'],
+    required: ['id', 'userId', 'actorType', 'action', 'entityType', 'entityId', 'createdAt'],
     properties: {
       id: uuid,
-      userId: uuid,
+      userId: nullableUuid,
+      actorType,
+      externalRequesterId: nullableUuid,
+      supportIntegrationId: nullableUuid,
       action: { type: 'string' },
       entityType: { type: 'string' },
       entityId: uuid,

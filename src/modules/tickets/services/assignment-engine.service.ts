@@ -19,6 +19,7 @@ import { generateUuid } from '../../../common/helpers/uuidv7.helper';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { TicketAssignedEvent } from '../domain/ticket.events';
 import { SettingsService } from '../../settings/settings.service';
+import { systemActor } from '../domain/ticket-actor';
 
 /**
  * Configuration de pondération de la charge de travail par ticket.
@@ -67,7 +68,8 @@ export class AssignmentEngineService {
    */
   async routeTicket(ticketId: string): Promise<boolean> {
     try {
-      return await this.drizzle.db.transaction(async (tx) => {
+      return await this.drizzle.runInTransaction(async () => {
+        const tx = this.drizzle.db;
         // 1. Verrouiller le ticket pour lecture et modification exclusive
         const [ticket] = await tx
           .select()
@@ -218,15 +220,6 @@ export class AssignmentEngineService {
         // 6. Verrouiller l'agent sélectionné
         await tx.select().from(users).where(eq(users.id, selectedAgent.id)).for('update');
 
-        // Trouver l'administrateur système pour l'imputation de l'assignation
-        const [systemUser] = await tx
-          .select({ id: users.id })
-          .from(users)
-          .where(eq(users.email, 'admin@telecom.local'))
-          .limit(1);
-
-        const systemUserId = systemUser?.id || selectedAgent.id;
-
         // 7. Appliquer l'assignation
         await tx
           .update(tickets)
@@ -248,7 +241,8 @@ export class AssignmentEngineService {
           toUserId: selectedAgent.id,
           fromDepartmentId: null,
           toDepartmentId: dept.id,
-          assignedBy: systemUserId,
+          assignedBy: null,
+          actorType: 'SYSTEM',
           reason: `Assignation automatique par le système (Stratégie: ${dept.assignmentStrategy})`,
           createdAt: now,
         });
@@ -257,7 +251,9 @@ export class AssignmentEngineService {
         await tx.insert(ticketHistory).values({
           id: generateUuid(),
           ticketId: ticket.id,
-          userId: systemUserId,
+          userId: null,
+          actorType: 'SYSTEM',
+          supportIntegrationId: ticket.supportIntegrationId,
           action: 'TICKET_ASSIGNED',
           oldValue: null,
           newValue: { assignedTo: selectedAgent.id, status: 'ASSIGNED' },
@@ -266,10 +262,13 @@ export class AssignmentEngineService {
           },
         });
 
-        this.logger.log(`Ticket ${ticket.ticketNumber} assigné automatiquement à l'agent ${selectedAgent.email}`);
-
-        // 8. Émettre l'événement sémantique
-        this.eventEmitter.emit('ticket.assigned', new TicketAssignedEvent(ticket.id, selectedAgent.id, systemUserId));
+        this.drizzle.afterCommit(() => {
+          this.logger.log(`Ticket ${ticket.ticketNumber} assigné automatiquement à l'agent ${selectedAgent.email}`);
+          this.eventEmitter.emit(
+            'ticket.assigned',
+            new TicketAssignedEvent(ticket.id, selectedAgent.id, systemActor(), ticket.supportIntegrationId),
+          );
+        });
 
         return true;
       });

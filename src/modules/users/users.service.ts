@@ -141,7 +141,7 @@ export class UsersService {
     // Statistiques des tickets associés à cet utilisateur
     const [ticketStats] = await this.drizzle.db
       .select({
-        totalCreated: sql<number>`count(*) filter (where ${tickets.createdBy} = ${id})`,
+        totalCreated: sql<number>`count(*) filter (where coalesce(${tickets.openedByUserId}, ${tickets.createdBy}) = ${id})`,
         totalAssigned: sql<number>`count(*) filter (where ${tickets.assignedTo} = ${id})`,
         openTickets: sql<number>`count(*) filter (where ${tickets.assignedTo} = ${id} and ${tickets.status} not in ('RESOLVED','CLOSED','CANCELLED'))`,
         resolvedTickets: sql<number>`count(*) filter (where ${tickets.assignedTo} = ${id} and ${tickets.status} = 'RESOLVED')`,

@@ -20,7 +20,17 @@ import { generateUuid } from '../../../common/helpers/uuidv7.helper';
 import { CreateTicketInput, UpdateTicketInput } from '../dto/ticket-service.interfaces';
 
 import { DrizzleProvider } from '../../../database/drizzle.provider';
-import { tickets, ticketAssignments, slaPolicies, users, departments, categories } from '../../../database/schemas';
+import {
+  categories,
+  departments,
+  externalRequesters,
+  outboxEvents,
+  slaPolicies,
+  ticketAssignments,
+  tickets,
+  supportIntegrations,
+  users,
+} from '../../../database/schemas';
 import { TicketStateMachine, TicketStatus } from '../domain/ticket-status-transitions';
 import { TicketPermissions } from '../domain/ticket-permissions';
 import { TicketNumberService } from './ticket-number.service';
@@ -41,6 +51,8 @@ import {
   TicketReopenedEvent,
   TicketCancelledEvent,
 } from '../domain/ticket.events';
+import { internalActor, toTicketActorColumns } from '../domain/ticket-actor';
+import { TicketCreationCommand, TicketRequesterContext } from '../domain/ticket-creation-command';
 
 const creator = alias(users, 'ticket_creator');
 const assignee = alias(users, 'ticket_assignee');
@@ -74,6 +86,12 @@ export class TicketsService {
    * @throws BadRequestException Si aucune politique SLA ne correspond au couple (catégorie, priorité).
    */
   async create(dto: CreateTicketInput, createdBy: string) {
+    return this.createFromCommand({ input: dto, actor: internalActor(createdBy), outboxEvents: [] });
+  }
+
+  /** Exécute la création commune interne/publique dans une transaction métier atomique. */
+  async createFromCommand(command: TicketCreationCommand) {
+    const dto = command.input;
     // Trouver la politique SLA correspondante
     const [policy] = await this.drizzle.db
       .select()
@@ -119,40 +137,75 @@ export class TicketsService {
       businessDays,
     );
 
-    await this.drizzle.db.insert(tickets).values({
-      id,
-      ticketNumber,
-      title: dto.title,
-      description: dto.description,
-      status: 'NEW' as const,
-      priority: dto.priority as typeof tickets.$inferSelect.priority,
-      severity: dto.severity as typeof tickets.$inferSelect.severity,
-      categoryId: dto.categoryId,
-      slaPolicyId: policy.id,
-      customerAccountNumber: dto.customerAccountNumber || null,
-      customerName: dto.customerName || null,
-      customerContact: dto.customerContact || null,
-      departmentId: dto.departmentId,
-      assignedTeamId: dto.assignedTeamId,
-      createdBy,
-      tags: dto.tags || null,
-      firstResponseDueAt,
-      resolutionDueAt,
+    const requester = this.resolveRequesterContext(command);
+    const actorColumns = toTicketActorColumns(command.actor, requester?.supportIntegrationId);
+    const created = await this.drizzle.runInTransaction(async () => {
+      await this.drizzle.db.insert(tickets).values({
+        id,
+        ticketNumber,
+        title: dto.title,
+        description: dto.description,
+        status: 'NEW' as const,
+        priority: dto.priority as typeof tickets.$inferSelect.priority,
+        severity: dto.severity as typeof tickets.$inferSelect.severity,
+        categoryId: dto.categoryId,
+        slaPolicyId: policy.id,
+        customerAccountNumber: dto.customerAccountNumber || null,
+        customerName: dto.customerName || null,
+        customerContact: dto.customerContact || null,
+        departmentId: dto.departmentId,
+        assignedTeamId: dto.assignedTeamId,
+        createdBy: actorColumns.userId,
+        openedByUserId: actorColumns.userId,
+        requesterId: requester?.requesterId ?? null,
+        supportIntegrationId: requester?.supportIntegrationId ?? null,
+        sourceChannel: command.sourceChannel ?? 'INTERNAL',
+        tags: dto.tags || null,
+        firstResponseDueAt,
+        resolutionDueAt,
+      });
+
+      const persisted = await this.findTicketById(id);
+
+      // Enregistrer dans l'historique
+      await this.ticketHistory.recordByActor(
+        id,
+        command.actor,
+        'TICKET_CREATED',
+        null,
+        { ticketNumber, title: dto.title },
+        undefined,
+        requester?.supportIntegrationId,
+      );
+
+      // Émettre l'événement de domaine
+      for (const event of command.outboxEvents ?? []) {
+        await this.drizzle.db.insert(outboxEvents).values({
+          id: generateUuid(),
+          mutationId: event.mutationId,
+          schemaVersion: event.schemaVersion,
+          supportIntegrationId: requester?.supportIntegrationId ?? null,
+          actorType: actorColumns.actorType,
+          userId: actorColumns.userId,
+          externalRequesterId: actorColumns.externalRequesterId,
+          aggregateType: 'TICKET',
+          aggregateId: id,
+          eventType: event.eventType,
+          deduplicationKey: event.deduplicationKey,
+          payload: { ...event.payload },
+        });
+      }
+      this.emitAfterCommit('ticket.created', new TicketCreatedEvent(persisted, command.actor));
+
+      // Métriques Prometheus
+      this.drizzle.afterCommit(() => {
+        this.metricsService.ticketsCreatedTotal.inc({ priority: dto.priority, category: categoryName });
+        this.metricsService.ticketsActive.inc();
+
+        this.logger.log(`Ticket créé: ${ticketNumber} (${id}) par ${command.actor.type}`);
+      });
+      return persisted;
     });
-
-    const created = await this.findTicketById(id);
-
-    // Enregistrer dans l'historique
-    await this.ticketHistory.record(id, createdBy, 'TICKET_CREATED', null, { ticketNumber, title: dto.title });
-
-    // Émettre l'événement de domaine
-    this.emitAfterCommit('ticket.created', new TicketCreatedEvent(created, createdBy));
-
-    // Métriques Prometheus
-    this.metricsService.ticketsCreatedTotal.inc({ priority: dto.priority, category: categoryName });
-    this.metricsService.ticketsActive.inc();
-
-    this.logger.log(`Ticket créé: ${ticketNumber} (${id}) par ${createdBy}`);
 
     return { message: 'Ticket créé avec succès.', data: created };
   }
@@ -194,7 +247,15 @@ export class TicketsService {
 
     await this.drizzle.db.update(tickets).set(updateData).where(eq(tickets.id, id));
 
-    await this.ticketHistory.record(id, user.sub, 'UPDATED', ticket, updateData);
+    await this.ticketHistory.recordByActor(
+      id,
+      internalActor(user.sub),
+      'UPDATED',
+      ticket,
+      updateData,
+      undefined,
+      ticket.supportIntegrationId ?? undefined,
+    );
 
     const updated = await this.findTicketById(id);
     return { message: 'Ticket mis à jour avec succès.', data: updated };
@@ -223,20 +284,24 @@ export class TicketsService {
     const updateFields = await this.buildSlaUpdateFields(ticket, oldStatus, newStatus, now, reason);
 
     await this.drizzle.db.update(tickets).set(updateFields).where(eq(tickets.id, id));
-    await this.ticketHistory.record(
+    await this.ticketHistory.recordByActor(
       id,
-      user.sub,
+      internalActor(user.sub),
       'STATUS_CHANGED',
       { status: oldStatus },
       { status: newStatus },
       { reason },
+      ticket.supportIntegrationId ?? undefined,
     );
 
     // Émettre l'événement de changement de statut
-    this.emitAfterCommit('ticket.status_changed', new TicketStatusChangedEvent(id, oldStatus, newStatus, user.sub));
+    this.emitAfterCommit(
+      'ticket.status_changed',
+      new TicketStatusChangedEvent(id, oldStatus, newStatus, user.sub, ticket.supportIntegrationId),
+    );
 
     // Émettre des événements spécifiques
-    this.emitStatusEvent(newStatus, id, user.sub);
+    this.emitStatusEvent(newStatus, id, user.sub, ticket.supportIntegrationId);
 
     // Métriques Prometheus — décrémenter les tickets actifs si terminé
     if (['RESOLVED', 'CLOSED', 'CANCELLED'].includes(newStatus)) {
@@ -275,6 +340,7 @@ export class TicketsService {
       fromDepartmentId: ticket.assignedTeamId || null,
       toDepartmentId: ticket.assignedTeamId,
       assignedBy: user.sub,
+      actorType: 'INTERNAL',
       reason: reason || null,
     });
 
@@ -286,16 +352,20 @@ export class TicketsService {
       .set({ assignedTo: toUserId, status: newStatus as typeof tickets.$inferSelect.status })
       .where(eq(tickets.id, id));
 
-    await this.ticketHistory.record(
+    await this.ticketHistory.recordByActor(
       id,
-      user.sub,
+      internalActor(user.sub),
       'ASSIGNED',
       { assignedTo: ticket.assignedTo, status: ticket.status },
       { assignedTo: toUserId, status: newStatus },
       { reason },
+      ticket.supportIntegrationId ?? undefined,
     );
 
-    this.emitAfterCommit('ticket.assigned', new TicketAssignedEvent(id, toUserId, user.sub));
+    this.emitAfterCommit(
+      'ticket.assigned',
+      new TicketAssignedEvent(id, toUserId, user.sub, ticket.supportIntegrationId),
+    );
     this.logger.log(`Ticket ${ticket.ticketNumber} assigné à ${toUserId} par ${user.sub} (auto: ${isAutoAssign})`);
 
     const updated = await this.findTicketById(id);
@@ -329,6 +399,7 @@ export class TicketsService {
       fromDepartmentId: ticket.assignedTeamId || null,
       toDepartmentId,
       assignedBy: user.sub,
+      actorType: 'INTERNAL',
       reason: reason || null,
     });
 
@@ -337,16 +408,20 @@ export class TicketsService {
       .set({ assignedTo: toUserId, assignedTeamId: toDepartmentId })
       .where(eq(tickets.id, id));
 
-    await this.ticketHistory.record(
+    await this.ticketHistory.recordByActor(
       id,
-      user.sub,
+      internalActor(user.sub),
       'ESCALATED',
       { assignedTo: ticket.assignedTo, assignedTeamId: ticket.assignedTeamId },
       { assignedTo: toUserId, assignedTeamId: toDepartmentId },
       { reason, type: isHierarchical ? 'hierarchical' : 'functional' },
+      ticket.supportIntegrationId ?? undefined,
     );
 
-    this.emitAfterCommit('ticket.escalated', new TicketEscalatedEvent(id, toUserId, user.sub));
+    this.emitAfterCommit(
+      'ticket.escalated',
+      new TicketEscalatedEvent(id, toUserId, user.sub, ticket.supportIntegrationId),
+    );
     this.logger.log(
       `Ticket ${ticket.ticketNumber} escaladé par ${user.sub} (type: ${isHierarchical ? 'hierarchical' : 'functional'})`,
     );
@@ -387,6 +462,30 @@ export class TicketsService {
    * Construit l'objet de mise à jour des champs SLA selon la transition de statut.
    * Gère les 4 cas : PAUSE (→PENDING), RESUME (←PENDING), START (premier démarrage), STOP (clôture).
    */
+  private resolveRequesterContext(command: TicketCreationCommand): TicketRequesterContext | undefined {
+    if (command.actor.type === 'EXTERNAL_REQUESTER') {
+      const actorContext = {
+        requesterId: command.actor.externalRequesterId,
+        supportIntegrationId: command.actor.supportIntegrationId,
+      };
+      if (
+        command.requester &&
+        (command.requester.requesterId !== actorContext.requesterId ||
+          command.requester.supportIntegrationId !== actorContext.supportIntegrationId)
+      ) {
+        throw new BadRequestException("Le demandeur ne correspond pas à l'acteur externe.");
+      }
+      if (!command.sourceChannel || command.sourceChannel === 'INTERNAL') {
+        throw new BadRequestException('Un canal public explicite est requis pour un demandeur externe.');
+      }
+      return actorContext;
+    }
+    if (command.actor.type === 'SYSTEM' && !command.requester) {
+      throw new BadRequestException('Une création système doit cibler un demandeur externe.');
+    }
+    return command.requester;
+  }
+
   private async buildSlaUpdateFields(
     ticket: Awaited<ReturnType<typeof this.findTicketById>>,
     oldStatus: string,
@@ -466,6 +565,12 @@ export class TicketsService {
         departmentId: tickets.departmentId,
         assignedTeamId: tickets.assignedTeamId,
         createdBy: tickets.createdBy,
+        openedByUserId: tickets.openedByUserId,
+        requesterId: tickets.requesterId,
+        supportIntegrationId: tickets.supportIntegrationId,
+        sourceChannel: tickets.sourceChannel,
+        requesterName: externalRequesters.displayName,
+        integrationName: supportIntegrations.name,
         assignedTo: tickets.assignedTo,
         resolutionSummary: tickets.resolutionSummary,
         firstResponseAt: tickets.firstResponseAt,
@@ -491,11 +596,17 @@ export class TicketsService {
       .leftJoin(departments, eq(tickets.departmentId, departments.id))
       .leftJoin(assignedTeam, eq(tickets.assignedTeamId, assignedTeam.id))
       .leftJoin(categories, eq(tickets.categoryId, categories.id))
+      .leftJoin(externalRequesters, eq(tickets.requesterId, externalRequesters.id))
+      .leftJoin(supportIntegrations, eq(tickets.supportIntegrationId, supportIntegrations.id))
       .where(and(eq(tickets.id, id), isNull(tickets.deletedAt)))
       .limit(1);
 
     if (!result[0]) {
       throw new TicketNotFoundException(id);
+    }
+
+    if (result[0].createdBy && !result[0].openedByUserId) {
+      this.metricsService.legacyTicketActorFallbackTotal.inc({ surface: 'ticket_detail' });
     }
 
     return result[0];
@@ -504,19 +615,24 @@ export class TicketsService {
   /**
    * Émet l'événement de domaine approprié selon le statut vers lequel le ticket a basculé.
    */
-  private emitStatusEvent(newStatus: TicketStatus, id: string, userId: string): void {
+  private emitStatusEvent(
+    newStatus: TicketStatus,
+    id: string,
+    userId: string,
+    supportIntegrationId: string | null,
+  ): void {
     switch (newStatus) {
       case 'RESOLVED':
-        this.emitAfterCommit('ticket.resolved', new TicketResolvedEvent(id, userId));
+        this.emitAfterCommit('ticket.resolved', new TicketResolvedEvent(id, userId, supportIntegrationId));
         break;
       case 'CLOSED':
-        this.emitAfterCommit('ticket.closed', new TicketClosedEvent(id, userId));
+        this.emitAfterCommit('ticket.closed', new TicketClosedEvent(id, userId, supportIntegrationId));
         break;
       case 'REOPENED':
-        this.emitAfterCommit('ticket.reopened', new TicketReopenedEvent(id, userId));
+        this.emitAfterCommit('ticket.reopened', new TicketReopenedEvent(id, userId, supportIntegrationId));
         break;
       case 'CANCELLED':
-        this.emitAfterCommit('ticket.cancelled', new TicketCancelledEvent(id, userId));
+        this.emitAfterCommit('ticket.cancelled', new TicketCancelledEvent(id, userId, supportIntegrationId));
         break;
     }
   }

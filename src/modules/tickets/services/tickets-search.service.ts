@@ -94,6 +94,9 @@ export class TicketsSearchService {
         departmentName: departments.name,
         assignedTeamName: assignedTeam.name,
         customerName: tickets.customerName,
+        requesterId: tickets.requesterId,
+        supportIntegrationId: tickets.supportIntegrationId,
+        sourceChannel: tickets.sourceChannel,
         resolutionDueAt: tickets.resolutionDueAt,
         slaBreached: tickets.slaBreached,
         createdAt: tickets.createdAt,
@@ -126,7 +129,11 @@ export class TicketsSearchService {
     if (filters.assignedTo) conditions.push(eq(tickets.assignedTo, filters.assignedTo));
     if (filters.assignedTeam) conditions.push(eq(tickets.assignedTeamId, filters.assignedTeam));
     if (filters.departmentId) conditions.push(eq(tickets.departmentId, filters.departmentId));
-    if (filters.createdBy) conditions.push(eq(tickets.createdBy, filters.createdBy));
+    if (filters.createdBy) {
+      conditions.push(
+        or(eq(tickets.createdBy, filters.createdBy), eq(tickets.openedByUserId, filters.createdBy)) as SQL<unknown>,
+      );
+    }
     if (filters.from) conditions.push(gte(tickets.createdAt, new Date(filters.from)));
     if (filters.to) conditions.push(lte(tickets.createdAt, new Date(filters.to)));
     if (filters.search) {

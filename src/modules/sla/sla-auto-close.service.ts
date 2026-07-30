@@ -16,8 +16,9 @@ import { and, eq, isNull, lt } from 'drizzle-orm';
 import { generateUuid } from '../../common/helpers/uuidv7.helper';
 import { MetricsService } from '../../common/metrics/metrics.service';
 import { DrizzleProvider } from '../../database/drizzle.provider';
-import { ticketHistory, tickets, users } from '../../database/schemas';
+import { ticketHistory, tickets } from '../../database/schemas';
 import { TicketClosedEvent, TicketStatusChangedEvent } from '../tickets/domain/ticket.events';
+import { systemActor } from '../tickets/domain/ticket-actor';
 
 /**
  * Service orchestrant l'auto-clôture après 48h de résolution sans intervention.
@@ -38,30 +39,22 @@ export class SlaAutoCloseService {
   async process(): Promise<void> {
     const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000); // Seuil d'inactivité fixé à 48 heures
     const resolvedTickets = await this.drizzle.db
-      .select({ id: tickets.id, ticketNumber: tickets.ticketNumber })
+      .select({
+        id: tickets.id,
+        ticketNumber: tickets.ticketNumber,
+        supportIntegrationId: tickets.supportIntegrationId,
+      })
       .from(tickets)
       .where(and(eq(tickets.status, 'RESOLVED'), lt(tickets.resolvedAt, cutoff), isNull(tickets.deletedAt)))
       .limit(100);
 
     if (resolvedTickets.length === 0) return;
 
-    // Récupération du compte système administrateur pour l'historique
-    const [adminUser] = await this.drizzle.db
-      .select({ id: users.id })
-      .from(users)
-      .where(eq(users.email, 'admin@telecom.local'))
-      .limit(1);
-
-    if (!adminUser) {
-      this.logger.error("Impossible de procéder à l'auto-clôture : administrateur système introuvable.");
-      return;
-    }
-
     for (const ticket of resolvedTickets) {
       const closedAt = new Date();
       // Transaction atomique de mise à jour et d'insertion d'historique
-      const claimed = await this.drizzle.db.transaction(async (transaction) => {
-        const rows = await transaction
+      const claimed = await this.drizzle.runInTransaction(async () => {
+        const rows = await this.drizzle.db
           .update(tickets)
           .set({ status: 'CLOSED', closedAt })
           .where(
@@ -75,28 +68,33 @@ export class SlaAutoCloseService {
           .returning({ id: tickets.id });
         if (rows.length === 0) return false;
 
-        await transaction.insert(ticketHistory).values({
+        await this.drizzle.db.insert(ticketHistory).values({
           id: generateUuid(),
           ticketId: ticket.id,
-          userId: adminUser.id,
+          userId: null,
+          actorType: 'SYSTEM',
+          supportIntegrationId: ticket.supportIntegrationId,
           action: 'STATUS_CHANGED',
           oldValue: { status: 'RESOLVED' },
           newValue: { status: 'CLOSED' },
           metadata: { reason: 'Clôture automatique après 48 heures de résolution sans activité.' },
         });
+        this.drizzle.afterCommit(() => {
+          this.eventEmitter.emit(
+            'ticket.status_changed',
+            new TicketStatusChangedEvent(ticket.id, 'RESOLVED', 'CLOSED', systemActor(), ticket.supportIntegrationId),
+          );
+          this.eventEmitter.emit(
+            'ticket.closed',
+            new TicketClosedEvent(ticket.id, systemActor(), ticket.supportIntegrationId),
+          );
+          this.metricsService.ticketsActive.dec();
+          this.logger.log(`Ticket ${ticket.ticketNumber} clôturé automatiquement.`);
+        });
         return true;
       });
 
       if (!claimed) continue;
-
-      // Émission des événements métier et mise à jour des jauges Prometheus
-      this.eventEmitter.emit(
-        'ticket.status_changed',
-        new TicketStatusChangedEvent(ticket.id, 'RESOLVED', 'CLOSED', adminUser.id),
-      );
-      this.eventEmitter.emit('ticket.closed', new TicketClosedEvent(ticket.id, adminUser.id));
-      this.metricsService.ticketsActive.dec();
-      this.logger.log(`Ticket ${ticket.ticketNumber} clôturé automatiquement.`);
     }
   }
 }

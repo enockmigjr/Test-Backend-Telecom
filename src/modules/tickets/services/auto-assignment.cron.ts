@@ -156,6 +156,7 @@ export class AutoAssignmentCron {
         resolutionDueAt: tickets.resolutionDueAt,
         firstResponseDueAt: tickets.firstResponseDueAt,
         firstResponseAt: tickets.firstResponseAt,
+        supportIntegrationId: tickets.supportIntegrationId,
       })
       .from(tickets)
       .where(
@@ -177,13 +178,6 @@ export class AutoAssignmentCron {
       );
 
     if (activeTickets.length === 0) return;
-
-    const [systemUser] = await this.drizzle.db
-      .select({ id: users.id })
-      .from(users)
-      .where(eq(users.email, 'admin@telecom.local'))
-      .limit(1);
-    const systemUserId = systemUser?.id;
 
     for (const ticket of activeTickets) {
       const agent = inactiveAgents.find((a) => a.id === ticket.assignedTo);
@@ -227,38 +221,44 @@ export class AutoAssignmentCron {
         );
 
         // Désassignation atomique
-        await this.drizzle.db
-          .update(tickets)
-          .set({
-            assignedTo: null,
-            status: ticket.status === 'NEW' ? 'NEW' : 'REOPENED', // Repasse en NEW ou REOPENED pour aiguillage
-            updatedAt: now,
-          })
-          .where(eq(tickets.id, ticket.id));
+        await this.drizzle.runInTransaction(async () => {
+          await this.drizzle.db
+            .update(tickets)
+            .set({
+              assignedTo: null,
+              status: ticket.status === 'NEW' ? 'NEW' : 'REOPENED', // Repasse en NEW ou REOPENED pour aiguillage
+              updatedAt: now,
+            })
+            .where(eq(tickets.id, ticket.id));
 
-        // Enregistrer l'historique
-        await this.drizzle.db.insert(ticketHistory).values({
-          id: generateUuid(),
-          ticketId: ticket.id,
-          userId: systemUserId || agent.id,
-          action: 'STATUS_CHANGED',
-          oldValue: { assignedTo: agent.id, status: ticket.status },
-          newValue: { assignedTo: null, status: 'REOPENED' },
-          metadata: { reason: `Désassignation automatique système : ${reason}` },
+          // Enregistrer l'historique
+          await this.drizzle.db.insert(ticketHistory).values({
+            id: generateUuid(),
+            ticketId: ticket.id,
+            userId: null,
+            actorType: 'SYSTEM',
+            supportIntegrationId: ticket.supportIntegrationId,
+            action: 'STATUS_CHANGED',
+            oldValue: { assignedTo: agent.id, status: ticket.status },
+            newValue: { assignedTo: null, status: 'REOPENED' },
+            metadata: { reason: `Désassignation automatique système : ${reason}` },
+          });
+
+          // Émettre un événement pour forcer le ré-aiguillage asynchrone immédiat
+          this.drizzle.afterCommit(async () => {
+            this.eventEmitter.emit('ticket.unassigned', {
+              ticketId: ticket.id,
+              ticketNumber: ticket.ticketNumber,
+            });
+
+            // Émettre l'événement de désassignation pour envoyer notifications et e-mails
+            const { TicketDeassignedEvent } = await import('../domain/ticket.events');
+            this.eventEmitter.emit(
+              'ticket.deassigned',
+              new TicketDeassignedEvent(ticket.id, agent.id, reason, agent.departmentId || ''),
+            );
+          });
         });
-
-        // Émettre un événement pour forcer le ré-aiguillage asynchrone immédiat
-        this.eventEmitter.emit('ticket.unassigned', {
-          ticketId: ticket.id,
-          ticketNumber: ticket.ticketNumber,
-        });
-
-        // Émettre l'événement de désassignation pour envoyer notifications et e-mails
-        const { TicketDeassignedEvent } = await import('../domain/ticket.events');
-        this.eventEmitter.emit(
-          'ticket.deassigned',
-          new TicketDeassignedEvent(ticket.id, agent.id, reason, agent.departmentId || ''),
-        );
       }
     }
   }

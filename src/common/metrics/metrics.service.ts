@@ -34,6 +34,8 @@ export class MetricsService implements OnModuleInit {
   readonly ticketsActive: Gauge;
   /** Compteur total des pénalités/violations SLA détectées. */
   readonly slaBreachesTotal: Counter;
+  /** Compteur des lectures ayant encore besoin de l'identite acteur historique. */
+  readonly legacyTicketActorFallbackTotal: Counter;
 
   // ─── Métriques utilisateurs & WebSockets ────────────────
   /** Jauge du nombre d'utilisateurs uniques actuellement connectés. */
@@ -83,6 +85,13 @@ export class MetricsService implements OnModuleInit {
       name: 'telecom_sla_breaches_total',
       help: 'Nombre total de violations SLA',
       labelNames: ['priority', 'target'],
+      registers: [this.registry],
+    });
+
+    this.legacyTicketActorFallbackTotal = new Counter({
+      name: 'telecom_legacy_ticket_actor_fallback_total',
+      help: "Nombre de lectures utilisant encore l'identite acteur historique",
+      labelNames: ['surface'],
       registers: [this.registry],
     });
 

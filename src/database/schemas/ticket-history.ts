@@ -10,8 +10,11 @@
  * ============================================================================
  */
 
-import { pgTable, uuid, varchar, jsonb, timestamp, index } from 'drizzle-orm/pg-core';
-import { relations } from 'drizzle-orm';
+import { relations, sql } from 'drizzle-orm';
+import { check, foreignKey, index, jsonb, pgTable, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
+import { actorTypeEnum } from './enums';
+import { externalRequesters } from './external-requesters';
+import { supportIntegrations } from './support-integrations';
 import { tickets } from './tickets';
 import { users } from './users';
 
@@ -32,9 +35,12 @@ export const ticketHistory = pgTable(
       .references(() => tickets.id),
 
     // Référence vers l'utilisateur ayant exécuté l'action (clé étrangère vers `users`)
-    userId: uuid('user_id')
-      .notNull()
-      .references(() => users.id),
+    userId: uuid('user_id').references(() => users.id),
+    actorType: actorTypeEnum('actor_type').notNull().default('INTERNAL'),
+    externalRequesterId: uuid('external_requester_id'),
+    supportIntegrationId: uuid('support_integration_id').references(() => supportIntegrations.id, {
+      onDelete: 'restrict',
+    }),
 
     // Code de l'action effectuée (ex: 'TICKET_CREATED', 'STATUS_CHANGED', 'ASSIGNED', 'ESCALATED', 'UPDATED')
     action: varchar('action', { length: 100 }).notNull(),
@@ -56,7 +62,28 @@ export const ticketHistory = pgTable(
     idxHistoryTicket: index('idx_history_ticket').on(table.ticketId),
 
     // Index pour optimiser les recherches par plage de dates dans les rapports d'activité
-    idxHistoryCreatedAt: index('idx_history_createdAt').on(table.createdAt),
+    idxHistoryCreatedAt: index('idx_history_created_at').on(table.createdAt),
+    idxHistoryRequester: index('idx_ticket_history_requester').on(
+      table.supportIntegrationId,
+      table.externalRequesterId,
+    ),
+    requesterIntegrationForeignKey: foreignKey({
+      columns: [table.externalRequesterId, table.supportIntegrationId],
+      foreignColumns: [externalRequesters.id, externalRequesters.supportIntegrationId],
+      name: 'ticket_history_requester_integration_fk',
+    }).onDelete('restrict'),
+    ticketIntegrationForeignKey: foreignKey({
+      columns: [table.ticketId, table.supportIntegrationId],
+      foreignColumns: [tickets.id, tickets.supportIntegrationId],
+      name: 'ticket_history_ticket_integration_fk',
+    }).onDelete('restrict'),
+    actorVariantCheck: check(
+      'ticket_history_actor_variant_check',
+      sql`(${table.actorType} = 'INTERNAL' AND ${table.userId} IS NOT NULL AND ${table.externalRequesterId} IS NULL)
+        OR (${table.actorType} = 'EXTERNAL_REQUESTER' AND ${table.userId} IS NULL
+          AND ${table.externalRequesterId} IS NOT NULL AND ${table.supportIntegrationId} IS NOT NULL)
+        OR (${table.actorType} = 'SYSTEM' AND ${table.userId} IS NULL AND ${table.externalRequesterId} IS NULL)`,
+    ),
   }),
 );
 
@@ -76,6 +103,10 @@ export const ticketHistoryRelations = relations(ticketHistory, ({ one }) => ({
   user: one(users, {
     fields: [ticketHistory.userId],
     references: [users.id],
+  }),
+  requester: one(externalRequesters, {
+    fields: [ticketHistory.externalRequesterId],
+    references: [externalRequesters.id],
   }),
 }));
 

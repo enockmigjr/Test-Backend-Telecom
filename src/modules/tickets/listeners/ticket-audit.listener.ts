@@ -20,6 +20,7 @@ import {
   TicketClosedEvent,
   TicketReopenedEvent,
 } from '../domain/ticket.events';
+import { toTicketActorColumns } from '../domain/ticket-actor';
 
 interface BullMqQueues {
   audit: Queue;
@@ -66,7 +67,7 @@ export class TicketAuditListener {
   @OnEvent('ticket.created')
   async handleCreated(event: TicketCreatedEvent): Promise<void> {
     await this.enqueue('audit-log', {
-      userId: event.userId,
+      ...toTicketActorColumns(event.actor, event.supportIntegrationId ?? undefined),
       action: 'TICKET_CREATED',
       entityType: 'ticket',
       entityId: event.ticket['id'] as string,
@@ -84,7 +85,7 @@ export class TicketAuditListener {
   @OnEvent('ticket.assigned')
   async handleAssigned(event: TicketAssignedEvent): Promise<void> {
     await this.enqueue('audit-log', {
-      userId: event.assignedBy,
+      ...toTicketActorColumns(event.actor, event.supportIntegrationId ?? undefined),
       action: 'TICKET_ASSIGNED',
       entityType: 'ticket',
       entityId: event.ticketId,
@@ -98,7 +99,7 @@ export class TicketAuditListener {
   @OnEvent('ticket.status_changed')
   async handleStatusChanged(event: TicketStatusChangedEvent): Promise<void> {
     await this.enqueue('audit-log', {
-      userId: event.userId,
+      ...toTicketActorColumns(event.actor, event.supportIntegrationId ?? undefined),
       action: 'STATUS_CHANGED',
       entityType: 'ticket',
       entityId: event.ticketId,
@@ -113,7 +114,7 @@ export class TicketAuditListener {
   @OnEvent('ticket.closed')
   async handleClosed(event: TicketClosedEvent): Promise<void> {
     await this.enqueue('audit-log', {
-      userId: event.closedBy,
+      ...toTicketActorColumns(event.actor, event.supportIntegrationId ?? undefined),
       action: 'TICKET_CLOSED',
       entityType: 'ticket',
       entityId: event.ticketId,
@@ -126,7 +127,7 @@ export class TicketAuditListener {
   @OnEvent('ticket.reopened')
   async handleReopened(event: TicketReopenedEvent): Promise<void> {
     await this.enqueue('audit-log', {
-      userId: event.reopenedBy,
+      ...toTicketActorColumns(event.actor, event.supportIntegrationId ?? undefined),
       action: 'TICKET_REOPENED',
       entityType: 'ticket',
       entityId: event.ticketId,

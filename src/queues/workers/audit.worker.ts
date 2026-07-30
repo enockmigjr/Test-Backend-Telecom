@@ -17,6 +17,20 @@ import { DrizzleProvider } from '../../database/drizzle.provider';
 import { auditLogs } from '../../database/schemas';
 import { generateUuid } from '../../common/helpers/uuidv7.helper';
 
+interface AuditJobData {
+  readonly userId: string | null;
+  readonly actorType: 'INTERNAL' | 'EXTERNAL_REQUESTER' | 'SYSTEM';
+  readonly externalRequesterId: string | null;
+  readonly supportIntegrationId: string | null;
+  readonly action: string;
+  readonly entityType: string;
+  readonly entityId: string;
+  readonly oldValue?: unknown;
+  readonly newValue?: unknown;
+  readonly ipAddress?: string;
+  readonly userAgent?: string;
+}
+
 /**
  * Worker BullMQ pour l'écriture asynchrone des logs d'audit.
  * Écrire les logs d'audit de manière asynchrone évite de bloquer
@@ -25,12 +39,12 @@ import { generateUuid } from '../../common/helpers/uuidv7.helper';
 @Injectable()
 export class AuditWorker implements OnModuleInit {
   private readonly logger = new Logger(AuditWorker.name);
-  private worker: Worker;
+  private worker: Worker<AuditJobData>;
 
   constructor(private readonly drizzle: DrizzleProvider) {}
 
   onModuleInit(): void {
-    this.worker = new Worker(
+    this.worker = new Worker<AuditJobData>(
       AUDIT_QUEUE,
       async (job: Job) => {
         await this.processAuditLog(job);
@@ -50,12 +64,27 @@ export class AuditWorker implements OnModuleInit {
     this.logger.log('Audit Worker démarré');
   }
 
-  private async processAuditLog(job: Job): Promise<void> {
-    const { userId, action, entityType, entityId, oldValue, newValue, ipAddress, userAgent } = job.data;
+  private async processAuditLog(job: Job<AuditJobData>): Promise<void> {
+    const {
+      userId,
+      actorType,
+      externalRequesterId,
+      supportIntegrationId,
+      action,
+      entityType,
+      entityId,
+      oldValue,
+      newValue,
+      ipAddress,
+      userAgent,
+    } = job.data;
 
     await this.drizzle.db.insert(auditLogs).values({
       id: generateUuid(),
       userId,
+      actorType,
+      externalRequesterId,
+      supportIntegrationId,
       action,
       entityType,
       entityId,

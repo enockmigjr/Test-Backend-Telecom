@@ -12,6 +12,8 @@
  */
 
 import {
+  check,
+  foreignKey,
   pgTable,
   uuid,
   varchar,
@@ -23,12 +25,14 @@ import {
   jsonb,
   integer,
 } from 'drizzle-orm/pg-core';
-import { relations } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 import { departments } from './departments';
 import { users } from './users';
 import { slaPolicies } from './sla-policies';
 import { categories } from './categories';
-import { ticketStatusEnum, ticketPriorityEnum, ticketSeverityEnum } from './enums';
+import { externalRequesters } from './external-requesters';
+import { supportIntegrations } from './support-integrations';
+import { supportChannelEnum, ticketStatusEnum, ticketPriorityEnum, ticketSeverityEnum } from './enums';
 
 /**
  * Table `tickets` (Tickets d'incidents telecom)
@@ -74,9 +78,14 @@ export const tickets = pgTable(
       .notNull()
       .references(() => departments.id),
     // Utilisateur ayant créé le ticket
-    createdBy: uuid('created_by')
-      .notNull()
-      .references(() => users.id),
+    createdBy: uuid('created_by').references(() => users.id),
+    // Colonnes d'acteur canoniques; `created_by` reste écrit pendant la migration progressive.
+    openedByUserId: uuid('opened_by_user_id').references(() => users.id),
+    requesterId: uuid('requester_id'),
+    supportIntegrationId: uuid('support_integration_id').references(() => supportIntegrations.id, {
+      onDelete: 'restrict',
+    }),
+    sourceChannel: supportChannelEnum('source_channel').notNull().default('INTERNAL'),
     // Agent ou technicien individuel attribué (peut être null au départ)
     assignedTo: uuid('assigned_to').references(() => users.id),
     // Résumé de la solution apportée lors de la résolution
@@ -129,8 +138,28 @@ export const tickets = pgTable(
     idxTicketsAssignedTeam: index('idx_tickets_assigned_team').on(table.assignedTeamId),
     idxTicketsAssignedTo: index('idx_tickets_assigned_to').on(table.assignedTo),
     idxTicketsCreatedBy: index('idx_tickets_created_by').on(table.createdBy),
+    idxTicketsOpenedBy: index('idx_tickets_opened_by').on(table.openedByUserId),
+    idxTicketsRequester: index('idx_tickets_requester').on(table.supportIntegrationId, table.requesterId),
+    integrationIdentityUnique: uniqueIndex('uq_tickets_id_integration').on(table.id, table.supportIntegrationId),
     idxTicketsCreatedAt: index('idx_tickets_created_at').on(table.createdAt),
     idxSlaProcessing: index('idx_sla_processing').on(table.status, table.priority),
+    requesterIntegrationForeignKey: foreignKey({
+      columns: [table.requesterId, table.supportIntegrationId],
+      foreignColumns: [externalRequesters.id, externalRequesters.supportIntegrationId],
+      name: 'tickets_requester_integration_fk',
+    }).onDelete('restrict'),
+    actorPresenceCheck: check(
+      'tickets_actor_presence_check',
+      sql`num_nonnulls(${table.createdBy}, ${table.openedByUserId}, ${table.requesterId}) >= 1`,
+    ),
+    legacyCreatorCheck: check(
+      'tickets_legacy_creator_check',
+      sql`${table.createdBy} IS NULL OR ${table.createdBy} = ${table.openedByUserId}`,
+    ),
+    requesterIntegrationCheck: check(
+      'tickets_requester_integration_check',
+      sql`num_nonnulls(${table.requesterId}, ${table.supportIntegrationId}) IN (0, 2)`,
+    ),
   }),
 );
 
@@ -138,35 +167,6 @@ export const tickets = pgTable(
  * Relations Drizzle du ticket avec son créateur, son sous-traitant, sa catégorie, son département, etc.
  */
 /** Relations ORM `ticketsRelations` : Définition des jointures et associations Drizzle. */
-export const ticketsRelations = relations(tickets, ({ one }) => ({
-  department: one(departments, {
-    fields: [tickets.departmentId],
-    references: [departments.id],
-    relationName: 'department_owner',
-  }),
-  assignedTeam: one(departments, {
-    fields: [tickets.assignedTeamId],
-    references: [departments.id],
-    relationName: 'assigned_team',
-  }),
-  creator: one(users, {
-    fields: [tickets.createdBy],
-    references: [users.id],
-  }),
-  assignee: one(users, {
-    fields: [tickets.assignedTo],
-    references: [users.id],
-  }),
-  slaPolicy: one(slaPolicies, {
-    fields: [tickets.slaPolicyId],
-    references: [slaPolicies.id],
-  }),
-  category: one(categories, {
-    fields: [tickets.categoryId],
-    references: [categories.id],
-  }),
-}));
-
 /**
  * Types TypeScript dérivés pour la sélection et l'insertion de tickets.
  */

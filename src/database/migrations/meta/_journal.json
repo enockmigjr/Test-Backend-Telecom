@@ -29,6 +29,41 @@
       "when": 1784552188306,
       "tag": "0003_slimy_thor_girl",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1785426091627,
+      "tag": "0004_trouble-ticket-public-expand",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1785426169064,
+      "tag": "0005_trouble-ticket-actor-backfill",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1785427823528,
+      "tag": "0006_external-delivery-tenant-guard",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1785428393271,
+      "tag": "0007_outbox-event-envelope",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1785428526162,
+      "tag": "0008_parent-integration-guards",
+      "breakpoints": true
     }
   ]
 }

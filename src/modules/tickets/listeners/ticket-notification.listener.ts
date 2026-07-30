@@ -185,7 +185,7 @@ export class TicketNotificationListener {
     // Email de confirmation au créateur
     const appUrl = process.env['APP_URL'] || 'http://localhost:3000';
     const ticketId = event.ticket['id'] as string;
-    const creatorInfo = await this.getUserInfo(creatorId);
+    const creatorInfo = creatorId ? await this.getUserInfo(creatorId) : null;
     if (creatorInfo) {
       await this.sendEmail({
         to: creatorInfo.email,
@@ -230,7 +230,7 @@ export class TicketNotificationListener {
     const assigneeInfo = await this.getUserInfo(event.assignedTo);
     if (assigneeInfo) {
       const ticket = await this.getTicketEmailContext(event.ticketId);
-      const supervisorInfo = await this.getUserInfo(event.assignedBy);
+      const supervisorInfo = event.assignedBy ? await this.getUserInfo(event.assignedBy) : null;
       const appUrl = process.env['APP_URL'] || 'http://localhost:3000';
       await this.sendEmail({
         to: assigneeInfo.email,
@@ -286,7 +286,7 @@ export class TicketNotificationListener {
     const escalatedToInfo = await this.getUserInfo(event.escalatedTo);
     if (escalatedToInfo) {
       const ticket = await this.getTicketEmailContext(event.ticketId);
-      const escalatedByInfo = await this.getUserInfo(event.escalatedBy);
+      const escalatedByInfo = event.escalatedBy ? await this.getUserInfo(event.escalatedBy) : null;
       const appUrl = process.env['APP_URL'] || 'http://localhost:3000';
       await this.sendEmail({
         to: escalatedToInfo.email,
@@ -317,9 +317,9 @@ export class TicketNotificationListener {
     this.logger.log(`Notification: ticket ${event.ticketId} résolu`);
 
     // Notification WebSocket
-    this.wsGateway.emitToUser(event.resolvedBy, 'ticket.resolved', {
-      ticketId: event.ticketId,
-    });
+    if (event.resolvedBy) {
+      this.wsGateway.emitToUser(event.resolvedBy, 'ticket.resolved', { ticketId: event.ticketId });
+    }
 
     await this.emitToTicketDepartment(event.ticketId, 'ticket.resolved', {
       ticketId: event.ticketId,
@@ -327,14 +327,15 @@ export class TicketNotificationListener {
     });
 
     // Persistance
-    await this.createNotification({
-      userId: event.resolvedBy,
-      type: 'TICKET_RESOLVED',
-      title: 'Ticket résolu',
-      message: `Le ticket a été résolu avec succès.`,
-      referenceType: 'ticket',
-      referenceId: event.ticketId,
-    });
+    if (event.resolvedBy)
+      await this.createNotification({
+        userId: event.resolvedBy,
+        type: 'TICKET_RESOLVED',
+        title: 'Ticket résolu',
+        message: `Le ticket a été résolu avec succès.`,
+        referenceType: 'ticket',
+        referenceId: event.ticketId,
+      });
   }
 
   /**
@@ -357,7 +358,7 @@ export class TicketNotificationListener {
       closedBy: event.closedBy,
     };
 
-    this.wsGateway.emitToUser(event.closedBy, 'ticket.closed', payload);
+    if (event.closedBy) this.wsGateway.emitToUser(event.closedBy, 'ticket.closed', payload);
     await this.emitToTicketDepartment(event.ticketId, 'ticket.closed', payload);
     const recipients = new Set(
       [event.closedBy, ticket?.assignedTo, ticket?.createdBy].filter((id): id is string => Boolean(id)),
@@ -425,7 +426,7 @@ export class TicketNotificationListener {
       });
 
       const assigneeInfo = await this.getUserInfo(ticket.assignedTo);
-      const reopenerInfo = await this.getUserInfo(event.reopenedBy);
+      const reopenerInfo = event.reopenedBy ? await this.getUserInfo(event.reopenedBy) : null;
       const appUrl = process.env['APP_URL'] || 'http://localhost:3000';
       if (assigneeInfo) {
         await this.sendEmail({

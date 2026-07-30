@@ -24,6 +24,7 @@ const creator: JwtPayload = {
 const ticket: TicketPermissionData = {
   id: 'ticket-001',
   createdBy: creator.sub,
+  openedByUserId: creator.sub,
   assignedTo: 'assignee-001',
   assignedTeamId: 'dept-002',
   departmentId: 'dept-001',
@@ -56,6 +57,33 @@ describe('TicketPermissions - edition createur', () => {
     const assignee = { ...creator, sub: 'assignee-001' };
     expect(() =>
       permissions.checkCanUpdateFields({ ...ticket, status: 'IN_PROGRESS' }, assignee, ['description']),
+    ).not.toThrow();
+  });
+
+  it('autorise un ouvreur canonique lorsque createdBy est absent', () => {
+    expect(() =>
+      permissions.checkCanUpdateFields({ ...ticket, createdBy: null, openedByUserId: creator.sub }, creator, ['title']),
+    ).not.toThrow();
+  });
+
+  it('conserve le fallback createdBy pour un ticket legacy', () => {
+    expect(() =>
+      permissions.checkCanUpdateFields({ ...ticket, openedByUserId: undefined }, creator, ['categoryId']),
+    ).not.toThrow();
+  });
+
+  it('refuse le createdBy legacy lorsque openedByUserId désigne un autre utilisateur', () => {
+    expect(() =>
+      permissions.checkCanUpdateFields({ ...ticket, openedByUserId: 'other-user' }, creator, ['title']),
+    ).toThrow(ForbiddenException);
+  });
+
+  it('autorise la réouverture par l ouvreur canonique Customer Service', () => {
+    expect(() =>
+      permissions.checkCanReopen(
+        { ...ticket, createdBy: null, openedByUserId: creator.sub, status: 'CLOSED', closedAt: new Date() },
+        creator,
+      ),
     ).not.toThrow();
   });
 });

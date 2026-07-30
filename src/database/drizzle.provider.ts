@@ -71,6 +71,7 @@ export class DrizzleProvider implements OnModuleInit {
    * Exécute un ensemble d'opérations dans une transaction SQL atomique.
    */
   async runInTransaction<T>(callback: () => Promise<T>): Promise<T> {
+    if (this.transactionContext.getStore()) return callback();
     const afterCommit: Array<() => void | Promise<void>> = [];
     const result = await this.dbInstance.transaction((transaction) =>
       this.transactionContext.run({ database: transaction as Database, afterCommit }, callback),

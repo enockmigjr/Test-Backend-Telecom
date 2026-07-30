@@ -161,6 +161,18 @@
       },
       "Assignment": {
         "properties": {
+          "actorType": {
+            "enum": [
+              "INTERNAL",
+              "SYSTEM"
+            ],
+            "type": "string"
+          },
+          "assignedBy": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
           "createdAt": {
             "format": "date-time",
             "type": "string"
@@ -178,6 +190,10 @@
             "nullable": true,
             "type": "string"
           },
+          "ticketId": {
+            "format": "uuid",
+            "type": "string"
+          },
           "toUserId": {
             "format": "uuid",
             "type": "string"
@@ -185,7 +201,10 @@
         },
         "required": [
           "id",
+          "ticketId",
           "toUserId",
+          "assignedBy",
+          "actorType",
           "createdAt"
         ],
         "type": "object"
@@ -228,6 +247,14 @@
       },
       "Attachment": {
         "properties": {
+          "actorType": {
+            "enum": [
+              "INTERNAL",
+              "EXTERNAL_REQUESTER",
+              "SYSTEM"
+            ],
+            "type": "string"
+          },
           "bucketName": {
             "type": "string"
           },
@@ -238,6 +265,11 @@
           },
           "createdAt": {
             "format": "date-time",
+            "type": "string"
+          },
+          "externalRequesterId": {
+            "format": "uuid",
+            "nullable": true,
             "type": "string"
           },
           "fileSize": {
@@ -262,6 +294,16 @@
           "originalFilename": {
             "type": "string"
           },
+          "supportIntegrationId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "supportMessageId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
           "ticketId": {
             "format": "uuid",
             "nullable": true,
@@ -269,12 +311,14 @@
           },
           "uploadedBy": {
             "format": "uuid",
+            "nullable": true,
             "type": "string"
           }
         },
         "required": [
           "id",
           "uploadedBy",
+          "actorType",
           "objectKey",
           "bucketName",
           "originalFilename",
@@ -289,6 +333,14 @@
           "action": {
             "type": "string"
           },
+          "actorType": {
+            "enum": [
+              "INTERNAL",
+              "EXTERNAL_REQUESTER",
+              "SYSTEM"
+            ],
+            "type": "string"
+          },
           "createdAt": {
             "format": "date-time",
             "type": "string"
@@ -298,6 +350,11 @@
             "type": "string"
           },
           "entityType": {
+            "type": "string"
+          },
+          "externalRequesterId": {
+            "format": "uuid",
+            "nullable": true,
             "type": "string"
           },
           "id": {
@@ -350,18 +407,25 @@
               }
             ]
           },
+          "supportIntegrationId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
           "userAgent": {
             "nullable": true,
             "type": "string"
           },
           "userId": {
             "format": "uuid",
+            "nullable": true,
             "type": "string"
           }
         },
         "required": [
           "id",
           "userId",
+          "actorType",
           "action",
           "entityType",
           "entityId",
@@ -1348,17 +1412,29 @@
       },
       "InternalNote": {
         "properties": {
+          "actorType": {
+            "enum": [
+              "INTERNAL",
+              "EXTERNAL_REQUESTER",
+              "SYSTEM"
+            ],
+            "type": "string"
+          },
           "authorFirstName": {
+            "nullable": true,
             "type": "string"
           },
           "authorId": {
             "format": "uuid",
+            "nullable": true,
             "type": "string"
           },
           "authorLastName": {
+            "nullable": true,
             "type": "string"
           },
           "authorRole": {
+            "nullable": true,
             "type": "string"
           },
           "content": {
@@ -1368,8 +1444,22 @@
             "format": "date-time",
             "type": "string"
           },
+          "externalRequesterId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
           "id": {
             "format": "uuid",
+            "type": "string"
+          },
+          "requesterName": {
+            "nullable": true,
+            "type": "string"
+          },
+          "supportIntegrationId": {
+            "format": "uuid",
+            "nullable": true,
             "type": "string"
           },
           "ticketId": {
@@ -1893,6 +1983,7 @@
           },
           "createdBy": {
             "format": "uuid",
+            "nullable": true,
             "type": "string"
           },
           "creator": {
@@ -1948,6 +2039,10 @@
             "format": "uuid",
             "type": "string"
           },
+          "integrationName": {
+            "nullable": true,
+            "type": "string"
+          },
           "metadata": {
             "nullable": true,
             "oneOf": [
@@ -1969,6 +2064,11 @@
               }
             ]
           },
+          "openedByUserId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
           "priority": {
             "enum": [
               "LOW",
@@ -1976,6 +2076,15 @@
               "HIGH",
               "CRITICAL"
             ],
+            "type": "string"
+          },
+          "requesterId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "requesterName": {
+            "nullable": true,
             "type": "string"
           },
           "resolutionBreachedAt": {
@@ -2022,6 +2131,18 @@
             "format": "uuid",
             "type": "string"
           },
+          "sourceChannel": {
+            "enum": [
+              "INTERNAL",
+              "WEB_PORTAL",
+              "WIDGET",
+              "WORDPRESS",
+              "EMAIL",
+              "WHATSAPP",
+              "API"
+            ],
+            "type": "string"
+          },
           "status": {
             "enum": [
               "NEW",
@@ -2034,6 +2155,11 @@
               "REOPENED",
               "CANCELLED"
             ],
+            "type": "string"
+          },
+          "supportIntegrationId": {
+            "format": "uuid",
+            "nullable": true,
             "type": "string"
           },
           "tags": {
@@ -2064,6 +2190,7 @@
           "departmentId",
           "assignedTeamId",
           "createdBy",
+          "sourceChannel",
           "createdAt",
           "updatedAt"
         ],
@@ -2071,17 +2198,29 @@
       },
       "TicketComment": {
         "properties": {
+          "actorType": {
+            "enum": [
+              "INTERNAL",
+              "EXTERNAL_REQUESTER",
+              "SYSTEM"
+            ],
+            "type": "string"
+          },
           "authorFirstName": {
+            "nullable": true,
             "type": "string"
           },
           "authorId": {
             "format": "uuid",
+            "nullable": true,
             "type": "string"
           },
           "authorLastName": {
+            "nullable": true,
             "type": "string"
           },
           "authorRole": {
+            "nullable": true,
             "type": "string"
           },
           "content": {
@@ -2091,8 +2230,22 @@
             "format": "date-time",
             "type": "string"
           },
+          "externalRequesterId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
           "id": {
             "format": "uuid",
+            "type": "string"
+          },
+          "requesterName": {
+            "nullable": true,
+            "type": "string"
+          },
+          "supportIntegrationId": {
+            "format": "uuid",
+            "nullable": true,
             "type": "string"
           },
           "ticketId": {
@@ -2108,6 +2261,7 @@
           "id",
           "ticketId",
           "authorId",
+          "actorType",
           "content",
           "createdAt",
           "updatedAt"
@@ -2119,8 +2273,21 @@
           "action": {
             "type": "string"
           },
+          "actorType": {
+            "enum": [
+              "INTERNAL",
+              "EXTERNAL_REQUESTER",
+              "SYSTEM"
+            ],
+            "type": "string"
+          },
           "createdAt": {
             "format": "date-time",
+            "type": "string"
+          },
+          "externalRequesterId": {
+            "format": "uuid",
+            "nullable": true,
             "type": "string"
           },
           "id": {
@@ -2190,12 +2357,18 @@
               }
             ]
           },
+          "supportIntegrationId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
           "ticketId": {
             "format": "uuid",
             "type": "string"
           },
           "userId": {
             "format": "uuid",
+            "nullable": true,
             "type": "string"
           }
         },
@@ -2203,6 +2376,7 @@
           "id",
           "ticketId",
           "userId",
+          "actorType",
           "action",
           "createdAt"
         ],

@@ -37,6 +37,7 @@ export function ticketVisibilityCondition(user: JwtPayload): SQL<unknown> | unde
     eq(tickets.assignedTeamId, user.departmentId),
     eq(tickets.assignedTo, user.sub),
     eq(tickets.createdBy, user.sub),
+    eq(tickets.openedByUserId, user.sub),
   ) as SQL<unknown>;
 }
 

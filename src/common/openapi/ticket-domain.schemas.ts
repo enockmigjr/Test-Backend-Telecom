@@ -41,6 +41,12 @@ const ticketListProperties: Record<string, SchemaObject> = {
   updatedAt: dateTime,
 };
 
+const actorType: SchemaObject = {
+  type: 'string',
+  enum: ['INTERNAL', 'EXTERNAL_REQUESTER', 'SYSTEM'],
+};
+const nullableUuid: SchemaObject = { ...uuid, nullable: true };
+
 /**
  * Schémas OpenAPI Swagger exportés pour les tickets d'incidents.
  */
@@ -65,6 +71,7 @@ export const TICKET_DOMAIN_SCHEMAS: Record<string, SchemaObject> = {
       'departmentId',
       'assignedTeamId',
       'createdBy',
+      'sourceChannel',
       'createdAt',
       'updatedAt',
     ],
@@ -76,7 +83,16 @@ export const TICKET_DOMAIN_SCHEMAS: Record<string, SchemaObject> = {
       customerContact: nullableString,
       departmentId: uuid,
       assignedTeamId: uuid,
-      createdBy: uuid,
+      createdBy: nullableUuid,
+      openedByUserId: nullableUuid,
+      requesterId: nullableUuid,
+      supportIntegrationId: nullableUuid,
+      sourceChannel: {
+        type: 'string',
+        enum: ['INTERNAL', 'WEB_PORTAL', 'WIDGET', 'WORDPRESS', 'EMAIL', 'WHATSAPP', 'API'],
+      },
+      requesterName: nullableString,
+      integrationName: nullableString,
       resolutionSummary: nullableString,
       firstResponseAt: nullableDateTime,
       firstResponseDueAt: dateTime,
@@ -109,11 +125,14 @@ export const TICKET_DOMAIN_SCHEMAS: Record<string, SchemaObject> = {
   },
   Assignment: {
     type: 'object',
-    required: ['id', 'toUserId', 'createdAt'],
+    required: ['id', 'ticketId', 'toUserId', 'assignedBy', 'actorType', 'createdAt'],
     properties: {
       id: uuid,
+      ticketId: uuid,
       fromUserId: { ...uuid, nullable: true },
       toUserId: uuid,
+      assignedBy: nullableUuid,
+      actorType: { type: 'string', enum: ['INTERNAL', 'SYSTEM'] },
       reason: nullableString,
       createdAt: dateTime,
     },
@@ -128,11 +147,14 @@ export const TICKET_DOMAIN_SCHEMAS: Record<string, SchemaObject> = {
   },
   TicketHistory: {
     type: 'object',
-    required: ['id', 'ticketId', 'userId', 'action', 'createdAt'],
+    required: ['id', 'ticketId', 'userId', 'actorType', 'action', 'createdAt'],
     properties: {
       id: uuid,
       ticketId: uuid,
-      userId: uuid,
+      userId: nullableUuid,
+      actorType,
+      externalRequesterId: nullableUuid,
+      supportIntegrationId: nullableUuid,
       action: { type: 'string' },
       oldValue: jsonValue,
       newValue: jsonValue,

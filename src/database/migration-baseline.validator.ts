@@ -1,267 +1,166 @@
-/**
- * ============================================================================
- * FICHIER : src/database/migration-baseline.validator.ts
- * RÔLE : Validateur d'empreinte de schéma PostgreSQL et de compatibilité Baseline Drizzle.
- * EXPLICATION :
- * Ce module vérifie que la base de données PostgreSQL de production est conforme au schéma Drizzle :
- * 1. Inspecte les catalogues système PostgreSQL (`pg_attribute`, `pg_constraint`, `pg_index`).
- * 2. Compare les colonnes, types de données, contraintes d'intégrité (PK, FK, Unique) et index avec le fichier d'empreinte Drizzle (`0000_snapshot.json`).
- * 3. Lève une erreur si la base existante présente une structure incompatible ou partielle avant de marquer la baseline comme exécutée.
- * ============================================================================
- */
-
-import { readFileSync } from 'fs';
-import { join } from 'path';
 import postgres from 'postgres';
+import { findSchemaProblems } from './migration-schema-inspector';
 
-interface SnapshotColumn {
-  name: string;
-  type: string;
-  notNull: boolean;
-  default?: unknown;
-  primaryKey: boolean;
-}
-interface SnapshotIndex {
-  name: string;
-  columns: Array<{ expression: string }>;
-  isUnique: boolean;
-  method: string;
-}
-interface SnapshotForeignKey {
-  name: string;
-  tableTo: string;
-  columnsFrom: string[];
-  columnsTo: string[];
-}
-interface SnapshotUnique {
-  name: string;
-  columns: string[];
-}
-interface SnapshotTable {
-  name: string;
-  columns: Record<string, SnapshotColumn>;
-  indexes: Record<string, SnapshotIndex>;
-  foreignKeys: Record<string, SnapshotForeignKey>;
-  uniqueConstraints: Record<string, SnapshotUnique>;
-}
-interface Snapshot {
-  tables: Record<string, SnapshotTable>;
-}
-interface ActualColumn {
-  tableName: string;
-  columnName: string;
-  type: string;
-  notNull: boolean;
-  defaultValue: string | null;
-}
-interface ActualConstraint {
-  name: string;
-  type: 'p' | 'u' | 'f';
-  tableName: string;
-  targetTable: string | null;
-  sourceColumns: string[];
-  targetColumns: string[];
-}
-interface ActualIndex {
-  name: string;
-  tableName: string;
-  isUnique: boolean;
-  method: string;
-  columns: string[];
-}
-
-/** Colonnes exemptées de validation stricte pour rétrocompatibilité lors des migrations évolutives. */
 const COMPAT_COLUMNS = new Set([
   'tickets.first_response_warning_sent_at',
   'tickets.first_response_breached_at',
   'tickets.resolution_warning_sent_at',
   'tickets.resolution_breached_at',
 ]);
-
-/** Index exemptés de validation stricte pour rétrocompatibilité. */
 const COMPAT_INDEXES = new Set(['idx_tickets_first_response_breached', 'idx_tickets_resolution_breached']);
+const COMPAT_NULLABILITY = new Set([
+  'attachments.uploaded_by',
+  'audit_logs.user_id',
+  'tickets.created_by',
+  'ticket_assignments.assigned_by',
+  'ticket_comments.author_id',
+  'ticket_history.user_id',
+]);
+const PUBLIC_EXPAND_CHECKS = [
+  'external_challenges_attempts_check',
+  'external_challenges_expiration_check',
+  'trusted_devices_policy_version_check',
+  'trusted_devices_expiration_check',
+  'integration_credentials_versions_check',
+  'support_conversations_ticket_created_state_check',
+  'support_messages_actor_variant_check',
+  'support_messages_canonical_content_check',
+  'outbox_events_attempts_check',
+  'external_deliveries_attempts_check',
+  'attachments_parent_check',
+  'attachments_actor_variant_check',
+  'attachments_internal_note_actor_check',
+  'audit_logs_actor_variant_check',
+  'idempotency_records_subject_variant_check',
+  'tickets_actor_presence_check',
+  'tickets_legacy_creator_check',
+  'tickets_requester_integration_check',
+  'ticket_assignments_actor_variant_check',
+  'ticket_comments_actor_variant_check',
+  'ticket_history_actor_variant_check',
+] as const;
+const OUTBOX_ENVELOPE_CHECKS = ['outbox_events_actor_variant_check', 'outbox_events_schema_version_check'] as const;
+const REQUIRED_VALIDATED_CHECKS = [
+  'external_challenges_attempts_check',
+  'external_challenges_expiration_check',
+  'trusted_devices_policy_version_check',
+  'trusted_devices_expiration_check',
+  'integration_credentials_versions_check',
+  'support_conversations_ticket_created_state_check',
+  'support_messages_actor_variant_check',
+  'support_messages_canonical_content_check',
+  'outbox_events_attempts_check',
+  'external_deliveries_attempts_check',
+] as const;
+const CHECK_TABLES: Readonly<Record<string, string>> = {
+  external_challenges_attempts_check: 'external_verification_challenges',
+  external_challenges_expiration_check: 'external_verification_challenges',
+  trusted_devices_policy_version_check: 'trusted_devices',
+  trusted_devices_expiration_check: 'trusted_devices',
+  integration_credentials_versions_check: 'integration_credentials',
+  support_conversations_ticket_created_state_check: 'support_conversations',
+  support_messages_actor_variant_check: 'support_messages',
+  support_messages_canonical_content_check: 'support_messages',
+  outbox_events_attempts_check: 'outbox_events',
+  outbox_events_actor_variant_check: 'outbox_events',
+  outbox_events_schema_version_check: 'outbox_events',
+  external_deliveries_attempts_check: 'external_deliveries',
+  attachments_parent_check: 'attachments',
+  attachments_actor_variant_check: 'attachments',
+  attachments_internal_note_actor_check: 'attachments',
+  audit_logs_actor_variant_check: 'audit_logs',
+  idempotency_records_subject_variant_check: 'idempotency_records',
+  tickets_actor_presence_check: 'tickets',
+  tickets_legacy_creator_check: 'tickets',
+  tickets_requester_integration_check: 'tickets',
+  ticket_assignments_actor_variant_check: 'ticket_assignments',
+  ticket_comments_actor_variant_check: 'ticket_comments',
+  ticket_history_actor_variant_check: 'ticket_history',
+};
 
-/**
- * Valide que la base de données PostgreSQL est compatible avec l'empreinte snapshot Drizzle.
- *
- * @param client Client SQL `postgres` connecté.
- * @throws Error si des incompatibilités structurelles (colonnes, types, clés, index) sont détectées.
- */
 export async function assertBaselineCompatible(client: postgres.Sql): Promise<void> {
-  const tables = Object.values(readSnapshot().tables);
-  const columns = await actualColumns(client);
-  const constraints = await actualConstraints(client);
-  const indexes = await actualIndexes(client);
-  const problems: string[] = [];
+  const problems = await findSchemaProblems(client, '0000_snapshot.json', {
+    ignoredColumns: COMPAT_COLUMNS,
+    ignoredIndexes: COMPAT_INDEXES,
+    compatibleNullability: COMPAT_NULLABILITY,
+  });
+  assertNoProblems(problems, 'baseline');
+}
 
-  for (const table of tables) {
-    for (const expected of Object.values(table.columns)) {
-      const key = `${table.name}.${expected.name}`;
-      if (COMPAT_COLUMNS.has(key)) continue;
-      const actual = columns.find((column) => `${column.tableName}.${column.columnName}` === key);
-      if (
-        !actual ||
-        normalizeType(actual.type) !== normalizeType(expected.type) ||
-        actual.notNull !== expected.notNull
-      ) {
-        problems.push(`column:${key}`);
-        continue;
-      }
-      if (normalizeDefault(actual.defaultValue) !== normalizeDefault(expected.default)) {
-        problems.push(`default:${key}`);
-      }
-      if (expected.primaryKey && !matchesConstraint(constraints, 'p', table.name, null, [expected.name], [])) {
-        problems.push(`pk:${key}`);
-      }
-    }
-    for (const expected of Object.values(table.foreignKeys)) {
-      if (
-        !matchesConstraint(
-          constraints,
-          'f',
-          table.name,
-          expected.tableTo,
-          expected.columnsFrom,
-          expected.columnsTo,
-          expected.name,
-        )
-      ) {
-        problems.push(`fk:${expected.name}`);
-      }
-    }
-    for (const expected of Object.values(table.uniqueConstraints)) {
-      if (!matchesConstraint(constraints, 'u', table.name, null, expected.columns, [], expected.name)) {
-        problems.push(`unique:${expected.name}`);
-      }
-    }
-    for (const expected of Object.values(table.indexes)) {
-      if (COMPAT_INDEXES.has(expected.name)) continue;
-      const actual = indexes.find((index) => index.name === expected.name && index.tableName === table.name);
-      const expectedColumns = expected.columns.map((column) => normalizeExpression(column.expression));
-      if (
-        !actual ||
-        actual.isUnique !== expected.isUnique ||
-        actual.method !== expected.method ||
-        !same(actual.columns.map(normalizeExpression), expectedColumns)
-      ) {
-        problems.push(`index:${expected.name}`);
-      }
-    }
+export async function assertLatestSchemaCompatible(client: postgres.Sql): Promise<void> {
+  const problems = await findSchemaProblems(client, '0007_snapshot.json');
+  assertNoProblems(problems, 'dernier schema');
+}
+
+export async function assertPublicExpandSchemaCompatible(client: postgres.Sql): Promise<void> {
+  const problems = await findSchemaProblems(client, '0005_snapshot.json');
+  assertNoProblems(problems, 'schema public etendu');
+}
+
+export async function assertLatestPublicInvariants(client: postgres.Sql): Promise<boolean> {
+  return assertPublicInvariants(
+    client,
+    [...PUBLIC_EXPAND_CHECKS, ...OUTBOX_ENVELOPE_CHECKS],
+    [...REQUIRED_VALIDATED_CHECKS, ...OUTBOX_ENVELOPE_CHECKS],
+  );
+}
+
+export async function assertPublicExpandInvariants(client: postgres.Sql): Promise<boolean> {
+  return assertPublicInvariants(client, PUBLIC_EXPAND_CHECKS, REQUIRED_VALIDATED_CHECKS);
+}
+
+export async function hasParentIntegrationGuards(client: postgres.Sql): Promise<boolean> {
+  const [state] = await client<{ complete: boolean }[]>`
+    WITH expected(table_name, trigger_name, function_name) AS (VALUES
+      ('ticket_comments', 'ticket_comments_parent_integration_guard', 'enforce_ticket_child_integration'),
+      ('ticket_history', 'ticket_history_parent_integration_guard', 'enforce_ticket_child_integration'),
+      ('attachments', 'attachments_parent_integration_guard', 'enforce_attachment_parent_integration')
+    )
+    SELECT COUNT(*) = 3 AND bool_and(trigger.tgenabled <> 'D') AS complete
+    FROM expected
+    JOIN pg_class relation ON relation.relname = expected.table_name
+    JOIN pg_namespace relation_namespace ON relation_namespace.oid = relation.relnamespace
+      AND relation_namespace.nspname = 'public'
+    JOIN pg_trigger trigger ON trigger.tgrelid = relation.oid
+      AND trigger.tgname = expected.trigger_name AND NOT trigger.tgisinternal
+    JOIN pg_proc function ON function.oid = trigger.tgfoid AND function.proname = expected.function_name
+    JOIN pg_namespace function_namespace ON function_namespace.oid = function.pronamespace
+      AND function_namespace.nspname = 'public'
+  `;
+  return state?.complete ?? false;
+}
+
+async function assertPublicInvariants(
+  client: postgres.Sql,
+  requiredChecks: readonly string[],
+  validatedChecks: readonly string[],
+): Promise<boolean> {
+  const constraints = await client<{ name: string; tableName: string; validated: boolean }[]>`
+    SELECT c.conname AS name, r.relname AS "tableName", c.convalidated AS validated
+    FROM pg_constraint c
+    JOIN pg_class r ON r.oid = c.conrelid
+    JOIN pg_namespace n ON n.oid = r.relnamespace
+    WHERE n.nspname = 'public' AND c.contype = 'c'
+  `;
+  const byName = new Map(
+    constraints.map((constraint) => [`${constraint.tableName}.${constraint.name}`, constraint.validated]),
+  );
+  const keyFor = (name: string) => `${CHECK_TABLES[name]}.${name}`;
+  const missing = requiredChecks.filter((name) => !byName.has(keyFor(name)));
+  if (missing.length > 0) throw new Error(`Contraintes publiques manquantes: ${missing.join(', ')}.`);
+  const unvalidated = validatedChecks.filter((name) => byName.get(keyFor(name)) !== true);
+  if (unvalidated.length > 0) {
+    throw new Error(`Contraintes publiques non validees: ${unvalidated.join(', ')}.`);
   }
-  if (problems.length > 0) throw new Error('La base existante est partielle ou incompatible; baseline refusée.');
-}
-
-/** Interroge le catalogue `pg_attribute` de PostgreSQL pour extraire les colonnes et types effectifs. */
-async function actualColumns(client: postgres.Sql): Promise<ActualColumn[]> {
-  return client<ActualColumn[]>`
-    SELECT c.relname AS "tableName", a.attname AS "columnName",
-      format_type(a.atttypid, a.atttypmod) AS type, a.attnotnull AS "notNull",
-      pg_get_expr(d.adbin, d.adrelid) AS "defaultValue"
-    FROM pg_attribute a JOIN pg_class c ON c.oid = a.attrelid
-    JOIN pg_namespace n ON n.oid = c.relnamespace
-    LEFT JOIN pg_attrdef d ON d.adrelid = a.attrelid AND d.adnum = a.attnum
-    WHERE n.nspname = 'public' AND c.relkind = 'r' AND a.attnum > 0 AND NOT a.attisdropped
+  const [state] = await client<{ complete: boolean }[]>`
+    SELECT NOT EXISTS (
+      SELECT 1 FROM tickets WHERE created_by IS NOT NULL AND opened_by_user_id IS NULL
+    ) AS complete
   `;
+  return state?.complete ?? false;
 }
 
-/** Interroge le catalogue `pg_constraint` pour extraire les contraintes PK, FK et Uniques. */
-async function actualConstraints(client: postgres.Sql): Promise<ActualConstraint[]> {
-  return client<ActualConstraint[]>`
-    SELECT con.conname AS name, con.contype AS type, source.relname AS "tableName",
-      target.relname AS "targetTable",
-      ARRAY(SELECT att.attname FROM unnest(con.conkey) WITH ORDINALITY key(attnum, ord)
-        JOIN pg_attribute att ON att.attrelid = con.conrelid AND att.attnum = key.attnum ORDER BY key.ord) AS "sourceColumns",
-      ARRAY(SELECT att.attname FROM unnest(con.confkey) WITH ORDINALITY key(attnum, ord)
-        JOIN pg_attribute att ON att.attrelid = con.confrelid AND att.attnum = key.attnum ORDER BY key.ord) AS "targetColumns"
-    FROM pg_constraint con JOIN pg_class source ON source.oid = con.conrelid
-    JOIN pg_namespace n ON n.oid = source.relnamespace LEFT JOIN pg_class target ON target.oid = con.confrelid
-    WHERE n.nspname = 'public' AND con.contype IN ('p', 'u', 'f')
-  `;
-}
-
-/** Interroge le catalogue `pg_index` pour extraire les index et leurs colonnes associées. */
-async function actualIndexes(client: postgres.Sql): Promise<ActualIndex[]> {
-  return client<ActualIndex[]>`
-    SELECT idx.relname AS name, tbl.relname AS "tableName", i.indisunique AS "isUnique", am.amname AS method,
-      ARRAY(SELECT pg_get_indexdef(i.indexrelid, position, true)
-        FROM generate_series(1, i.indnkeyatts) position ORDER BY position) AS columns
-    FROM pg_index i JOIN pg_class idx ON idx.oid = i.indexrelid JOIN pg_class tbl ON tbl.oid = i.indrelid
-    JOIN pg_namespace n ON n.oid = tbl.relnamespace JOIN pg_am am ON am.oid = idx.relam
-    WHERE n.nspname = 'public' AND NOT i.indisprimary
-  `;
-}
-
-/** Vérifie si une contrainte correspond aux paramètres attendus. */
-function matchesConstraint(
-  all: ActualConstraint[],
-  type: ActualConstraint['type'],
-  table: string,
-  target: string | null,
-  from: string[],
-  to: string[],
-  name?: string,
-): boolean {
-  return all.some(
-    (item) =>
-      item.type === type &&
-      item.tableName === table &&
-      (!name || item.name === name) &&
-      (target === null || item.targetTable === target) &&
-      same(item.sourceColumns, from) &&
-      (to.length === 0 || same(item.targetColumns, to)),
-  );
-}
-
-/** Compare la stricte égalité de deux tableaux de chaînes de caractères. */
-function same(left: string[], right: string[]): boolean {
-  return left.length === right.length && left.every((value, index) => value === right[index]);
-}
-
-/** Normalise la représentation textuelle d'un type SQL. */
-function normalizeType(value: string): string {
-  return value.toLowerCase().replace('character varying', 'varchar').replaceAll('"', '');
-}
-
-/** Normalise la représentation textuelle d'une expression d'index SQL. */
-function normalizeExpression(value: string): string {
-  return value.replaceAll('"', '').replaceAll(' ', '').toLowerCase();
-}
-
-/** Normalise la valeur par défaut d'une colonne SQL. */
-function normalizeDefault(value: unknown): string {
-  return String(value ?? '')
-    .replace(/::[\w\s".\[\]]+/g, '')
-    .replace(/^\((.*)\)$/, '$1')
-    .replaceAll(' ', '')
-    .toLowerCase();
-}
-
-/** Lit et décode le fichier d'empreinte snapshot Drizzle `0000_snapshot.json`. */
-function readSnapshot(): Snapshot {
-  const path = join(process.cwd(), 'src/database/migrations/meta/0000_snapshot.json');
-  const parsed: unknown = JSON.parse(readFileSync(path, 'utf8'));
-  if (!isSnapshot(parsed)) throw new Error('Empreinte de baseline invalide.');
-  return parsed;
-}
-
-/** Prédicat de validation de la structure du fichier JSON snapshot. */
-function isSnapshot(value: unknown): value is Snapshot {
-  if (
-    typeof value !== 'object' ||
-    value === null ||
-    !('tables' in value) ||
-    typeof value.tables !== 'object' ||
-    value.tables === null
-  )
-    return false;
-  return Object.values(value.tables).every(
-    (table) =>
-      typeof table === 'object' &&
-      table !== null &&
-      'name' in table &&
-      'columns' in table &&
-      'indexes' in table &&
-      'foreignKeys' in table &&
-      'uniqueConstraints' in table,
-  );
+function assertNoProblems(problems: readonly string[], target: string): void {
+  if (problems.length === 0) return;
+  throw new Error(`La base est incompatible avec ${target}: ${problems.join(', ')}.`);
 }

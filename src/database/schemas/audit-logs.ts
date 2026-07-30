@@ -9,8 +9,11 @@
  * ============================================================================
  */
 
-import { pgTable, uuid, varchar, text, jsonb, timestamp, index } from 'drizzle-orm/pg-core';
-import { relations } from 'drizzle-orm';
+import { relations, sql } from 'drizzle-orm';
+import { check, foreignKey, index, jsonb, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
+import { actorTypeEnum } from './enums';
+import { externalRequesters } from './external-requesters';
+import { supportIntegrations } from './support-integrations';
 import { users } from './users';
 
 /**
@@ -23,9 +26,12 @@ export const auditLogs = pgTable(
   'audit_logs',
   {
     id: uuid('id').primaryKey(),
-    userId: uuid('user_id')
-      .notNull()
-      .references(() => users.id),
+    userId: uuid('user_id').references(() => users.id),
+    actorType: actorTypeEnum('actor_type').notNull().default('INTERNAL'),
+    externalRequesterId: uuid('external_requester_id'),
+    supportIntegrationId: uuid('support_integration_id').references(() => supportIntegrations.id, {
+      onDelete: 'restrict',
+    }),
     action: varchar('action', { length: 100 }).notNull(),
     entityType: varchar('entity_type', { length: 50 }).notNull(),
     entityId: uuid('entity_id').notNull(),
@@ -40,6 +46,19 @@ export const auditLogs = pgTable(
     idxAuditLogsAction: index('idx_audit_logs_action').on(table.action),
     idxAuditLogsEntity: index('idx_audit_logs_entity').on(table.entityType, table.entityId),
     idxAuditLogsCreatedAt: index('idx_audit_logs_created_at').on(table.createdAt),
+    idxAuditLogsRequester: index('idx_audit_logs_requester').on(table.supportIntegrationId, table.externalRequesterId),
+    requesterIntegrationForeignKey: foreignKey({
+      columns: [table.externalRequesterId, table.supportIntegrationId],
+      foreignColumns: [externalRequesters.id, externalRequesters.supportIntegrationId],
+      name: 'audit_logs_requester_integration_fk',
+    }).onDelete('restrict'),
+    actorVariantCheck: check(
+      'audit_logs_actor_variant_check',
+      sql`(${table.actorType} = 'INTERNAL' AND ${table.userId} IS NOT NULL AND ${table.externalRequesterId} IS NULL)
+        OR (${table.actorType} = 'EXTERNAL_REQUESTER' AND ${table.userId} IS NULL
+          AND ${table.externalRequesterId} IS NOT NULL AND ${table.supportIntegrationId} IS NOT NULL)
+        OR (${table.actorType} = 'SYSTEM' AND ${table.userId} IS NULL AND ${table.externalRequesterId} IS NULL)`,
+    ),
   }),
 );
 
@@ -48,6 +67,10 @@ export const auditLogsRelations = relations(auditLogs, ({ one }) => ({
   user: one(users, {
     fields: [auditLogs.userId],
     references: [users.id],
+  }),
+  requester: one(externalRequesters, {
+    fields: [auditLogs.externalRequesterId],
+    references: [externalRequesters.id],
   }),
 }));
 

@@ -30,8 +30,13 @@ const IDEMPOTENCY_TTL_MS = 24 * 60 * 60 * 1000;
 const IDEMPOTENCY_KEY_PATTERN = /^[A-Za-z0-9._:-]{1,128}$/;
 
 interface AuthenticatedRequest extends Request {
-  user?: { sub?: string; id?: string };
+  user?: { sub?: string; id?: string; externalRequesterId?: string; supportIntegrationId?: string };
 }
+
+type IdempotencySubject =
+  | { type: 'INTERNAL'; userId: string; externalRequesterId: null; supportIntegrationId: null }
+  | { type: 'EXTERNAL_REQUESTER'; userId: null; externalRequesterId: string; supportIntegrationId: string }
+  | { type: 'INTEGRATION'; userId: null; externalRequesterId: null; supportIntegrationId: string };
 
 interface StoredResponse {
   readonly fingerprint: string;
@@ -62,12 +67,12 @@ export class IdempotencyInterceptor implements NestInterceptor {
       throw new BadRequestException('Le header Idempotency-Key est invalide.');
     }
 
-    const userId = request.user?.sub ?? request.user?.id;
-    if (!userId) throw new BadRequestException("L'utilisateur authentifié est requis pour l'idempotence.");
+    const subject = this.resolveSubject(request);
 
     const fingerprint = this.hash(JSON.stringify(request.body ?? null));
     const path = `${request.baseUrl}${request.path}`;
-    const keyHash = this.hash(`${userId}:${request.method}:${path}:${rawKey}`);
+    const subjectKey = `${subject.type}:${subject.userId ?? subject.externalRequesterId ?? subject.supportIntegrationId}`;
+    const keyHash = this.hash(`${subjectKey}:${request.method}:${path}:${rawKey}`);
     await this.drizzle.db.delete(idempotencyRecords).where(lte(idempotencyRecords.expiresAt, new Date()));
     const existing = await this.findStored(keyHash);
     if (existing) return this.replay(existing, fingerprint, response);
@@ -76,7 +81,10 @@ export class IdempotencyInterceptor implements NestInterceptor {
       const body = await this.drizzle.runInTransaction(async () => {
         await this.drizzle.db.insert(idempotencyRecords).values({
           keyHash,
-          userId,
+          subjectType: subject.type,
+          userId: subject.userId,
+          externalRequesterId: subject.externalRequesterId,
+          supportIntegrationId: subject.supportIntegrationId,
           method: request.method,
           path,
           fingerprint,
@@ -96,6 +104,20 @@ export class IdempotencyInterceptor implements NestInterceptor {
       if (!concurrent) throw new ConflictException('Une requête identique est déjà en cours de traitement.');
       return this.replay(concurrent, fingerprint, response);
     }
+  }
+
+  private resolveSubject(request: AuthenticatedRequest): IdempotencySubject {
+    const userId = request.user?.sub ?? request.user?.id;
+    if (userId) return { type: 'INTERNAL', userId, externalRequesterId: null, supportIntegrationId: null };
+    const externalRequesterId = request.user?.externalRequesterId;
+    const supportIntegrationId = request.user?.supportIntegrationId;
+    if (externalRequesterId && supportIntegrationId) {
+      return { type: 'EXTERNAL_REQUESTER', userId: null, externalRequesterId, supportIntegrationId };
+    }
+    if (supportIntegrationId) {
+      return { type: 'INTEGRATION', userId: null, externalRequesterId: null, supportIntegrationId };
+    }
+    throw new BadRequestException("Un sujet authentifié est requis pour l'idempotence.");
   }
 
   private async findStored(keyHash: string): Promise<StoredResponse | undefined> {

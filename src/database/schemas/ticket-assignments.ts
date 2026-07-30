@@ -9,8 +9,9 @@
  * ============================================================================
  */
 
-import { pgTable, uuid, text, timestamp } from 'drizzle-orm/pg-core';
-import { relations } from 'drizzle-orm';
+import { relations, sql } from 'drizzle-orm';
+import { check, index, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { actorTypeEnum } from './enums';
 import { tickets } from './tickets';
 import { users } from './users';
 import { departments } from './departments';
@@ -20,25 +21,35 @@ import { departments } from './departments';
  * Chaque changement d'assigné ou de département crée un nouvel enregistrement.
  */
 /** Table PostgreSQL `ticketAssignments` : Définition des colonnes, contraintes et index. */
-export const ticketAssignments = pgTable('ticket_assignments', {
-  id: uuid('id').primaryKey(),
-  ticketId: uuid('ticket_id')
-    .notNull()
-    .references(() => tickets.id),
-  fromUserId: uuid('from_user_id').references(() => users.id),
-  toUserId: uuid('to_user_id')
-    .notNull()
-    .references(() => users.id),
-  fromDepartmentId: uuid('from_department_id').references(() => departments.id),
-  toDepartmentId: uuid('to_department_id')
-    .notNull()
-    .references(() => departments.id),
-  assignedBy: uuid('assigned_by')
-    .notNull()
-    .references(() => users.id),
-  reason: text('reason'),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-});
+export const ticketAssignments = pgTable(
+  'ticket_assignments',
+  {
+    id: uuid('id').primaryKey(),
+    ticketId: uuid('ticket_id')
+      .notNull()
+      .references(() => tickets.id),
+    fromUserId: uuid('from_user_id').references(() => users.id),
+    toUserId: uuid('to_user_id')
+      .notNull()
+      .references(() => users.id),
+    fromDepartmentId: uuid('from_department_id').references(() => departments.id),
+    toDepartmentId: uuid('to_department_id')
+      .notNull()
+      .references(() => departments.id),
+    assignedBy: uuid('assigned_by').references(() => users.id),
+    actorType: actorTypeEnum('actor_type').notNull().default('INTERNAL'),
+    reason: text('reason'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    ticketIndex: index('idx_ticket_assignments_ticket').on(table.ticketId, table.createdAt),
+    actorVariantCheck: check(
+      'ticket_assignments_actor_variant_check',
+      sql`(${table.actorType} = 'INTERNAL' AND ${table.assignedBy} IS NOT NULL)
+      OR (${table.actorType} = 'SYSTEM' AND ${table.assignedBy} IS NULL)`,
+    ),
+  }),
+);
 
 /** Relations ORM `ticketAssignmentsRelations` : Définition des jointures et associations Drizzle. */
 export const ticketAssignmentsRelations = relations(ticketAssignments, ({ one }) => ({

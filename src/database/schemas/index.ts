@@ -21,6 +21,7 @@ export * from './categories';
 export * from './sla-policies';
 /** Réexportation des symboles pour l'importation centralisée. */
 export * from './tickets';
+export * from './ticket-relations';
 /** Réexportation des symboles pour l'importation centralisée. */
 export * from './ticket-assignments';
 /** Réexportation des symboles pour l'importation centralisée. */
@@ -43,3 +44,13 @@ export * from './reports';
 export * from './settings';
 /** Réexportation des symboles pour l'importation centralisée. */
 export * from './idempotency-records';
+export * from './support-integrations';
+export * from './integration-credentials';
+export * from './external-requesters';
+export * from './external-identities';
+export * from './external-verification-challenges';
+export * from './trusted-devices';
+export * from './support-conversations';
+export * from './support-messages';
+export * from './outbox-events';
+export * from './external-deliveries';

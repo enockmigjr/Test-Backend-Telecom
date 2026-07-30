@@ -18,10 +18,11 @@ import { PaginationHelper } from '../../common/helpers/pagination.helper';
 import { generateUuid } from '../../common/helpers/uuidv7.helper';
 import { AttachmentAssociation, TicketAccessService } from '../../common/services/ticket-access.service';
 import { DrizzleProvider } from '../../database/drizzle.provider';
-import { attachments, ticketComments, ticketInternalNotes } from '../../database/schemas';
+import { attachments, ticketComments, ticketInternalNotes, tickets } from '../../database/schemas';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { isAllowedAttachment, MAX_ATTACHMENT_SIZE } from './attachment-upload.config';
 import { LocalStorageService } from './storage/local-storage.service';
+import { internalActor, toTicketActorColumns } from '../tickets/domain/ticket-actor';
 
 /**
  * Service gérant la persistance en base et le stockage physique des pièces jointes.
@@ -48,7 +49,12 @@ export class AttachmentsService {
     if (!file) throw new BadRequestException('Aucun fichier fourni.');
     if (file.size > MAX_ATTACHMENT_SIZE) throw new BadRequestException('Fichier trop volumineux.');
     if (!isAllowedAttachment(file)) throw new BadRequestException('Type de fichier non autorisé.');
-    await this.ticketAccess.resolveVisibleParent(association, user);
+    const parentTicketId = await this.ticketAccess.resolveVisibleParent(association, user);
+    const [parentTicket] = await this.drizzle.db
+      .select({ supportIntegrationId: tickets.supportIntegrationId })
+      .from(tickets)
+      .where(eq(tickets.id, parentTicketId))
+      .limit(1);
 
     // Assainissement du nom de fichier original (caractères alphanumériques uniquement)
     const safeName = basename(file.originalname).replace(/[^a-zA-Z0-9._-]/g, '_');
@@ -63,12 +69,14 @@ export class AttachmentsService {
         ticketId: association.ticketId ?? null,
         commentId: association.commentId ?? null,
         internalNoteId: association.internalNoteId ?? null,
-        uploadedBy: user.sub,
+        supportMessageId: null,
+        ...toTicketActorColumns(internalActor(user.sub), parentTicket?.supportIntegrationId ?? undefined),
         objectKey,
         bucketName: 'default',
         originalFilename: safeName,
         mimeType: file.mimetype,
         fileSize: file.size,
+        scanStatus: 'NOT_REQUIRED',
       });
     } catch (error) {
       // Rollback : suppression du fichier écrit sur disque si l'insertion PostgreSQL échoue

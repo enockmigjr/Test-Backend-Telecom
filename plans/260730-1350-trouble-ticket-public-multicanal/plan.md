@@ -2,7 +2,7 @@
 
 ## Statut
 
-- État : phase 00 terminée et validée ; phase 01 non commencée
+- État : phases 00 et 01 terminées ; phase 01b implémentée, validation E2E finale partiellement réservée ; phase 02 non commencée
 - Design source : `docs/superpowers/specs/2026-07-30-trouble-ticket-public-multicanal-design.md`
 - Mode : difficile, deux audits en lecture seule puis revue adversariale
 - Dépôts : backend, frontend interne, futur `public-frontend`, WordPress PhotoVault

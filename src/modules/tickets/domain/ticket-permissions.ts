@@ -14,7 +14,8 @@ import { JwtPayload } from '../../auth/interfaces/jwt-payload.interface';
 
 export interface TicketPermissionData {
   id: string;
-  createdBy: string;
+  createdBy: string | null;
+  openedByUserId?: string | null;
   assignedTo: string | null;
   assignedTeamId: string;
   departmentId: string;
@@ -28,7 +29,7 @@ export class TicketPermissions {
    * Verifie les permissions de modification fine par champ (PATCH).
    */
   checkCanUpdateFields(ticket: TicketPermissionData, user: JwtPayload, updatedFields: string[]): void {
-    const isOwner = ticket.createdBy === user.sub;
+    const isOwner = this.internalOpenerId(ticket) === user.sub;
     const isAssignee = ticket.assignedTo === user.sub;
     const isSupervisor = user.role === 'SUPERVISOR';
     const isAdmin = user.role === 'ADMINISTRATOR';
@@ -196,7 +197,7 @@ export class TicketPermissions {
     const isAdmin = user.role === 'ADMINISTRATOR';
     const isSupervisor = user.role === 'SUPERVISOR';
     const isCSAgent = user.role === 'CUSTOMER_SERVICE_AGENT';
-    const isCreator = ticket.createdBy === user.sub;
+    const isCreator = this.internalOpenerId(ticket) === user.sub;
 
     if (!isSupervisor && !isAdmin && !(isCSAgent && isCreator)) {
       throw new ForbiddenException(
@@ -258,5 +259,9 @@ export class TicketPermissions {
         this.checkCanReopen(ticket, user);
         break;
     }
+  }
+
+  private internalOpenerId(ticket: TicketPermissionData): string | null {
+    return ticket.openedByUserId ?? ticket.createdBy;
   }
 }

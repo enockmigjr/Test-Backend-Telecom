@@ -104,3 +104,54 @@ export const notificationTypeEnum = pgEnum('notification_type_enum', [
   'REPORT_READY',
   'REPORT_FAILED',
 ]);
+
+/** Nature de l'acteur persistant une mutation métier. */
+export const actorTypeEnum = pgEnum('actor_type_enum', ['INTERNAL', 'EXTERNAL_REQUESTER', 'SYSTEM']);
+
+/** Canal ayant initié un échange de support. */
+export const supportChannelEnum = pgEnum('support_channel_enum', [
+  'INTERNAL',
+  'WEB_PORTAL',
+  'WIDGET',
+  'WORDPRESS',
+  'EMAIL',
+  'WHATSAPP',
+  'API',
+]);
+
+export const integrationStatusEnum = pgEnum('integration_status_enum', ['DRAFT', 'ACTIVE', 'SUSPENDED']);
+export const externalIdentityTypeEnum = pgEnum('external_identity_type_enum', ['EMAIL', 'PHONE', 'WORDPRESS']);
+export const verificationChallengeStatusEnum = pgEnum('verification_challenge_status_enum', [
+  'PENDING',
+  'VERIFIED',
+  'EXPIRED',
+  'LOCKED',
+]);
+export const conversationStatusEnum = pgEnum('conversation_status_enum', [
+  'OPEN',
+  'TICKET_CREATED',
+  'CLOSED',
+  'ABANDONED',
+]);
+export const supportMessageDirectionEnum = pgEnum('support_message_direction_enum', ['INBOUND', 'OUTBOUND']);
+export const outboxStatusEnum = pgEnum('outbox_status_enum', ['PENDING', 'PROCESSING', 'PUBLISHED', 'FAILED']);
+export const deliveryStatusEnum = pgEnum('delivery_status_enum', [
+  'PENDING',
+  'PROCESSING',
+  'DELIVERED',
+  'FAILED',
+  'DELIVERY_UNKNOWN',
+]);
+export const attachmentScanStatusEnum = pgEnum('attachment_scan_status_enum', [
+  'NOT_REQUIRED',
+  'PENDING',
+  'SCANNING',
+  'CLEAN',
+  'INFECTED',
+  'ERROR',
+]);
+export const idempotencySubjectTypeEnum = pgEnum('idempotency_subject_type_enum', [
+  'INTERNAL',
+  'EXTERNAL_REQUESTER',
+  'INTEGRATION',
+]);
