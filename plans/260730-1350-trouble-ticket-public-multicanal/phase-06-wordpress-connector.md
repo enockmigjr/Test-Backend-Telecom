@@ -8,6 +8,12 @@ PhotoVault possède trois plugins métier actifs et un thème de présentation. 
 
 Créer `trouble-ticket-connector` dans la source active, ajouter son miroir de distribution et valider l’assertion d’identité ainsi que l’injection du widget.
 
+## Statut
+
+En cours. Le plugin autonome, son assertion vérifiée, le widget `v2`, le fallback public, le runtime WordPress, le miroir
+et l’infrastructure de déploiement sont implémentés. La recette navigateur PhotoVault avec une intégration backend réelle
+et la publication du dépôt distant du connecteur restent ouvertes.
+
 ## Exigences
 
 - Aucun changement WordPress Core, thème ou comportement des trois plugins.
@@ -32,10 +38,10 @@ Le plugin expose un endpoint REST WordPress même origine, réservé à l’util
 8. Ajouter injection par `wp_enqueue_scripts`/`wp_footer` et shortcode, avec échappement et URL autorisée.
 9. Ajouter écran admin, test de connexion non sensible, rotation et révocation du secret.
 10. Créer `tests/runtime-connector.php` et README d’installation/désinstallation.
-11. Modifier le `.gitignore` du dépôt WordPress avec des négations ciblées pour suivre uniquement la source active et son miroir `trouble-ticket-connector` sous leurs parents ré-inclus.
-12. Vérifier avant commit avec `git check-ignore` et `git ls-files` que le code réellement exécuté sera versionné dans le dépôt WordPress.
-13. Copier vers `wp-content/themes/PhotoVault/plugins/trouble-ticket-connector/` seulement après validation de la source active.
-14. Étendre `scripts/check-plugin-mirrors.php`, `tools/check-plugin-sync.php`, `sync-plugins.php`, `Makefile` et workflow CI.
+11. Initialiser `wp-content/plugins/trouble-ticket-connector` comme dépôt autonome, conformément aux trois plugins actifs existants ; ne pas ouvrir le `.gitignore` du dépôt de déploiement.
+12. Vérifier avant commit avec `git ls-files` que la source runtime est suivie dans le dépôt du connecteur.
+13. Copier vers `wp-content/themes/PhotoVault/plugins/trouble-ticket-connector/` seulement après validation de la source active, puis suivre le miroir dans le dépôt PhotoVault.
+14. Étendre `scripts/check-plugin-mirrors.php`, `tools/check-plugin-sync.php`, `sync-plugins.php`, `Makefile` et workflow CI ; le dépôt racine ne suit que l’infrastructure.
 
 ## Fichiers du plugin
 
@@ -45,13 +51,13 @@ Le plugin expose un endpoint REST WordPress même origine, réservé à l’util
 
 ## Todo et tests
 
-- [ ] Non connecté, nonce invalide, email non vérifié et Identity Kit absent.
+- [x] Non connecté, nonce invalide, email non vérifié et Identity Kit absent.
 - [ ] Expiration, mauvaise audience, origine hostile, nonce rejoué et rotation.
 - [ ] Shortcode, injection automatique, désactivation et CSP bloquante.
-- [ ] Syntaxe PHP et standard WordPress ciblé.
-- [ ] Test runtime dans Docker/WordPress réel.
+- [x] Syntaxe PHP et standard WordPress ciblé.
+- [x] Test runtime dans Docker/WordPress réel.
 - [ ] Vérification des miroirs et tests navigateur PhotoVault, individuellement si longs.
-- [ ] Source active et miroir présents dans `git ls-files` du dépôt WordPress.
+- [x] Source active présente dans `git ls-files` du connecteur, miroir dans celui de PhotoVault, infrastructure dans le dépôt racine.
 
 ## Critères de succès
 
@@ -59,4 +65,4 @@ Le plugin expose un endpoint REST WordPress même origine, réservé à l’util
 - Un visiteur anonyme conserve le parcours public normal.
 - Désactiver le plugin restaure exactement le comportement antérieur du site.
 - Les quatre plugins actifs et leurs miroirs sont identiques après synchronisation.
-- Le SHA du dépôt WordPress contient réellement le connecteur exécuté et son miroir.
+- Les SHA des dépôts connecteur, PhotoVault et déploiement contiennent respectivement la source exécutée, le miroir et les contrôles d’infrastructure.
