@@ -10,8 +10,8 @@ Créer `public-frontend/` comme dépôt Next.js 16 autonome, livrer le portail s
 
 ## Statut
 
-En cours. Le gate backend/OpenAPI, le BFF cookie-only, le portail pleine page et le chargeur iframe sont implémentés.
-Le temps réel navigateur, les E2E multi-navigateurs et le raccordement Docker/Nginx restent ouverts.
+En cours. Le gate backend/OpenAPI, le BFF cookie-only, le portail pleine page, le widget iframe, le temps réel avec
+repli polling et le raccordement Docker/Nginx sont implémentés. La relance E2E multi-navigateurs reste ouverte.
 
 ## Exigences
 
@@ -64,7 +64,7 @@ Le dépôt reprend les patterns éprouvés de `frontend/`, sans importer son cod
 - [ ] E2E Chromium, Firefox, WebKit : iframe, cookies bloqués et pleine page.
 - [ ] E2E : cookie partitionné, blocage total, bootstrap unique, rejeu, URL nettoyée et CSRF mémoire.
 - [ ] Accessibilité clavier et axe sur parcours critiques.
-- [ ] `pnpm lint`, `typecheck`, `test`, `build` réussis ; `test:e2e` reste au jalon navigateur.
+- [x] `pnpm lint`, `typecheck`, `test`, `build` réussis ; `test:e2e` reste au jalon navigateur.
 
 ## Critères de succès
 

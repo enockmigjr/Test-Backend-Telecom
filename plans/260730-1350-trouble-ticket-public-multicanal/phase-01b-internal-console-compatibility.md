@@ -47,11 +47,13 @@ Le backend expose durant la transition les champs legacy et le nouvel acteur. Le
 
 ## Todo et tests
 
-- [ ] Contrat généré et Zod couvrent tous les acteurs et valeurs legacy.
-- [ ] Permissions avec créateur interne, externe, système et absent.
-- [ ] Historique, audit, commentaire et pièce jointe sans utilisateur interne.
-- [ ] Régression tickets internes, filtres, pagination, mutations et temps réel.
-- [ ] Jalon frontend interne : contrat, lint, typecheck, tests, build et E2E tickets.
+- [x] Contrat généré et Zod couvrent tous les acteurs et valeurs legacy.
+- [x] Permissions avec créateur interne, externe, système et absent.
+- [x] Historique, audit, commentaire et pièce jointe sans utilisateur interne.
+- [x] Régression tickets internes, filtres, pagination, mutations et temps réel.
+- [x] Jalon frontend interne : contrat, lint, typecheck, tests, build et E2E tickets.
+
+Implémentation clôturée côté console interne par `4a5ef43`, après le socle backend `cdf3d94`.
 
 ## Critères de succès
 

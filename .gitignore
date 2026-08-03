@@ -12,6 +12,7 @@ uploads/
 Thumbs.db
 .turbo
 .npm
+.pnpm-store/
 .eslintcache
 plan/
 .claude/

@@ -10,7 +10,7 @@ import {
 import { Server, Socket } from 'socket.io';
 import { DrizzleProvider } from '../database/drizzle.provider';
 import { supportConversations } from '../database/schemas';
-import { PublicWebSocketAuthService } from './public-websocket-auth.service';
+import { PublicWebSocketAuthService, publicWebSocketContext } from './public-websocket-auth.service';
 import { publicWebsocketCorsOrigin } from './public-websocket-cors';
 
 @WebSocketGateway({ namespace: '/public-support', cors: { origin: publicWebsocketCorsOrigin, credentials: true } })
@@ -29,6 +29,7 @@ export class PublicSupportGateway implements OnGatewayConnection, OnGatewayDisco
       const principal = await this.auth.authenticate(
         client.handshake.headers.cookie,
         typeof client.handshake.headers.origin === 'string' ? client.handshake.headers.origin : undefined,
+        publicWebSocketContext(client.handshake.auth),
       );
       const requesterRoom = room(principal.supportIntegrationId, principal.externalRequesterId);
       await client.join(requesterRoom);

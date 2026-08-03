@@ -27,7 +27,10 @@ describe('PublicSupportGateway', () => {
     client = mock<Socket>();
     Object.defineProperty(client, 'id', { value: 'socket-001' });
     Object.defineProperty(client, 'handshake', {
-      value: { headers: { cookie: 'support_session=token', origin: 'https://widget.example.test' } },
+      value: {
+        headers: { cookie: 'support_session=token', origin: 'https://widget.example.test' },
+        auth: { context: 'portal' },
+      },
     });
   });
 
@@ -47,7 +50,7 @@ describe('PublicSupportGateway', () => {
 
     await gateway.handleConnection(client);
 
-    expect(auth.authenticate).toHaveBeenCalledWith('support_session=token', 'https://widget.example.test');
+    expect(auth.authenticate).toHaveBeenCalledWith('support_session=token', 'https://widget.example.test', 'portal');
     expect(client.join.mock.calls.map(([value]) => value)).toEqual([
       'public:requester:integration-001:requester-001',
       'public:conversation:conversation-001',

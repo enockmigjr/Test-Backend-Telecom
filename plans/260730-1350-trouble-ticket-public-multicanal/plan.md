@@ -2,9 +2,9 @@
 
 ## Statut
 
-- État : phases backend 00 à 04 implémentées. Le gate contractuel de la phase 05 est livré : réponses publiques typées,
-  reprise de conversation, configuration d'intégration, appareils de confiance et uploads idempotents. Le portail public
-  autonome est initialisé et construit ; les validations navigateur/iframe restent à terminer avant la phase 06.
+- État : phases 00, 01, 01b et backend 02 à 04 implémentées. La phase 05 livre les réponses publiques typées,
+  la reprise de conversation, les appareils de confiance, le portail autonome, le widget, le temps réel et son déploiement.
+  La relance navigateur/iframe multi-moteurs reste à terminer avant la phase 06.
 - Design source : `docs/superpowers/specs/2026-07-30-trouble-ticket-public-multicanal-design.md`
 - Mode : difficile, deux audits en lecture seule puis revue adversariale
 - Dépôts : backend, frontend interne, futur `public-frontend`, WordPress PhotoVault

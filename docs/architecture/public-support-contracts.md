@@ -93,11 +93,15 @@ Les origines de sites intégrateurs servent à `frame-ancestors` et `postMessage
 | Audience session publique | `telecom-public-bff` |
 | Audience assertion intégration | `telecom-integration-assertion` |
 | Audience bootstrap top-level | `telecom-public-support-bootstrap` |
-| Cookie iframe | `__Host-support_iframe` |
+| Cookie iframe | `__Host-support_iframe_session` |
 | Cookie pleine page | `__Host-support_session` |
 | Namespace temps réel | `/public-support` |
 
 Le cookie iframe sera `Secure; HttpOnly; SameSite=None; Partitioned`. Le cookie pleine page sera `Secure; HttpOnly; SameSite=Lax`. Le CSRF public utilise un synchronizer token retourné par une route `no-store` et conservé en mémoire.
+
+`PUBLIC_SUPPORT_ORIGINS` contient les origines exactes du portail public qui initient Socket.IO. Les domaines des sites
+intégrateurs restent dans `support_integrations.allowed_origins` pour `frame-ancestors` et `postMessage` ; ces deux
+listes de confiance ne doivent pas être confondues.
 
 Le passage iframe → pleine page utilise un code opaque à usage unique placé dans le fragment, échangé par POST puis supprimé par `history.replaceState`. Aucun token ne circule en query string ou dans les journaux.
 
