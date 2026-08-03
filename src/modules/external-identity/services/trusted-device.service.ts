@@ -1,10 +1,11 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { and, eq, gt, isNull } from 'drizzle-orm';
+import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { and, desc, eq, gt, isNull } from 'drizzle-orm';
 import { generateUuid } from '../../../common/helpers/uuidv7.helper';
 import { PublicSupportConfigService } from '../../../config/public-support.config';
 import { DrizzleProvider } from '../../../database/drizzle.provider';
 import { supportIntegrations, trustedDevices } from '../../../database/schemas';
 import { PublicIdentityCryptoService } from './public-identity-crypto.service';
+import { policyNumber, trustedDevicePolicy } from './trusted-device-policy';
 
 export interface IssuedTrustedDevice {
   readonly deviceId: string;
@@ -91,7 +92,7 @@ export class TrustedDeviceService {
         )
         .limit(1);
       if (!device) throw new UnauthorizedException('Appareil non reconnu.');
-      const policy = policyValues(device.trustPolicy, this.config);
+      const policy = trustedDevicePolicy(device.trustPolicy, this.config);
       if (device.policyVersion !== policy.version) throw new UnauthorizedException('Appareil non reconnu.');
       const now = new Date();
       const renewalThreshold = now.getTime() + policy.renewalWindowDays * 86_400_000;
@@ -122,6 +123,51 @@ export class TrustedDeviceService {
       );
   }
 
+  async list(externalRequesterId: string, supportIntegrationId: string, currentDeviceId?: string) {
+    const columns = {
+      id: trustedDevices.id,
+      createdAt: trustedDevices.createdAt,
+      lastUsedAt: trustedDevices.lastUsedAt,
+      expiresAt: trustedDevices.expiresAt,
+      revokedAt: trustedDevices.revokedAt,
+    };
+    const scope = and(
+      eq(trustedDevices.externalRequesterId, externalRequesterId),
+      eq(trustedDevices.supportIntegrationId, supportIntegrationId),
+    );
+    const [active, history] = await Promise.all([
+      this.drizzle.db
+        .select(columns)
+        .from(trustedDevices)
+        .where(and(scope, isNull(trustedDevices.revokedAt)))
+        .orderBy(desc(trustedDevices.createdAt)),
+      this.drizzle.db
+        .select(columns)
+        .from(trustedDevices)
+        .where(and(scope, gt(trustedDevices.revokedAt, new Date(0))))
+        .orderBy(desc(trustedDevices.createdAt))
+        .limit(20),
+    ]);
+    const rows = [...active, ...history];
+    return { data: rows.map((device) => ({ ...device, current: device.id === currentDeviceId })) };
+  }
+
+  async revokeScoped(deviceId: string, externalRequesterId: string, supportIntegrationId: string): Promise<void> {
+    const [revoked] = await this.drizzle.db
+      .update(trustedDevices)
+      .set({ revokedAt: new Date() })
+      .where(
+        and(
+          eq(trustedDevices.id, deviceId),
+          eq(trustedDevices.externalRequesterId, externalRequesterId),
+          eq(trustedDevices.supportIntegrationId, supportIntegrationId),
+          isNull(trustedDevices.revokedAt),
+        ),
+      )
+      .returning({ id: trustedDevices.id });
+    if (!revoked) throw new NotFoundException('Appareil introuvable.');
+  }
+
   private async activePolicy(supportIntegrationId: string) {
     const [integration] = await this.drizzle.db
       .select({ trustPolicy: supportIntegrations.trustPolicy })
@@ -129,7 +175,7 @@ export class TrustedDeviceService {
       .where(and(eq(supportIntegrations.id, supportIntegrationId), eq(supportIntegrations.status, 'ACTIVE')))
       .limit(1);
     if (!integration) throw new UnauthorizedException('Intégration inactive.');
-    return policyValues(integration.trustPolicy, this.config);
+    return trustedDevicePolicy(integration.trustPolicy, this.config);
   }
 
   private async insert(
@@ -150,17 +196,4 @@ export class TrustedDeviceService {
     });
     return { deviceId, token, expiresAt };
   }
-}
-
-function policyValues(policy: Record<string, unknown>, config: PublicSupportConfigService) {
-  return {
-    days: policyNumber(policy, 'trustedDeviceDays', config.trustedDeviceDays),
-    version: policyNumber(policy, 'policyVersion', config.trustedDevicePolicyVersion),
-    renewalWindowDays: policyNumber(policy, 'renewalWindowDays', 7),
-  };
-}
-
-function policyNumber(policy: Record<string, unknown>, key: string, fallback: number): number {
-  const value = policy[key];
-  return typeof value === 'number' && Number.isSafeInteger(value) && value > 0 ? value : fallback;
 }

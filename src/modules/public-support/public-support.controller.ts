@@ -11,7 +11,15 @@ import {
   Query,
   Req,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiHeader, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiCreatedResponse,
+  ApiHeader,
+  ApiOkResponse,
+  ApiOperation,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
 import { Auth, AuthMode } from '../../common/decorators/auth-mode.decorator';
 import { Idempotent, RequireIdempotency } from '../../common/decorators/idempotent.decorator';
 import { PublicSupportApi } from '../../common/openapi/public-support-api.decorator';
@@ -22,6 +30,20 @@ import {
   SavePublicTicketDraftDto,
 } from './dto/public-conversation.dto';
 import { CreatePublicCommentDto, UpdatePublicPreferencesDto } from './dto/public-ticket.dto';
+import {
+  PublicCatalogResponseDto,
+  PublicConversationStateResponseDto,
+  PublicDraftSavedResponseDto,
+  PublicHandoffResponseDto,
+  PublicPreferencesResponseDto,
+  PublicTicketConfirmedResponseDto,
+} from './dto/public-support-response.dto';
+import {
+  PublicCommentResponseDto,
+  PublicTicketDetailResponseDto,
+  PublicTicketListResponseDto,
+  PublicTimelineResponseDto,
+} from './dto/public-ticket-response.dto';
 import { PublicSupportRequest, requirePublicPrincipal } from './public-request';
 import { PublicAdmissionPolicyService } from './services/public-admission-policy.service';
 import { PublicConversationService } from './services/public-conversation.service';
@@ -44,6 +66,7 @@ export class PublicSupportController {
   @Get('catalog')
   @PublicSupportApi()
   @ApiOperation({ summary: 'Catalogue public autorisé pour cette intégration' })
+  @ApiOkResponse({ type: PublicCatalogResponseDto })
   catalog(@Req() request: PublicSupportRequest) {
     return this.admission.catalog(requirePublicPrincipal(request).supportIntegrationId);
   }
@@ -53,6 +76,7 @@ export class PublicSupportController {
   @RequireIdempotency()
   @PublicSupportApi()
   @ApiOperation({ summary: 'Démarrer une conversation de support' })
+  @ApiCreatedResponse({ type: PublicConversationStateResponseDto })
   createConversation(@Req() request: PublicSupportRequest, @Body() dto: CreatePublicConversationDto) {
     return this.conversations.create(requirePublicPrincipal(request), dto.serviceKey);
   }
@@ -62,6 +86,7 @@ export class PublicSupportController {
   @PublicSupportApi()
   @ApiHeader({ name: 'Idempotency-Key', required: false })
   @ApiOperation({ summary: 'Enregistrer le brouillon qualifié' })
+  @ApiOkResponse({ type: PublicDraftSavedResponseDto })
   saveDraft(
     @Param('id', ParseUUIDPipe) id: string,
     @Req() request: PublicSupportRequest,
@@ -74,6 +99,7 @@ export class PublicSupportController {
   @RequireIdempotency()
   @PublicSupportApi()
   @ApiOperation({ summary: 'Confirmer et créer atomiquement le ticket' })
+  @ApiCreatedResponse({ type: PublicTicketConfirmedResponseDto })
   confirm(
     @Param('id', ParseUUIDPipe) id: string,
     @Req() request: PublicSupportRequest,
@@ -86,6 +112,7 @@ export class PublicSupportController {
   @RequireIdempotency()
   @PublicSupportApi()
   @ApiOperation({ summary: 'Demander explicitement un transfert humain' })
+  @ApiCreatedResponse({ type: PublicHandoffResponseDto })
   handoff(@Param('id', ParseUUIDPipe) id: string, @Req() request: PublicSupportRequest, @Body() dto: PublicHandoffDto) {
     return this.conversations.requestHandoff(id, requirePublicPrincipal(request), dto.reason);
   }
@@ -93,6 +120,9 @@ export class PublicSupportController {
   @Get('tickets')
   @PublicSupportApi()
   @ApiOperation({ summary: 'Lister uniquement les demandes du contact courant' })
+  @ApiQuery({ name: 'page', required: false, schema: { type: 'integer', minimum: 1, default: 1 } })
+  @ApiQuery({ name: 'limit', required: false, schema: { type: 'integer', minimum: 1, maximum: 100, default: 20 } })
+  @ApiOkResponse({ type: PublicTicketListResponseDto })
   listTickets(@Req() request: PublicSupportRequest, @Query('page') page?: string, @Query('limit') limit?: string) {
     return this.tickets.list(requirePublicPrincipal(request), page, limit);
   }
@@ -100,6 +130,7 @@ export class PublicSupportController {
   @Get('tickets/:id')
   @PublicSupportApi()
   @ApiOperation({ summary: 'Consulter une demande publique' })
+  @ApiOkResponse({ type: PublicTicketDetailResponseDto })
   ticket(@Param('id', ParseUUIDPipe) id: string, @Req() request: PublicSupportRequest) {
     return this.tickets.detail(id, requirePublicPrincipal(request));
   }
@@ -107,6 +138,7 @@ export class PublicSupportController {
   @Get('tickets/:id/timeline')
   @PublicSupportApi()
   @ApiOperation({ summary: 'Consulter la timeline publique filtrée' })
+  @ApiOkResponse({ type: PublicTimelineResponseDto })
   timeline(@Param('id', ParseUUIDPipe) id: string, @Req() request: PublicSupportRequest) {
     return this.tickets.timeline(id, requirePublicPrincipal(request));
   }
@@ -115,6 +147,7 @@ export class PublicSupportController {
   @RequireIdempotency()
   @PublicSupportApi()
   @ApiOperation({ summary: 'Ajouter un commentaire demandeur' })
+  @ApiCreatedResponse({ type: PublicCommentResponseDto })
   addComment(
     @Param('id', ParseUUIDPipe) id: string,
     @Req() request: PublicSupportRequest,
@@ -126,6 +159,7 @@ export class PublicSupportController {
   @Get('preferences')
   @PublicSupportApi()
   @ApiOperation({ summary: 'Consulter le profil public conservé' })
+  @ApiOkResponse({ type: PublicPreferencesResponseDto })
   getPreferences(@Req() request: PublicSupportRequest) {
     return this.preferences.get(requirePublicPrincipal(request));
   }
@@ -134,6 +168,7 @@ export class PublicSupportController {
   @RequireIdempotency()
   @PublicSupportApi()
   @ApiOperation({ summary: 'Mettre à jour le nom et la langue du profil public' })
+  @ApiOkResponse({ type: PublicPreferencesResponseDto })
   updatePreferences(@Req() request: PublicSupportRequest, @Body() dto: UpdatePublicPreferencesDto) {
     return this.preferences.update(requirePublicPrincipal(request), dto);
   }

@@ -8,6 +8,11 @@ Le backend public et son OpenAPI sont stables. Le nouveau frontend doit rester i
 
 Créer `public-frontend/` comme dépôt Next.js 16 autonome, livrer le portail sans IA, puis le widget iframe et son fallback.
 
+## Statut
+
+En cours. Le gate backend/OpenAPI, le BFF cookie-only, le portail pleine page et le chargeur iframe sont implémentés.
+Le temps réel navigateur, les E2E multi-navigateurs et le raccordement Docker/Nginx restent ouverts.
+
 ## Exigences
 
 - pnpm, TypeScript strict, aucun `any` et schéma OpenAPI généré.
@@ -53,13 +58,13 @@ Le dépôt reprend les patterns éprouvés de `frontend/`, sans importer son cod
 
 ## Todo et tests
 
-- [ ] Contrat généré sans diff.
-- [ ] Unitaires : cookies, CSRF, erreurs, statuts, handshake et messages hostiles.
+- [x] Contrat généré sans diff.
+- [x] Unitaires : cookies, CSRF, erreurs, statuts, handshake et messages hostiles.
 - [ ] E2E portail : vérifier, créer, reprendre, répondre, révoquer et fallback sans bot.
 - [ ] E2E Chromium, Firefox, WebKit : iframe, cookies bloqués et pleine page.
 - [ ] E2E : cookie partitionné, blocage total, bootstrap unique, rejeu, URL nettoyée et CSRF mémoire.
 - [ ] Accessibilité clavier et axe sur parcours critiques.
-- [ ] `pnpm lint`, `typecheck`, `test`, `build`, puis `test:e2e` au jalon.
+- [ ] `pnpm lint`, `typecheck`, `test`, `build` réussis ; `test:e2e` reste au jalon navigateur.
 
 ## Critères de succès
 

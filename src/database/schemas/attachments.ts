@@ -10,7 +10,18 @@
  */
 
 import { relations, sql } from 'drizzle-orm';
-import { bigint, check, foreignKey, index, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
+import {
+  bigint,
+  check,
+  foreignKey,
+  index,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+  varchar,
+} from 'drizzle-orm/pg-core';
 import { actorTypeEnum, attachmentScanStatusEnum } from './enums';
 import { externalRequesters } from './external-requesters';
 import { supportIntegrations } from './support-integrations';
@@ -49,6 +60,9 @@ export const attachments = pgTable(
     scannedAt: timestamp('scanned_at', { withTimezone: true }),
     quarantineDeletedAt: timestamp('quarantine_deleted_at', { withTimezone: true }),
     scanError: text('scan_error'),
+    publicUploadKeyHash: varchar('public_upload_key_hash', { length: 64 }),
+    publicUploadFingerprint: varchar('public_upload_fingerprint', { length: 64 }),
+    publicUploadIdempotencyExpiresAt: timestamp('public_upload_idempotency_expires_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => ({
@@ -59,6 +73,7 @@ export const attachments = pgTable(
       table.externalRequesterId,
     ),
     idxAttachmentsSupportMessage: index('idx_attachments_support_message').on(table.supportMessageId),
+    publicUploadKeyUnique: uniqueIndex('uq_attachments_public_upload_key').on(table.publicUploadKeyHash),
     requesterIntegrationForeignKey: foreignKey({
       columns: [table.externalRequesterId, table.supportIntegrationId],
       foreignColumns: [externalRequesters.id, externalRequesters.supportIntegrationId],
@@ -93,6 +108,10 @@ export const attachments = pgTable(
     internalNoteActorCheck: check(
       'attachments_internal_note_actor_check',
       sql`${table.internalNoteId} IS NULL OR ${table.actorType} <> 'EXTERNAL_REQUESTER'`,
+    ),
+    publicUploadIdempotencyCheck: check(
+      'attachments_public_upload_idempotency_check',
+      sql`num_nonnulls(${table.publicUploadKeyHash}, ${table.publicUploadFingerprint}, ${table.publicUploadIdempotencyExpiresAt}) IN (0, 3)`,
     ),
   }),
 );

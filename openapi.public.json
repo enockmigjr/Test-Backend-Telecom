@@ -1,34 +1,6 @@
 {
   "components": {
     "schemas": {
-      "ApiCollectionResponse": {
-        "properties": {
-          "data": {
-            "items": {
-              "additionalProperties": true,
-              "type": "object"
-            },
-            "type": "array"
-          },
-          "statusCode": {
-            "maximum": 299,
-            "minimum": 200,
-            "type": "integer"
-          },
-          "success": {
-            "enum": [
-              true
-            ],
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "success",
-          "statusCode",
-          "data"
-        ],
-        "type": "object"
-      },
       "ApiErrorDetail": {
         "properties": {
           "code": {
@@ -100,50 +72,31 @@
         ],
         "type": "object"
       },
-      "ApiPaginatedResponse": {
+      "BootstrapGrantDataDto": {
         "properties": {
-          "data": {
-            "items": {
-              "additionalProperties": true,
-              "type": "object"
-            },
-            "type": "array"
+          "code": {
+            "type": "string"
           },
-          "meta": {
-            "$ref": "#/components/schemas/PaginationMeta"
-          },
-          "statusCode": {
-            "maximum": 299,
-            "minimum": 200,
-            "type": "integer"
-          },
-          "success": {
-            "enum": [
-              true
-            ],
-            "type": "boolean"
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
           }
         },
         "required": [
-          "success",
-          "statusCode",
-          "data",
-          "meta"
+          "code",
+          "expiresAt"
         ],
         "type": "object"
       },
-      "ApiSuccessResponse": {
+      "BootstrapGrantResponseDto": {
         "properties": {
           "data": {
-            "nullable": true
-          },
-          "message": {
-            "type": "string"
+            "$ref": "#/components/schemas/BootstrapGrantDataDto"
           },
           "statusCode": {
             "maximum": 299,
             "minimum": 200,
-            "type": "integer"
+            "type": "number"
           },
           "success": {
             "enum": [
@@ -175,6 +128,8 @@
         "properties": {
           "code": {
             "description": "Code opaque extrait du fragment puis envoyé en POST",
+            "maxLength": 128,
+            "minLength": 32,
             "type": "string"
           }
         },
@@ -186,10 +141,13 @@
       "ConsumeEmailVerificationDto": {
         "properties": {
           "challengeId": {
+            "format": "uuid",
             "type": "string"
           },
           "code": {
             "example": "123456",
+            "maxLength": 6,
+            "minLength": 6,
             "type": "string"
           }
         },
@@ -222,31 +180,446 @@
         },
         "type": "object"
       },
-      "PaginationMeta": {
+      "DeviceRevokedDataDto": {
         "properties": {
-          "limit": {
-            "maximum": 100,
-            "minimum": 1,
-            "type": "integer"
-          },
-          "page": {
-            "minimum": 1,
-            "type": "integer"
-          },
-          "total": {
-            "minimum": 0,
-            "type": "integer"
-          },
-          "totalPages": {
-            "minimum": 0,
-            "type": "integer"
+          "revoked": {
+            "enum": [
+              true
+            ],
+            "type": "boolean"
           }
         },
         "required": [
-          "page",
-          "limit",
-          "total",
-          "totalPages"
+          "revoked"
+        ],
+        "type": "object"
+      },
+      "DeviceRevokedResponseDto": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/DeviceRevokedDataDto"
+          },
+          "statusCode": {
+            "maximum": 299,
+            "minimum": 200,
+            "type": "number"
+          },
+          "success": {
+            "enum": [
+              true
+            ],
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "data"
+        ],
+        "type": "object"
+      },
+      "PublicAppearanceDto": {
+        "properties": {
+          "accentColor": {
+            "pattern": "^#[0-9A-F]{6}$",
+            "type": "string"
+          },
+          "logoUrl": {
+            "format": "uri",
+            "type": "string"
+          },
+          "primaryColor": {
+            "pattern": "^#[0-9A-F]{6}$",
+            "type": "string"
+          },
+          "supportName": {
+            "type": "string"
+          },
+          "welcomeMessage": {
+            "type": "string"
+          },
+          "welcomeTitle": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "PublicAttachmentDataDto": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "error": {
+            "nullable": true,
+            "type": "string"
+          },
+          "filename": {
+            "type": "string"
+          },
+          "fileSize": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "mimeType": {
+            "type": "string"
+          },
+          "scanStatus": {
+            "enum": [
+              "NOT_REQUIRED",
+              "QUARANTINED",
+              "PENDING",
+              "SCANNING",
+              "CLEAN",
+              "INFECTED",
+              "ERROR"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "filename",
+          "fileSize",
+          "scanStatus"
+        ],
+        "type": "object"
+      },
+      "PublicAttachmentListResponseDto": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/PublicAttachmentDataDto"
+            },
+            "type": "array"
+          },
+          "statusCode": {
+            "maximum": 299,
+            "minimum": 200,
+            "type": "number"
+          },
+          "success": {
+            "enum": [
+              true
+            ],
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "data"
+        ],
+        "type": "object"
+      },
+      "PublicAttachmentResponseDto": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PublicAttachmentDataDto"
+          },
+          "statusCode": {
+            "maximum": 299,
+            "minimum": 200,
+            "type": "number"
+          },
+          "success": {
+            "enum": [
+              true
+            ],
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "data"
+        ],
+        "type": "object"
+      },
+      "PublicCatalogDataDto": {
+        "properties": {
+          "categories": {
+            "items": {
+              "$ref": "#/components/schemas/PublicCategoryDto"
+            },
+            "type": "array"
+          },
+          "services": {
+            "items": {
+              "$ref": "#/components/schemas/PublicServiceDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "categories",
+          "services"
+        ],
+        "type": "object"
+      },
+      "PublicCatalogResponseDto": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PublicCatalogDataDto"
+          },
+          "statusCode": {
+            "maximum": 299,
+            "minimum": 200,
+            "type": "number"
+          },
+          "success": {
+            "enum": [
+              true
+            ],
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "data"
+        ],
+        "type": "object"
+      },
+      "PublicCategoryDto": {
+        "properties": {
+          "description": {
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "type": "object"
+      },
+      "PublicCommentDataDto": {
+        "properties": {
+          "content": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "content"
+        ],
+        "type": "object"
+      },
+      "PublicCommentResponseDto": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PublicCommentDataDto"
+          },
+          "statusCode": {
+            "maximum": 299,
+            "minimum": 200,
+            "type": "number"
+          },
+          "success": {
+            "enum": [
+              true
+            ],
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "data"
+        ],
+        "type": "object"
+      },
+      "PublicConversationDetailDataDto": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "draft": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PublicTicketDraftDataDto"
+              }
+            ],
+            "nullable": true
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "lastMessageAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "ticketId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "state",
+          "status",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "PublicConversationDetailResponseDto": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PublicConversationDetailDataDto"
+          },
+          "statusCode": {
+            "maximum": 299,
+            "minimum": 200,
+            "type": "number"
+          },
+          "success": {
+            "enum": [
+              true
+            ],
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "data"
+        ],
+        "type": "object"
+      },
+      "PublicConversationStateDataDto": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "QUALIFY",
+              "DRAFT"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "state"
+        ],
+        "type": "object"
+      },
+      "PublicConversationStateResponseDto": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PublicConversationStateDataDto"
+          },
+          "statusCode": {
+            "maximum": 299,
+            "minimum": 200,
+            "type": "number"
+          },
+          "success": {
+            "enum": [
+              true
+            ],
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "data"
+        ],
+        "type": "object"
+      },
+      "PublicDraftSavedDataDto": {
+        "properties": {
+          "draft": {
+            "$ref": "#/components/schemas/PublicTicketDraftDataDto"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "QUALIFY",
+              "DRAFT"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "state",
+          "draft"
+        ],
+        "type": "object"
+      },
+      "PublicDraftSavedResponseDto": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PublicDraftSavedDataDto"
+          },
+          "statusCode": {
+            "maximum": 299,
+            "minimum": 200,
+            "type": "number"
+          },
+          "success": {
+            "enum": [
+              true
+            ],
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "data"
+        ],
+        "type": "object"
+      },
+      "PublicHandoffDataDto": {
+        "properties": {
+          "conversationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "FOLLOW_UP_OR_HANDOFF"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "conversationId",
+          "state"
         ],
         "type": "object"
       },
@@ -259,14 +632,575 @@
         },
         "type": "object"
       },
+      "PublicHandoffResponseDto": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PublicHandoffDataDto"
+          },
+          "statusCode": {
+            "maximum": 299,
+            "minimum": 200,
+            "type": "number"
+          },
+          "success": {
+            "enum": [
+              true
+            ],
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "data"
+        ],
+        "type": "object"
+      },
+      "PublicIntegrationConfigDataDto": {
+        "properties": {
+          "appearance": {
+            "$ref": "#/components/schemas/PublicAppearanceDto"
+          },
+          "features": {
+            "$ref": "#/components/schemas/PublicIntegrationFeaturesDto"
+          },
+          "frameAllowed": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "frameAllowed",
+          "appearance",
+          "features"
+        ],
+        "type": "object"
+      },
+      "PublicIntegrationConfigResponseDto": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PublicIntegrationConfigDataDto"
+          },
+          "statusCode": {
+            "maximum": 299,
+            "minimum": 200,
+            "type": "number"
+          },
+          "success": {
+            "enum": [
+              true
+            ],
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "data"
+        ],
+        "type": "object"
+      },
+      "PublicIntegrationFeaturesDto": {
+        "properties": {
+          "publicAttachments": {
+            "type": "boolean"
+          },
+          "publicBot": {
+            "type": "boolean"
+          },
+          "publicRealtime": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "publicAttachments",
+          "publicRealtime",
+          "publicBot"
+        ],
+        "type": "object"
+      },
+      "PublicPaginationMetaDto": {
+        "properties": {
+          "limit": {
+            "maximum": 100,
+            "minimum": 1,
+            "type": "number"
+          },
+          "page": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "total": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "totalPages": {
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "page",
+          "limit",
+          "total",
+          "totalPages"
+        ],
+        "type": "object"
+      },
+      "PublicPreferencesDataDto": {
+        "properties": {
+          "displayName": {
+            "nullable": true,
+            "type": "string"
+          },
+          "lastSeenAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "locale": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "locale"
+        ],
+        "type": "object"
+      },
+      "PublicPreferencesResponseDto": {
+        "properties": {
+          "data": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PublicPreferencesDataDto"
+              }
+            ],
+            "nullable": true
+          },
+          "statusCode": {
+            "maximum": 299,
+            "minimum": 200,
+            "type": "number"
+          },
+          "success": {
+            "enum": [
+              true
+            ],
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "data"
+        ],
+        "type": "object"
+      },
+      "PublicServiceDto": {
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "label"
+        ],
+        "type": "object"
+      },
+      "PublicSessionDataDto": {
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          },
+          "expiresIn": {
+            "minimum": 1,
+            "type": "number"
+          },
+          "trustedDeviceExpiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "trustedDeviceToken": {
+            "type": "string"
+          },
+          "verified": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "accessToken",
+          "expiresIn",
+          "trustedDeviceToken",
+          "trustedDeviceExpiresAt"
+        ],
+        "type": "object"
+      },
+      "PublicSessionResponseDto": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PublicSessionDataDto"
+          },
+          "statusCode": {
+            "maximum": 299,
+            "minimum": 200,
+            "type": "number"
+          },
+          "success": {
+            "enum": [
+              true
+            ],
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "data"
+        ],
+        "type": "object"
+      },
+      "PublicTicketConfirmedDataDto": {
+        "properties": {
+          "conversationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "ticketId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "ticketNumber": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "conversationId",
+          "ticketId",
+          "ticketNumber"
+        ],
+        "type": "object"
+      },
+      "PublicTicketConfirmedResponseDto": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PublicTicketConfirmedDataDto"
+          },
+          "statusCode": {
+            "maximum": 299,
+            "minimum": 200,
+            "type": "number"
+          },
+          "success": {
+            "enum": [
+              true
+            ],
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "data"
+        ],
+        "type": "object"
+      },
+      "PublicTicketDetailDto": {
+        "properties": {
+          "closedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "firstResponseDueAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "resolutionDueAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "resolvedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "RECEIVED",
+              "IN_PROGRESS",
+              "WAITING_FOR_CUSTOMER",
+              "RESOLVED",
+              "CLOSED"
+            ],
+            "type": "string"
+          },
+          "ticketNumber": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "ticketNumber",
+          "title",
+          "status",
+          "createdAt",
+          "updatedAt",
+          "description"
+        ],
+        "type": "object"
+      },
+      "PublicTicketDetailResponseDto": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PublicTicketDetailDto"
+          },
+          "statusCode": {
+            "maximum": 299,
+            "minimum": 200,
+            "type": "number"
+          },
+          "success": {
+            "enum": [
+              true
+            ],
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "data"
+        ],
+        "type": "object"
+      },
+      "PublicTicketDraftDataDto": {
+        "properties": {
+          "categoryId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "customerAccountNumber": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "impact": {
+            "enum": [
+              "LOW",
+              "MEDIUM",
+              "HIGH"
+            ],
+            "type": "string"
+          },
+          "serviceKey": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "urgency": {
+            "enum": [
+              "LOW",
+              "MEDIUM",
+              "HIGH"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "categoryId",
+          "title",
+          "description",
+          "impact",
+          "urgency"
+        ],
+        "type": "object"
+      },
+      "PublicTicketListResponseDto": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/PublicTicketSummaryDto"
+            },
+            "type": "array"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PublicPaginationMetaDto"
+          },
+          "statusCode": {
+            "maximum": 299,
+            "minimum": 200,
+            "type": "number"
+          },
+          "success": {
+            "enum": [
+              true
+            ],
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "data",
+          "meta"
+        ],
+        "type": "object"
+      },
+      "PublicTicketSummaryDto": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "RECEIVED",
+              "IN_PROGRESS",
+              "WAITING_FOR_CUSTOMER",
+              "RESOLVED",
+              "CLOSED"
+            ],
+            "type": "string"
+          },
+          "ticketNumber": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "ticketNumber",
+          "title",
+          "status",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "PublicTimelineEntryDto": {
+        "properties": {
+          "author": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "correctsCommentId": {
+            "format": "uuid",
+            "nullable": true,
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "RECEIVED",
+              "IN_PROGRESS",
+              "WAITING_FOR_CUSTOMER",
+              "RESOLVED",
+              "CLOSED"
+            ],
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "COMMENT",
+              "STATUS"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "PublicTimelineResponseDto": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/PublicTimelineEntryDto"
+            },
+            "type": "array"
+          },
+          "statusCode": {
+            "maximum": 299,
+            "minimum": 200,
+            "type": "number"
+          },
+          "success": {
+            "enum": [
+              true
+            ],
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "data"
+        ],
+        "type": "object"
+      },
       "RequestEmailVerificationDto": {
         "properties": {
           "email": {
             "example": "client@example.com",
+            "format": "email",
+            "maxLength": 255,
             "type": "string"
           },
           "integrationKey": {
             "description": "Clé publique de l'intégration",
+            "maxLength": 80,
+            "minLength": 16,
             "type": "string"
           }
         },
@@ -326,6 +1260,69 @@
         ],
         "type": "object"
       },
+      "TrustedDeviceDataDto": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "current": {
+            "type": "boolean"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "lastUsedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "revokedAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "current",
+          "createdAt",
+          "expiresAt"
+        ],
+        "type": "object"
+      },
+      "TrustedDeviceListResponseDto": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/TrustedDeviceDataDto"
+            },
+            "type": "array"
+          },
+          "statusCode": {
+            "maximum": 299,
+            "minimum": 200,
+            "type": "number"
+          },
+          "success": {
+            "enum": [
+              true
+            ],
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "data"
+        ],
+        "type": "object"
+      },
       "UpdatePublicPreferencesDto": {
         "properties": {
           "displayName": {
@@ -338,6 +1335,84 @@
             "type": "string"
           }
         },
+        "type": "object"
+      },
+      "VerificationRejectedDataDto": {
+        "properties": {
+          "verified": {
+            "enum": [
+              false
+            ],
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "verified"
+        ],
+        "type": "object"
+      },
+      "VerificationRejectedResponseDto": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/VerificationRejectedDataDto"
+          },
+          "statusCode": {
+            "maximum": 299,
+            "minimum": 200,
+            "type": "number"
+          },
+          "success": {
+            "enum": [
+              true
+            ],
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "data"
+        ],
+        "type": "object"
+      },
+      "VerificationRequestDataDto": {
+        "properties": {
+          "challengeId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "challengeId"
+        ],
+        "type": "object"
+      },
+      "VerificationRequestResponseDto": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/VerificationRequestDataDto"
+          },
+          "message": {
+            "type": "string"
+          },
+          "statusCode": {
+            "maximum": 299,
+            "minimum": 200,
+            "type": "number"
+          },
+          "success": {
+            "enum": [
+              true
+            ],
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "data",
+          "message"
+        ],
         "type": "object"
       }
     },
@@ -383,7 +1458,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiSuccessResponse"
+                  "$ref": "#/components/schemas/PublicCatalogResponseDto"
                 }
               }
             },
@@ -408,6 +1483,61 @@
         "summary": "Catalogue public autorisé pour cette intégration",
         "tags": [
           "Support public - demandes"
+        ],
+        "x-api-audience": "public-support"
+      }
+    },
+    "/api/v1/public-support/config": {
+      "get": {
+        "operationId": "PublicPortalConfigController_get",
+        "parameters": [
+          {
+            "description": "Clé publique de l'intégration",
+            "in": "query",
+            "name": "integrationKey",
+            "required": true,
+            "schema": {
+              "maxLength": 80,
+              "minLength": 16,
+              "type": "string"
+            }
+          },
+          {
+            "description": "Origine exacte demandant l'intégration en iframe",
+            "in": "query",
+            "name": "origin",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicIntegrationConfigResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [],
+        "summary": "Charger la configuration publique bornée d'une intégration",
+        "tags": [
+          "Support public - configuration"
         ],
         "x-api-audience": "public-support"
       }
@@ -441,7 +1571,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiSuccessResponse"
+                  "$ref": "#/components/schemas/PublicConversationStateResponseDto"
                 }
               }
             },
@@ -488,7 +1618,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiCollectionResponse"
+                  "$ref": "#/components/schemas/PublicAttachmentListResponseDto"
                 }
               }
             },
@@ -526,14 +1656,50 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "in": "header",
+            "name": "idempotency-key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Clé unique liée au contenu réel du fichier.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
           }
         ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "properties": {
+                  "file": {
+                    "format": "binary",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "file"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "201": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiSuccessResponse"
+                  "$ref": "#/components/schemas/PublicAttachmentResponseDto"
                 }
               }
             },
@@ -644,7 +1810,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiSuccessResponse"
+                  "$ref": "#/components/schemas/PublicAttachmentResponseDto"
                 }
               }
             },
@@ -669,6 +1835,53 @@
         "summary": "Consulter l'état du scan",
         "tags": [
           "Support public - pièces jointes pré-ticket"
+        ],
+        "x-api-audience": "public-support"
+      }
+    },
+    "/api/v1/public-support/conversations/{id}": {
+      "get": {
+        "operationId": "PublicConversationResumeController_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicConversationDetailResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [
+          {
+            "publicSession": []
+          }
+        ],
+        "summary": "Reprendre une conversation ou son brouillon",
+        "tags": [
+          "Support public - demandes"
         ],
         "x-api-audience": "public-support"
       }
@@ -710,7 +1923,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiSuccessResponse"
+                  "$ref": "#/components/schemas/PublicTicketConfirmedResponseDto"
                 }
               }
             },
@@ -775,7 +1988,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiSuccessResponse"
+                  "$ref": "#/components/schemas/PublicDraftSavedResponseDto"
                 }
               }
             },
@@ -841,7 +2054,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiSuccessResponse"
+                  "$ref": "#/components/schemas/PublicHandoffResponseDto"
                 }
               }
             },
@@ -879,7 +2092,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiSuccessResponse"
+                  "$ref": "#/components/schemas/PublicSessionResponseDto"
                 }
               }
             },
@@ -927,7 +2140,14 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiSuccessResponse"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/PublicSessionResponseDto"
+                    },
+                    {
+                      "$ref": "#/components/schemas/VerificationRejectedResponseDto"
+                    }
+                  ]
                 }
               }
             },
@@ -971,7 +2191,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiSuccessResponse"
+                  "$ref": "#/components/schemas/VerificationRequestResponseDto"
                 }
               }
             },
@@ -1005,7 +2225,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiSuccessResponse"
+                  "$ref": "#/components/schemas/PublicPreferencesResponseDto"
                 }
               }
             },
@@ -1061,7 +2281,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiSuccessResponse"
+                  "$ref": "#/components/schemas/PublicPreferencesResponseDto"
                 }
               }
             },
@@ -1109,7 +2329,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiSuccessResponse"
+                  "$ref": "#/components/schemas/PublicSessionResponseDto"
                 }
               }
             },
@@ -1143,7 +2363,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiSuccessResponse"
+                  "$ref": "#/components/schemas/BootstrapGrantResponseDto"
                 }
               }
             },
@@ -1172,6 +2392,91 @@
         "x-api-audience": "public-support"
       }
     },
+    "/api/v1/public-support/session/devices": {
+      "get": {
+        "operationId": "PublicTrustedDevicesController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrustedDeviceListResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [
+          {
+            "publicSession": []
+          }
+        ],
+        "summary": "Lister les appareils de confiance du demandeur",
+        "tags": [
+          "Support public - appareils"
+        ],
+        "x-api-audience": "public-support"
+      }
+    },
+    "/api/v1/public-support/session/devices/{id}": {
+      "delete": {
+        "operationId": "PublicTrustedDevicesController_revoke",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceRevokedResponseDto"
+                }
+              }
+            },
+            "description": ""
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [
+          {
+            "publicSession": []
+          }
+        ],
+        "summary": "Révoquer un appareil de confiance précis",
+        "tags": [
+          "Support public - appareils"
+        ],
+        "x-api-audience": "public-support"
+      }
+    },
     "/api/v1/public-support/session/restore": {
       "post": {
         "operationId": "ExternalIdentityController_restore",
@@ -1179,7 +2484,7 @@
           {
             "in": "header",
             "name": "x-integration-key",
-            "required": false,
+            "required": true,
             "schema": {
               "type": "string"
             }
@@ -1187,7 +2492,7 @@
           {
             "in": "header",
             "name": "x-trusted-device",
-            "required": false,
+            "required": true,
             "schema": {
               "type": "string"
             }
@@ -1198,7 +2503,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiSuccessResponse"
+                  "$ref": "#/components/schemas/PublicSessionResponseDto"
                 }
               }
             },
@@ -1237,7 +2542,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiSuccessResponse"
+                  "$ref": "#/components/schemas/DeviceRevokedResponseDto"
                 }
               }
             },
@@ -1273,17 +2578,22 @@
           {
             "in": "query",
             "name": "page",
-            "required": true,
+            "required": false,
             "schema": {
-              "type": "string"
+              "default": 1,
+              "minimum": 1,
+              "type": "integer"
             }
           },
           {
             "in": "query",
             "name": "limit",
-            "required": true,
+            "required": false,
             "schema": {
-              "type": "string"
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
             }
           }
         ],
@@ -1292,7 +2602,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiPaginatedResponse"
+                  "$ref": "#/components/schemas/PublicTicketListResponseDto"
                 }
               }
             },
@@ -1339,7 +2649,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiSuccessResponse"
+                  "$ref": "#/components/schemas/PublicTicketDetailResponseDto"
                 }
               }
             },
@@ -1405,7 +2715,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiSuccessResponse"
+                  "$ref": "#/components/schemas/PublicCommentResponseDto"
                 }
               }
             },
@@ -1452,7 +2762,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiSuccessResponse"
+                  "$ref": "#/components/schemas/PublicTimelineResponseDto"
                 }
               }
             },
@@ -1499,7 +2809,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiCollectionResponse"
+                  "$ref": "#/components/schemas/PublicAttachmentListResponseDto"
                 }
               }
             },
@@ -1537,14 +2847,50 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "in": "header",
+            "name": "idempotency-key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Clé unique liée au contenu réel du fichier.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
           }
         ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "properties": {
+                  "file": {
+                    "format": "binary",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "file"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "201": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiSuccessResponse"
+                  "$ref": "#/components/schemas/PublicAttachmentResponseDto"
                 }
               }
             },
@@ -1655,7 +3001,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiSuccessResponse"
+                  "$ref": "#/components/schemas/PublicAttachmentResponseDto"
                 }
               }
             },

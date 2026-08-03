@@ -6,10 +6,10 @@ import { outboxEvents, supportConversations, supportMessages } from '../../../da
 import { PublicPrincipal } from '../../external-identity/interfaces/public-principal.interface';
 import { TicketsService } from '../../tickets/services/tickets.service';
 import { SavePublicTicketDraftDto } from '../dto/public-conversation.dto';
-import { PublicTicketDraft } from '../interfaces/public-admission.interface';
 import { PublicAdmissionPolicyService } from './public-admission-policy.service';
 import { PublicTicketAccessService } from './public-ticket-access.service';
 import { PreTicketAttachmentMaterializerService } from './pre-ticket-attachment-materializer.service';
+import { normalizeDraft, parseDraft, publicDraft } from './public-ticket-draft';
 
 @Injectable()
 export class PublicConversationService {
@@ -35,6 +35,21 @@ export class PublicConversationService {
       await this.writeMutationEvent(principal, id, 'PUBLIC_CONVERSATION_STARTED');
     });
     return { data: { id, state: 'QUALIFY' as const } };
+  }
+
+  async get(id: string, principal: PublicPrincipal) {
+    const conversation = await this.access.requireConversation(id, principal);
+    return {
+      data: {
+        id: conversation.id,
+        state: conversation.currentState,
+        status: conversation.status,
+        ticketId: conversation.ticketId,
+        draft: publicDraft(conversation.context['draft']),
+        lastMessageAt: conversation.lastMessageAt,
+        createdAt: conversation.createdAt,
+      },
+    };
   }
 
   async saveDraft(id: string, principal: PublicPrincipal, dto: SavePublicTicketDraftDto) {
@@ -158,37 +173,4 @@ export class PublicConversationService {
       payload: { conversationId },
     });
   }
-}
-
-function normalizeDraft(dto: SavePublicTicketDraftDto): PublicTicketDraft {
-  return {
-    categoryId: dto.categoryId,
-    title: dto.title.trim(),
-    description: dto.description.trim(),
-    impact: dto.impact,
-    urgency: dto.urgency,
-    ...(dto.customerAccountNumber ? { customerAccountNumber: dto.customerAccountNumber.trim() } : {}),
-    ...(dto.serviceKey ? { serviceKey: dto.serviceKey.trim() } : {}),
-  };
-}
-
-function parseDraft(value: unknown): PublicTicketDraft {
-  if (!isRecord(value)) throw new BadRequestException('Le brouillon doit être complété avant confirmation.');
-  const dto = Object.assign(new SavePublicTicketDraftDto(), value);
-  const valid =
-    typeof dto.categoryId === 'string' &&
-    typeof dto.title === 'string' &&
-    typeof dto.description === 'string' &&
-    isLevel(dto.impact) &&
-    isLevel(dto.urgency);
-  if (!valid) throw new BadRequestException('Le brouillon enregistré est invalide.');
-  return normalizeDraft(dto);
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-function isLevel(value: unknown): value is 'LOW' | 'MEDIUM' | 'HIGH' {
-  return value === 'LOW' || value === 'MEDIUM' || value === 'HIGH';
 }

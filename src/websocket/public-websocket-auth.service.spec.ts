@@ -54,10 +54,25 @@ describe('PublicWebSocketAuthService', () => {
     expect(sessions.validate).toHaveBeenCalledWith('opaque.token');
   });
 
+  it('accepte le cookie iframe public distinct', async () => {
+    sessions.validate.mockResolvedValue({
+      kind: 'PUBLIC',
+      sub: 'requester-001',
+      supportIntegrationId: 'integration-001',
+      externalRequesterId: 'requester-001',
+      jti: 'session-001',
+    });
+
+    await service.authenticate('support_iframe=iframe-token', 'https://widget.example.test');
+
+    expect(sessions.validate).toHaveBeenCalledWith('iframe-token');
+  });
+
   it.each([
     [undefined, 'https://widget.example.test'],
     ['support_session=token', undefined],
     ['support_session=first; support_session=second', 'https://widget.example.test'],
+    ['support_session=first; support_iframe=second', 'https://widget.example.test'],
     ['support_session=%E0%A4%A', 'https://widget.example.test'],
   ])('rejette une authentification ambigue ou incomplete', async (cookie, origin) => {
     await expect(service.authenticate(cookie, origin)).rejects.toBeInstanceOf(UnauthorizedException);
@@ -66,7 +81,7 @@ describe('PublicWebSocketAuthService', () => {
 
   it('impose un cookie __Host en production', async () => {
     process.env['NODE_ENV'] = 'production';
-    process.env['PUBLIC_WS_COOKIE_NAME'] = 'support_session';
+    process.env['PUBLIC_WS_COOKIE_NAME'] = 'support_session,__Host-support_iframe';
     await expect(service.authenticate('support_session=token', 'https://widget.example.test')).rejects.toThrow(
       '__Host-',
     );

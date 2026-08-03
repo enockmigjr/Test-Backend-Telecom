@@ -14,10 +14,11 @@ import { TrustedDeviceService } from './services/trusted-device.service';
 import { BootstrapGrantService } from './services/bootstrap-grant.service';
 import { IntegrationAssertionService } from './services/integration-assertion.service';
 import { WordPressIdentityStoreService } from './services/wordpress-identity-store.service';
+import { PublicTrustedDevicesController } from './public-trusted-devices.controller';
 
 @Module({
   imports: [SupportIntegrationsModule],
-  controllers: [ExternalIdentityController],
+  controllers: [ExternalIdentityController, PublicTrustedDevicesController],
   providers: [
     ContactVerificationService,
     BootstrapGrantService,

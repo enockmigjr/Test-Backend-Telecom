@@ -27,12 +27,10 @@ export class PublicWebSocketAuthService {
 
   private extractCookie(header: string | undefined): string | null {
     if (!header) return null;
-    const name = this.cookieName();
-    const values = header
-      .split(';')
-      .map((part) => part.trim())
-      .filter((part) => part.startsWith(`${name}=`))
-      .map((part) => part.slice(name.length + 1));
+    const cookies = header.split(';').map((part) => part.trim());
+    const values = this.cookieNames().flatMap((name) =>
+      cookies.filter((part) => part.startsWith(`${name}=`)).map((part) => part.slice(name.length + 1)),
+    );
     if (values.length !== 1 || !values[0]) return null;
     try {
       return decodeURIComponent(values[0]);
@@ -41,11 +39,24 @@ export class PublicWebSocketAuthService {
     }
   }
 
-  private cookieName(): string {
+  private cookieNames(): readonly string[] {
     const configured = process.env['PUBLIC_WS_COOKIE_NAME'];
-    if (process.env['NODE_ENV'] !== 'production') return configured || 'support_session';
-    const name = configured || '__Host-support_session';
-    if (!name.startsWith('__Host-')) throw new Error('PUBLIC_WS_COOKIE_NAME doit utiliser __Host- en production.');
-    return name;
+    const fallback =
+      process.env['NODE_ENV'] === 'production'
+        ? ['__Host-support_session', '__Host-support_iframe']
+        : ['support_session', 'support_iframe'];
+    const names = configured
+      ? configured
+          .split(',')
+          .map((name) => name.trim())
+          .filter(Boolean)
+      : fallback;
+    if (names.length === 0 || new Set(names).size !== names.length) {
+      throw new Error('PUBLIC_WS_COOKIE_NAME doit contenir des noms uniques.');
+    }
+    if (process.env['NODE_ENV'] === 'production' && names.some((name) => !name.startsWith('__Host-'))) {
+      throw new Error('PUBLIC_WS_COOKIE_NAME doit utiliser __Host- en production.');
+    }
+    return names;
   }
 }

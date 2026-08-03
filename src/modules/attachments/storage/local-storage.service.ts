@@ -15,6 +15,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { promises as fs } from 'fs';
 import * as path from 'path';
 import { IStorageService } from './storage.interface';
+import { listFilesOlderThan } from './quarantine-inventory';
 
 /**
  * Fournisseur de stockage local implémentant le contrat `IStorageService`.
@@ -132,6 +133,10 @@ export class LocalStorageService implements IStorageService {
       deleted += 1;
     }
     return deleted;
+  }
+
+  listQuarantineFiles(olderThan: Date): Promise<string[]> {
+    return listFilesOlderThan(this.validatePath('quarantine'), olderThan);
   }
 
   /**

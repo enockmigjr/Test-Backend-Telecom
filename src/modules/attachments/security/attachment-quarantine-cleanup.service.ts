@@ -19,7 +19,9 @@ export class AttachmentQuarantineCleanupService {
 
   @Cron(CronExpression.EVERY_HOUR)
   async cleanup(): Promise<void> {
-    const incomingDeleted = await this.storage.cleanupIncoming(new Date(Date.now() - this.retentionMs));
+    const olderThan = new Date(Date.now() - this.retentionMs);
+    const incomingDeleted = await this.storage.cleanupIncoming(olderThan);
+    const orphanedDeleted = await this.cleanupOrphanedQuarantines(olderThan);
     const expired = await this.drizzle.db
       .select()
       .from(attachments)
@@ -52,6 +54,31 @@ export class AttachmentQuarantineCleanupService {
     }
     if (expired.length > 0) this.logger.log(`${expired.length} quarantaine(s) expirée(s) nettoyée(s).`);
     if (incomingDeleted > 0) this.logger.log(`${incomingDeleted} temporaire(s) entrant(s) nettoyé(s).`);
+    if (orphanedDeleted > 0) this.logger.warn(`${orphanedDeleted} quarantaine(s) orpheline(s) nettoyée(s).`);
+  }
+
+  private async cleanupOrphanedQuarantines(olderThan: Date): Promise<number> {
+    const candidates = await this.storage.listQuarantineFiles(olderThan);
+    if (candidates.length === 0) return 0;
+    let deleted = 0;
+    for (let offset = 0; offset < candidates.length && deleted < 100; offset += 500) {
+      const batch = candidates.slice(offset, offset + 500);
+      const possibleObjectKeys = batch.flatMap((key) => [key, key.replace(/^quarantine\//, 'clean/')]);
+      const referenced = await this.drizzle.db
+        .select({ objectKey: attachments.objectKey })
+        .from(attachments)
+        .where(inArray(attachments.objectKey, possibleObjectKeys));
+      const referencedKeys = new Set(
+        referenced.flatMap(({ objectKey }) => [objectKey, objectKey.replace(/^clean\//, 'quarantine/')]),
+      );
+      for (const key of batch) {
+        if (deleted >= 100) break;
+        if (referencedKeys.has(key)) continue;
+        await this.storage.deleteQuarantine(key);
+        deleted += 1;
+      }
+    }
+    return deleted;
   }
 
   @Cron('*/5 * * * *')

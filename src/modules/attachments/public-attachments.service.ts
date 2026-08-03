@@ -17,6 +17,7 @@ import { MAX_ATTACHMENT_SIZE } from './attachment-upload.config';
 import { ANTIVIRUS_SCANNER, AntivirusScanner } from './security/antivirus-scanner.interface';
 import { LocalStorageService } from './storage/local-storage.service';
 import { Inject } from '@nestjs/common';
+import { PublicUploadReservation } from './public-attachment-idempotency.service';
 
 @Injectable()
 export class PublicAttachmentsService {
@@ -27,7 +28,12 @@ export class PublicAttachmentsService {
     @Inject(ANTIVIRUS_SCANNER) private readonly antivirus: AntivirusScanner,
   ) {}
 
-  async upload(ticketId: string, principal: PublicPrincipal, file?: Express.Multer.File) {
+  async upload(
+    ticketId: string,
+    principal: PublicPrincipal,
+    file: Express.Multer.File | undefined,
+    reservation: PublicUploadReservation,
+  ) {
     if (!file) throw new BadRequestException('Aucun fichier fourni.');
     try {
       await this.access.requireTicket(ticketId, principal);
@@ -61,6 +67,9 @@ export class PublicAttachmentsService {
           mimeType: 'application/octet-stream',
           fileSize: file.size,
           scanStatus: 'QUARANTINED',
+          publicUploadKeyHash: reservation.keyHash,
+          publicUploadFingerprint: reservation.fingerprint,
+          publicUploadIdempotencyExpiresAt: reservation.expiresAt,
         });
         const mutationId = generateUuid();
         await this.drizzle.db.insert(outboxEvents).values({

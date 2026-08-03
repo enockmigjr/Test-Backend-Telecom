@@ -60,12 +60,14 @@ Ajouter les entités publiques, introduire l’acteur discriminé et rendre la c
 
 ## Todo et tests
 
-- [ ] Unités : union d’acteur et combinaisons invalides.
-- [ ] Intégration : base vide, base peuplée, backfill et compatibilité des binaires N/N-1 sur le schéma expand.
-- [ ] SQL : chaque ancien `NOT NULL` est levé et chaque combinaison d’acteur invalide est refusée sur les nouvelles écritures.
-- [ ] Intégration : ticket + historique atomiques, puis ticket + historique + outbox lorsqu’un événement est fourni.
-- [ ] Régression ciblée : création, recherche, permissions, commentaires, SLA et affectation internes.
-- [ ] Jalons complets backend : unitaires, intégration, E2E, OpenAPI et build.
+- [x] Unités : union d’acteur et combinaisons invalides.
+- [x] Intégration : base vide, base peuplée, backfill et compatibilité des binaires N/N-1 sur le schéma expand.
+- [x] SQL : chaque ancien `NOT NULL` est levé et chaque combinaison d’acteur invalide est refusée sur les nouvelles écritures.
+- [x] Intégration : ticket + historique atomiques, puis ticket + historique + outbox lorsqu’un événement est fourni.
+- [x] Régression ciblée : création, recherche, permissions, commentaires, SLA et affectation internes.
+- [x] Jalons complets backend : unitaires, intégration, E2E, OpenAPI et build.
+
+Implémentation clôturée par `cdf3d94`, avec la compatibilité console complétée dans la phase 01b.
 
 ## Critères de succès
 

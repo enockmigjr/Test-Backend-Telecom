@@ -75,7 +75,7 @@ function ensureResponseSchema(path: string, operation: OperationObject, status: 
   const isBinary = path.endsWith('/download') || candidate.description.toLowerCase().includes('fichier pdf');
   if (isBinary) {
     const mediaType = path.includes('/reports/') ? 'application/pdf' : 'application/octet-stream';
-    candidate.content[mediaType] = { schema: { type: 'string', format: 'binary' } };
+    candidate.content = { [mediaType]: { schema: { type: 'string', format: 'binary' } } };
     return;
   }
 
@@ -123,5 +123,19 @@ export function completeOpenApiDocument(document: OpenAPIObject): OpenAPIObject 
       if (operation) completeOperation(path, operation);
     }
   }
+  for (const schema of Object.values(document.components.schemas)) normalizeBooleanEnums(schema);
   return document;
+}
+
+function normalizeBooleanEnums(value: unknown): void {
+  if (!isRecord(value)) return;
+  const values = value['enum'];
+  if (Array.isArray(values) && values.length > 0 && values.every((item) => typeof item === 'boolean')) {
+    value['type'] = 'boolean';
+  }
+  for (const nested of Object.values(value)) normalizeBooleanEnums(nested);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }

@@ -21,6 +21,7 @@ export interface IStorageService {
   deleteQuarantine(objectKey: string): Promise<void>;
   discardIncoming(file: Express.Multer.File): Promise<void>;
   cleanupIncoming(olderThan: Date): Promise<number>;
+  listQuarantineFiles(olderThan: Date): Promise<string[]>;
   download(objectKey: string): Promise<Buffer>;
   delete(objectKey: string): Promise<void>;
   getUrl(objectKey: string): Promise<string>;

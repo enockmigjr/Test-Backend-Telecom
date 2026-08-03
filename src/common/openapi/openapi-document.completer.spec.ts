@@ -76,4 +76,24 @@ describe('completeOpenApiDocument', () => {
       }),
     );
   });
+
+  it('corrige les littéraux booléens mal typés par le générateur Swagger', () => {
+    const source = fixture();
+    source.components = {
+      schemas: {
+        LiteralBoolean: {
+          type: 'object',
+          properties: { success: { type: 'number', enum: [true] } },
+        },
+      },
+    };
+
+    const document = completeOpenApiDocument(source);
+
+    expect(document.components?.schemas?.['LiteralBoolean']).toEqual(
+      expect.objectContaining({
+        properties: { success: { type: 'boolean', enum: [true] } },
+      }),
+    );
+  });
 });

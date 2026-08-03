@@ -90,8 +90,8 @@ Les origines de sites intégrateurs servent à `frame-ancestors` et `postMessage
 
 | Usage | Valeur réservée |
 |---|---|
-| Audience session publique | `telecom-public-support` |
-| Audience assertion intégration | `telecom-public-support-assertion` |
+| Audience session publique | `telecom-public-bff` |
+| Audience assertion intégration | `telecom-integration-assertion` |
 | Audience bootstrap top-level | `telecom-public-support-bootstrap` |
 | Cookie iframe | `__Host-support_iframe` |
 | Cookie pleine page | `__Host-support_session` |

@@ -9,10 +9,13 @@ import { PublicTicketAccessService } from './services/public-ticket-access.servi
 import { PublicTicketService } from './services/public-ticket.service';
 import { PublicTimelineService } from './services/public-timeline.service';
 import { PreTicketAttachmentMaterializerService } from './services/pre-ticket-attachment-materializer.service';
+import { PublicIntegrationConfigService } from './services/public-integration-config.service';
+import { PublicPortalConfigController } from './public-portal-config.controller';
+import { PublicConversationResumeController } from './public-conversation-resume.controller';
 
 @Module({
   imports: [forwardRef(() => TicketsModule)],
-  controllers: [PublicSupportController],
+  controllers: [PublicSupportController, PublicPortalConfigController, PublicConversationResumeController],
   providers: [
     PublicAdmissionPolicyService,
     PublicConversationService,
@@ -22,6 +25,7 @@ import { PreTicketAttachmentMaterializerService } from './services/pre-ticket-at
     PublicTicketService,
     PublicTimelineService,
     PreTicketAttachmentMaterializerService,
+    PublicIntegrationConfigService,
   ],
   exports: [PublicTicketAccessService],
 })

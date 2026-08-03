@@ -77,9 +77,9 @@ describe('contrat openapi.json', () => {
 
   /** Test : contient les 99 opérations actuelles avec des operationId uniques */
 
-  it('contient les 118 opérations actuelles avec des operationId uniques', () => {
+  it('contient les 122 opérations actuelles avec des operationId uniques', () => {
     const operationIds = apiOperations.map((operation) => operation['operationId']);
-    expect(apiOperations).toHaveLength(118);
+    expect(apiOperations).toHaveLength(122);
     expect(operationIds.every((id) => typeof id === 'string' && id.length > 0)).toBe(true);
     expect(new Set(operationIds).size).toBe(operationIds.length);
   });
