@@ -10,11 +10,13 @@
 import { Module } from '@nestjs/common';
 import { HealthController } from './health.controller';
 import { HealthService } from './health.service';
+import { AttachmentsModule } from '../../modules/attachments/attachments.module';
 
 /**
  * Module HealthModule
  */
 @Module({
+  imports: [AttachmentsModule],
   controllers: [HealthController],
   providers: [HealthService],
 })

@@ -24,6 +24,34 @@ export class IntegrationTrustPolicyDto {
 }
 
 export class IntegrationQuotaPolicyDto {
+  @ApiPropertyOptional({ default: 20, minimum: 1, maximum: 200 })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(200)
+  attachmentUploadsPerHour?: number;
+
+  @ApiPropertyOptional({ default: 50, minimum: 1, maximum: 500 })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(500)
+  attachmentUploadsPerIpHour?: number;
+
+  @ApiPropertyOptional({ default: 1000, minimum: 10, maximum: 10000 })
+  @IsOptional()
+  @IsInt()
+  @Min(10)
+  @Max(10000)
+  attachmentUploadsPerIntegrationHour?: number;
+
+  @ApiPropertyOptional({ default: 10485760, minimum: 1024, maximum: 10485760 })
+  @IsOptional()
+  @IsInt()
+  @Min(1024)
+  @Max(10 * 1024 * 1024)
+  attachmentMaxBytes?: number;
+
   @ApiPropertyOptional({ default: 5, minimum: 1, maximum: 100 })
   @IsOptional()
   @IsInt()

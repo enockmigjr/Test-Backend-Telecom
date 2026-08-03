@@ -9,6 +9,7 @@ import { SavePublicTicketDraftDto } from '../dto/public-conversation.dto';
 import { PublicTicketDraft } from '../interfaces/public-admission.interface';
 import { PublicAdmissionPolicyService } from './public-admission-policy.service';
 import { PublicTicketAccessService } from './public-ticket-access.service';
+import { PreTicketAttachmentMaterializerService } from './pre-ticket-attachment-materializer.service';
 
 @Injectable()
 export class PublicConversationService {
@@ -17,6 +18,7 @@ export class PublicConversationService {
     private readonly access: PublicTicketAccessService,
     private readonly admission: PublicAdmissionPolicyService,
     private readonly tickets: TicketsService,
+    private readonly materializer: PreTicketAttachmentMaterializerService,
   ) {}
 
   async create(principal: PublicPrincipal, serviceKey?: string) {
@@ -96,6 +98,7 @@ export class PublicConversationService {
           },
         ],
       });
+      await this.materializer.materialize(id, result.data.id, principal);
       const [updated] = await this.drizzle.db
         .update(supportConversations)
         .set({ ticketId: result.data.id, status: 'TICKET_CREATED', currentState: 'CREATED', lastMessageAt: new Date() })

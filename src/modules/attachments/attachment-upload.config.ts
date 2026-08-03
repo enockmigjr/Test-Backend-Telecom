@@ -13,6 +13,10 @@
 import { BadRequestException } from '@nestjs/common';
 import { MulterOptions } from '@nestjs/platform-express/multer/interfaces/multer-options.interface';
 import { extname } from 'path';
+import { resolve } from 'path';
+import { mkdirSync } from 'fs';
+import { diskStorage } from 'multer';
+import { generateUuid } from '../../common/helpers/uuidv7.helper';
 
 /** Dictionnaire immuable associant chaque type MIME aux extensions de fichier autorisées. */
 const ALLOWED_MIME_EXTENSIONS: Readonly<Record<string, readonly string[]>> = {
@@ -49,4 +53,18 @@ export const attachmentUploadOptions: MulterOptions = {
     }
     callback(null, true);
   },
+};
+
+/** Le public est contrôlé sur son contenu réel après écriture en quarantaine. */
+export const publicAttachmentUploadOptions: MulterOptions = {
+  storage: diskStorage({
+    destination: (_request, _file, callback) => {
+      const directory = resolve(process.env['STORAGE_LOCAL_PATH'] || './uploads', 'incoming');
+      // eslint-disable-next-line security/detect-non-literal-fs-filename -- chemin serveur fixe issu de la configuration
+      mkdirSync(directory, { recursive: true });
+      callback(null, directory);
+    },
+    filename: (_request, _file, callback) => callback(null, generateUuid()),
+  }),
+  limits: { fileSize: MAX_ATTACHMENT_SIZE, files: 1 },
 };

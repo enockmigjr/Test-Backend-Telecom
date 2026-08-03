@@ -15,6 +15,12 @@
  */
 export interface IStorageService {
   upload(file: Express.Multer.File, objectKey: string): Promise<string>;
+  quarantine(file: Express.Multer.File, objectKey: string): Promise<string>;
+  readQuarantine(objectKey: string): Promise<Buffer>;
+  promote(quarantineKey: string, cleanObjectKey: string): Promise<string>;
+  deleteQuarantine(objectKey: string): Promise<void>;
+  discardIncoming(file: Express.Multer.File): Promise<void>;
+  cleanupIncoming(olderThan: Date): Promise<number>;
   download(objectKey: string): Promise<Buffer>;
   delete(objectKey: string): Promise<void>;
   getUrl(objectKey: string): Promise<string>;

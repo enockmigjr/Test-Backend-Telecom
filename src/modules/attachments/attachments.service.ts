@@ -139,6 +139,14 @@ export class AttachmentsService {
     return attachment;
   }
 
+  async findOneDownloadableForUser(id: string, user: JwtPayload) {
+    const attachment = await this.findOneForUser(id, user);
+    if (attachment.scanStatus !== 'CLEAN' && attachment.scanStatus !== 'NOT_REQUIRED') {
+      throw new NotFoundException('Pièce jointe indisponible.');
+    }
+    return attachment;
+  }
+
   /**
    * Supprime une pièce jointe du stockage et de la base de données PostgreSQL.
    */

@@ -1517,6 +1517,30 @@
       },
       "IntegrationQuotaPolicyDto": {
         "properties": {
+          "attachmentMaxBytes": {
+            "default": 10485760,
+            "maximum": 10485760,
+            "minimum": 1024,
+            "type": "number"
+          },
+          "attachmentUploadsPerHour": {
+            "default": 20,
+            "maximum": 200,
+            "minimum": 1,
+            "type": "number"
+          },
+          "attachmentUploadsPerIntegrationHour": {
+            "default": 1000,
+            "maximum": 10000,
+            "minimum": 10,
+            "type": "number"
+          },
+          "attachmentUploadsPerIpHour": {
+            "default": 50,
+            "maximum": 500,
+            "minimum": 1,
+            "type": "number"
+          },
           "verificationAttemptsPerHour": {
             "default": 10,
             "maximum": 100,
@@ -6931,6 +6955,209 @@
         "x-api-audience": "public-support"
       }
     },
+    "/api/v1/public-support/conversations/{conversationId}/attachments": {
+      "get": {
+        "operationId": "PublicConversationAttachmentsController_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversationId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiCollectionResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [
+          {
+            "publicSession": []
+          }
+        ],
+        "summary": "Lister les fichiers de la conversation",
+        "tags": [
+          "Support public - pièces jointes pré-ticket"
+        ],
+        "x-api-audience": "public-support"
+      },
+      "post": {
+        "operationId": "PublicConversationAttachmentsController_upload",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversationId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiSuccessResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [
+          {
+            "publicSession": []
+          }
+        ],
+        "summary": "Déposer un fichier avant création du ticket",
+        "tags": [
+          "Support public - pièces jointes pré-ticket"
+        ],
+        "x-api-audience": "public-support"
+      }
+    },
+    "/api/v1/public-support/conversations/{conversationId}/attachments/{attachmentId}/download": {
+      "get": {
+        "operationId": "PublicConversationAttachmentsController_download",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversationId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "attachmentId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": ""
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [
+          {
+            "publicSession": []
+          }
+        ],
+        "summary": "Télécharger un fichier pré-ticket sain",
+        "tags": [
+          "Support public - pièces jointes pré-ticket"
+        ],
+        "x-api-audience": "public-support"
+      }
+    },
+    "/api/v1/public-support/conversations/{conversationId}/attachments/{attachmentId}/status": {
+      "get": {
+        "operationId": "PublicConversationAttachmentsController_status",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversationId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "attachmentId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiSuccessResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [
+          {
+            "publicSession": []
+          }
+        ],
+        "summary": "Consulter l'état du scan",
+        "tags": [
+          "Support public - pièces jointes pré-ticket"
+        ],
+        "x-api-audience": "public-support"
+      }
+    },
     "/api/v1/public-support/conversations/{id}/confirm": {
       "post": {
         "operationId": "PublicSupportController_confirm",
@@ -7735,6 +7962,209 @@
         "summary": "Consulter la timeline publique filtrée",
         "tags": [
           "Support public - demandes"
+        ],
+        "x-api-audience": "public-support"
+      }
+    },
+    "/api/v1/public-support/tickets/{ticketId}/attachments": {
+      "get": {
+        "operationId": "PublicAttachmentsController_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "ticketId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiCollectionResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [
+          {
+            "publicSession": []
+          }
+        ],
+        "summary": "Lister les pièces jointes et leur état de scan",
+        "tags": [
+          "Support public - pièces jointes"
+        ],
+        "x-api-audience": "public-support"
+      },
+      "post": {
+        "operationId": "PublicAttachmentsController_upload",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "ticketId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiSuccessResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [
+          {
+            "publicSession": []
+          }
+        ],
+        "summary": "Déposer une pièce jointe en quarantaine",
+        "tags": [
+          "Support public - pièces jointes"
+        ],
+        "x-api-audience": "public-support"
+      }
+    },
+    "/api/v1/public-support/tickets/{ticketId}/attachments/{attachmentId}/download": {
+      "get": {
+        "operationId": "PublicAttachmentsController_download",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "ticketId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "attachmentId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": ""
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [
+          {
+            "publicSession": []
+          }
+        ],
+        "summary": "Télécharger uniquement une pièce jointe déclarée saine",
+        "tags": [
+          "Support public - pièces jointes"
+        ],
+        "x-api-audience": "public-support"
+      }
+    },
+    "/api/v1/public-support/tickets/{ticketId}/attachments/{attachmentId}/status": {
+      "get": {
+        "operationId": "PublicAttachmentsController_status",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "ticketId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "attachmentId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiSuccessResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [
+          {
+            "publicSession": []
+          }
+        ],
+        "summary": "Consulter l'état d'analyse d'une pièce jointe",
+        "tags": [
+          "Support public - pièces jointes"
         ],
         "x-api-audience": "public-support"
       }

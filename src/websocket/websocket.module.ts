@@ -13,12 +13,22 @@ import { Global, Module } from '@nestjs/common';
 import { TelecomWebSocketGateway } from './websocket.gateway';
 import { AuthModule } from '../modules/auth/auth.module';
 import { WebSocketAuthService } from './websocket-auth.service';
+import { ExternalIdentityModule } from '../modules/external-identity/external-identity.module';
+import { PublicSupportGateway } from './public-support.gateway';
+import { PublicWebSocketAuthService } from './public-websocket-auth.service';
+import { PublicRealtimeNotifierService } from './public-realtime-notifier.service';
 
 @Global()
 @Module({
-  imports: [AuthModule],
-  providers: [TelecomWebSocketGateway, WebSocketAuthService],
-  exports: [TelecomWebSocketGateway],
+  imports: [AuthModule, ExternalIdentityModule],
+  providers: [
+    TelecomWebSocketGateway,
+    WebSocketAuthService,
+    PublicSupportGateway,
+    PublicWebSocketAuthService,
+    PublicRealtimeNotifierService,
+  ],
+  exports: [TelecomWebSocketGateway, PublicSupportGateway, PublicRealtimeNotifierService],
 })
 /**
  * Module NestJS `WebSocketModule` configurant les dépendances, contrôleurs et services associés.

@@ -105,6 +105,18 @@ export class SupportIntegrationsService {
       : undefined;
     const quotaPolicy = dto.quotaPolicy
       ? {
+          attachmentUploadsPerHour:
+            dto.quotaPolicy.attachmentUploadsPerHour ??
+            policyNumber(existing?.quotaPolicy, 'attachmentUploadsPerHour', 20),
+          attachmentUploadsPerIpHour:
+            dto.quotaPolicy.attachmentUploadsPerIpHour ??
+            policyNumber(existing?.quotaPolicy, 'attachmentUploadsPerIpHour', 50),
+          attachmentUploadsPerIntegrationHour:
+            dto.quotaPolicy.attachmentUploadsPerIntegrationHour ??
+            policyNumber(existing?.quotaPolicy, 'attachmentUploadsPerIntegrationHour', 1000),
+          attachmentMaxBytes:
+            dto.quotaPolicy.attachmentMaxBytes ??
+            policyNumber(existing?.quotaPolicy, 'attachmentMaxBytes', 10 * 1024 * 1024),
           verificationRequestsPerHour:
             dto.quotaPolicy.verificationRequestsPerHour ??
             policyNumber(existing?.quotaPolicy, 'verificationRequestsPerHour', 5),

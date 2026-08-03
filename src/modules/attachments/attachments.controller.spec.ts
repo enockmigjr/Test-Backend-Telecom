@@ -52,6 +52,7 @@ const attachment = {
   mimeType: 'application/pdf',
   fileSize: 4,
   scanStatus: 'NOT_REQUIRED' as const,
+  quarantineDeletedAt: null,
   scannedAt: null,
   scanError: null,
   createdAt: new Date(),

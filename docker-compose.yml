@@ -45,6 +45,24 @@ services:
       - telecom-network
 
   # ============================================
+  # ClamAV — analyse antivirus des fichiers publics
+  # ============================================
+  clamav:
+    image: clamav/clamav:1.4.5-debian
+    container_name: telecom-clamav
+    restart: unless-stopped
+    volumes:
+      - clamav-data:/var/lib/clamav
+    healthcheck:
+      test: ['CMD-SHELL', 'clamdscan --ping 1']
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 120s
+    networks:
+      - telecom-network
+
+  # ============================================
   # API NestJS (dev)
   # ============================================
   api:
@@ -72,6 +90,8 @@ services:
       REDIS_URL: ${DOCKER_REDIS_URL:-redis://redis:6379}
       SMTP_HOST: ${DOCKER_SMTP_HOST:-mailpit}
       SMTP_PORT: ${DOCKER_SMTP_PORT:-1025}
+      CLAMAV_HOST: clamav
+      CLAMAV_PORT: 3310
       APP_NAME: ${APP_NAME:-"Helpdesk Telecom"}
       APP_URL: ${APP_URL:-http://localhost:3000}
       API_PUBLIC_URL: ${API_PUBLIC_URL:-http://localhost:3000}
@@ -87,6 +107,8 @@ services:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      clamav:
         condition: service_healthy
     command: pnpm run start:dev
     networks:
@@ -264,6 +286,7 @@ volumes:
   tempo-data:
   grafana-data:
   uptime-kuma-data:
+  clamav-data:
 
 networks:
   telecom-network:

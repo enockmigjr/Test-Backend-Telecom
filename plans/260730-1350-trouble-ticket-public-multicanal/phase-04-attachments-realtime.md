@@ -55,15 +55,15 @@ L’upload écrit le fichier en zone de quarantaine et une métadonnée `QUARANT
 
 ## Todo et tests
 
-- [ ] Fichier déguisé, archive interdite, dépassement de taille et contenu malveillant.
-- [ ] Aucun accès durant quarantaine ou après rejet.
-- [ ] Parent XOR : combinaisons multi-parent et `internalNoteId + supportMessageId` refusées.
-- [ ] Compatibilité `file-type` démontrée par Jest et build CommonJS.
-- [ ] Queue : enregistrement, fermeture, healthcheck et Bull Board.
-- [ ] Nettoyage et reprise après panne du worker.
-- [ ] Connexion WebSocket avec session expirée, origine hostile et room forgée.
-- [ ] Isolation entre demandeurs et intégrations.
-- [ ] Polling fonctionnel sans WebSocket.
+- [x] Fichier déguisé, archive interdite, dépassement de taille et contenu malveillant.
+- [x] Aucun accès durant quarantaine ou après rejet.
+- [x] Parent XOR : combinaisons multi-parent et `internalNoteId + supportMessageId` refusées.
+- [x] Compatibilité `file-type` démontrée par Jest et build CommonJS.
+- [x] Queue : enregistrement, fermeture, healthcheck et Bull Board.
+- [x] Nettoyage et reprise après panne du worker.
+- [x] Connexion WebSocket avec session expirée, origine hostile et room forgée.
+- [x] Isolation entre demandeurs et intégrations.
+- [x] Contrat de polling REST documenté et exporté ; validation navigateur reportée à la phase 05.
 
 ## Critères de succès
 

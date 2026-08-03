@@ -19,5 +19,6 @@ export interface BullMqQueues {
   email: Queue;
   notification: Queue;
   externalDelivery: Queue;
+  attachmentScan: Queue;
   [key: string]: Queue;
 }

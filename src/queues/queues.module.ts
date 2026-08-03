@@ -18,6 +18,7 @@ import { SlaWorker } from './workers/sla.worker';
 import { AuditWorker } from './workers/audit.worker';
 import { ReportWorker } from './workers/report.worker';
 import { AssignmentWorker, ASSIGNMENT_QUEUE } from './workers/assignment.worker';
+import { AttachmentScanWorker } from './workers/attachment-scan.worker';
 
 export const EMAIL_QUEUE = 'email-queue';
 export const NOTIFICATION_QUEUE = 'notification-queue';
@@ -25,6 +26,7 @@ export const SLA_QUEUE = 'sla-queue';
 export const AUDIT_QUEUE = 'audit-queue';
 export const REPORT_QUEUE = 'report-queue';
 export const EXTERNAL_DELIVERY_QUEUE = 'external-delivery-queue';
+export const ATTACHMENT_SCAN_QUEUE = 'attachment-scan-queue';
 export { ASSIGNMENT_QUEUE };
 
 import { ReportsModule } from '../modules/reports/reports.module';
@@ -72,6 +74,15 @@ import { TicketsModule } from '../modules/tickets/tickets.module';
               removeOnFail: { age: 30 * 24 * 60 * 60 },
             },
           }),
+          attachmentScan: new Queue(ATTACHMENT_SCAN_QUEUE, {
+            connection,
+            defaultJobOptions: {
+              attempts: 8,
+              backoff: { type: 'fixed', delay: 30_000 },
+              removeOnComplete: { age: 7 * 24 * 60 * 60 },
+              removeOnFail: { age: 30 * 24 * 60 * 60 },
+            },
+          }),
         };
       },
     },
@@ -81,6 +92,7 @@ import { TicketsModule } from '../modules/tickets/tickets.module';
     AuditWorker,
     ReportWorker,
     AssignmentWorker,
+    AttachmentScanWorker,
   ],
   exports: ['BullMQ_Queues'],
 })
@@ -92,7 +104,7 @@ export class QueuesModule implements OnModuleInit {
 
   onModuleInit(): void {
     this.logger.log(
-      'Files BullMQ initialisées: email, notification, sla, audit, report, assignment, external-delivery',
+      'Files BullMQ initialisées: email, notification, sla, audit, report, assignment, external-delivery, attachment-scan',
     );
   }
 }

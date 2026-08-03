@@ -138,7 +138,7 @@ export class AttachmentsController {
    */
   private async streamFile(id: string, user: JwtPayload, res: Response, disposition: 'attachment' | 'inline') {
     // Vérification préalable que la pièce jointe existe et que l'utilisateur a le droit d'y accéder
-    const attachment = await this.attachmentsService.findOneForUser(id, user);
+    const attachment = await this.attachmentsService.findOneDownloadableForUser(id, user);
     const filePath = join(process.env['STORAGE_LOCAL_PATH'] || './uploads', attachment.objectKey);
 
     // Vérification de l'existence physique du fichier sur le serveur de fichiers local

@@ -16,6 +16,7 @@ import { sql } from 'drizzle-orm';
 import { Redis } from 'ioredis';
 import { redisConfig } from '../providers/redis.config';
 import { BullMqQueues } from '../../queues/queues.types';
+import { ANTIVIRUS_SCANNER, AntivirusScanner } from '../../modules/attachments/security/antivirus-scanner.interface';
 
 /**
  * Service réalisant le diagnostic de disponibilité des composants d'infrastructure.
@@ -27,6 +28,7 @@ export class HealthService {
   constructor(
     private readonly drizzle: DrizzleProvider,
     @Inject('BullMQ_Queues') private readonly queues: BullMqQueues,
+    @Inject(ANTIVIRUS_SCANNER) private readonly antivirus: AntivirusScanner,
   ) {}
 
   /**
@@ -67,6 +69,16 @@ export class HealthService {
     } catch (error: unknown) {
       results['externalDeliveryQueue'] = { status: 'error', message: errorCategory(error) };
     }
+
+    try {
+      await this.queues.attachmentScan.getJobCounts('waiting', 'active', 'failed');
+      results['attachmentScanQueue'] = { status: 'ok' };
+    } catch (error: unknown) {
+      results['attachmentScanQueue'] = { status: 'error', message: errorCategory(error) };
+    }
+    results['clamav'] = (await this.antivirus.health())
+      ? { status: 'ok' }
+      : { status: 'error', message: 'ANTIVIRUS_UNAVAILABLE' };
 
     return results;
   }

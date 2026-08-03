@@ -1,0 +1,1 @@
+ALTER TYPE "attachment_scan_status_enum" ADD VALUE 'QUARANTINED';

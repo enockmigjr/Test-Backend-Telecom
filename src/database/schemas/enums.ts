@@ -144,6 +144,7 @@ export const deliveryStatusEnum = pgEnum('delivery_status_enum', [
 ]);
 export const attachmentScanStatusEnum = pgEnum('attachment_scan_status_enum', [
   'NOT_REQUIRED',
+  'QUARANTINED',
   'PENDING',
   'SCANNING',
   'CLEAN',

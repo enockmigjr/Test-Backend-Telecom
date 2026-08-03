@@ -19,6 +19,9 @@ jest.mock('fs', () => ({
     writeFile: jest.fn().mockResolvedValue(undefined),
     readFile: jest.fn().mockResolvedValue(Buffer.from('test-content')),
     unlink: jest.fn().mockResolvedValue(undefined),
+    rename: jest.fn().mockResolvedValue(undefined),
+    readdir: jest.fn().mockResolvedValue([]),
+    stat: jest.fn().mockResolvedValue({ isFile: () => true, mtime: new Date(0) }),
   },
 }));
 
@@ -81,5 +84,14 @@ describe('LocalStorageService', () => {
       expect(result).toBe(dangerousKey);
       expect(fs.writeFile).toHaveBeenCalledWith(path.resolve(mockBasePath, 'file.png.txt'), mockFile.buffer);
     });
+  });
+
+  it('supprime le temporaire si le déplacement en quarantaine échoue', async () => {
+    const file = { path: path.resolve(mockBasePath, 'incoming/file') } as Express.Multer.File;
+    jest.mocked(fs.rename).mockRejectedValueOnce(new Error('disk failure'));
+
+    await expect(service.quarantine(file, 'attachments/file')).rejects.toThrow('disk failure');
+
+    expect(fs.unlink).toHaveBeenCalledWith(file.path);
   });
 });

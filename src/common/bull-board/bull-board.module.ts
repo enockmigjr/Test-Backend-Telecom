@@ -69,6 +69,7 @@ export class BullBoardModule implements NestModule {
       new BullMQAdapter(this.queues['audit'] as never),
       new BullMQAdapter(this.queues['report'] as never),
       new BullMQAdapter(this.queues['externalDelivery'] as never),
+      new BullMQAdapter(this.queues['attachmentScan'] as never),
     ];
 
     const apiPrefix = process.env['API_PREFIX'] || 'api/v1';

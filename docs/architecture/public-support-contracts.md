@@ -1,6 +1,6 @@
 # Contrats structurants du support public
 
-Statut : baseline de phase 00, aucune route de support public active
+Statut : backend des phases 00 à 04 implémenté ; portail public encore à réaliser
 
 ## Sources
 
@@ -32,7 +32,7 @@ La projection :
 - exclut notes internes, audit, secrets et routes administratives ;
 - est sérialisée de manière déterministe et hashable.
 
-Baseline : 83 opérations internes et 0 opération de support public. Ce zéro décrit honnêtement l’état courant et ne doit pas être remplacé par des endpoints fictifs.
+État après phase 04 : 118 opérations internes et 26 opérations de support public exportées depuis le code.
 
 ## Acteur métier cible
 
@@ -100,6 +100,19 @@ Les origines de sites intégrateurs servent à `frame-ancestors` et `postMessage
 Le cookie iframe sera `Secure; HttpOnly; SameSite=None; Partitioned`. Le cookie pleine page sera `Secure; HttpOnly; SameSite=Lax`. Le CSRF public utilise un synchronizer token retourné par une route `no-store` et conservé en mémoire.
 
 Le passage iframe → pleine page utilise un code opaque à usage unique placé dans le fragment, échangé par POST puis supprimé par `history.replaceState`. Aucun token ne circule en query string ou dans les journaux.
+
+## Temps réel public et repli polling
+
+Le namespace Socket.IO `/public-support` utilise uniquement la session publique en cookie et des rooms calculées côté serveur. Ses événements ne contiennent que `{ resource, id }` et demandent au client de relire l’état persistant par REST.
+
+Le portail de phase 05 doit considérer le WebSocket comme une optimisation :
+
+- après connexion ou reconnexion, relire le ticket, la chronologie et les pièces jointes ;
+- si le WebSocket échoue, interroger les routes GET publiques avec un délai progressif et suspendre le polling lorsque l’onglet est masqué ;
+- conserver les mutations HTTP indépendantes du canal temps réel ;
+- utiliser le passage iframe vers la pleine page lorsque les cookies tiers sont indisponibles.
+
+Les routes de liste et d’état des pièces jointes restent autoritatives. Aucun téléchargement n’est exposé avant le statut antivirus `CLEAN`.
 
 ## Matrice de responsabilité
 

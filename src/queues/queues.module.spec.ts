@@ -21,6 +21,7 @@ import {
   AUDIT_QUEUE,
   REPORT_QUEUE,
   EXTERNAL_DELIVERY_QUEUE,
+  ATTACHMENT_SCAN_QUEUE,
 } from './queues.module';
 import { EmailWorker } from './workers/email.worker';
 import { NotificationWorker } from './workers/notification.worker';
@@ -131,6 +132,10 @@ describe('QueuesModule', () => {
     it('doit exporter EXTERNAL_DELIVERY_QUEUE', () => {
       expect(EXTERNAL_DELIVERY_QUEUE).toBe('external-delivery-queue');
     });
+
+    it('doit exporter ATTACHMENT_SCAN_QUEUE', () => {
+      expect(ATTACHMENT_SCAN_QUEUE).toBe('attachment-scan-queue');
+    });
   });
 
   // ─── Résolution des providers ──────────────────────────────────────────────
@@ -190,6 +195,7 @@ describe('QueuesModule', () => {
       expect(queues.report).toBeDefined();
       expect(queues.assignment).toBeDefined();
       expect(queues.externalDelivery).toBeDefined();
+      expect(queues.attachmentScan).toBeDefined();
     });
   });
 

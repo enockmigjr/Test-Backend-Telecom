@@ -32,6 +32,12 @@ import { WordPressIdentityStoreService } from './services/wordpress-identity-sto
     TrustedDeviceService,
     { provide: CONTACT_VERIFICATION_PROVIDER, useClass: EmailContactVerificationProvider },
   ],
-  exports: [IntegrationAssertionGuard, PublicSessionGuard, PublicSessionService, TrustedDeviceService],
+  exports: [
+    IntegrationAssertionGuard,
+    PublicSessionGuard,
+    PublicSessionService,
+    PublicRateLimitService,
+    TrustedDeviceService,
+  ],
 })
 export class ExternalIdentityModule {}

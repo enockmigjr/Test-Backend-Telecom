@@ -59,5 +59,9 @@ describe('contrat openapi.public.json', () => {
     expect(paths).toHaveProperty('/api/v1/public-support/tickets/{id}/timeline');
     expect(paths).toHaveProperty('/api/v1/public-support/tickets/{id}/comments');
     expect(paths).toHaveProperty('/api/v1/public-support/preferences');
+    expect(paths).toHaveProperty('/api/v1/public-support/tickets/{ticketId}/attachments');
+    expect(paths).toHaveProperty('/api/v1/public-support/tickets/{ticketId}/attachments/{attachmentId}/status');
+    expect(paths).toHaveProperty('/api/v1/public-support/tickets/{ticketId}/attachments/{attachmentId}/download');
+    expect(paths).toHaveProperty('/api/v1/public-support/conversations/{conversationId}/attachments');
   });
 });

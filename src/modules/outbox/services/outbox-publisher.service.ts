@@ -3,6 +3,7 @@ import { Interval } from '@nestjs/schedule';
 import { hostname } from 'os';
 import { BullMqQueues } from '../../../queues/queues.types';
 import { OutboxService } from './outbox.service';
+import { PublicRealtimeNotifierService } from '../../../websocket/public-realtime-notifier.service';
 
 @Injectable()
 export class OutboxPublisherService {
@@ -13,6 +14,7 @@ export class OutboxPublisherService {
   constructor(
     private readonly outbox: OutboxService,
     @Inject('BullMQ_Queues') private readonly queues: BullMqQueues,
+    private readonly realtime: PublicRealtimeNotifierService,
   ) {}
 
   @Interval(1000)
@@ -23,12 +25,25 @@ export class OutboxPublisherService {
       const events = await this.outbox.claim(this.workerId);
       for (const event of events) {
         try {
-          await this.queues.externalDelivery.add(
-            'dispatch-outbox-event',
-            { outboxEventId: event.id },
-            { jobId: event.id },
-          );
+          if (event.eventType === 'PUBLIC_ATTACHMENT_QUARANTINED') {
+            await this.queues.attachmentScan.add(
+              'scan-attachment',
+              { attachmentId: event.aggregateId },
+              { jobId: event.id },
+            );
+          } else {
+            await this.queues.externalDelivery.add(
+              'dispatch-outbox-event',
+              { outboxEventId: event.id },
+              { jobId: event.id },
+            );
+          }
           await this.outbox.published(event.id, this.workerId);
+          try {
+            await this.realtime.notify(event);
+          } catch (error: unknown) {
+            this.logger.warn(`Temps réel public différé: ${errorCategory(error)}`);
+          }
         } catch (error: unknown) {
           await this.outbox.failed(event, this.workerId, error);
           this.logger.warn(`Publication outbox différée: ${event.id} (${errorCategory(error)})`);

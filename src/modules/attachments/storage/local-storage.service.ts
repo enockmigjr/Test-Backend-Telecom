@@ -67,6 +67,73 @@ export class LocalStorageService implements IStorageService {
     return objectKey;
   }
 
+  async quarantine(file: Express.Multer.File, objectKey: string): Promise<string> {
+    const quarantineKey = `quarantine/${objectKey}`;
+    if (!file.path) return this.upload(file, quarantineKey);
+    const target = this.validatePath(quarantineKey);
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- cible validée et source produite par Multer
+    await fs.mkdir(path.dirname(target), { recursive: true });
+    try {
+      // eslint-disable-next-line security/detect-non-literal-fs-filename -- cible validée et source produite par Multer
+      await fs.rename(file.path, target);
+    } catch (error: unknown) {
+      await this.discardIncoming(file);
+      throw error;
+    }
+    return quarantineKey;
+  }
+
+  async readQuarantine(objectKey: string): Promise<Buffer> {
+    return this.download(objectKey);
+  }
+
+  async promote(quarantineKey: string, cleanObjectKey: string): Promise<string> {
+    const source = this.validatePath(quarantineKey);
+    const target = this.validatePath(cleanObjectKey);
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- chemins validés contre le path traversal
+    await fs.mkdir(path.dirname(target), { recursive: true });
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- chemins validés contre le path traversal
+    await fs.copyFile(source, target);
+    return cleanObjectKey;
+  }
+
+  async deleteQuarantine(objectKey: string): Promise<void> {
+    await this.delete(objectKey);
+  }
+
+  async discardIncoming(file: Express.Multer.File): Promise<void> {
+    if (!file.path) return;
+    try {
+      // eslint-disable-next-line security/detect-non-literal-fs-filename -- chemin créé par Multer dans le dossier incoming
+      await fs.unlink(file.path);
+    } catch (error: unknown) {
+      if (!isErrorCode(error, 'ENOENT')) throw error;
+    }
+  }
+
+  async cleanupIncoming(olderThan: Date): Promise<number> {
+    const incomingPath = this.validatePath('incoming');
+    let entries;
+    try {
+      // eslint-disable-next-line security/detect-non-literal-fs-filename -- chemin validé contre le path traversal
+      entries = await fs.readdir(incomingPath);
+    } catch (error: unknown) {
+      if (isErrorCode(error, 'ENOENT')) return 0;
+      throw error;
+    }
+    let deleted = 0;
+    for (const entry of entries) {
+      const filePath = this.validatePath(`incoming/${entry}`);
+      // eslint-disable-next-line security/detect-non-literal-fs-filename -- chemin validé contre le path traversal
+      const metadata = await fs.stat(filePath);
+      if (!metadata.isFile() || metadata.mtime >= olderThan) continue;
+      // eslint-disable-next-line security/detect-non-literal-fs-filename -- chemin validé contre le path traversal
+      await fs.unlink(filePath);
+      deleted += 1;
+    }
+    return deleted;
+  }
+
   /**
    * Lit le contenu binaire d'un fichier stocké en local.
    *
@@ -89,8 +156,12 @@ export class LocalStorageService implements IStorageService {
     try {
       // eslint-disable-next-line security/detect-non-literal-fs-filename -- fullPath est validé par validatePath() contre le path traversal
       await fs.unlink(fullPath);
-    } catch {
-      this.logger.warn(`Fichier non trouvé pour suppression: ${objectKey}`);
+    } catch (error: unknown) {
+      if (isErrorCode(error, 'ENOENT')) {
+        this.logger.warn(`Fichier non trouvé pour suppression: ${objectKey}`);
+        return;
+      }
+      throw error;
     }
   }
 
@@ -100,4 +171,8 @@ export class LocalStorageService implements IStorageService {
   async getUrl(objectKey: string): Promise<string> {
     return `/api/v1/attachments/${objectKey}/download`;
   }
+}
+
+function isErrorCode(error: unknown, code: string): boolean {
+  return typeof error === 'object' && error !== null && 'code' in error && error.code === code;
 }

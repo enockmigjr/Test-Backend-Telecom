@@ -47,6 +47,7 @@ export const attachments = pgTable(
     fileSize: bigint('file_size', { mode: 'number' }).notNull(),
     scanStatus: attachmentScanStatusEnum('scan_status').notNull().default('NOT_REQUIRED'),
     scannedAt: timestamp('scanned_at', { withTimezone: true }),
+    quarantineDeletedAt: timestamp('quarantine_deleted_at', { withTimezone: true }),
     scanError: text('scan_error'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
