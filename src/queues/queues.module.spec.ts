@@ -13,7 +13,15 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { Logger } from '@nestjs/common';
 import { Queue } from 'bullmq';
-import { QueuesModule, EMAIL_QUEUE, NOTIFICATION_QUEUE, SLA_QUEUE, AUDIT_QUEUE, REPORT_QUEUE } from './queues.module';
+import {
+  QueuesModule,
+  EMAIL_QUEUE,
+  NOTIFICATION_QUEUE,
+  SLA_QUEUE,
+  AUDIT_QUEUE,
+  REPORT_QUEUE,
+  EXTERNAL_DELIVERY_QUEUE,
+} from './queues.module';
 import { EmailWorker } from './workers/email.worker';
 import { NotificationWorker } from './workers/notification.worker';
 import { SlaWorker } from './workers/sla.worker';
@@ -119,6 +127,10 @@ describe('QueuesModule', () => {
     it('doit exporter REPORT_QUEUE', () => {
       expect(REPORT_QUEUE).toBe('report-queue');
     });
+
+    it('doit exporter EXTERNAL_DELIVERY_QUEUE', () => {
+      expect(EXTERNAL_DELIVERY_QUEUE).toBe('external-delivery-queue');
+    });
   });
 
   // ─── Résolution des providers ──────────────────────────────────────────────
@@ -177,6 +189,7 @@ describe('QueuesModule', () => {
       expect(queues.audit).toBeDefined();
       expect(queues.report).toBeDefined();
       expect(queues.assignment).toBeDefined();
+      expect(queues.externalDelivery).toBeDefined();
     });
   });
 
@@ -227,7 +240,7 @@ describe('QueuesModule', () => {
       const queuesModule = moduleRef.get<QueuesModule>(QueuesModule);
       queuesModule.onModuleInit();
 
-      expect(loggerLogSpy).toHaveBeenCalledWith(expect.stringContaining('6 Workers'));
+      expect(loggerLogSpy).toHaveBeenCalledWith(expect.stringContaining('external-delivery'));
     });
   });
 });

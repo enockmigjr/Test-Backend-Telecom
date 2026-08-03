@@ -24,6 +24,7 @@ export const NOTIFICATION_QUEUE = 'notification-queue';
 export const SLA_QUEUE = 'sla-queue';
 export const AUDIT_QUEUE = 'audit-queue';
 export const REPORT_QUEUE = 'report-queue';
+export const EXTERNAL_DELIVERY_QUEUE = 'external-delivery-queue';
 export { ASSIGNMENT_QUEUE };
 
 import { ReportsModule } from '../modules/reports/reports.module';
@@ -62,6 +63,15 @@ import { TicketsModule } from '../modules/tickets/tickets.module';
               },
             },
           }),
+          externalDelivery: new Queue(EXTERNAL_DELIVERY_QUEUE, {
+            connection,
+            defaultJobOptions: {
+              attempts: 10,
+              backoff: { type: 'fixed', delay: 10_000 },
+              removeOnComplete: { age: 7 * 24 * 60 * 60 },
+              removeOnFail: { age: 30 * 24 * 60 * 60 },
+            },
+          }),
         };
       },
     },
@@ -81,6 +91,8 @@ export class QueuesModule implements OnModuleInit {
   private readonly logger = new Logger(QueuesModule.name);
 
   onModuleInit(): void {
-    this.logger.log('Files BullMQ + 6 Workers initialisés: email, notification, sla, audit, report, assignment');
+    this.logger.log(
+      'Files BullMQ initialisées: email, notification, sla, audit, report, assignment, external-delivery',
+    );
   }
 }

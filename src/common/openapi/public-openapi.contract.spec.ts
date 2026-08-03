@@ -47,4 +47,17 @@ describe('contrat openapi.public.json', () => {
     expect(securitySchemes).toHaveProperty('publicSession');
     expect(securitySchemes).toHaveProperty('integrationAssertion');
   });
+
+  it('publie la tranche phase 03 de création et de suivi', () => {
+    const paths = isRecord(document['paths']) ? document['paths'] : {};
+    expect(paths).toHaveProperty('/api/v1/public-support/catalog');
+    expect(paths).toHaveProperty('/api/v1/public-support/conversations');
+    expect(paths).toHaveProperty('/api/v1/public-support/conversations/{id}/confirm');
+    expect(paths).toHaveProperty('/api/v1/public-support/conversations/{id}/handoff');
+    expect(paths).toHaveProperty('/api/v1/public-support/tickets');
+    expect(paths).toHaveProperty('/api/v1/public-support/tickets/{id}');
+    expect(paths).toHaveProperty('/api/v1/public-support/tickets/{id}/timeline');
+    expect(paths).toHaveProperty('/api/v1/public-support/tickets/{id}/comments');
+    expect(paths).toHaveProperty('/api/v1/public-support/preferences');
+  });
 });

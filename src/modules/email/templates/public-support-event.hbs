@@ -1,0 +1,19 @@
+{{#> base subject=subject accentColor=accentColor footerText=footerText}}
+<p class='email-eyebrow'>Suivi de demande</p>
+<h1 class='email-title'>{{eventLabel}}</h1>
+
+{{#if ticketNumber}}
+<div class='email-highlight'>
+  <p class='email-highlight-label'>Numéro de suivi</p>
+  <p class='email-highlight-value'>{{ticketNumber}}</p>
+</div>
+{{/if}}
+
+<p class='email-text'>
+  Cette notification concerne votre demande adressée au support. Ouvrez votre espace de suivi habituel pour consulter les informations à jour.
+</p>
+
+<div class='btn-wrap'>
+  <a href='{{supportUrl}}' class='btn-primary'>Ouvrir mon espace de suivi</a>
+</div>
+{{/base}}

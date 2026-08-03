@@ -24,7 +24,7 @@ import type { Request, Response } from 'express';
 import { lastValueFrom, Observable, of } from 'rxjs';
 import { DrizzleProvider } from '../../database/drizzle.provider';
 import { idempotencyRecords } from '../../database/schemas';
-import { IDEMPOTENT_KEY } from '../decorators/idempotent.decorator';
+import { IDEMPOTENCY_REQUIRED_KEY, IDEMPOTENT_KEY } from '../decorators/idempotent.decorator';
 
 const IDEMPOTENCY_TTL_MS = 24 * 60 * 60 * 1000;
 const IDEMPOTENCY_KEY_PATTERN = /^[A-Za-z0-9._:-]{1,128}$/;
@@ -68,7 +68,14 @@ export class IdempotencyInterceptor implements NestInterceptor {
     const request = http.getRequest<AuthenticatedRequest>();
     const response = http.getResponse<Response>();
     const rawKey = request.headers['idempotency-key'];
-    if (rawKey === undefined) return next.handle();
+    if (rawKey === undefined) {
+      const required = this.reflector.getAllAndOverride<boolean>(IDEMPOTENCY_REQUIRED_KEY, [
+        context.getHandler(),
+        context.getClass(),
+      ]);
+      if (required) throw new BadRequestException('Le header Idempotency-Key est requis.');
+      return next.handle();
+    }
     if (Array.isArray(rawKey) || !IDEMPOTENCY_KEY_PATTERN.test(rawKey)) {
       throw new BadRequestException('Le header Idempotency-Key est invalide.');
     }

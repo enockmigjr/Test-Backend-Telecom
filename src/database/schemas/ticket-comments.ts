@@ -34,6 +34,7 @@ export const ticketComments = pgTable(
     supportIntegrationId: uuid('support_integration_id').references(() => supportIntegrations.id, {
       onDelete: 'restrict',
     }),
+    correctsCommentId: uuid('corrects_comment_id'),
     content: text('content').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true })
@@ -44,6 +45,7 @@ export const ticketComments = pgTable(
   (table) => ({
     idxCommentsTicket: index('idx_comments_ticket').on(table.ticketId),
     idxCommentsRequester: index('idx_comments_requester').on(table.supportIntegrationId, table.externalRequesterId),
+    idxCommentsCorrection: index('idx_comments_correction').on(table.correctsCommentId),
     integrationIdentityUnique: uniqueIndex('uq_ticket_comments_id_integration').on(
       table.id,
       table.supportIntegrationId,
@@ -58,6 +60,15 @@ export const ticketComments = pgTable(
       foreignColumns: [tickets.id, tickets.supportIntegrationId],
       name: 'ticket_comments_ticket_integration_fk',
     }).onDelete('restrict'),
+    correctionIntegrationForeignKey: foreignKey({
+      columns: [table.correctsCommentId, table.supportIntegrationId],
+      foreignColumns: [table.id, table.supportIntegrationId],
+      name: 'ticket_comments_correction_integration_fk',
+    }).onDelete('restrict'),
+    correctionSelfCheck: check(
+      'ticket_comments_correction_self_check',
+      sql`${table.correctsCommentId} IS NULL OR ${table.correctsCommentId} <> ${table.id}`,
+    ),
     actorVariantCheck: check(
       'ticket_comments_actor_variant_check',
       sql`(${table.actorType} = 'INTERNAL' AND ${table.authorId} IS NOT NULL AND ${table.externalRequesterId} IS NULL)

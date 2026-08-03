@@ -10,11 +10,12 @@
  * ============================================================================
  */
 
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { DrizzleProvider } from '../../database/drizzle.provider';
 import { sql } from 'drizzle-orm';
 import { Redis } from 'ioredis';
 import { redisConfig } from '../providers/redis.config';
+import { BullMqQueues } from '../../queues/queues.types';
 
 /**
  * Service réalisant le diagnostic de disponibilité des composants d'infrastructure.
@@ -23,7 +24,10 @@ import { redisConfig } from '../providers/redis.config';
 export class HealthService {
   private readonly logger = new Logger(HealthService.name);
 
-  constructor(private readonly drizzle: DrizzleProvider) {}
+  constructor(
+    private readonly drizzle: DrizzleProvider,
+    @Inject('BullMQ_Queues') private readonly queues: BullMqQueues,
+  ) {}
 
   /**
    * Effectue un contrôle complet et simultané des dépendances PostgreSQL et Redis.
@@ -57,6 +61,20 @@ export class HealthService {
       results['redis'] = { status: 'error', message: (error as Error).message };
     }
 
+    try {
+      await this.queues.externalDelivery.getJobCounts('waiting', 'active', 'failed');
+      results['externalDeliveryQueue'] = { status: 'ok' };
+    } catch (error: unknown) {
+      results['externalDeliveryQueue'] = { status: 'error', message: errorCategory(error) };
+    }
+
     return results;
   }
+}
+
+function errorCategory(error: unknown): string {
+  if (typeof error !== 'object' || error === null) return 'UnknownError';
+  const name = 'name' in error && typeof error.name === 'string' ? error.name : 'Error';
+  const code = 'code' in error && typeof error.code === 'string' ? error.code : undefined;
+  return code ? `${name}:${code}` : name;
 }

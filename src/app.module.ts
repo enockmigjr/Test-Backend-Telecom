@@ -52,6 +52,9 @@ import { BullBoardModule } from './common/bull-board/bull-board.module';
 import { SettingsModule } from './modules/settings/settings.module';
 import { SupportIntegrationsModule } from './modules/support-integrations/support-integrations.module';
 import { ExternalIdentityModule } from './modules/external-identity/external-identity.module';
+import { PublicSupportModule } from './modules/public-support/public-support.module';
+import { OutboxModule } from './modules/outbox/outbox.module';
+import { ExternalDeliveryModule } from './modules/external-delivery/external-delivery.module';
 import { IdempotencyInterceptor } from './common/interceptors/idempotency.interceptor';
 import { isAuthRateLimited } from './common/decorators/auth-rate-limited.decorator';
 
@@ -148,6 +151,9 @@ import { isAuthRateLimited } from './common/decorators/auth-rate-limited.decorat
     SettingsModule,
     SupportIntegrationsModule,
     ExternalIdentityModule,
+    PublicSupportModule,
+    OutboxModule,
+    ExternalDeliveryModule,
   ],
   providers: [
     // Protection globale contre le surdimensionnement des requêtes (Rate Limiting)

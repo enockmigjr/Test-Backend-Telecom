@@ -11,7 +11,7 @@
  * ============================================================================
  */
 
-import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { and, eq, sql } from 'drizzle-orm';
 import { normalizePagination } from '../../common/helpers/normalized-pagination.helper';
 import { PaginationHelper } from '../../common/helpers/pagination.helper';
@@ -21,6 +21,7 @@ import { DrizzleProvider } from '../../database/drizzle.provider';
 import { externalRequesters, ticketComments, tickets, users } from '../../database/schemas';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { internalActor, TicketActor, toTicketActorColumns } from '../tickets/domain/ticket-actor';
+import { PublicReplyPersistenceService } from './services/public-reply-persistence.service';
 
 /**
  * Service orchestrant la persistance et la gestion des droits sur les commentaires publics.
@@ -32,6 +33,7 @@ export class CommentsService {
   constructor(
     private readonly drizzle: DrizzleProvider,
     private readonly ticketAccess: TicketAccessService,
+    private readonly publicReplies: PublicReplyPersistenceService,
   ) {}
 
   /**
@@ -60,6 +62,7 @@ export class CommentsService {
         actorType: ticketComments.actorType,
         externalRequesterId: ticketComments.externalRequesterId,
         supportIntegrationId: ticketComments.supportIntegrationId,
+        correctsCommentId: ticketComments.correctsCommentId,
         content: ticketComments.content,
         createdAt: ticketComments.createdAt,
         updatedAt: ticketComments.updatedAt,
@@ -92,27 +95,47 @@ export class CommentsService {
    * @param user Utilisateur auteur du commentaire.
    * @param content Texte du commentaire.
    */
-  async create(ticketId: string, user: JwtPayload, content: string) {
+  async create(ticketId: string, user: JwtPayload, content: string, correctsCommentId?: string) {
     await this.ticketAccess.assertTicketVisible(ticketId, user);
     const [ticket] = await this.drizzle.db
       .select({ supportIntegrationId: tickets.supportIntegrationId })
       .from(tickets)
       .where(eq(tickets.id, ticketId))
       .limit(1);
-    return this.createByActor(ticketId, internalActor(user.sub), content, ticket?.supportIntegrationId ?? undefined);
+    return this.createByActor(
+      ticketId,
+      internalActor(user.sub),
+      content,
+      ticket?.supportIntegrationId ?? undefined,
+      correctsCommentId,
+    );
   }
 
   /** Persiste un commentaire après que le cas d'usage appelant a autorisé l'acteur. */
-  async createByActor(ticketId: string, actor: TicketActor, content: string, contextIntegrationId?: string) {
+  async createByActor(
+    ticketId: string,
+    actor: TicketActor,
+    content: string,
+    contextIntegrationId?: string,
+    correctsCommentId?: string,
+  ) {
     const id = generateUuid();
-    await this.drizzle.db.insert(ticketComments).values({
-      id,
-      ticketId,
-      ...toTicketActorColumns(actor, contextIntegrationId),
-      content,
+    return this.drizzle.runInTransaction(async () => {
+      if (correctsCommentId)
+        await this.publicReplies.assertCorrectionTarget(ticketId, contextIntegrationId, correctsCommentId);
+      await this.drizzle.db.insert(ticketComments).values({
+        id,
+        ticketId,
+        ...toTicketActorColumns(actor, contextIntegrationId),
+        content,
+        correctsCommentId,
+      });
+      if (contextIntegrationId && actor.type === 'INTERNAL') {
+        await this.publicReplies.persist(ticketId, id, actor, contextIntegrationId, correctsCommentId);
+      }
+      const [created] = await this.drizzle.db.select().from(ticketComments).where(eq(ticketComments.id, id)).limit(1);
+      return { message: 'Commentaire ajouté avec succès.', data: created };
     });
-    const [created] = await this.drizzle.db.select().from(ticketComments).where(eq(ticketComments.id, id)).limit(1);
-    return { message: 'Commentaire ajouté avec succès.', data: created };
   }
 
   /**
@@ -124,6 +147,7 @@ export class CommentsService {
    */
   async update(id: string, user: JwtPayload, content: string) {
     const comment = await this.findOne(id);
+    this.assertMutable(comment);
     await this.ticketAccess.assertTicketVisible(comment.ticketId, user);
     this.assertCanModify(comment.authorId, user, 'modifier');
     await this.drizzle.db.update(ticketComments).set({ content }).where(eq(ticketComments.id, id));
@@ -139,6 +163,7 @@ export class CommentsService {
    */
   async remove(id: string, user: JwtPayload) {
     const comment = await this.findOne(id);
+    this.assertMutable(comment);
     await this.ticketAccess.assertTicketVisible(comment.ticketId, user);
     this.assertCanModify(comment.authorId, user, 'supprimer');
     await this.drizzle.db.delete(ticketComments).where(eq(ticketComments.id, id));
@@ -160,5 +185,11 @@ export class CommentsService {
   private assertCanModify(authorId: string | null, user: JwtPayload, action: 'modifier' | 'supprimer'): void {
     if (authorId === user.sub || user.role === 'ADMINISTRATOR' || user.role === 'SUPERVISOR') return;
     throw new ForbiddenException(`Vous ne pouvez ${action} que vos propres commentaires.`);
+  }
+
+  private assertMutable(comment: typeof ticketComments.$inferSelect): void {
+    if (comment.supportIntegrationId && comment.actorType === 'INTERNAL') {
+      throw new ConflictException('Une réponse déjà publiée est immuable. Envoyez une correction liée.');
+    }
   }
 }

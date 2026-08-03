@@ -101,7 +101,8 @@ export class EmailService {
     templateName: string,
     data: Record<string, unknown>,
     attachments?: Array<{ filename: string; content: Buffer }>,
-  ): Promise<void> {
+    options?: { readonly messageId?: string },
+  ): Promise<string | undefined> {
     const template = this.compileTemplate(templateName);
 
     // Déterminer la couleur de l'accentuation visuelle et le texte de pied de page selon le type de notification
@@ -147,7 +148,7 @@ export class EmailService {
     };
 
     const html = template(mergedContext);
-    await this.send(to, subject, html, attachments);
+    return this.send(to, subject, html, attachments, options);
   }
 
   /**
@@ -163,10 +164,12 @@ export class EmailService {
     subject: string,
     html: string,
     attachments?: Array<{ filename: string; content: Buffer }>,
-  ): Promise<void> {
+    options?: { readonly messageId?: string },
+  ): Promise<string | undefined> {
     try {
-      const info = await this.transporter.sendMail({ from: this.from, to, subject, html, attachments });
+      const info = await this.transporter.sendMail({ from: this.from, to, subject, html, attachments, ...options });
       this.logger.log(`Email envoyé à ${maskEmail(to)}: ${info.messageId}`);
+      return typeof info.messageId === 'string' ? info.messageId : undefined;
     } catch (error: unknown) {
       this.logger.error(`Échec envoi email à ${maskEmail(to)}: ${errorCategory(error)}`);
       throw error;

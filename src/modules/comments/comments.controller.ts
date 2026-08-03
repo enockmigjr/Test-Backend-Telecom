@@ -86,7 +86,9 @@ export class CommentsController {
   @ApiResponse({ status: 401, description: 'Non authentifié.' })
   @ApiResponse({ status: 404, description: 'Ticket non trouvé.' })
   async create(@Param('ticketId') ticketId: string, @Body() dto: CreateCommentDto, @CurrentUser() user: JwtPayload) {
-    return this.commentsService.create(ticketId, user, dto.content);
+    return dto.correctsCommentId
+      ? this.commentsService.create(ticketId, user, dto.content, dto.correctsCommentId)
+      : this.commentsService.create(ticketId, user, dto.content);
   }
 
   /**

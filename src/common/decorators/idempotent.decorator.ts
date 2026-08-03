@@ -15,6 +15,7 @@ import { ApiHeader } from '@nestjs/swagger';
 
 /** Clé de métadonnées pour marquer une route comme idempotente */
 export const IDEMPOTENT_KEY = 'idempotent';
+export const IDEMPOTENCY_REQUIRED_KEY = 'idempotency-required';
 
 /**
  * Décorateur `@Idempotent()` : marque une route comme protégée contre la réexécution en double.
@@ -26,5 +27,17 @@ export const Idempotent = () =>
       name: 'Idempotency-Key',
       required: false,
       description: 'Clé unique de 1 à 128 caractères pour rejouer une mutation sans la dupliquer.',
+    }),
+  );
+
+/** Variante publique exigeant la clé afin qu'un rejeu ne puisse pas dupliquer la mutation. */
+export const RequireIdempotency = () =>
+  applyDecorators(
+    SetMetadata(IDEMPOTENT_KEY, true),
+    SetMetadata(IDEMPOTENCY_REQUIRED_KEY, true),
+    ApiHeader({
+      name: 'Idempotency-Key',
+      required: true,
+      description: 'Clé unique de 1 à 128 caractères, obligatoire pour cette mutation.',
     }),
   );

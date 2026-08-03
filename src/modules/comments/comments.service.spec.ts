@@ -15,6 +15,7 @@ import { TicketAccessService } from '../../common/services/ticket-access.service
 import { DrizzleProvider } from '../../database/drizzle.provider';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { CommentsService } from './comments.service';
+import { PublicReplyPersistenceService } from './services/public-reply-persistence.service';
 
 const user: JwtPayload = {
   sub: 'agent-001',
@@ -43,6 +44,7 @@ describe('CommentsService - isolation ticket', () => {
     update: jest.fn(),
     delete: jest.fn(),
   };
+  const publicReplies = { assertCorrectionTarget: jest.fn(), persist: jest.fn() };
   const ticketAccess = { assertTicketVisible: jest.fn() };
   let service: CommentsService;
 
@@ -54,6 +56,7 @@ describe('CommentsService - isolation ticket', () => {
         CommentsService,
         { provide: DrizzleProvider, useValue: { db } },
         { provide: TicketAccessService, useValue: ticketAccess },
+        { provide: PublicReplyPersistenceService, useValue: publicReplies },
       ],
     }).compile();
     service = moduleRef.get(CommentsService);

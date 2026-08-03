@@ -9,8 +9,8 @@
  * ============================================================================
  */
 
-import { ApiProperty } from '@nestjs/swagger';
-import { IsString, MinLength, MaxLength } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsOptional, IsString, IsUUID, MinLength, MaxLength } from 'class-validator';
 
 /**
  * Objet DTO de création d'un commentaire public.
@@ -27,4 +27,12 @@ export class CreateCommentDto {
   @MinLength(1, { message: 'Le contenu ne peut pas être vide.' })
   @MaxLength(5000, { message: 'Le contenu ne peut pas dépasser 5000 caractères.' })
   content: string;
+
+  @ApiPropertyOptional({
+    format: 'uuid',
+    description: 'Réponse précédente corrigée; la réponse originale reste immuable.',
+  })
+  @IsOptional()
+  @IsUUID()
+  correctsCommentId?: string;
 }

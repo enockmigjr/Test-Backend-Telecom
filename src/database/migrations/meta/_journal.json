@@ -71,6 +71,13 @@
       "when": 1785749481127,
       "tag": "0009_public-identity-bootstrap",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1785751994053,
+      "tag": "0010_public-reply-corrections",
+      "breakpoints": true
     }
   ]
 }

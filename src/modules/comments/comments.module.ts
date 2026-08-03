@@ -13,10 +13,13 @@ import { Module } from '@nestjs/common';
 import { CommentsController } from './comments.controller';
 import { CommentsService } from './comments.service';
 import { TicketAccessService } from '../../common/services/ticket-access.service';
+import { TicketsModule } from '../tickets/tickets.module';
+import { PublicReplyPersistenceService } from './services/public-reply-persistence.service';
 
 @Module({
+  imports: [TicketsModule],
   controllers: [CommentsController],
-  providers: [CommentsService, TicketAccessService],
+  providers: [CommentsService, TicketAccessService, PublicReplyPersistenceService],
   exports: [CommentsService],
 })
 /**

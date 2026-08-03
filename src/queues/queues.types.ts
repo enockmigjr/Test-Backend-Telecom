@@ -18,5 +18,6 @@ import { Queue } from 'bullmq';
 export interface BullMqQueues {
   email: Queue;
   notification: Queue;
+  externalDelivery: Queue;
   [key: string]: Queue;
 }

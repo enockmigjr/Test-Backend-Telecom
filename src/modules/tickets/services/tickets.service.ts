@@ -12,7 +12,7 @@
  * ============================================================================
  */
 
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException, ConflictException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { eq, and, isNull, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
@@ -53,10 +53,19 @@ import {
 } from '../domain/ticket.events';
 import { internalActor, toTicketActorColumns } from '../domain/ticket-actor';
 import { TicketCreationCommand, TicketRequesterContext } from '../domain/ticket-creation-command';
+import { toPublicTicketStatus } from '../domain/public-ticket-status';
 
 const creator = alias(users, 'ticket_creator');
 const assignee = alias(users, 'ticket_assignee');
 const assignedTeam = alias(departments, 'ticket_assigned_team');
+
+function publicStatusEventType(status: TicketStatus) {
+  if (status === 'PENDING_CUSTOMER') return 'PUBLIC_INFORMATION_REQUESTED' as const;
+  if (status === 'RESOLVED') return 'PUBLIC_TICKET_RESOLVED' as const;
+  if (status === 'CLOSED' || status === 'CANCELLED') return 'PUBLIC_TICKET_CLOSED' as const;
+  if (status === 'REOPENED') return 'PUBLIC_TICKET_REOPENED' as const;
+  return 'PUBLIC_STATUS_CHANGED' as const;
+}
 
 /**
  * Service orchestrateur du domaine des tickets d'incidents.
@@ -283,16 +292,40 @@ export class TicketsService {
     const now = new Date();
     const updateFields = await this.buildSlaUpdateFields(ticket, oldStatus, newStatus, now, reason);
 
-    await this.drizzle.db.update(tickets).set(updateFields).where(eq(tickets.id, id));
-    await this.ticketHistory.recordByActor(
-      id,
-      internalActor(user.sub),
-      'STATUS_CHANGED',
-      { status: oldStatus },
-      { status: newStatus },
-      { reason },
-      ticket.supportIntegrationId ?? undefined,
-    );
+    await this.drizzle.runInTransaction(async () => {
+      const [transitioned] = await this.drizzle.db
+        .update(tickets)
+        .set(updateFields)
+        .where(and(eq(tickets.id, id), eq(tickets.status, oldStatus)))
+        .returning({ id: tickets.id });
+      if (!transitioned) throw new ConflictException('Le statut du ticket a changé. Rechargez avant de réessayer.');
+      await this.ticketHistory.recordByActor(
+        id,
+        internalActor(user.sub),
+        'STATUS_CHANGED',
+        { status: oldStatus },
+        { status: newStatus },
+        { reason },
+        ticket.supportIntegrationId ?? undefined,
+      );
+      if (ticket.supportIntegrationId && ticket.requesterId) {
+        const mutationId = generateUuid();
+        const eventType = publicStatusEventType(newStatus);
+        await this.drizzle.db.insert(outboxEvents).values({
+          id: generateUuid(),
+          mutationId,
+          schemaVersion: 1,
+          supportIntegrationId: ticket.supportIntegrationId,
+          actorType: 'INTERNAL',
+          userId: user.sub,
+          aggregateType: 'TICKET',
+          aggregateId: id,
+          eventType,
+          deduplicationKey: `${eventType.toLowerCase()}:${mutationId}`,
+          payload: { ticketId: id, status: toPublicTicketStatus(newStatus) },
+        });
+      }
+    });
 
     // Émettre l'événement de changement de statut
     this.emitAfterCommit(

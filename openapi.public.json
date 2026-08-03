@@ -72,6 +72,38 @@
         ],
         "type": "object"
       },
+      "ApiPaginatedResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PaginationMeta"
+          },
+          "statusCode": {
+            "maximum": 299,
+            "minimum": 200,
+            "type": "integer"
+          },
+          "success": {
+            "enum": [
+              true
+            ],
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success",
+          "statusCode",
+          "data",
+          "meta"
+        ],
+        "type": "object"
+      },
       "ApiSuccessResponse": {
         "properties": {
           "data": {
@@ -96,6 +128,18 @@
           "success",
           "statusCode",
           "data"
+        ],
+        "type": "object"
+      },
+      "ConfirmPublicTicketDto": {
+        "properties": {
+          "confirmed": {
+            "example": true,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "confirmed"
         ],
         "type": "object"
       },
@@ -127,6 +171,66 @@
         ],
         "type": "object"
       },
+      "CreatePublicCommentDto": {
+        "properties": {
+          "content": {
+            "maxLength": 10000,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "content"
+        ],
+        "type": "object"
+      },
+      "CreatePublicConversationDto": {
+        "properties": {
+          "serviceKey": {
+            "example": "internet-fixe",
+            "maxLength": 80,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "PaginationMeta": {
+        "properties": {
+          "limit": {
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "page": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "total": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "totalPages": {
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "page",
+          "limit",
+          "total",
+          "totalPages"
+        ],
+        "type": "object"
+      },
+      "PublicHandoffDto": {
+        "properties": {
+          "reason": {
+            "maxLength": 500,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "RequestEmailVerificationDto": {
         "properties": {
           "email": {
@@ -142,6 +246,70 @@
           "integrationKey",
           "email"
         ],
+        "type": "object"
+      },
+      "SavePublicTicketDraftDto": {
+        "properties": {
+          "categoryId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "customerAccountNumber": {
+            "maxLength": 100,
+            "type": "string"
+          },
+          "description": {
+            "maxLength": 10000,
+            "minLength": 10,
+            "type": "string"
+          },
+          "impact": {
+            "enum": [
+              "LOW",
+              "MEDIUM",
+              "HIGH"
+            ],
+            "type": "string"
+          },
+          "serviceKey": {
+            "maxLength": 80,
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 255,
+            "minLength": 5,
+            "type": "string"
+          },
+          "urgency": {
+            "enum": [
+              "LOW",
+              "MEDIUM",
+              "HIGH"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "categoryId",
+          "title",
+          "description",
+          "impact",
+          "urgency"
+        ],
+        "type": "object"
+      },
+      "UpdatePublicPreferencesDto": {
+        "properties": {
+          "displayName": {
+            "maxLength": 160,
+            "type": "string"
+          },
+          "locale": {
+            "example": "fr",
+            "maxLength": 16,
+            "type": "string"
+          }
+        },
         "type": "object"
       }
     },
@@ -178,6 +346,299 @@
   },
   "openapi": "3.0.0",
   "paths": {
+    "/api/v1/public-support/catalog": {
+      "get": {
+        "operationId": "PublicSupportController_catalog",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiSuccessResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [
+          {
+            "publicSession": []
+          }
+        ],
+        "summary": "Catalogue public autorisé pour cette intégration",
+        "tags": [
+          "Support public - demandes"
+        ],
+        "x-api-audience": "public-support"
+      }
+    },
+    "/api/v1/public-support/conversations": {
+      "post": {
+        "operationId": "PublicSupportController_createConversation",
+        "parameters": [
+          {
+            "description": "Clé unique de 1 à 128 caractères, obligatoire pour cette mutation.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePublicConversationDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiSuccessResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [
+          {
+            "publicSession": []
+          }
+        ],
+        "summary": "Démarrer une conversation de support",
+        "tags": [
+          "Support public - demandes"
+        ],
+        "x-api-audience": "public-support"
+      }
+    },
+    "/api/v1/public-support/conversations/{id}/confirm": {
+      "post": {
+        "operationId": "PublicSupportController_confirm",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Clé unique de 1 à 128 caractères, obligatoire pour cette mutation.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmPublicTicketDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiSuccessResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [
+          {
+            "publicSession": []
+          }
+        ],
+        "summary": "Confirmer et créer atomiquement le ticket",
+        "tags": [
+          "Support public - demandes"
+        ],
+        "x-api-audience": "public-support"
+      }
+    },
+    "/api/v1/public-support/conversations/{id}/draft": {
+      "patch": {
+        "operationId": "PublicSupportController_saveDraft",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SavePublicTicketDraftDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiSuccessResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [
+          {
+            "publicSession": []
+          }
+        ],
+        "summary": "Enregistrer le brouillon qualifié",
+        "tags": [
+          "Support public - demandes"
+        ],
+        "x-api-audience": "public-support"
+      }
+    },
+    "/api/v1/public-support/conversations/{id}/handoff": {
+      "post": {
+        "operationId": "PublicSupportController_handoff",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Clé unique de 1 à 128 caractères, obligatoire pour cette mutation.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicHandoffDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiSuccessResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [
+          {
+            "publicSession": []
+          }
+        ],
+        "summary": "Demander explicitement un transfert humain",
+        "tags": [
+          "Support public - demandes"
+        ],
+        "x-api-audience": "public-support"
+      }
+    },
     "/api/v1/public-support/identity/assertion/exchange": {
       "post": {
         "operationId": "ExternalIdentityController_exchangeAssertion",
@@ -300,6 +761,100 @@
         "summary": "Demander un code de vérification email",
         "tags": [
           "Support public - identité"
+        ],
+        "x-api-audience": "public-support"
+      }
+    },
+    "/api/v1/public-support/preferences": {
+      "get": {
+        "operationId": "PublicSupportController_getPreferences",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiSuccessResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [
+          {
+            "publicSession": []
+          }
+        ],
+        "summary": "Consulter le profil public conservé",
+        "tags": [
+          "Support public - demandes"
+        ],
+        "x-api-audience": "public-support"
+      },
+      "patch": {
+        "operationId": "PublicSupportController_updatePreferences",
+        "parameters": [
+          {
+            "description": "Clé unique de 1 à 128 caractères, obligatoire pour cette mutation.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePublicPreferencesDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiSuccessResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [
+          {
+            "publicSession": []
+          }
+        ],
+        "summary": "Mettre à jour le nom et la langue du profil public",
+        "tags": [
+          "Support public - demandes"
         ],
         "x-api-audience": "public-support"
       }
@@ -476,6 +1031,221 @@
         "summary": "Révoquer l’appareil courant",
         "tags": [
           "Support public - identité"
+        ],
+        "x-api-audience": "public-support"
+      }
+    },
+    "/api/v1/public-support/tickets": {
+      "get": {
+        "operationId": "PublicSupportController_listTickets",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiPaginatedResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [
+          {
+            "publicSession": []
+          }
+        ],
+        "summary": "Lister uniquement les demandes du contact courant",
+        "tags": [
+          "Support public - demandes"
+        ],
+        "x-api-audience": "public-support"
+      }
+    },
+    "/api/v1/public-support/tickets/{id}": {
+      "get": {
+        "operationId": "PublicSupportController_ticket",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiSuccessResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [
+          {
+            "publicSession": []
+          }
+        ],
+        "summary": "Consulter une demande publique",
+        "tags": [
+          "Support public - demandes"
+        ],
+        "x-api-audience": "public-support"
+      }
+    },
+    "/api/v1/public-support/tickets/{id}/comments": {
+      "post": {
+        "operationId": "PublicSupportController_addComment",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Clé unique de 1 à 128 caractères, obligatoire pour cette mutation.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePublicCommentDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiSuccessResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [
+          {
+            "publicSession": []
+          }
+        ],
+        "summary": "Ajouter un commentaire demandeur",
+        "tags": [
+          "Support public - demandes"
+        ],
+        "x-api-audience": "public-support"
+      }
+    },
+    "/api/v1/public-support/tickets/{id}/timeline": {
+      "get": {
+        "operationId": "PublicSupportController_timeline",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiSuccessResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [
+          {
+            "publicSession": []
+          }
+        ],
+        "summary": "Consulter la timeline publique filtrée",
+        "tags": [
+          "Support public - demandes"
         ],
         "x-api-audience": "public-support"
       }
