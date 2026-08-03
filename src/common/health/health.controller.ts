@@ -12,7 +12,7 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { SkipThrottle } from '@nestjs/throttler';
-import { Public } from '../decorators/public.decorator';
+import { Auth, AuthMode } from '../decorators/auth-mode.decorator';
 import { HealthService } from './health.service';
 
 /**
@@ -25,7 +25,7 @@ export class HealthController {
   constructor(private readonly healthService: HealthService) {}
 
   /** Route publique `/health` (Test d'activité de l'application) */
-  @Public()
+  @Auth(AuthMode.ANONYMOUS)
   @SkipThrottle({ default: true, auth: true })
   @Get()
   @ApiOperation({ summary: 'Liveness check — le processus est-il vivant ?' })
@@ -38,7 +38,7 @@ export class HealthController {
   }
 
   /** Route publique `/health/ready` (Test d'état des dépendances système) */
-  @Public()
+  @Auth(AuthMode.ANONYMOUS)
   @SkipThrottle({ default: true, auth: true })
   @Get('ready')
   @ApiOperation({ summary: 'Readiness check — les dépendances sont-elles connectées ?' })

@@ -27,7 +27,7 @@ import { DatabaseModule } from './database/database.module';
 
 // Importation des 16 modules métier du backend
 import { AuthModule } from './modules/auth/auth.module';
-import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
+import { RequestAuthGuard } from './modules/auth/guards/request-auth.guard';
 import { PasswordChangeRequiredGuard } from './modules/auth/guards/password-change-required.guard';
 import { DepartmentsModule } from './modules/departments/departments.module';
 import { CategoriesModule } from './modules/categories/categories.module';
@@ -50,6 +50,8 @@ import { EmailModule } from './modules/email/email.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { BullBoardModule } from './common/bull-board/bull-board.module';
 import { SettingsModule } from './modules/settings/settings.module';
+import { SupportIntegrationsModule } from './modules/support-integrations/support-integrations.module';
+import { ExternalIdentityModule } from './modules/external-identity/external-identity.module';
 import { IdempotencyInterceptor } from './common/interceptors/idempotency.interceptor';
 import { isAuthRateLimited } from './common/decorators/auth-rate-limited.decorator';
 
@@ -144,6 +146,8 @@ import { isAuthRateLimited } from './common/decorators/auth-rate-limited.decorat
     QueuesModule,
     BullBoardModule,
     SettingsModule,
+    SupportIntegrationsModule,
+    ExternalIdentityModule,
   ],
   providers: [
     // Protection globale contre le surdimensionnement des requêtes (Rate Limiting)
@@ -154,7 +158,7 @@ import { isAuthRateLimited } from './common/decorators/auth-rate-limited.decorat
     // Protection globale par authentification JWT (bloque tout accès non authentifié par défaut)
     {
       provide: APP_GUARD,
-      useClass: JwtAuthGuard,
+      useClass: RequestAuthGuard,
     },
     // Vérification globale forçant le changement du mot de passe temporaire
     {

@@ -92,6 +92,11 @@ export async function assertLatestSchemaCompatible(client: postgres.Sql): Promis
   assertNoProblems(problems, 'dernier schema');
 }
 
+export async function assertCurrentSchemaCompatible(client: postgres.Sql): Promise<void> {
+  const problems = await findSchemaProblems(client, '0009_snapshot.json');
+  assertNoProblems(problems, 'schema courant');
+}
+
 export async function assertPublicExpandSchemaCompatible(client: postgres.Sql): Promise<void> {
   const problems = await findSchemaProblems(client, '0005_snapshot.json');
   assertNoProblems(problems, 'schema public etendu');
@@ -126,6 +131,25 @@ export async function hasParentIntegrationGuards(client: postgres.Sql): Promise<
     JOIN pg_proc function ON function.oid = trigger.tgfoid AND function.proname = expected.function_name
     JOIN pg_namespace function_namespace ON function_namespace.oid = function.pronamespace
       AND function_namespace.nspname = 'public'
+  `;
+  return state?.complete ?? false;
+}
+
+export async function hasPublicBootstrapGrants(client: postgres.Sql): Promise<boolean> {
+  const [state] = await client<{ complete: boolean }[]>`
+    WITH expected(name) AS (VALUES
+      ('public_bootstrap_grants_integration_fk'),
+      ('public_bootstrap_grants_requester_integration_fk'),
+      ('public_bootstrap_grants_device_subject_fk'),
+      ('public_bootstrap_grants_expiration_check')
+    )
+    SELECT to_regclass('public.public_bootstrap_grants') IS NOT NULL
+      AND COUNT(relation.oid) = 4
+      AND COALESCE(bool_and(c.convalidated) FILTER (WHERE relation.oid IS NOT NULL), false) AS complete
+    FROM expected
+    LEFT JOIN pg_constraint c ON c.conname = expected.name
+    LEFT JOIN pg_class relation ON relation.oid = c.conrelid
+      AND relation.relname = 'public_bootstrap_grants'
   `;
   return state?.complete ?? false;
 }

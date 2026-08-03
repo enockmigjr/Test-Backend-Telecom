@@ -5,11 +5,13 @@ import postgres from 'postgres';
 import { DatabaseConfigService } from '../config/database.config';
 import {
   assertBaselineCompatible,
+  assertCurrentSchemaCompatible,
   assertLatestPublicInvariants,
   assertLatestSchemaCompatible,
   assertPublicExpandInvariants,
   assertPublicExpandSchemaCompatible,
   hasParentIntegrationGuards,
+  hasPublicBootstrapGrants,
 } from './migration-baseline.validator';
 
 const BASELINE_MIGRATION_COUNT = 1;
@@ -17,6 +19,7 @@ const PUBLIC_EXPAND_MIGRATION_COUNT = 5;
 const PUBLIC_BACKFILL_MIGRATION_COUNT = 6;
 const OUTBOX_ENVELOPE_MIGRATION_COUNT = 8;
 const PARENT_GUARD_MIGRATION_COUNT = 9;
+const LATEST_MIGRATION_COUNT = 10;
 
 export async function runMigrations(
   databaseUrl = new DatabaseConfigService().url,
@@ -34,16 +37,34 @@ export async function runMigrations(
 
 export async function baselineExistingSchema(client: postgres.Sql): Promise<void> {
   const migrations = readMigrationFiles({ migrationsFolder: 'src/database/migrations' });
-  if (migrations.length < PARENT_GUARD_MIGRATION_COUNT) {
+  if (migrations.length < LATEST_MIGRATION_COUNT) {
     throw new Error('Catalogue de migrations incomplet.');
+  }
+  if (await hasPublicBootstrapGrants(client)) {
+    await assertCurrentSchemaCompatible(client);
+    const backfillComplete = await assertLatestPublicInvariants(client);
+    const parentGuardsComplete = await hasParentIntegrationGuards(client);
+    if (!backfillComplete || !parentGuardsComplete) {
+      throw new Error('Schema 0009 partiellement migre; baseline refusee.');
+    }
+    await journalAppliedMigrations(client, migrations.slice(0, LATEST_MIGRATION_COUNT));
+    return;
   }
   let appliedMigrations = migrations.slice(0, BASELINE_MIGRATION_COUNT);
   try {
     await assertLatestSchemaCompatible(client);
     const backfillComplete = await assertLatestPublicInvariants(client);
     const parentGuardsComplete = await hasParentIntegrationGuards(client);
+    const bootstrapComplete = parentGuardsComplete && (await hasPublicBootstrapGrants(client));
     appliedMigrations = backfillComplete
-      ? migrations.slice(0, parentGuardsComplete ? PARENT_GUARD_MIGRATION_COUNT : OUTBOX_ENVELOPE_MIGRATION_COUNT)
+      ? migrations.slice(
+          0,
+          bootstrapComplete
+            ? LATEST_MIGRATION_COUNT
+            : parentGuardsComplete
+              ? PARENT_GUARD_MIGRATION_COUNT
+              : OUTBOX_ENVELOPE_MIGRATION_COUNT,
+        )
       : migrations.slice(0, PUBLIC_EXPAND_MIGRATION_COUNT);
   } catch {
     try {

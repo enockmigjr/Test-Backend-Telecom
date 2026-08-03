@@ -22,7 +22,7 @@ import { LoginDto } from './dto/login.dto';
 import { RefreshDto } from './dto/refresh.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { Public } from '../../common/decorators/public.decorator';
+import { Auth, AuthMode } from '../../common/decorators/auth-mode.decorator';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 import { AllowPasswordChangePending } from '../../common/decorators/allow-password-change-pending.decorator';
 import { AuthRateLimited } from '../../common/decorators/auth-rate-limited.decorator';
@@ -36,7 +36,7 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   /** Route publique de connexion */
-  @Public()
+  @Auth(AuthMode.ANONYMOUS)
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @AuthRateLimited()
@@ -52,7 +52,7 @@ export class AuthController {
   }
 
   /** Route publique de rafraîchissement des tokens */
-  @Public()
+  @Auth(AuthMode.ANONYMOUS)
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Rafraîchir la paire de tokens (rotation)' })

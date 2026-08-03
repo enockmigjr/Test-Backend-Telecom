@@ -166,9 +166,9 @@ export class EmailService {
   ): Promise<void> {
     try {
       const info = await this.transporter.sendMail({ from: this.from, to, subject, html, attachments });
-      this.logger.log(`Email envoyé à ${to}: ${info.messageId}`);
-    } catch (error) {
-      this.logger.error(`Échec envoi email à ${to}: ${(error as Error).message}`);
+      this.logger.log(`Email envoyé à ${maskEmail(to)}: ${info.messageId}`);
+    } catch (error: unknown) {
+      this.logger.error(`Échec envoi email à ${maskEmail(to)}: ${errorCategory(error)}`);
       throw error;
     }
   }
@@ -303,4 +303,17 @@ export class EmailService {
       <hr><small>Telecom Ticket Management — Rapport automatique</small>
     `,
   };
+}
+
+function maskEmail(value: string): string {
+  const separator = value.lastIndexOf('@');
+  if (separator < 1) return '[contact masqué]';
+  return `${value[0]}***${value.slice(separator)}`;
+}
+
+function errorCategory(error: unknown): string {
+  if (typeof error !== 'object' || error === null) return 'UnknownError';
+  const name = 'name' in error && typeof error.name === 'string' ? error.name : 'Error';
+  const code = 'code' in error && typeof error.code === 'string' ? error.code : undefined;
+  return code ? `${name}:${code}` : name;
 }

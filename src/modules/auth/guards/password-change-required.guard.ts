@@ -15,12 +15,15 @@ import { Reflector } from '@nestjs/core';
 import { ALLOW_PASSWORD_CHANGE_PENDING_KEY } from '../../../common/decorators/allow-password-change-pending.decorator';
 import { JwtPayload } from '../interfaces/jwt-payload.interface';
 import { assertPasswordChangeComplete } from '../password-change-policy';
+import { AUTH_MODE_KEY, AuthMode } from '../../../common/decorators/auth-mode.decorator';
 
 @Injectable()
 export class PasswordChangeRequiredGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
+    const mode = this.reflector.getAllAndOverride<AuthMode>(AUTH_MODE_KEY, [context.getHandler(), context.getClass()]);
+    if (mode && mode !== AuthMode.INTERNAL) return true;
     const allowed = this.reflector.getAllAndOverride<boolean>(ALLOW_PASSWORD_CHANGE_PENDING_KEY, [
       context.getHandler(),
       context.getClass(),

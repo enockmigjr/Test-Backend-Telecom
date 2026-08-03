@@ -50,6 +50,7 @@ export * from './external-requesters';
 export * from './external-identities';
 export * from './external-verification-challenges';
 export * from './trusted-devices';
+export * from './public-bootstrap-grants';
 export * from './support-conversations';
 export * from './support-messages';
 export * from './outbox-events';

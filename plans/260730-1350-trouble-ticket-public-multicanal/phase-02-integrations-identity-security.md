@@ -1,5 +1,15 @@
 # Phase 02 — Intégrations, identité publique et sécurité
 
+## Statut d'exécution
+
+- Implémentation : terminée.
+- Contrats OpenAPI interne/public : validés.
+- Validation ciblée : 15 suites, 68 tests passants ; build et lint ciblé passants.
+- Migration 0009 : appliquée et contraintes vérifiées sur PostgreSQL local.
+- Réservation : la suite d'intégration migration a atteint la limite de trois exécutions pendant la correction du
+  re-baselining 0009. La dernière erreur syntaxique a été corrigée et sa requête validée directement en base, mais la
+  suite complète ne doit pas être relancée dans ce jalon.
+
 ## Contexte
 
 Le public ne peut pas utiliser le JWT interne. L’identité doit être vérifiée sans imposer de compte et sans répéter l’OTP sur un appareil reconnu.
@@ -54,15 +64,17 @@ Le BFF détient un court jeton d’accès public et un jeton opaque d’appareil
 
 ## Todo et tests
 
-- [ ] OTP : expiration, rejeu, essais, renvoi et réponse uniforme.
-- [ ] Appareil : émission, rotation, renouvellement, réduction et révocation.
-- [ ] Assertion : audience, origine, nonce, secret ancien/nouveau et Redis absent.
-- [ ] Auth mode : JWT public refusé en interne, JWT interne refusé en public et aucune route session anonyme.
-- [ ] Parité : login, refresh, app info, health, metrics et téléchargement signé gardent leur accessibilité exacte.
-- [ ] Bootstrap : fragment client, échange POST, consommation unique, expiration et URL nettoyée.
-- [ ] Isolation : identités identiques dans deux intégrations non fusionnées.
-- [ ] Logs : aucun OTP, jeton, secret, email ou téléphone complet.
-- [ ] Inventaire public-support : seules config, vérification initiale et consommation de code sont anonymes ; tickets, appareils et préférences exigent `PUBLIC_SESSION`.
+- [x] OTP : expiration, rejeu, essais, renvoi et réponse uniforme.
+- [x] Appareil : émission, rotation, renouvellement, réduction et révocation.
+- [x] Assertion : audience, origine, nonce, secret ancien/nouveau et Redis absent.
+- [x] Auth mode : JWT public refusé en interne, JWT interne refusé en public et aucune route session anonyme.
+- [x] Parité : login, refresh, app info, health, metrics et téléchargement signé gardent leur accessibilité exacte.
+- [x] Bootstrap : code destiné au fragment client, échange POST, consommation unique et expiration. Le nettoyage de
+  l'URL par `history.replaceState` reste à réaliser dans le frontend public de phase 05.
+- [x] Isolation : identités, appareils et bootstrap cloisonnés par intégration avec contraintes composites.
+- [x] Logs : aucun OTP, jeton, secret, email ou téléphone complet.
+- [x] Inventaire public-support : seules vérification initiale, consommation OTP/bootstrap et assertion sont sans session
+  publique ; tickets, appareils et préférences exigent `PUBLIC_SESSION` ou la preuve opaque dédiée à la restauration.
 
 ## Critères de succès
 

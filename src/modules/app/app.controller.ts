@@ -11,7 +11,7 @@
 
 import { Controller, Get } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { Public } from '../../common/decorators/public.decorator';
+import { Auth, AuthMode } from '../../common/decorators/auth-mode.decorator';
 
 /**
  * Class AppController
@@ -20,7 +20,7 @@ import { Public } from '../../common/decorators/public.decorator';
 @Controller()
 export class AppController {
   /** Route publique affichant les méta-informations de l'API Telecom */
-  @Public()
+  @Auth(AuthMode.ANONYMOUS)
   @Get()
   @ApiOperation({ summary: "Informations sur l'API" })
   @ApiResponse({ status: 200, description: 'API opérationnelle.' })

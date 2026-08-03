@@ -2,7 +2,8 @@
 
 ## Statut
 
-- État : phases 00 et 01 terminées ; phase 01b implémentée, validation E2E finale partiellement réservée ; phase 02 non commencée
+- État : phases 00 et 01 terminées ; phase 01b implémentée avec réservation E2E ; phase 02 implémentée, contrat public
+  validé et migration appliquée, avec réservation de revalidation de la suite migration après la limite de trois essais.
 - Design source : `docs/superpowers/specs/2026-07-30-trouble-ticket-public-multicanal-design.md`
 - Mode : difficile, deux audits en lecture seule puis revue adversariale
 - Dépôts : backend, frontend interne, futur `public-frontend`, WordPress PhotoVault

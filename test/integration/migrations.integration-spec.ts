@@ -38,7 +38,13 @@ describe('Migrations PostgreSQL', () => {
 
     const client = postgres(url, { max: 1 });
     const [schema] = await client<
-      { tables: number; slaColumns: number; familyColumns: number; tenantGuards: number }[]
+      {
+        tables: number;
+        slaColumns: number;
+        familyColumns: number;
+        tenantGuards: number;
+        bootstrapConstraints: number;
+      }[]
     >`
       SELECT
         (SELECT COUNT(*)::int FROM information_schema.tables WHERE table_schema = 'public') AS tables,
@@ -50,9 +56,23 @@ describe('Migrations PostgreSQL', () => {
         (SELECT COUNT(*)::int FROM information_schema.columns
           WHERE table_name = 'refresh_tokens' AND column_name = 'family_id') AS "familyColumns",
         (SELECT COUNT(*)::int FROM pg_trigger
-          WHERE NOT tgisinternal AND tgname LIKE '%parent_integration_guard') AS "tenantGuards"
+          WHERE NOT tgisinternal AND tgname LIKE '%parent_integration_guard') AS "tenantGuards",
+        (SELECT COUNT(*)::int FROM pg_constraint
+          WHERE conrelid = 'public_bootstrap_grants'::regclass
+            AND conname IN (
+              'public_bootstrap_grants_integration_fk',
+              'public_bootstrap_grants_requester_integration_fk',
+              'public_bootstrap_grants_device_subject_fk',
+              'public_bootstrap_grants_expiration_check'
+            )) AS "bootstrapConstraints"
     `;
-    expect(schema).toEqual({ tables: 26, slaColumns: 4, familyColumns: 1, tenantGuards: 3 });
+    expect(schema).toEqual({
+      tables: 27,
+      slaColumns: 4,
+      familyColumns: 1,
+      tenantGuards: 3,
+      bootstrapConstraints: 4,
+    });
 
     await client`DROP SCHEMA drizzle CASCADE`;
     await client.end();
@@ -62,7 +82,7 @@ describe('Migrations PostgreSQL', () => {
       SELECT COUNT(*)::int AS count FROM drizzle.__drizzle_migrations
     `;
     await baselinedClient.end();
-    expect(migrationState?.count).toBe(9);
+    expect(migrationState?.count).toBe(10);
   });
 
   it('reprend une base peuplée et accepte encore les écritures du binaire N-1', async () => {

@@ -14,7 +14,7 @@ import { Controller, Get, Res } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { SkipThrottle } from '@nestjs/throttler';
 import { Response } from 'express';
-import { Public } from '../decorators/public.decorator';
+import { Auth, AuthMode } from '../decorators/auth-mode.decorator';
 import { MetricsService } from './metrics.service';
 
 /**
@@ -31,7 +31,7 @@ export class MetricsController {
    *
    * @param res Objet de réponse Express pour l'injection directe de l'en-tête `Content-Type: text/plain`.
    */
-  @Public()
+  @Auth(AuthMode.ANONYMOUS)
   @SkipThrottle({ default: true, auth: true })
   @Get()
   @ApiOperation({ summary: 'Métriques Prometheus (format OpenMetrics)' })

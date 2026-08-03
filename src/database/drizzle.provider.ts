@@ -80,7 +80,7 @@ export class DrizzleProvider implements OnModuleInit {
       try {
         await effect();
       } catch (error: unknown) {
-        this.logger.error(`Effet post-commit en échec: ${String(error)}`);
+        this.logger.error(`Effet post-commit en échec: ${errorCategory(error)}`);
       }
     }
     return result;
@@ -97,4 +97,11 @@ export class DrizzleProvider implements OnModuleInit {
     }
     void effect();
   }
+}
+
+function errorCategory(error: unknown): string {
+  if (typeof error !== 'object' || error === null) return 'UnknownError';
+  const name = 'name' in error && typeof error.name === 'string' ? error.name : 'Error';
+  const code = 'code' in error && typeof error.code === 'string' ? error.code : undefined;
+  return code ? `${name}:${code}` : name;
 }

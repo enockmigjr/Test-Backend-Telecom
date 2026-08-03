@@ -48,7 +48,27 @@ export function createOpenApiDocument(app: INestApplication): OpenAPIObject {
     .setTitle('Telecom Ticket Management API')
     .setDescription("Système de Gestion des Tickets d'Incidents Télécom")
     .setVersion('1.0')
-    .addBearerAuth();
+    .addBearerAuth(undefined, 'bearer')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        description: 'Session courte du demandeur public',
+        bearerFormat: 'PublicSession',
+      },
+      'publicSession',
+    )
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        description: "Assertion signée à usage unique d'une intégration",
+        bearerFormat: 'IntegrationAssertion',
+      },
+      'integrationAssertion',
+    )
+    .addApiKey({ type: 'apiKey', in: 'header', name: 'x-trusted-device' }, 'trustedDevice')
+    .addApiKey({ type: 'apiKey', in: 'header', name: 'x-integration-key' }, 'integrationKey');
 
   // Enregistrement de l'ensemble des catégories (Tags) d'endpoints
   for (const [name, description] of TAGS) {

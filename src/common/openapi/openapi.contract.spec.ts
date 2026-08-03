@@ -75,11 +75,11 @@ describe('contrat openapi.json', () => {
   const document = loadDocument();
   const apiOperations = operations(document);
 
-  /** Test : contient les 83 opérations actuelles avec des operationId uniques */
+  /** Test : contient les 99 opérations actuelles avec des operationId uniques */
 
-  it('contient les 83 opérations actuelles avec des operationId uniques', () => {
+  it('contient les 99 opérations actuelles avec des operationId uniques', () => {
     const operationIds = apiOperations.map((operation) => operation['operationId']);
-    expect(apiOperations).toHaveLength(83);
+    expect(apiOperations).toHaveLength(99);
     expect(operationIds.every((id) => typeof id === 'string' && id.length > 0)).toBe(true);
     expect(new Set(operationIds).size).toBe(operationIds.length);
   });

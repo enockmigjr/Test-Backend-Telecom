@@ -44,5 +44,7 @@ describe('contrat openapi.public.json', () => {
     const securitySchemes = isRecord(components['securitySchemes']) ? components['securitySchemes'] : {};
     expect(schemas.some((name) => FORBIDDEN_SCHEMAS.test(name))).toBe(false);
     expect(securitySchemes).not.toHaveProperty('bearer');
+    expect(securitySchemes).toHaveProperty('publicSession');
+    expect(securitySchemes).toHaveProperty('integrationAssertion');
   });
 });

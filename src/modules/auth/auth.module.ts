@@ -19,11 +19,14 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import { PasswordChangeRequiredGuard } from './guards/password-change-required.guard';
+import { RequestAuthGuard } from './guards/request-auth.guard';
 import { JwtConfigService } from '../../config/jwt.config';
 import { RefreshSessionService } from './refresh-session.service';
+import { ExternalIdentityModule } from '../external-identity/external-identity.module';
 
 @Module({
   imports: [
+    ExternalIdentityModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       inject: [JwtConfigService],
@@ -34,8 +37,25 @@ import { RefreshSessionService } from './refresh-session.service';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, RefreshSessionService, JwtStrategy, JwtAuthGuard, PasswordChangeRequiredGuard, RolesGuard],
-  exports: [AuthService, JwtStrategy, JwtAuthGuard, PasswordChangeRequiredGuard, RolesGuard, PassportModule, JwtModule],
+  providers: [
+    AuthService,
+    RefreshSessionService,
+    JwtStrategy,
+    JwtAuthGuard,
+    RequestAuthGuard,
+    PasswordChangeRequiredGuard,
+    RolesGuard,
+  ],
+  exports: [
+    AuthService,
+    JwtStrategy,
+    JwtAuthGuard,
+    RequestAuthGuard,
+    PasswordChangeRequiredGuard,
+    RolesGuard,
+    PassportModule,
+    JwtModule,
+  ],
 })
 /**
  * Module NestJS `AuthModule` configurant les dépendances, contrôleurs et services associés.

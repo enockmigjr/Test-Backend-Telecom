@@ -43,7 +43,12 @@ interface ValidationOptions {
   ignoredIndexes?: ReadonlySet<string>;
   compatibleNullability?: ReadonlySet<string>;
 }
-type SnapshotFile = '0000_snapshot.json' | '0005_snapshot.json' | '0006_snapshot.json' | '0007_snapshot.json';
+type SnapshotFile =
+  | '0000_snapshot.json'
+  | '0005_snapshot.json'
+  | '0006_snapshot.json'
+  | '0007_snapshot.json'
+  | '0009_snapshot.json';
 
 export async function findSchemaProblems(
   client: postgres.Sql,

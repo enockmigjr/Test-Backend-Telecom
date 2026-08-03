@@ -61,6 +61,29 @@ describe('IdempotencyInterceptor', () => {
     expect(updateWhere).toHaveBeenCalledTimes(1);
   });
 
+  it('classe le principal public comme demandeur externe même si son jeton contient sub', async () => {
+    await lastValueFrom(
+      await interceptor.intercept(
+        context({
+          kind: 'PUBLIC',
+          sub: '00000000-0000-0000-0000-000000000101',
+          externalRequesterId: '00000000-0000-0000-0000-000000000101',
+          supportIntegrationId: '00000000-0000-0000-0000-000000000102',
+        }),
+        handler({ id: 'ticket-public-1' }),
+      ),
+    );
+
+    expect(values).toHaveBeenCalledWith(
+      expect.objectContaining({
+        subjectType: 'EXTERNAL_REQUESTER',
+        userId: null,
+        externalRequesterId: '00000000-0000-0000-0000-000000000101',
+        supportIntegrationId: '00000000-0000-0000-0000-000000000102',
+      }),
+    );
+  });
+
   /** Test : rejoue une réponse terminée sans rappeler le contrôleur */
 
   it('rejoue une réponse terminée sans rappeler le contrôleur', async () => {
@@ -124,11 +147,11 @@ describe('IdempotencyInterceptor', () => {
     return { handle: jest.fn(() => of(value)) };
   }
 
-  function context(): ExecutionContext {
+  function context(user: Record<string, string> = { sub: '00000000-0000-0000-0000-000000000001' }): ExecutionContext {
     const response = { statusCode: 201, status: jest.fn().mockReturnThis() };
     const request = {
       headers: { 'idempotency-key': 'ticket-create-1' },
-      user: { sub: '00000000-0000-0000-0000-000000000001' },
+      user,
       method: 'POST',
       baseUrl: '/api/v1/tickets',
       path: '/',

@@ -484,6 +484,34 @@
         ],
         "type": "object"
       },
+      "ConsumeBootstrapDto": {
+        "properties": {
+          "code": {
+            "description": "Code opaque extrait du fragment puis envoyé en POST",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "type": "object"
+      },
+      "ConsumeEmailVerificationDto": {
+        "properties": {
+          "challengeId": {
+            "type": "string"
+          },
+          "code": {
+            "example": "123456",
+            "type": "string"
+          }
+        },
+        "required": [
+          "challengeId",
+          "code"
+        ],
+        "type": "object"
+      },
       "CreateCategoryDto": {
         "properties": {
           "description": {
@@ -607,6 +635,43 @@
           "priority",
           "firstResponseMinutes",
           "resolutionMinutes"
+        ],
+        "type": "object"
+      },
+      "CreateSupportIntegrationDto": {
+        "properties": {
+          "allowedOrigins": {
+            "example": [
+              "https://photos.example.com"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "appearance": {
+            "type": "object"
+          },
+          "features": {
+            "type": "object"
+          },
+          "name": {
+            "example": "PhotoVault production",
+            "type": "string"
+          },
+          "quotaPolicy": {
+            "$ref": "#/components/schemas/IntegrationQuotaPolicyDto"
+          },
+          "routingPolicy": {
+            "type": "object"
+          },
+          "trustPolicy": {
+            "$ref": "#/components/schemas/IntegrationTrustPolicyDto"
+          }
+        },
+        "required": [
+          "name",
+          "allowedOrigins"
         ],
         "type": "object"
       },
@@ -1410,6 +1475,69 @@
         ],
         "type": "object"
       },
+      "IntegrationQuotaPolicyDto": {
+        "properties": {
+          "verificationAttemptsPerHour": {
+            "default": 10,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "number"
+          },
+          "verificationAttemptsPerIntegrationHour": {
+            "default": 2000,
+            "maximum": 20000,
+            "minimum": 10,
+            "type": "number"
+          },
+          "verificationAttemptsPerIpHour": {
+            "default": 50,
+            "maximum": 2000,
+            "minimum": 1,
+            "type": "number"
+          },
+          "verificationRequestsPerHour": {
+            "default": 5,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "number"
+          },
+          "verificationRequestsPerIntegrationHour": {
+            "default": 500,
+            "maximum": 10000,
+            "minimum": 10,
+            "type": "number"
+          },
+          "verificationRequestsPerIpHour": {
+            "default": 20,
+            "maximum": 1000,
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "type": "object"
+      },
+      "IntegrationTrustPolicyDto": {
+        "properties": {
+          "policyVersion": {
+            "default": 1,
+            "minimum": 1,
+            "type": "number"
+          },
+          "renewalWindowDays": {
+            "default": 7,
+            "maximum": 30,
+            "minimum": 1,
+            "type": "number"
+          },
+          "trustedDeviceDays": {
+            "default": 90,
+            "maximum": 365,
+            "minimum": 1,
+            "type": "number"
+          }
+        },
+        "type": "object"
+      },
       "InternalNote": {
         "properties": {
           "actorType": {
@@ -1770,6 +1898,23 @@
         ],
         "type": "object"
       },
+      "RequestEmailVerificationDto": {
+        "properties": {
+          "email": {
+            "example": "client@example.com",
+            "type": "string"
+          },
+          "integrationKey": {
+            "description": "Clé publique de l'intégration",
+            "type": "string"
+          }
+        },
+        "required": [
+          "integrationKey",
+          "email"
+        ],
+        "type": "object"
+      },
       "ResolveTicketDto": {
         "properties": {
           "resolutionSummary": {
@@ -1778,6 +1923,18 @@
             "type": "string"
           }
         },
+        "type": "object"
+      },
+      "RotateIntegrationSecretDto": {
+        "properties": {
+          "secret": {
+            "description": "Secret aléatoire de 32 octets encodé en base64url; il ne sera jamais renvoyé.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "secret"
+        ],
         "type": "object"
       },
       "Setting": {
@@ -2707,6 +2864,47 @@
         },
         "type": "object"
       },
+      "UpdateSupportIntegrationDto": {
+        "properties": {
+          "allowedOrigins": {
+            "example": [
+              "https://photos.example.com"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "appearance": {
+            "type": "object"
+          },
+          "features": {
+            "type": "object"
+          },
+          "name": {
+            "example": "PhotoVault production",
+            "type": "string"
+          },
+          "quotaPolicy": {
+            "$ref": "#/components/schemas/IntegrationQuotaPolicyDto"
+          },
+          "routingPolicy": {
+            "type": "object"
+          },
+          "status": {
+            "enum": [
+              "DRAFT",
+              "ACTIVE",
+              "SUSPENDED"
+            ],
+            "type": "string"
+          },
+          "trustPolicy": {
+            "$ref": "#/components/schemas/IntegrationTrustPolicyDto"
+          }
+        },
+        "type": "object"
+      },
       "UpdateTicketDto": {
         "properties": {
           "categoryId": {
@@ -2911,6 +3109,28 @@
         "bearerFormat": "JWT",
         "scheme": "bearer",
         "type": "http"
+      },
+      "integrationAssertion": {
+        "bearerFormat": "IntegrationAssertion",
+        "description": "Assertion signée à usage unique d'une intégration",
+        "scheme": "bearer",
+        "type": "http"
+      },
+      "integrationKey": {
+        "in": "header",
+        "name": "x-integration-key",
+        "type": "apiKey"
+      },
+      "publicSession": {
+        "bearerFormat": "PublicSession",
+        "description": "Session courte du demandeur public",
+        "scheme": "bearer",
+        "type": "http"
+      },
+      "trustedDevice": {
+        "in": "header",
+        "name": "x-trusted-device",
+        "type": "apiKey"
       }
     }
   },
@@ -6502,6 +6722,308 @@
         ]
       }
     },
+    "/api/v1/public-support/identity/assertion/exchange": {
+      "post": {
+        "operationId": "ExternalIdentityController_exchangeAssertion",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiSuccessResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [
+          {
+            "integrationAssertion": []
+          }
+        ],
+        "summary": "Échanger une assertion signée contre une session publique",
+        "tags": [
+          "Support public - identité"
+        ],
+        "x-api-audience": "public-support"
+      }
+    },
+    "/api/v1/public-support/identity/email/consume": {
+      "post": {
+        "operationId": "ExternalIdentityController_consumeEmail",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConsumeEmailVerificationDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiSuccessResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [],
+        "summary": "Vérifier le code et ouvrir une session publique",
+        "tags": [
+          "Support public - identité"
+        ],
+        "x-api-audience": "public-support"
+      }
+    },
+    "/api/v1/public-support/identity/email/request": {
+      "post": {
+        "operationId": "ExternalIdentityController_requestEmail",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestEmailVerificationDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiSuccessResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [],
+        "summary": "Demander un code de vérification email",
+        "tags": [
+          "Support public - identité"
+        ],
+        "x-api-audience": "public-support"
+      }
+    },
+    "/api/v1/public-support/session/bootstrap/consume": {
+      "post": {
+        "operationId": "ExternalIdentityController_consumeBootstrap",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConsumeBootstrapDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiSuccessResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [],
+        "summary": "Consommer une fois un code de transfert",
+        "tags": [
+          "Support public - identité"
+        ],
+        "x-api-audience": "public-support"
+      }
+    },
+    "/api/v1/public-support/session/bootstrap/request": {
+      "post": {
+        "operationId": "ExternalIdentityController_requestBootstrap",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiSuccessResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [
+          {
+            "publicSession": []
+          }
+        ],
+        "summary": "Créer un code de transfert iframe vers pleine page",
+        "tags": [
+          "Support public - identité"
+        ],
+        "x-api-audience": "public-support"
+      }
+    },
+    "/api/v1/public-support/session/restore": {
+      "post": {
+        "operationId": "ExternalIdentityController_restore",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-integration-key",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-trusted-device",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiSuccessResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [
+          {
+            "integrationKey": [],
+            "trustedDevice": []
+          }
+        ],
+        "summary": "Restaurer et faire tourner la confiance de l’appareil",
+        "tags": [
+          "Support public - identité"
+        ],
+        "x-api-audience": "public-support"
+      }
+    },
+    "/api/v1/public-support/session/revoke-device": {
+      "post": {
+        "operationId": "ExternalIdentityController_revokeDevice",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiSuccessResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [
+          {
+            "publicSession": []
+          }
+        ],
+        "summary": "Révoquer l’appareil courant",
+        "tags": [
+          "Support public - identité"
+        ],
+        "x-api-audience": "public-support"
+      }
+    },
     "/api/v1/reports": {
       "get": {
         "description": "Retourne tous les rapports pour un administrateur et uniquement ses propres rapports pour un superviseur.",
@@ -7803,6 +8325,451 @@
         "summary": "Modifier les délais SLA (Admin)",
         "tags": [
           "sla"
+        ]
+      }
+    },
+    "/api/v1/support-integrations": {
+      "get": {
+        "operationId": "SupportIntegrationsController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiCollectionResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Lister les intégrations sans exposer leurs secrets",
+        "tags": [
+          "support-integrations"
+        ]
+      },
+      "post": {
+        "operationId": "SupportIntegrationsController_create",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSupportIntegrationDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiSuccessResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Créer une intégration de support en brouillon",
+        "tags": [
+          "support-integrations"
+        ]
+      }
+    },
+    "/api/v1/support-integrations/{id}": {
+      "get": {
+        "operationId": "SupportIntegrationsController_findOne",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiSuccessResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Consulter une intégration",
+        "tags": [
+          "support-integrations"
+        ]
+      },
+      "patch": {
+        "operationId": "SupportIntegrationsController_update",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSupportIntegrationDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiSuccessResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Modifier politiques, origines ou statut",
+        "tags": [
+          "support-integrations"
+        ]
+      }
+    },
+    "/api/v1/support-integrations/{id}/credentials": {
+      "get": {
+        "operationId": "SupportIntegrationsController_listCredentials",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiCollectionResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Lister les versions de secret sans exposer leur valeur chiffrée",
+        "tags": [
+          "support-integrations"
+        ]
+      }
+    },
+    "/api/v1/support-integrations/{id}/credentials/{credentialId}/revoke": {
+      "post": {
+        "operationId": "SupportIntegrationsController_revokeSecret",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "credentialId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Révoquer une version de secret",
+        "tags": [
+          "support-integrations"
+        ]
+      }
+    },
+    "/api/v1/support-integrations/{id}/credentials/rotate": {
+      "post": {
+        "operationId": "SupportIntegrationsController_rotateSecret",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RotateIntegrationSecretDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiSuccessResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Chiffrer une nouvelle version de secret sans la retourner",
+        "tags": [
+          "support-integrations"
+        ]
+      }
+    },
+    "/api/v1/support-integrations/{id}/devices": {
+      "get": {
+        "operationId": "SupportIntegrationsController_listDevices",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiPaginatedResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Lister les appareils de confiance sans exposer leurs jetons",
+        "tags": [
+          "support-integrations"
+        ]
+      }
+    },
+    "/api/v1/support-integrations/{id}/devices/{deviceId}/revoke": {
+      "post": {
+        "operationId": "SupportIntegrationsController_revokeDevice",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "deviceId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Révoquer un appareil de confiance",
+        "tags": [
+          "support-integrations"
         ]
       }
     },

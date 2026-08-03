@@ -64,6 +64,13 @@
       "when": 1785428526162,
       "tag": "0008_parent-integration-guards",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1785749481127,
+      "tag": "0009_public-identity-bootstrap",
+      "breakpoints": true
     }
   ]
 }

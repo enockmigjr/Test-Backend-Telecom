@@ -14,7 +14,7 @@
 import { Controller, Get, Param, Query, Res } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiProduces, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Response } from 'express';
-import { Public } from '../../common/decorators/public.decorator';
+import { Auth, AuthMode } from '../../common/decorators/auth-mode.decorator';
 import { SignedReportDownloadQueryDto } from './dto/signed-report-download-query.dto';
 import { ReportDownloadService } from './report-download.service';
 
@@ -33,7 +33,7 @@ export class PublicReportsController {
    * @param query DTO contenant le timestamp d'expiration et la signature HMAC SHA-256 base64url.
    * @param response Objet de réponse Express.
    */
-  @Public()
+  @Auth(AuthMode.ANONYMOUS)
   @Get(':id/download')
   @ApiOperation({ summary: 'Télécharger un rapport depuis un lien signé et temporaire' })
   @ApiParam({ name: 'id', description: 'UUID du rapport' })

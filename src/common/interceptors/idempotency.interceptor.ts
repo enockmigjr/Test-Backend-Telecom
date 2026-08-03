@@ -30,7 +30,13 @@ const IDEMPOTENCY_TTL_MS = 24 * 60 * 60 * 1000;
 const IDEMPOTENCY_KEY_PATTERN = /^[A-Za-z0-9._:-]{1,128}$/;
 
 interface AuthenticatedRequest extends Request {
-  user?: { sub?: string; id?: string; externalRequesterId?: string; supportIntegrationId?: string };
+  user?: {
+    kind?: 'PUBLIC';
+    sub?: string;
+    id?: string;
+    externalRequesterId?: string;
+    supportIntegrationId?: string;
+  };
 }
 
 type IdempotencySubject =
@@ -107,13 +113,13 @@ export class IdempotencyInterceptor implements NestInterceptor {
   }
 
   private resolveSubject(request: AuthenticatedRequest): IdempotencySubject {
-    const userId = request.user?.sub ?? request.user?.id;
-    if (userId) return { type: 'INTERNAL', userId, externalRequesterId: null, supportIntegrationId: null };
     const externalRequesterId = request.user?.externalRequesterId;
     const supportIntegrationId = request.user?.supportIntegrationId;
     if (externalRequesterId && supportIntegrationId) {
       return { type: 'EXTERNAL_REQUESTER', userId: null, externalRequesterId, supportIntegrationId };
     }
+    const userId = request.user?.sub ?? request.user?.id;
+    if (userId) return { type: 'INTERNAL', userId, externalRequesterId: null, supportIntegrationId: null };
     if (supportIntegrationId) {
       return { type: 'INTEGRATION', userId: null, externalRequesterId: null, supportIntegrationId };
     }

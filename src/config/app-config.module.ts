@@ -13,11 +13,12 @@ import { Global, Module } from '@nestjs/common';
 import { AppConfigService } from './app.config';
 import { DatabaseConfigService } from './database.config';
 import { JwtConfigService } from './jwt.config';
+import { PublicSupportConfigService } from './public-support.config';
 
 /**
  * Liste des services de configuration regroupés dans ce module.
  */
-const configServices = [AppConfigService, DatabaseConfigService, JwtConfigService];
+const configServices = [AppConfigService, DatabaseConfigService, JwtConfigService, PublicSupportConfigService];
 
 /**
  * Déclaration du module global NestJS de configuration.

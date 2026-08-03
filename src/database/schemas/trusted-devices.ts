@@ -21,6 +21,11 @@ export const trustedDevices = pgTable(
   },
   (table) => ({
     tokenUnique: uniqueIndex('uq_trusted_devices_token_hash').on(table.tokenHash),
+    subjectUnique: uniqueIndex('uq_trusted_devices_subject').on(
+      table.id,
+      table.supportIntegrationId,
+      table.externalRequesterId,
+    ),
     requesterIndex: index('idx_trusted_devices_requester').on(table.supportIntegrationId, table.externalRequesterId),
     expirationIndex: index('idx_trusted_devices_expires_at').on(table.expiresAt),
     requesterIntegrationForeignKey: foreignKey({
