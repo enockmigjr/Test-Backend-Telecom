@@ -127,6 +127,8 @@ services:
       dockerfile: Dockerfile
     container_name: telecom-public-frontend
     restart: unless-stopped
+    ports:
+      - '3005:3100'
     environment:
       NODE_ENV: production
       BACKEND_URL: http://api:3000

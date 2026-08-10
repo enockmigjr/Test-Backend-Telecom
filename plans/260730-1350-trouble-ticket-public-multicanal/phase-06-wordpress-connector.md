@@ -13,7 +13,10 @@ Créer `trouble-ticket-connector` dans la source active, ajouter son miroir de d
 En cours. Le plugin autonome, son assertion vérifiée, le widget `v2`, le fallback public, le runtime WordPress, le miroir
 et l'infrastructure de déploiement sont implémentés. La recette navigateur PhotoVault avec une intégration backend réelle
 est validée sur Chromium, Firefox et WebKit (visiteur anonyme et membre vérifié sans nouvel OTP). La publication du
-dépôt distant du connecteur reste ouverte.
+dépôt distant du connecteur reste ouverte. Localement, le portail public est exposé par le groupe compose sur
+`http://localhost:3005` (service `public-frontend`), sans conteneur annexe. Le catalogue public dépend de la
+`routingPolicy.allowedCategoryIds` de l'intégration : l'administrateur y déclare les catégories autorisées, les
+catégories elles-mêmes restant gérées par le backend (`/categories`).
 
 ## Exigences
 
