@@ -2,10 +2,7 @@
 
 ## Statut
 
-- État : phases 00, 01, 01b et backend 02 à 04 implémentées. La phase 05 livre les réponses publiques typées,
-  la reprise de conversation, les appareils de confiance, le portail autonome, le widget et le temps réel. La phase 06
-  livre le connecteur PhotoVault, son miroir et le runtime WordPress ; les recettes navigateur multi-moteurs et la
-  publication distante du nouveau dépôt restent à terminer avant la phase 07.
+- État : phases 00 à 06 implémentées et commitées. La recette navigateur multi-moteurs de la phase 06 est validée (Chromium/Firefox/WebKit) ; seule la publication du dépôt distant du connecteur reste ouverte (décision utilisateur). La phase 07 (administration interne enrichie) est le prochain chantier. Vue d'ensemble consolidée : plans/reports/overview-260810-1040-trouble-ticket-public-multicanal.md.
 - Design source : `docs/superpowers/specs/2026-07-30-trouble-ticket-public-multicanal-design.md`
 - Mode : difficile, deux audits en lecture seule puis revue adversariale
 - Dépôts : backend, frontend interne, futur `public-frontend`, WordPress PhotoVault
