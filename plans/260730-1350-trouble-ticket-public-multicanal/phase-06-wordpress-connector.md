@@ -53,8 +53,8 @@ Le plugin expose un endpoint REST WordPress même origine, réservé à l’util
 ## Todo et tests
 
 - [x] Non connecté, nonce invalide, email non vérifié et Identity Kit absent.
-- [ ] Expiration, mauvaise audience, origine hostile, nonce rejoué et rotation.
-- [ ] Shortcode, injection automatique, désactivation et CSP bloquante.
+- [x] Expiration, mauvaise audience, origine hostile, nonce rejoué et rotation (specs backend d'assertion et de rotation).
+- [x] Shortcode, injection automatique, désactivation et CSP bloquante (runtime WP + WP-CLI ; la CSP reste une politique du site documentée dans le README, avec repli public validé).
 - [x] Syntaxe PHP et standard WordPress ciblé.
 - [x] Test runtime dans Docker/WordPress réel.
 - [x] Vérification des miroirs et tests navigateur PhotoVault, individuellement si longs.
