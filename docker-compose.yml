@@ -91,6 +91,10 @@ services:
       CLAMAV_HOST: clamav
       CLAMAV_PORT: 3310
       PUBLIC_SUPPORT_ORIGINS: ${PUBLIC_SUPPORT_ORIGINS:-http://support.localhost}
+      PUBLIC_SUPPORT_CONTACT_HASH_SECRET: ${PUBLIC_SUPPORT_CONTACT_HASH_SECRET:-local-dev-contact-hash-secret-change-before-production}
+      PUBLIC_SUPPORT_MASTER_KEYS: ${PUBLIC_SUPPORT_MASTER_KEYS:-1:C84WzSoN7JCz5GUzWB2IvUnRROIs0iape77i0C/3eI8=}
+      PUBLIC_SUPPORT_MASTER_KEY_VERSION: ${PUBLIC_SUPPORT_MASTER_KEY_VERSION:-1}
+      PUBLIC_SESSION_SECRET: ${PUBLIC_SESSION_SECRET:-local-dev-public-session-secret-32chars}
       PUBLIC_WS_COOKIE_NAME: ${PUBLIC_WS_COOKIE_NAME:-support_session,support_iframe_session}
       APP_NAME: ${APP_NAME:-"Helpdesk Telecom"}
       APP_URL: ${APP_URL:-http://localhost:3000}

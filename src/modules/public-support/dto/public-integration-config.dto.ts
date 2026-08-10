@@ -10,7 +10,7 @@ export class PublicIntegrationConfigQueryDto {
 
   @ApiProperty({ required: false, description: "Origine exacte demandant l'intégration en iframe" })
   @IsOptional()
-  @IsUrl({ require_protocol: true, protocols: ['http', 'https'] })
+  @IsUrl({ require_protocol: true, require_tld: false, protocols: ['http', 'https'] })
   @MaxLength(2048)
   origin?: string;
 }

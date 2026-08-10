@@ -11,8 +11,9 @@ Créer `trouble-ticket-connector` dans la source active, ajouter son miroir de d
 ## Statut
 
 En cours. Le plugin autonome, son assertion vérifiée, le widget `v2`, le fallback public, le runtime WordPress, le miroir
-et l’infrastructure de déploiement sont implémentés. La recette navigateur PhotoVault avec une intégration backend réelle
-et la publication du dépôt distant du connecteur restent ouvertes.
+et l'infrastructure de déploiement sont implémentés. La recette navigateur PhotoVault avec une intégration backend réelle
+est validée (visiteur anonyme et membre vérifié sans nouvel OTP). La publication du dépôt distant du connecteur reste
+ouverte.
 
 ## Exigences
 
@@ -56,7 +57,7 @@ Le plugin expose un endpoint REST WordPress même origine, réservé à l’util
 - [ ] Shortcode, injection automatique, désactivation et CSP bloquante.
 - [x] Syntaxe PHP et standard WordPress ciblé.
 - [x] Test runtime dans Docker/WordPress réel.
-- [ ] Vérification des miroirs et tests navigateur PhotoVault, individuellement si longs.
+- [x] Vérification des miroirs et tests navigateur PhotoVault, individuellement si longs.
 - [x] Source active présente dans `git ls-files` du connecteur, miroir dans celui de PhotoVault, infrastructure dans le dépôt racine.
 
 ## Critères de succès
