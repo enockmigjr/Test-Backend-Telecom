@@ -96,3 +96,14 @@ Infrastructure : images, migrations de staging, healthchecks, alertes, sauvegard
 - Demandeur : anonymisÃ© automatiquement 13 mois aprÃ¨s la derniÃ¨re activitÃ© (aucun ticket ouvert) ; appareils de confiance expirÃ©s Ã  la rÃ©vocation.
 - Challenges OTP et idempotence : purge aprÃ¨s 24 h / 30 j.
 - Options par intÃ©gration : durÃ©e de rÃ©tention configurable et dÃ©sactivation de l'anonymisation automatique (audit de chaque modification).
+
+## Correctifs appliqués (2026-08-11)
+- Attachements publics : le guard et les services vérifient désormais la clé ttachments (et le repli publicAttachments), fin du 404 « Fonction indisponible ».
+- Upload/téléchargement/statut des pièces jointes couverts côté BFF (oute-policy) et client (tickets + conversations).
+- Escalade automatique : les tickets ASSIGNED en retard sans activité sont désassignés puis ré-acheminés (borne 10/passage, historique système).
+- Alertes SLA : les notifications de violation sont relancées toutes les 6 h tant que le ticket reste ouvert et en retard (métadonnées JSONB), plus de coupure après la date échue.
+- Dashboard : tRisk/overdue/workload.slaAtRiskCount couvrent les tickets échus ; overdue exposé ; esolvedCount ajouté à la résolution moyenne.
+- Catégories : rôles multiples (	argetRoles) supportés par le moteur d'assignation (repli 	argetRole), migration 0017.
+- Départements : algorithme (LEAST_LOADED/ROUND_ROBIN), auto-assignation et charge max configurables via DTO et UI admin.
+- Utilisateurs : pause (isAvailable) et absence (bsenceEndsAt) gérées dans l'assignation manuelle et exposées à l'admin.
+- Login CSRF : repli same-origin en développement quel que soit le port local (fin du 403 sur 3001).

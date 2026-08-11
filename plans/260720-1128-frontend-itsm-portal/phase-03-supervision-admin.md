@@ -71,3 +71,8 @@ Exposer les capacitÃ©s d'analyse et de configuration rÃ©ellement prÃ©sentes aprÃ
 ## CritÃ¨re de sortie Release 1
 
 Les superviseurs et administrateurs disposent d'Ã©crans utiles, denses et auditables dont chaque donnÃ©e et action correspond Ã  un contrat backend rÃ©el et testÃ©.
+
+## Correctifs appliqués (2026-08-11)
+- Dashboard : carte « SLA en retard » (overdue), résolution moyenne « — » si aucune résolution sur la période, SLA masqué pour les tickets clos dans la liste.
+- Admin : formulaire départements (algorithme, auto-assignation, charge max), catégories multi-rôles, pause/absence utilisateur avec badge d'état.
+- Contrats OpenAPI régénérés et types frontend synchronisés.
