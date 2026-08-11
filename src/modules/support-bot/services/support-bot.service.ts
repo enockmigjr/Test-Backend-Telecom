@@ -3,11 +3,7 @@ import { and, desc, eq, isNotNull } from 'drizzle-orm';
 import { PublicSupportConfigService } from '../../../config/public-support.config';
 import { DrizzleProvider } from '../../../database/drizzle.provider';
 import { generateUuid } from '../../../common/helpers/uuidv7.helper';
-import {
-  supportConversations,
-  supportIntegrations,
-  supportMessages,
-} from '../../../database/schemas';
+import { supportConversations, supportIntegrations, supportMessages } from '../../../database/schemas';
 import type { PublicPrincipal } from '../../external-identity/interfaces/public-principal.interface';
 import { BOT_PROVIDER, type AiProvider, type BotMessage } from '../interfaces/ai-provider.interface';
 import { ToolPolicyService } from './tool-policy.service';
@@ -32,10 +28,16 @@ export class SupportBotService {
 
     const botEnabled = integration.features?.['bot'] === true;
     if (!botEnabled || !this.provider) {
-      await this.persistMessage(conversation, null, 'OUTBOUND', 'Le formulaire reste disponible pour créer votre demande.', {
-        kind: 'bot',
-        mode: 'disabled',
-      });
+      await this.persistMessage(
+        conversation,
+        null,
+        'OUTBOUND',
+        'Le formulaire reste disponible pour créer votre demande.',
+        {
+          kind: 'bot',
+          mode: 'disabled',
+        },
+      );
       return { data: { mode: 'disabled' as const, reply: null, suggestedActions: ['open_form'] as const } };
     }
 
@@ -51,15 +53,23 @@ export class SupportBotService {
         timeoutMs: this.config.botTimeoutMs,
       });
     } catch {
-      await this.persistMessage(conversation, null, 'OUTBOUND', 'L’assistance automatisée est momentanément indisponible : le formulaire reste utilisable.', {
-        kind: 'bot',
-        mode: 'unavailable',
-      });
-      return { data: { mode: 'unavailable' as const, reply: null, suggestedActions: ['open_form', 'request_human'] as const } };
+      await this.persistMessage(
+        conversation,
+        null,
+        'OUTBOUND',
+        'L’assistance automatisée est momentanément indisponible : le formulaire reste utilisable.',
+        {
+          kind: 'bot',
+          mode: 'unavailable',
+        },
+      );
+      return {
+        data: { mode: 'unavailable' as const, reply: null, suggestedActions: ['open_form', 'request_human'] as const },
+      };
     }
 
     const toolTrace: unknown[] = [];
-    let reply = result.content ?? '';
+    const reply = result.content ?? '';
     if (result.toolCalls.length > 0) {
       for (const call of result.toolCalls.slice(0, MAX_TOOL_ROUNDS)) {
         try {

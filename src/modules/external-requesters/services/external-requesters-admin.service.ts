@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { randomBytes } from 'crypto';
 import { and, count, desc, eq, ilike, isNotNull, isNull, type SQL } from 'drizzle-orm';
 import type { AnyPgTable } from 'drizzle-orm/pg-core';
 import { normalizePagination } from '../../../common/helpers/normalized-pagination.helper';
@@ -260,6 +261,69 @@ export class ExternalRequestersAdminService {
           displayNameAdopted,
         },
       };
+    });
+  }
+
+  async anonymize(id: string, userId: string) {
+    const requester = await this.requireRequester(id);
+    const integrationId = requester.supportIntegrationId;
+    return this.drizzle.runInTransaction(async () => {
+      const alreadyAnonymized = Boolean(requester.anonymizedAt);
+      if (!alreadyAnonymized) {
+        const now = new Date();
+        const placeholderHash = randomBytes(64).toString('hex');
+        const placeholderCipher = `1:${randomBytes(32).toString('base64')}`;
+        await this.drizzle.db
+          .update(externalIdentities)
+          .set({
+            normalizedValueHash: placeholderHash,
+            encryptedValue: placeholderCipher,
+            providerSubject: null,
+            revokedAt: now,
+          })
+          .where(
+            and(
+              eq(externalIdentities.externalRequesterId, id),
+              eq(externalIdentities.supportIntegrationId, integrationId),
+            ),
+          );
+        await this.drizzle.db
+          .update(trustedDevices)
+          .set({ revokedAt: now })
+          .where(
+            and(
+              eq(trustedDevices.externalRequesterId, id),
+              eq(trustedDevices.supportIntegrationId, integrationId),
+              isNull(trustedDevices.revokedAt),
+            ),
+          );
+        await this.drizzle.db
+          .update(externalVerificationChallenges)
+          .set({ status: 'EXPIRED' })
+          .where(
+            and(
+              eq(externalVerificationChallenges.externalRequesterId, id),
+              eq(externalVerificationChallenges.supportIntegrationId, integrationId),
+              eq(externalVerificationChallenges.status, 'PENDING'),
+            ),
+          );
+        await this.drizzle.db
+          .update(externalRequesters)
+          .set({
+            displayName: null,
+            locale: 'fr',
+            metadata: {},
+            lastSeenAt: null,
+            anonymizedAt: now,
+            updatedAt: now,
+          })
+          .where(eq(externalRequesters.id, id));
+      }
+      await this.audit.create(userId, 'EXTERNAL_REQUESTER_ANONYMIZED', 'external_requester', id, undefined, {
+        alreadyAnonymized,
+        integrationId,
+      });
+      return { data: { anonymized: true, requesterId: id, alreadyAnonymized } };
     });
   }
 

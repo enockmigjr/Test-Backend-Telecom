@@ -102,3 +102,14 @@ export class MergeRequesterResultDto {
   @ApiProperty({ nullable: true })
   displayNameAdopted: string | null;
 }
+
+export class RequesterAnonymizedDto {
+  @ApiProperty()
+  anonymized: boolean;
+
+  @ApiProperty()
+  requesterId: string;
+
+  @ApiProperty({ description: 'Déjà anonymisé : aucune donnée supplémentaire n’a été modifiée.' })
+  alreadyAnonymized: boolean;
+}

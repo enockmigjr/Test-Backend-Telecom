@@ -80,6 +80,7 @@ export const RELEASE_RESPONSE_MODELS: Readonly<Record<string, ResponseModel>> = 
   ExternalRequestersController_detail: item('ExternalRequesterDetailDto'),
   ExternalRequestersController_mergePreview: item('MergeRequesterPreviewDto'),
   ExternalRequestersController_merge: item('MergeRequesterResultDto'),
+  ExternalRequestersController_anonymize: item('RequesterAnonymizedDto'),
   SupportKnowledgeController_list: page('KnowledgeArticleListItemDto'),
   SupportKnowledgeController_findOne: item('KnowledgeArticleDetailDto'),
   SupportKnowledgeController_create: item('KnowledgeArticleDetailDto'),

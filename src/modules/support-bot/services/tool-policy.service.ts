@@ -26,7 +26,8 @@ export class ToolPolicyService {
       },
       {
         name: 'save_draft',
-        description: "Enregistrer le brouillon qualifié de la demande (catégorie, objet, description, impact, urgence).",
+        description:
+          'Enregistrer le brouillon qualifié de la demande (catégorie, objet, description, impact, urgence).',
         parameters: {
           type: 'object',
           properties: {
@@ -55,11 +56,15 @@ export class ToolPolicyService {
   }
 
   async execute(call: BotToolCall, principal: PublicPrincipal, conversation: { readonly id: string }) {
-    if (!this.authorize(call.name, 'OPEN')) throw new BadRequestException('Outil non autorisé pour cette conversation.');
+    if (!this.authorize(call.name, 'OPEN'))
+      throw new BadRequestException('Outil non autorisé pour cette conversation.');
     if (call.name === 'knowledge_search') {
       const query = typeof call.arguments['query'] === 'string' ? call.arguments['query'] : '';
       const limit = Number(call.arguments['limit']) || 5;
-      return { tool: call.name, result: (await this.knowledge.search(principal.supportIntegrationId, query, limit)).data };
+      return {
+        tool: call.name,
+        result: (await this.knowledge.search(principal.supportIntegrationId, query, limit)).data,
+      };
     }
     if (call.name === 'save_draft') {
       const draft = this.parseDraft(call.arguments);
@@ -82,8 +87,12 @@ export class ToolPolicyService {
       throw new BadRequestException('Catégorie invalide.');
     }
     if (title.trim().length < 5 || title.trim().length > 255) throw new BadRequestException('Objet invalide.');
-    if (description.trim().length < 10 || description.trim().length > 10000) throw new BadRequestException('Description invalide.');
-    if (!IMPACT_LEVELS.includes(impact as (typeof IMPACT_LEVELS)[number]) || !IMPACT_LEVELS.includes(urgency as (typeof IMPACT_LEVELS)[number])) {
+    if (description.trim().length < 10 || description.trim().length > 10000)
+      throw new BadRequestException('Description invalide.');
+    if (
+      !IMPACT_LEVELS.includes(impact as (typeof IMPACT_LEVELS)[number]) ||
+      !IMPACT_LEVELS.includes(urgency as (typeof IMPACT_LEVELS)[number])
+    ) {
       throw new BadRequestException('Impact ou urgence invalide.');
     }
     return {

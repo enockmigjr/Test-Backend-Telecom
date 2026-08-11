@@ -3593,6 +3593,26 @@
         ],
         "type": "object"
       },
+      "RequesterAnonymizedDto": {
+        "properties": {
+          "alreadyAnonymized": {
+            "description": "Déjà anonymisé : aucune donnée supplémentaire n’a été modifiée.",
+            "type": "boolean"
+          },
+          "anonymized": {
+            "type": "boolean"
+          },
+          "requesterId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "anonymized",
+          "requesterId",
+          "alreadyAnonymized"
+        ],
+        "type": "object"
+      },
       "ResolveTicketDto": {
         "properties": {
           "resolutionSummary": {
@@ -8495,6 +8515,116 @@
           }
         ],
         "summary": "Consulter un demandeur public",
+        "tags": [
+          "external-requesters"
+        ]
+      }
+    },
+    "/api/v1/external-requesters/{id}/anonymize": {
+      "post": {
+        "description": "Efface le nom, la locale, les métadonnées et les valeurs d’identité chiffrées, révoque les appareils et challenges, puis écrit une trace d’audit. Les tickets restent rattachés au profil anonymisé.",
+        "operationId": "ExternalRequestersController_anonymize",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Clé unique de 1 à 128 caractères, obligatoire pour cette mutation.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/RequesterAnonymizedDto"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "maximum": 299,
+                      "minimum": 200,
+                      "type": "integer"
+                    },
+                    "success": {
+                      "enum": [
+                        true
+                      ],
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "statusCode",
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Demandeur anonymisé."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Token JWT manquant ou expiré."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Rôle insuffisant — ADMINISTRATOR requis."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Demandeur introuvable."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Anonymiser un demandeur public",
         "tags": [
           "external-requesters"
         ]

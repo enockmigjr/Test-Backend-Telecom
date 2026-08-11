@@ -32,6 +32,7 @@
     "db:migrate": "ts-node src/database/run-migrations.ts",
     "db:migrate:baseline": "ts-node src/database/run-migrations.ts --baseline-existing",
     "db:seed": "ts-node src/database/seed/run-seed.ts",
+    "db:phase9-check": "ts-node -r tsconfig-paths/register src/database/run-phase9-checks.ts",
     "db:reset": "pnpm run db:push && pnpm run db:seed",
     "db:studio": "drizzle-kit studio",
     "openapi:export": "ts-node -r tsconfig-paths/register src/common/openapi/export-openapi.ts",

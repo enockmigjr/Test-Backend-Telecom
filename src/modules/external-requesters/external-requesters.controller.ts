@@ -13,6 +13,7 @@ import {
   ExternalRequesterListItemDto,
   MergeRequesterPreviewDto,
   MergeRequesterResultDto,
+  RequesterAnonymizedDto,
 } from './dto/external-requester-response.dto';
 import { ExternalRequestersAdminService } from './services/external-requesters-admin.service';
 
@@ -24,6 +25,7 @@ import { ExternalRequestersAdminService } from './services/external-requesters-a
   ExternalRequesterListItemDto,
   MergeRequesterPreviewDto,
   MergeRequesterResultDto,
+  RequesterAnonymizedDto,
 )
 @UseGuards(RolesGuard)
 @Controller('external-requesters')
@@ -89,5 +91,21 @@ export class ExternalRequestersController {
   @ApiResponse({ status: 403, description: 'Rôle insuffisant — ADMINISTRATOR requis.' })
   merge(@Param('id', ParseUUIDPipe) id: string, @Body() dto: MergeRequesterDto, @CurrentUser() user: JwtPayload) {
     return this.requesters.merge(id, dto, user.sub);
+  }
+
+  @Post(':id/anonymize')
+  @Roles('ADMINISTRATOR')
+  @RequireIdempotency()
+  @ApiOperation({
+    summary: 'Anonymiser un demandeur public',
+    description:
+      'Efface le nom, la locale, les métadonnées et les valeurs d’identité chiffrées, révoque les appareils et challenges, puis écrit une trace d’audit. Les tickets restent rattachés au profil anonymisé.',
+  })
+  @ApiResponse({ status: 200, description: 'Demandeur anonymisé.' })
+  @ApiResponse({ status: 404, description: 'Demandeur introuvable.' })
+  @ApiResponse({ status: 401, description: 'Token JWT manquant ou expiré.' })
+  @ApiResponse({ status: 403, description: 'Rôle insuffisant — ADMINISTRATOR requis.' })
+  anonymize(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: JwtPayload) {
+    return this.requesters.anonymize(id, user.sub);
   }
 }
