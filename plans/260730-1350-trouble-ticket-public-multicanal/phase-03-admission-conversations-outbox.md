@@ -1,5 +1,9 @@
 # Phase 03 — Admission, conversations, outbox et email
 
+## Statut
+
+- Terminée et commitée.
+
 ## Contexte
 
 L’identité publique existe, mais aucun cas d’usage ne doit contourner les règles de ticket, l’historique, le SLA ou l’affectation.

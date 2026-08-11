@@ -1,5 +1,9 @@
 # Phase 01 — Données, acteurs et transaction métier
 
+## Statut
+
+- Terminée et commitée.
+
 ## Contexte
 
 Les tables et services actuels supposent un utilisateur interne. Une migration additive doit précéder toute route publique.

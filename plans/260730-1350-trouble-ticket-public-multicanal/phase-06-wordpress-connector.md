@@ -10,6 +10,7 @@ Créer `trouble-ticket-connector` dans la source active, ajouter son miroir de d
 
 ## Statut
 
+- **Terminée** (détails ci-dessous).
 En cours. Le plugin autonome, son assertion vérifiée, le widget `v2`, le fallback public, le runtime WordPress, le miroir
 et l'infrastructure de déploiement sont implémentés. La recette navigateur PhotoVault avec une intégration backend réelle
 est validée sur Chromium, Firefox et WebKit (visiteur anonyme et membre vérifié sans nouvel OTP). La publication du

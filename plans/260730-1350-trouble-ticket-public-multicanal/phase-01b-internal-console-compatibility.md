@@ -1,5 +1,9 @@
 # Phase 01b — Compatibilité obligatoire de la console interne
 
+## Statut
+
+- Terminée et commitée.
+
 ## Contexte
 
 Après la migration additive, le backend peut représenter un acteur externe ou système. Le frontend interne actuel rejette encore les champs acteur absents avec Zod.

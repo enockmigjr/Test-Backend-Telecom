@@ -1,5 +1,9 @@
 # Phase 04 — Pièces jointes et temps réel public
 
+## Statut
+
+- Terminée et commitée.
+
 ## Contexte
 
 Les fichiers et le WebSocket actuels sont sécurisés pour les agents internes, pas pour une surface publique exposée au spam et aux navigateurs tiers.

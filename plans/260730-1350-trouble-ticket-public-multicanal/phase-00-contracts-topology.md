@@ -1,5 +1,9 @@
 # Phase 00 — Contrats, topologie et invariants
 
+## Statut
+
+- Terminée et commitée.
+
 ## Contexte
 
 Le backend et le frontend interne fonctionnent déjà en production logique. La première phase fixe les frontières avant toute migration ou création d’écran.

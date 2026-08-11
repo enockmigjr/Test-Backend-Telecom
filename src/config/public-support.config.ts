@@ -104,15 +104,19 @@ export class PublicSupportConfigService {
   }
 
   get botBaseUrl(): string {
-    return process.env['PUBLIC_SUPPORT_BOT_BASE_URL'] || 'https://api.openai.com/v1';
+    const explicit = process.env['PUBLIC_SUPPORT_BOT_BASE_URL'];
+    if (explicit) return explicit;
+    return this.botProvider === 'deepseek' ? 'https://api.deepseek.com' : 'https://api.openai.com/v1';
   }
 
   get botModel(): string {
-    return process.env['PUBLIC_SUPPORT_BOT_MODEL'] || 'gpt-4o-mini';
+    const explicit = process.env['PUBLIC_SUPPORT_BOT_MODEL'];
+    if (explicit) return explicit;
+    return this.botProvider === 'deepseek' ? 'deepseek-chat' : 'gpt-4o-mini';
   }
 
   get botEnabled(): boolean {
-    return this.botProvider === 'openai-compatible' && Boolean(this.botApiKey);
+    return (this.botProvider === 'openai-compatible' || this.botProvider === 'deepseek') && Boolean(this.botApiKey);
   }
 
   get botDailyBudget(): number {

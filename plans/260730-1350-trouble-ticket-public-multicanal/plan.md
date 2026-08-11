@@ -2,7 +2,7 @@
 
 ## Statut
 
-- État : phases 00 à 06 implémentées et commitées. La recette navigateur multi-moteurs de la phase 06 est validée (Chromium/Firefox/WebKit) ; seule la publication du dépôt distant du connecteur reste ouverte (décision utilisateur). La phase 07 (administration interne enrichie) est le prochain chantier. Vue d'ensemble consolidée : plans/reports/overview-260810-1040-trouble-ticket-public-multicanal.md.
+- État : phases 00 à 08 terminées et commitées (contrats, données/acteurs, compat console, intégrations/identité, admission/outbox, pièces jointes/temps réel, portail/widget, connecteur WordPress, admin interne, connaissance, orchestration bot avec budget/coupe-circuit/repli et adaptateur DeepSeek/OpenAI-compatible prêt — clé à renseigner). Phase 09 en cours : cohérence SQL, contraintes acteur validées, anonymisation, drills email/Redis/PostgreSQL (avec correctif de rejeu), manifeste SHA, rollout documenté ; restent validation de la rétention et option fail-open Redis.
 - Design source : `docs/superpowers/specs/2026-07-30-trouble-ticket-public-multicanal-design.md`
 - Mode : difficile, deux audits en lecture seule puis revue adversariale
 - Dépôts : backend, frontend interne, futur `public-frontend`, WordPress PhotoVault

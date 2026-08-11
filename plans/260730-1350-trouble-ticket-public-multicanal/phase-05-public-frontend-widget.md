@@ -10,6 +10,7 @@ Créer `public-frontend/` comme dépôt Next.js 16 autonome, livrer le portail s
 
 ## Statut
 
+- **Terminée** (détails ci-dessous).
 En cours. Le gate backend/OpenAPI, le BFF cookie-only, le portail pleine page, le widget iframe, le temps réel avec
 repli polling et le raccordement Docker/Nginx sont implémentés. La relance E2E multi-navigateurs reste ouverte.
 
