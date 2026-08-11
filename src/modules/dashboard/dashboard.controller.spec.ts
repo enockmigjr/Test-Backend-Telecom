@@ -112,6 +112,19 @@ const slaComplianceResult = {
       resolutionComplianceRate: 96.67,
     },
   ],
+  trend: [
+    {
+      period: '2026-06-01T00:00:00.000Z',
+      totalTracked: 50,
+      compliant: 48,
+      breached: 2,
+      firstResponseBreached: 1,
+      resolutionBreached: 1,
+      complianceRate: 96,
+      firstResponseComplianceRate: 98,
+      resolutionComplianceRate: 98,
+    },
+  ],
 };
 
 const workloadResult = {

@@ -11,7 +11,7 @@
  */
 
 import { ForbiddenException, Injectable } from '@nestjs/common';
-import { and, count, eq, gte, isNull, lte, sql } from 'drizzle-orm';
+import { and, count, eq, gte, isNull, lt, lte, sql } from 'drizzle-orm';
 import { DrizzleProvider } from '../../database/drizzle.provider';
 import { categories, tickets } from '../../database/schemas';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
@@ -67,7 +67,9 @@ export class DashboardSlaService {
       resolutionBreached: sql<number>`COUNT(*) FILTER (WHERE ${tickets.resolutionBreachedAt} IS NOT NULL)`,
     };
 
-    const [[totals], byPriority, byCategory] = await Promise.all([
+    const openStatus = sql`${tickets.status} NOT IN ('RESOLVED','CLOSED','CANCELLED')`;
+    const now = new Date();
+    const [[totals], byPriority, byCategory, [atRiskRow], [overdueRow], trendRows] = await Promise.all([
       this.drizzle.db.select(fields).from(tickets).where(where),
       this.drizzle.db
         .select({ priority: tickets.priority, ...fields })
@@ -80,14 +82,41 @@ export class DashboardSlaService {
         .leftJoin(categories, eq(tickets.categoryId, categories.id))
         .where(where)
         .groupBy(categories.name),
+      this.drizzle.db
+        .select({ count: count() })
+        .from(tickets)
+        .where(
+          and(where, openStatus, lte(tickets.resolutionDueAt, new Date(now.getTime() + 30 * 60 * 1000))),
+        ),
+      this.drizzle.db
+        .select({ count: count() })
+        .from(tickets)
+        .where(and(where, openStatus, lt(tickets.resolutionDueAt, now))),
+      this.drizzle.db
+        .select({
+          period: sql<Date>`DATE_TRUNC('day', ${tickets.createdAt})`,
+          ...fields,
+        })
+        .from(tickets)
+        .where(where)
+        .groupBy(sql`DATE_TRUNC('day', ${tickets.createdAt})`)
+        .orderBy(sql`DATE_TRUNC('day', ${tickets.createdAt})`),
     ]);
     const summary = this.normalize(totals ?? this.emptyBreakdown());
 
     return {
       period: { from: fromDate.toISOString(), to: toDate.toISOString() },
-      summary: { ...summary, atRisk: 0 },
+      summary: {
+        ...summary,
+        atRisk: Number(atRiskRow?.count || 0),
+        overdue: Number(overdueRow?.count || 0),
+      },
       byPriority: byPriority.map((row) => ({ priority: row.priority, ...this.normalize(row) })),
       byCategory: byCategory.map((row) => ({ category: row.category, ...this.normalize(row) })),
+      trend: trendRows.map((row) => ({
+        period: new Date(row.period).toISOString(),
+        ...this.normalize(row),
+      })),
     };
   }
 
