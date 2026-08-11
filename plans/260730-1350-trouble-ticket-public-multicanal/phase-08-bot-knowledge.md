@@ -4,7 +4,8 @@
 - Base de connaissance livrée (étapes 1-4) : tables support_knowledge_articles/versions/grants (migration 0015), administration interne (création, édition avec historique append-only, publication/archivage, intégrations autorisées, audit), recherche publique par intégration (articles publiés uniquement) exposée au contrat public et au BFF du portail.
 - Orchestration bot livrée (étapes 5-8, 12) : interface AiProvider stricte (aucun fournisseur factice en production), ToolPolicyService (liste fermée knowledge_search/save_draft/request_human, exécution déterministe), SupportBotService (historique borné, exécution des outils, métadonnées modèle/prompt/latence/coût/confiance, repli formulaire quand le fournisseur est absent ou en erreur), endpoint public POST conversations/:id/bot et feature flag features.bot par intégration.
 - UI conversationnelle du portail livrée (étape 11) : panneau Assistant sur la page « Nouvelle demande » (conversation via botReply, modes disabled/unavailable/reply, formulaire toujours accessible et pointé par un lien permanent).
-- Reste : adaptateur fournisseur réel (décision requise), budget/coupe-circuit avancés par intégration, assistant dans le widget (étapes 9-10).
+- Adaptateur réel livré : OpenAiCompatibleAdapter (fetch, outils, usage, timeout), inactif par défaut — activation par PUBLIC_SUPPORT_BOT_PROVIDER=openai-compatible + PUBLIC_SUPPORT_BOT_API_KEY (+ base URL/modèle). Le comportement disabled est préservé sans configuration.
+- Reste : activation (choix du fournisseur), budget/coupe-circuit avancés par intégration, assistant dans le widget (étapes 9-10).
 
 ## Contexte
 

@@ -93,6 +93,27 @@ export class PublicSupportConfigService {
   get botPromptVersion(): string {
     return process.env['PUBLIC_SUPPORT_BOT_PROMPT_VERSION'] || '2026-08-v1';
   }
+
+  get botProvider(): string {
+    return (process.env['PUBLIC_SUPPORT_BOT_PROVIDER'] || 'none').toLowerCase();
+  }
+
+  get botApiKey(): string | undefined {
+    const value = process.env['PUBLIC_SUPPORT_BOT_API_KEY'];
+    return value && value.length > 0 ? value : undefined;
+  }
+
+  get botBaseUrl(): string {
+    return process.env['PUBLIC_SUPPORT_BOT_BASE_URL'] || 'https://api.openai.com/v1';
+  }
+
+  get botModel(): string {
+    return process.env['PUBLIC_SUPPORT_BOT_MODEL'] || 'gpt-4o-mini';
+  }
+
+  get botEnabled(): boolean {
+    return this.botProvider === 'openai-compatible' && Boolean(this.botApiKey);
+  }
 }
 
 function requiredSecret(name: string): string {

@@ -65,10 +65,7 @@ export class ExternalDeliveryService {
         .update(externalDeliveries)
         .set({ status: 'PENDING', lastError: 'REQUEUED_AFTER_RECOVERY', lockedAt: null, lockedBy: null })
         .where(eq(externalDeliveries.id, delivery.id));
-      await this.queues.externalDelivery.add(
-        'dispatch-outbox-event',
-        { outboxEventId: delivery.outboxEventId },
-      );
+      await this.queues.externalDelivery.add('dispatch-outbox-event', { outboxEventId: delivery.outboxEventId });
     }
     if (failed.length > 0) {
       this.logger.log(`Livraisons échouées relancées: ${failed.length}`);
