@@ -1,5 +1,10 @@
 # Phase 09 — Durcissement, rollout et migration finale
 
+## Statut
+
+- Débuté : script db:phase9-check (7 vérifications SQL de cohérence acteur/intégration/outbox/livraisons) — toutes vertes sur la base locale — et endpoint admin d'anonymisation des demandeurs (effacement des valeurs d'identité chiffrées, révocation appareils/challenges, audit, idempotent).
+- Reste : contraintes acteur en migration dédiée (CHECK NOT VALID), rétention/effacement du contenu des messages (politique), tests de pannes, rollout PhotoVault et manifest par SHA.
+
 ## Contexte
 
 Toutes les capacités existent derrière des flags. La dernière phase prouve sécurité, résilience et compatibilité avant d’enlever les colonnes de transition.
