@@ -1,5 +1,7 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { and, desc, eq, isNull, lt, or, sql } from 'drizzle-orm';
+import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Interval } from '@nestjs/schedule';
+import { and, desc, eq, gt, isNull, lt, or, sql } from 'drizzle-orm';
+import { BullMqQueues } from '../../../queues/queues.types';
 import { normalizePagination } from '../../../common/helpers/normalized-pagination.helper';
 import { PaginationHelper } from '../../../common/helpers/pagination.helper';
 import { generateUuid } from '../../../common/helpers/uuidv7.helper';
@@ -11,6 +13,8 @@ import { ChannelAdapter, EMAIL_CHANNEL_ADAPTER } from '../interfaces/channel-ada
 
 const DELIVERY_LEASE_MS = 60_000;
 const MAX_ATTEMPTS = 5;
+const RETRY_CEILING = 40;
+const RETRY_WINDOW_DAYS = 7;
 const OUTBOUND_EVENTS = new Set([
   'PUBLIC_TICKET_CREATED',
   'PUBLIC_REPLY_CREATED',
@@ -25,11 +29,51 @@ const OUTBOUND_EVENTS = new Set([
 
 @Injectable()
 export class ExternalDeliveryService {
+  private readonly logger = new Logger(ExternalDeliveryService.name);
+
   constructor(
     private readonly drizzle: DrizzleProvider,
     private readonly cipher: IntegrationSecretCipherService,
     @Inject(EMAIL_CHANNEL_ADAPTER) private readonly email: ChannelAdapter,
+    @Inject('BullMQ_Queues') private readonly queues: BullMqQueues,
   ) {}
+
+  /** Rejeu périodique des livraisons échouées après une panne prolongée du fournisseur. */
+  @Interval(60_000)
+  async requeueFailedDeliveries(): Promise<void> {
+    const windowStart = new Date(Date.now() - RETRY_WINDOW_DAYS * 86_400_000);
+    const failed = await this.drizzle.db
+      .select({ id: externalDeliveries.id, outboxEventId: externalDeliveries.outboxEventId })
+      .from(externalDeliveries)
+      .where(
+        and(
+          or(
+            eq(externalDeliveries.status, 'FAILED'),
+            and(
+              eq(externalDeliveries.status, 'PENDING'),
+              eq(externalDeliveries.lastError, 'REQUEUED_AFTER_RECOVERY'),
+              isNull(externalDeliveries.lockedAt),
+            ),
+          ),
+          lt(externalDeliveries.attemptCount, RETRY_CEILING),
+          gt(externalDeliveries.createdAt, windowStart),
+        ),
+      )
+      .limit(50);
+    for (const delivery of failed) {
+      await this.drizzle.db
+        .update(externalDeliveries)
+        .set({ status: 'PENDING', lastError: 'REQUEUED_AFTER_RECOVERY', lockedAt: null, lockedBy: null })
+        .where(eq(externalDeliveries.id, delivery.id));
+      await this.queues.externalDelivery.add(
+        'dispatch-outbox-event',
+        { outboxEventId: delivery.outboxEventId },
+      );
+    }
+    if (failed.length > 0) {
+      this.logger.log(`Livraisons échouées relancées: ${failed.length}`);
+    }
+  }
 
   async dispatch(outboxEventId: string, workerId: string): Promise<void> {
     const target = await this.loadTarget(outboxEventId);
