@@ -83,7 +83,7 @@ Infrastructure : images, migrations de staging, healthchecks, alertes, sauvegard
 ## Drill de pannes (procédure)
 
 - PostgreSQL arrêté : API en erreur 5xx standardisée, démarrage impossible ; restaurer le conteneur puis vérifier outbox (reprise après lease).
-- Redis arrêté : rate-limit dégradé, workers BullMQ en attente ; les tests unitaires simulent déjà Redis indisponible (jwt blacklist, token cleanup).
+- Redis arrêté (drill réel exécuté) : le process API reste vivant (/health 200), les workers BullMQ patientent, mais les routes authentifiées répondent 500 (ioredis ETIMEDOUT sur le contrôle jti/blacklist) — posture fail-closed volontaire. Restauration : docker start + restart API → Connecté à Redis + routes 200. Recommandation à trancher : fail-open configurable du contrôle de blacklist (compromis disponibilité/sécurité). Les tests unitaires simulent déjà Redis indisponible (jwt blacklist, token cleanup).
 - BullMQ arrêté : jobs SLA/delivery relancés au redémarrage (retry borné) ; vérifier external_deliveries (PENDING → FAILED après maxAttempts).
 - Email/Mailpit arrêté : delivery marquée PENDING puis FAILED après 5 tentatives, sans perte métier (ticket déjà créé). Drill réel exécuté : ticket INC-2026-000028 créé pendant la coupure → ttempt_count=5, ETIMEDOUT, FAILED → correctif livré (rejeu périodique 60 s des FAILED, borne 40 tentatives / fenêtre 7 j, sans jobId BullMQ) → reprise vérifiée DELIVERED et email présent dans Mailpit après restauration. Couverture automatisée ajoutée (spec rejeu : FAILED → PENDING → re-ajout sans jobId).
 - ClamAV arrêté : scan en erreur → fichier en QUARANTINE/ERROR, jamais servi (gate antivirus).

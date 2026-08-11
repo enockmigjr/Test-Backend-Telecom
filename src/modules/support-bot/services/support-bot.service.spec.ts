@@ -46,7 +46,11 @@ describe('SupportBotService (repli formulaire)', () => {
     botCircuitOpenMs: 600_000,
   };
 
-  async function buildService(options: { readonly provider?: AiProvider; readonly features: Record<string, boolean>; readonly rowSets?: unknown[][] }) {
+  async function buildService(options: {
+    readonly provider?: AiProvider;
+    readonly features: Record<string, boolean>;
+    readonly rowSets?: unknown[][];
+  }) {
     const drizzle = drizzleMock(options.rowSets ?? [[conversation], [{ features: options.features }]]);
     const moduleRef = await Test.createTestingModule({
       providers: [
@@ -82,11 +86,7 @@ describe('SupportBotService (repli formulaire)', () => {
     const { service, insert } = await buildService({
       features: { bot: true },
       provider,
-      rowSets: [
-        [conversation],
-        [{ features: { bot: true }, quotaPolicy: { botRequestsPerDay: 2 } }],
-        [{ total: 2 }],
-      ],
+      rowSets: [[conversation], [{ features: { bot: true }, quotaPolicy: { botRequestsPerDay: 2 } }], [{ total: 2 }]],
     });
     const result = await service.reply(principal, 'conversation-1', 'Ma ligne coupe.');
     expect(result.data.mode).toBe('disabled');
