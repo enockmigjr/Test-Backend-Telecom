@@ -112,6 +112,45 @@
         ],
         "type": "object"
       },
+      "BotMessageDto": {
+        "properties": {
+          "message": {
+            "example": "Ma ligne coupe depuis hier.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "type": "object"
+      },
+      "BotReplyDto": {
+        "properties": {
+          "mode": {
+            "enum": [
+              "disabled",
+              "unavailable",
+              "reply"
+            ],
+            "type": "string"
+          },
+          "reply": {
+            "nullable": true,
+            "type": "object"
+          },
+          "suggestedActions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "mode",
+          "suggestedActions"
+        ],
+        "type": "object"
+      },
       "ConfirmPublicTicketDto": {
         "properties": {
           "confirmed": {
@@ -1918,6 +1957,117 @@
         "summary": "Reprendre une conversation ou son brouillon",
         "tags": [
           "Support public - demandes"
+        ],
+        "x-api-audience": "public-support"
+      }
+    },
+    "/api/v1/public-support/conversations/{id}/bot": {
+      "post": {
+        "description": "Répond avec le mode disabled/unavailable tant qu’aucun fournisseur IA n’est configuré : le formulaire reste le chemin de création.",
+        "operationId": "SupportBotController_reply",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Clé unique de 1 à 128 caractères, obligatoire pour cette mutation.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BotMessageDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BotReplyDto"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "maximum": 299,
+                      "minimum": 200,
+                      "type": "integer"
+                    },
+                    "success": {
+                      "enum": [
+                        true
+                      ],
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "statusCode",
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Réponse du bot."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Conversation introuvable."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Conversation finalisée."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [
+          {
+            "publicSession": []
+          }
+        ],
+        "summary": "Envoyer un message au bot de la conversation",
+        "tags": [
+          "Support public - bot"
         ],
         "x-api-audience": "public-support"
       }

@@ -86,6 +86,7 @@ export const RELEASE_RESPONSE_MODELS: Readonly<Record<string, ResponseModel>> = 
   SupportKnowledgeController_update: item('KnowledgeArticleDetailDto'),
   PublicKnowledgeController_search: array('KnowledgeSearchResultDto'),
   PublicKnowledgeController_findBySlug: item('KnowledgeSearchResultDto'),
+  SupportBotController_reply: item('BotReplyDto'),
   DepartmentsController_findAll: array('Department'),
   DepartmentsController_findOne: item('Department'),
   DepartmentsController_create: item('Department'),

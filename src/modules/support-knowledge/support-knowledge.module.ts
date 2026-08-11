@@ -9,5 +9,6 @@ import { SupportKnowledgeService } from './services/support-knowledge.service';
   imports: [AuditLogsModule],
   controllers: [PublicKnowledgeController, SupportKnowledgeController],
   providers: [SupportKnowledgeService, PublicKnowledgeService],
+  exports: [PublicKnowledgeService],
 })
 export class SupportKnowledgeModule {}

@@ -81,6 +81,18 @@ export class PublicSupportConfigService {
   get bootstrapTtlSeconds(): number {
     return boundedInteger('PUBLIC_BOOTSTRAP_TTL_SECONDS', 120, 30, 300);
   }
+
+  get botMaxTokens(): number {
+    return boundedInteger('PUBLIC_SUPPORT_BOT_MAX_TOKENS', 800, 100, 4000);
+  }
+
+  get botTimeoutMs(): number {
+    return boundedInteger('PUBLIC_SUPPORT_BOT_TIMEOUT_MS', 20000, 2000, 60000);
+  }
+
+  get botPromptVersion(): string {
+    return process.env['PUBLIC_SUPPORT_BOT_PROMPT_VERSION'] || '2026-08-v1';
+  }
 }
 
 function requiredSecret(name: string): string {

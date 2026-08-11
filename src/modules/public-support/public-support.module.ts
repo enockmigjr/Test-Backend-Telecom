@@ -27,6 +27,6 @@ import { PublicConversationResumeController } from './public-conversation-resume
     PreTicketAttachmentMaterializerService,
     PublicIntegrationConfigService,
   ],
-  exports: [PublicTicketAccessService],
+  exports: [PublicTicketAccessService, PublicConversationService],
 })
 export class PublicSupportModule {}
