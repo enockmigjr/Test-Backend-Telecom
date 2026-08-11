@@ -1,118 +1,125 @@
 {
-  "version": "7",
-  "dialect": "postgresql",
-  "entries": [
-    {
-      "idx": 0,
-      "version": "7",
-      "when": 1784549000977,
-      "tag": "0000_baseline-current-schema",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1784549022322,
-      "tag": "0001_separate-sla-targets-compat",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1784550209528,
-      "tag": "0002_refresh-token-families",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1784552188306,
-      "tag": "0003_slimy_thor_girl",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1785426091627,
-      "tag": "0004_trouble-ticket-public-expand",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1785426169064,
-      "tag": "0005_trouble-ticket-actor-backfill",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1785427823528,
-      "tag": "0006_external-delivery-tenant-guard",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "7",
-      "when": 1785428393271,
-      "tag": "0007_outbox-event-envelope",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "7",
-      "when": 1785428526162,
-      "tag": "0008_parent-integration-guards",
-      "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "7",
-      "when": 1785749481127,
-      "tag": "0009_public-identity-bootstrap",
-      "breakpoints": true
-    },
-    {
-      "idx": 10,
-      "version": "7",
-      "when": 1785751994053,
-      "tag": "0010_public-reply-corrections",
-      "breakpoints": true
-    },
-    {
-      "idx": 11,
-      "version": "7",
-      "when": 1785754128412,
-      "tag": "0011_public-attachment-quarantine",
-      "breakpoints": true
-    },
-    {
-      "idx": 12,
-      "version": "7",
-      "when": 1785755519761,
-      "tag": "0012_attachment-quarantine-reconciliation",
-      "breakpoints": true
-    },
-    {
-      "idx": 13,
-      "version": "7",
-      "when": 1785756341118,
-      "tag": "0013_backfill-clean-quarantine",
-      "breakpoints": true
-    },
-    {
-      "idx": 14,
-      "version": "7",
-      "when": 1785760286757,
-      "tag": "0014_public-upload-idempotency",
-      "breakpoints": true
-    },
-    {
-      "idx": 15,
-      "version": "7",
-      "when": 1786445517066,
-      "tag": "0015_warm_barracuda",
-      "breakpoints": true
-    }
-  ]
+    "version":  "7",
+    "dialect":  "postgresql",
+    "entries":  [
+                    {
+                        "idx":  0,
+                        "version":  "7",
+                        "when":  1784549000977,
+                        "tag":  "0000_baseline-current-schema",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  1,
+                        "version":  "7",
+                        "when":  1784549022322,
+                        "tag":  "0001_separate-sla-targets-compat",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  2,
+                        "version":  "7",
+                        "when":  1784550209528,
+                        "tag":  "0002_refresh-token-families",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  3,
+                        "version":  "7",
+                        "when":  1784552188306,
+                        "tag":  "0003_slimy_thor_girl",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  4,
+                        "version":  "7",
+                        "when":  1785426091627,
+                        "tag":  "0004_trouble-ticket-public-expand",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  5,
+                        "version":  "7",
+                        "when":  1785426169064,
+                        "tag":  "0005_trouble-ticket-actor-backfill",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  6,
+                        "version":  "7",
+                        "when":  1785427823528,
+                        "tag":  "0006_external-delivery-tenant-guard",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  7,
+                        "version":  "7",
+                        "when":  1785428393271,
+                        "tag":  "0007_outbox-event-envelope",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  8,
+                        "version":  "7",
+                        "when":  1785428526162,
+                        "tag":  "0008_parent-integration-guards",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  9,
+                        "version":  "7",
+                        "when":  1785749481127,
+                        "tag":  "0009_public-identity-bootstrap",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  10,
+                        "version":  "7",
+                        "when":  1785751994053,
+                        "tag":  "0010_public-reply-corrections",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  11,
+                        "version":  "7",
+                        "when":  1785754128412,
+                        "tag":  "0011_public-attachment-quarantine",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  12,
+                        "version":  "7",
+                        "when":  1785755519761,
+                        "tag":  "0012_attachment-quarantine-reconciliation",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  13,
+                        "version":  "7",
+                        "when":  1785756341118,
+                        "tag":  "0013_backfill-clean-quarantine",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  14,
+                        "version":  "7",
+                        "when":  1785760286757,
+                        "tag":  "0014_public-upload-idempotency",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  15,
+                        "version":  "7",
+                        "when":  1786445517066,
+                        "tag":  "0015_warm_barracuda",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  16,
+                        "version":  "7",
+                        "when":  1786450552287,
+                        "tag":  "0016_validate-actor-constraints",
+                        "breakpoints":  true
+                    }
+                ]
 }
