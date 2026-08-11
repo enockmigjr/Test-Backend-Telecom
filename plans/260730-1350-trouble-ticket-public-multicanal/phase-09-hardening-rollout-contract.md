@@ -90,3 +90,9 @@ Infrastructure : images, migrations de staging, healthchecks, alertes, sauvegard
 - WebSocket coupé : le portail bascule en polling (repli déjà implémenté).
 - WordPress hors ligne : le widget affiche le fallback pleine page ; aucun ticket n'est stocké côté WP.
 - Fournisseur IA indisponible : le bot répond unavailable → formulaire (couvert par spec).
+## Politique de rétention (proposition à valider)
+
+- Tickets et messages : conservés 3 ans après clôture, puis suppression programmée (batch hebdomadaire, par lots, hors heures de pointe).
+- Demandeur : anonymisé automatiquement 13 mois après la dernière activité (aucun ticket ouvert) ; appareils de confiance expirés à la révocation.
+- Challenges OTP et idempotence : purge après 24 h / 30 j.
+- Options par intégration : durée de rétention configurable et désactivation de l'anonymisation automatique (audit de chaque modification).
