@@ -97,7 +97,10 @@ function toOpenAiMessage(message: BotMessage): OpenAiChatMessage {
 }
 
 function toOpenAiTool(tool: BotToolDefinition) {
-  return { type: 'function', function: { name: tool.name, description: tool.description, parameters: tool.parameters } };
+  return {
+    type: 'function',
+    function: { name: tool.name, description: tool.description, parameters: tool.parameters },
+  };
 }
 
 function parseToolCall(call: OpenAiToolCall): BotToolCall {
