@@ -13,7 +13,14 @@ import { ExternalRequestersAdminService } from './external-requesters-admin.serv
 
 const CHALLENGE_RETENTION_HOURS = 24;
 const IDEMPOTENCY_RETENTION_DAYS = 30;
-const OPEN_STATUSES = ['NEW', 'ASSIGNED', 'IN_PROGRESS', 'PENDING_CUSTOMER', 'PENDING_THIRD_PARTY', 'REOPENED'] as const;
+const OPEN_STATUSES = [
+  'NEW',
+  'ASSIGNED',
+  'IN_PROGRESS',
+  'PENDING_CUSTOMER',
+  'PENDING_THIRD_PARTY',
+  'REOPENED',
+] as const;
 
 /**
  * Rétention automatique : anonymise les demandeurs inactifs au-delà de la durée
@@ -48,10 +55,7 @@ export class RetentionCleanupService {
       .where(
         and(
           isNull(externalRequesters.anonymizedAt),
-          lt(
-            externalRequesters.lastSeenAt ?? externalRequesters.createdAt,
-            inactiveCutoff,
-          ),
+          lt(externalRequesters.lastSeenAt ?? externalRequesters.createdAt, inactiveCutoff),
         ),
       )
       .limit(100);
