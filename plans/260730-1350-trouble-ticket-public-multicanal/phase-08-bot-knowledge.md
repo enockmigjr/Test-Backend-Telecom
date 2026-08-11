@@ -6,7 +6,8 @@
 - UI conversationnelle du portail livrée (étape 11) : panneau Assistant sur la page « Nouvelle demande » (conversation via botReply, modes disabled/unavailable/reply, formulaire toujours accessible et pointé par un lien permanent).
 - Adaptateur réel livré : OpenAiCompatibleAdapter (fetch, outils, usage, timeout), inactif par défaut — activation par PUBLIC_SUPPORT_BOT_PROVIDER=openai-compatible + PUBLIC_SUPPORT_BOT_API_KEY (+ base URL/modèle). Le comportement disabled est préservé sans configuration.
 - Assistant conversationnel livré dans le widget (bouton dédié, repli formulaire permanent) — étape 11 complète.
-- Reste : activation (choix du fournisseur + clé), budget/coupe-circuit avancés par intégration (étapes 9-10).
+- Budget et coupe-circuit livrés (étape 12) : budget quotidien par intégration (quotaPolicy.botRequestsPerDay, défaut configurable), coupe-circuit après échecs répétés (fenêtre configurable), métadonnées eason budget/circuit_open/provider_error — tests dédiés (le test a détecté et permis de corriger un bug de sentinelle du circuit).
+- Reste : activation (choix du fournisseur + clé).
 
 ## Contexte
 

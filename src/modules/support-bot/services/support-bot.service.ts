@@ -1,5 +1,5 @@
 import { ConflictException, Inject, Injectable, NotFoundException, Optional } from '@nestjs/common';
-import { and, desc, eq, isNotNull } from 'drizzle-orm';
+import { and, desc, eq, gte, isNotNull, sql } from 'drizzle-orm';
 import { PublicSupportConfigService } from '../../../config/public-support.config';
 import { DrizzleProvider } from '../../../database/drizzle.provider';
 import { generateUuid } from '../../../common/helpers/uuidv7.helper';
@@ -11,6 +11,11 @@ import { ToolPolicyService } from './tool-policy.service';
 const HISTORY_LIMIT = 8;
 const MAX_TOOL_ROUNDS = 3;
 
+interface CircuitState {
+  failures: number;
+  openedAt: number;
+}
+
 @Injectable()
 export class SupportBotService {
   constructor(
@@ -19,6 +24,8 @@ export class SupportBotService {
     private readonly tools: ToolPolicyService,
     @Optional() @Inject(BOT_PROVIDER) private readonly provider?: AiProvider,
   ) {}
+
+  private readonly circuits = new Map<string, CircuitState>();
 
   async reply(principal: PublicPrincipal, conversationId: string, userText: string) {
     const conversation = await this.requireConversation(conversationId, principal);
@@ -41,6 +48,30 @@ export class SupportBotService {
       return { data: { mode: 'disabled' as const, reply: null, suggestedActions: ['open_form'] as const } };
     }
 
+    if ((await this.countTodayBotCalls(conversation.supportIntegrationId)) >= this.integrationBudget(integration)) {
+      await this.persistMessage(
+        conversation,
+        null,
+        'OUTBOUND',
+        'Le quota quotidien de l’assistant est atteint : utilisez le formulaire pour créer votre demande.',
+        { kind: 'bot', mode: 'disabled', reason: 'budget' },
+      );
+      return { data: { mode: 'disabled' as const, reply: null, suggestedActions: ['open_form'] as const } };
+    }
+
+    if (this.circuitOpen(conversation.supportIntegrationId)) {
+      await this.persistMessage(
+        conversation,
+        null,
+        'OUTBOUND',
+        'L’assistant est temporairement désactivé après des difficultés techniques : utilisez le formulaire.',
+        { kind: 'bot', mode: 'unavailable', reason: 'circuit_open' },
+      );
+      return {
+        data: { mode: 'unavailable' as const, reply: null, suggestedActions: ['open_form', 'request_human'] as const },
+      };
+    }
+
     const history = await this.loadHistory(conversation.id);
     const startedAt = Date.now();
     let result;
@@ -52,7 +83,9 @@ export class SupportBotService {
         maxTokens: this.config.botMaxTokens,
         timeoutMs: this.config.botTimeoutMs,
       });
+      this.circuits.delete(conversation.supportIntegrationId);
     } catch {
+      this.recordFailure(conversation.supportIntegrationId);
       await this.persistMessage(
         conversation,
         null,
@@ -61,6 +94,7 @@ export class SupportBotService {
         {
           kind: 'bot',
           mode: 'unavailable',
+          reason: 'provider_error',
         },
       );
       return {
@@ -122,12 +156,53 @@ export class SupportBotService {
 
   private async requireIntegration(integrationId: string) {
     const [integration] = await this.drizzle.db
-      .select({ features: supportIntegrations.features })
+      .select({ features: supportIntegrations.features, quotaPolicy: supportIntegrations.quotaPolicy })
       .from(supportIntegrations)
       .where(eq(supportIntegrations.id, integrationId))
       .limit(1);
     if (!integration) throw new NotFoundException('Intégration introuvable.');
     return integration;
+  }
+
+  private integrationBudget(integration: { readonly quotaPolicy?: Record<string, unknown> | null }): number {
+    const value = integration.quotaPolicy?.['botRequestsPerDay'];
+    return typeof value === 'number' && Number.isSafeInteger(value) && value > 0 ? value : this.config.botDailyBudget;
+  }
+
+  private async countTodayBotCalls(integrationId: string): Promise<number> {
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    const [row] = await this.drizzle.db
+      .select({ total: sql<number>`count(*)` })
+      .from(supportMessages)
+      .where(
+        and(
+          eq(supportMessages.supportIntegrationId, integrationId),
+          gte(supportMessages.createdAt, startOfDay),
+          sql`${supportMessages.channelMetadata}->>'kind' = 'bot'`,
+        ),
+      );
+    return Number(row?.total ?? 0);
+  }
+
+  private circuitOpen(integrationId: string): boolean {
+    const state = this.circuits.get(integrationId);
+    if (!state || state.openedAt <= 0) return false;
+    if (Date.now() - state.openedAt >= this.config.botCircuitOpenMs) {
+      this.circuits.delete(integrationId);
+      return false;
+    }
+    return true;
+  }
+
+  private recordFailure(integrationId: string): void {
+    const state = this.circuits.get(integrationId) ?? { failures: 0, openedAt: 0 };
+    state.failures += 1;
+    if (state.failures >= this.config.botCircuitOpenAfter) {
+      state.openedAt = Date.now();
+      state.failures = 0;
+    }
+    this.circuits.set(integrationId, state);
   }
 
   private async loadHistory(conversationId: string): Promise<readonly BotMessage[]> {

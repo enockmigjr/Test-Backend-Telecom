@@ -114,6 +114,18 @@ export class PublicSupportConfigService {
   get botEnabled(): boolean {
     return this.botProvider === 'openai-compatible' && Boolean(this.botApiKey);
   }
+
+  get botDailyBudget(): number {
+    return boundedInteger('PUBLIC_SUPPORT_BOT_DAILY_BUDGET', 200, 1, 100_000);
+  }
+
+  get botCircuitOpenAfter(): number {
+    return boundedInteger('PUBLIC_SUPPORT_BOT_CIRCUIT_OPEN_AFTER', 5, 2, 100);
+  }
+
+  get botCircuitOpenMs(): number {
+    return boundedInteger('PUBLIC_SUPPORT_BOT_CIRCUIT_OPEN_MS', 600_000, 10_000, 3_600_000);
+  }
 }
 
 function requiredSecret(name: string): string {
