@@ -2,7 +2,7 @@
 
 ## Statut
 
-- État : phases 00 à 08 terminées et commitées (contrats, données/acteurs, compat console, intégrations/identité, admission/outbox, pièces jointes/temps réel, portail/widget, connecteur WordPress, admin interne, connaissance, orchestration bot avec budget/coupe-circuit/repli et adaptateur DeepSeek/OpenAI-compatible prêt — clé à renseigner). Phase 09 en cours : cohérence SQL, contraintes acteur validées, anonymisation, drills email/Redis/PostgreSQL (avec correctif de rejeu), manifeste SHA, rollout documenté ; restent validation de la rétention et option fail-open Redis.
+- État : phases 00 à 08 terminées et commitées (contrats, données/acteurs, compat console, intégrations/identité, admission/outbox, pièces jointes/temps réel, portail/widget, connecteur WordPress, admin interne, connaissance, orchestration bot avec budget/coupe-circuit/repli et adaptateur DeepSeek/OpenAI-compatible prêt — clé à renseigner). Phase 09 en cours : cohérence SQL, contraintes acteur validées, anonymisation, drills email/Redis/PostgreSQL (avec correctif de rejeu), manifeste SHA, rollout documenté ; restent validation de la rétention et option fail-open Redis. Bot : DeepSeek câblé (`PUBLIC_SUPPORT_BOT_PROVIDER=deepseek` dans compose/.env), activation en attente de la clé API.
 - Design source : `docs/superpowers/specs/2026-07-30-trouble-ticket-public-multicanal-design.md`
 - Mode : difficile, deux audits en lecture seule puis revue adversariale
 - Dépôts : backend, frontend interne, futur `public-frontend`, WordPress PhotoVault
