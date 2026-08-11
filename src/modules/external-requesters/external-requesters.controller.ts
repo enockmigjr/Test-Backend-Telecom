@@ -18,7 +18,13 @@ import { ExternalRequestersAdminService } from './services/external-requesters-a
 
 @ApiTags('external-requesters')
 @ApiBearerAuth()
-@ApiExtraModels(ExternalRequesterDetailDto, ExternalRequesterIdentityDto, ExternalRequesterListItemDto, MergeRequesterPreviewDto, MergeRequesterResultDto)
+@ApiExtraModels(
+  ExternalRequesterDetailDto,
+  ExternalRequesterIdentityDto,
+  ExternalRequesterListItemDto,
+  MergeRequesterPreviewDto,
+  MergeRequesterResultDto,
+)
 @UseGuards(RolesGuard)
 @Controller('external-requesters')
 export class ExternalRequestersController {

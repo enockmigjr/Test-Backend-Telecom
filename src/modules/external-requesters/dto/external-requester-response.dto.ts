@@ -72,8 +72,7 @@ export class MergeRequesterPreviewDto {
   };
 
   @ApiProperty({
-    description:
-      'Identités vérifiées du profil source (types et dates uniquement, jamais la valeur).',
+    description: 'Identités vérifiées du profil source (types et dates uniquement, jamais la valeur).',
     type: [ExternalRequesterIdentityDto],
   })
   identities: ExternalRequesterIdentityDto[];

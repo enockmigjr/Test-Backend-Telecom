@@ -119,6 +119,9 @@ export const supportChannelEnum = pgEnum('support_channel_enum', [
   'API',
 ]);
 
+/** Statut d'un article de la base documentaire publique. */
+export const knowledgeStatusEnum = pgEnum('knowledge_status_enum', ['DRAFT', 'PUBLISHED', 'ARCHIVED']);
+
 export const integrationStatusEnum = pgEnum('integration_status_enum', ['DRAFT', 'ACTIVE', 'SUSPENDED']);
 export const externalIdentityTypeEnum = pgEnum('external_identity_type_enum', ['EMAIL', 'PHONE', 'WORDPRESS']);
 export const verificationChallengeStatusEnum = pgEnum('verification_challenge_status_enum', [

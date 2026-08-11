@@ -661,6 +661,46 @@
         ],
         "type": "object"
       },
+      "CreateKnowledgeArticleDto": {
+        "properties": {
+          "content": {
+            "description": "Contenu éditorial, explicitement public.",
+            "type": "string"
+          },
+          "integrationIds": {
+            "description": "Intégrations autorisées à servir cet article.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "language": {
+            "default": "fr",
+            "enum": [
+              "fr",
+              "en"
+            ],
+            "type": "string"
+          },
+          "slug": {
+            "example": "coupure-internet",
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "title": {
+            "example": "Coupure d’accès internet",
+            "type": "string"
+          }
+        },
+        "required": [
+          "slug",
+          "title",
+          "content"
+        ],
+        "type": "object"
+      },
       "CreatePublicCommentDto": {
         "properties": {
           "content": {
@@ -1943,6 +1983,223 @@
           "authorId",
           "content",
           "createdAt",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "KnowledgeArticleDetailDto": {
+        "properties": {
+          "content": {
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "integrationCount": {
+            "type": "number"
+          },
+          "integrations": {
+            "items": {
+              "$ref": "#/components/schemas/KnowledgeIntegrationRefDto"
+            },
+            "type": "array"
+          },
+          "language": {
+            "type": "string"
+          },
+          "publishedAt": {
+            "nullable": true,
+            "type": "object"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "DRAFT",
+              "PUBLISHED",
+              "ARCHIVED"
+            ],
+            "type": "string"
+          },
+          "summary": {
+            "nullable": true,
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "versions": {
+            "items": {
+              "$ref": "#/components/schemas/KnowledgeArticleVersionDto"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "title",
+          "status",
+          "language",
+          "integrationCount",
+          "createdAt",
+          "updatedAt",
+          "content",
+          "integrations",
+          "versions"
+        ],
+        "type": "object"
+      },
+      "KnowledgeArticleListItemDto": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "integrationCount": {
+            "type": "number"
+          },
+          "language": {
+            "type": "string"
+          },
+          "publishedAt": {
+            "nullable": true,
+            "type": "object"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "DRAFT",
+              "PUBLISHED",
+              "ARCHIVED"
+            ],
+            "type": "string"
+          },
+          "summary": {
+            "nullable": true,
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "title",
+          "status",
+          "language",
+          "integrationCount",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "KnowledgeArticleVersionDto": {
+        "properties": {
+          "content": {
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "createdBy": {
+            "nullable": true,
+            "type": "string"
+          },
+          "language": {
+            "type": "string"
+          },
+          "note": {
+            "nullable": true,
+            "type": "string"
+          },
+          "summary": {
+            "nullable": true,
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "version": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "version",
+          "title",
+          "content",
+          "language",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "KnowledgeIntegrationRefDto": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "type": "object"
+      },
+      "KnowledgeSearchResultDto": {
+        "properties": {
+          "content": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "language": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "summary": {
+            "nullable": true,
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "title",
+          "content",
+          "language",
           "updatedAt"
         ],
         "type": "object"
@@ -4322,6 +4579,45 @@
         "required": [
           "content"
         ],
+        "type": "object"
+      },
+      "UpdateKnowledgeArticleDto": {
+        "properties": {
+          "content": {
+            "type": "string"
+          },
+          "integrationIds": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "language": {
+            "enum": [
+              "fr",
+              "en"
+            ],
+            "type": "string"
+          },
+          "note": {
+            "description": "Motif conservé dans l’historique des versions.",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "DRAFT",
+              "PUBLISHED",
+              "ARCHIVED"
+            ],
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
         "type": "object"
       },
       "UpdatePublicPreferencesDto": {
@@ -9809,6 +10105,173 @@
         "x-api-audience": "public-support"
       }
     },
+    "/api/v1/public-support/knowledge/{slug}": {
+      "get": {
+        "operationId": "PublicKnowledgeController_findBySlug",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/KnowledgeSearchResultDto"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "maximum": 299,
+                      "minimum": 200,
+                      "type": "integer"
+                    },
+                    "success": {
+                      "enum": [
+                        true
+                      ],
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "statusCode",
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Article trouvé."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Article indisponible pour cette intégration."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [
+          {
+            "publicSession": []
+          }
+        ],
+        "summary": "Consulter un article public par slug",
+        "tags": [
+          "Support public - connaissance"
+        ],
+        "x-api-audience": "public-support"
+      }
+    },
+    "/api/v1/public-support/knowledge/search": {
+      "get": {
+        "operationId": "PublicKnowledgeController_search",
+        "parameters": [
+          {
+            "description": "Termes de recherche.",
+            "in": "query",
+            "name": "q",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 5,
+              "maximum": 20,
+              "minimum": 1,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "items": {
+                        "$ref": "#/components/schemas/KnowledgeSearchResultDto"
+                      },
+                      "type": "array"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "maximum": 299,
+                      "minimum": 200,
+                      "type": "integer"
+                    },
+                    "success": {
+                      "enum": [
+                        true
+                      ],
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "statusCode",
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Résultats de recherche."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [
+          {
+            "publicSession": []
+          }
+        ],
+        "summary": "Rechercher des articles publics de cette intégration",
+        "tags": [
+          "Support public - connaissance"
+        ],
+        "x-api-audience": "public-support"
+      }
+    },
     "/api/v1/public-support/preferences": {
       "get": {
         "operationId": "PublicSupportController_getPreferences",
@@ -12369,6 +12832,446 @@
         "summary": "Révoquer un appareil de confiance",
         "tags": [
           "support-integrations"
+        ]
+      }
+    },
+    "/api/v1/support-knowledge": {
+      "get": {
+        "description": "Articles éditorialisés, cloisonnés par intégration. Lecture ADMINISTRATOR/SUPERVISOR.",
+        "operationId": "SupportKnowledgeController_list",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "enum": [
+                "DRAFT",
+                "PUBLISHED",
+                "ARCHIVED"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "integrationId",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "items": {
+                        "$ref": "#/components/schemas/KnowledgeArticleListItemDto"
+                      },
+                      "type": "array"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginationMeta"
+                    },
+                    "statusCode": {
+                      "maximum": 299,
+                      "minimum": 200,
+                      "type": "integer"
+                    },
+                    "success": {
+                      "enum": [
+                        true
+                      ],
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "statusCode",
+                    "meta",
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Liste paginée des articles."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Token JWT manquant ou expiré."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Rôle insuffisant."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Liste paginée des articles de connaissance",
+        "tags": [
+          "support-knowledge"
+        ]
+      },
+      "post": {
+        "description": "Crée l’article en brouillon avec sa première version et ses intégrations autorisées. Écriture ADMINISTRATOR.",
+        "operationId": "SupportKnowledgeController_create",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateKnowledgeArticleDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/KnowledgeArticleDetailDto"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "maximum": 299,
+                      "minimum": 200,
+                      "type": "integer"
+                    },
+                    "success": {
+                      "enum": [
+                        true
+                      ],
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "statusCode",
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Article créé."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Token JWT manquant ou expiré."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Rôle insuffisant."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Créer un article de connaissance",
+        "tags": [
+          "support-knowledge"
+        ]
+      }
+    },
+    "/api/v1/support-knowledge/{id}": {
+      "get": {
+        "description": "Détail, intégrations autorisées et versions append-only. Lecture ADMINISTRATOR/SUPERVISOR.",
+        "operationId": "SupportKnowledgeController_findOne",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/KnowledgeArticleDetailDto"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "maximum": 299,
+                      "minimum": 200,
+                      "type": "integer"
+                    },
+                    "success": {
+                      "enum": [
+                        true
+                      ],
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "statusCode",
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Article trouvé."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Token JWT manquant ou expiré."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Rôle insuffisant."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Article introuvable."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Consulter un article avec son historique",
+        "tags": [
+          "support-knowledge"
+        ]
+      },
+      "patch": {
+        "description": "Chaque changement de contenu crée une nouvelle version ; la publication et l’archivage sont tracés. Écriture ADMINISTRATOR.",
+        "operationId": "SupportKnowledgeController_update",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateKnowledgeArticleDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/KnowledgeArticleDetailDto"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "maximum": 299,
+                      "minimum": 200,
+                      "type": "integer"
+                    },
+                    "success": {
+                      "enum": [
+                        true
+                      ],
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "statusCode",
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Article mis à jour."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Token JWT manquant ou expiré."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Rôle insuffisant."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Article introuvable."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Modifier, publier ou archiver un article",
+        "tags": [
+          "support-knowledge"
         ]
       }
     },

@@ -140,10 +140,7 @@ export class ExternalRequestersAdminService {
       const impact = await this.buildImpact(source.id, source.supportIntegrationId);
       const integrationId = source.supportIntegrationId;
 
-      await this.drizzle.db
-        .update(tickets)
-        .set({ requesterId: target.id })
-        .where(eq(tickets.requesterId, source.id));
+      await this.drizzle.db.update(tickets).set({ requesterId: target.id }).where(eq(tickets.requesterId, source.id));
       await this.drizzle.db
         .update(supportConversations)
         .set({ externalRequesterId: target.id })
@@ -183,11 +180,18 @@ export class ExternalRequestersAdminService {
 
       const [sourceIdentities, targetIdentities] = await Promise.all([
         this.drizzle.db
-          .select({ id: externalIdentities.id, identityType: externalIdentities.identityType, normalizedValueHash: externalIdentities.normalizedValueHash })
+          .select({
+            id: externalIdentities.id,
+            identityType: externalIdentities.identityType,
+            normalizedValueHash: externalIdentities.normalizedValueHash,
+          })
           .from(externalIdentities)
           .where(eq(externalIdentities.externalRequesterId, source.id)),
         this.drizzle.db
-          .select({ identityType: externalIdentities.identityType, normalizedValueHash: externalIdentities.normalizedValueHash })
+          .select({
+            identityType: externalIdentities.identityType,
+            normalizedValueHash: externalIdentities.normalizedValueHash,
+          })
           .from(externalIdentities)
           .where(
             and(
@@ -196,7 +200,9 @@ export class ExternalRequestersAdminService {
             ),
           ),
       ]);
-      const targetKeys = new Set(targetIdentities.map((identity) => `${identity.identityType}:${identity.normalizedValueHash}`));
+      const targetKeys = new Set(
+        targetIdentities.map((identity) => `${identity.identityType}:${identity.normalizedValueHash}`),
+      );
       let collisionsRemoved = 0;
       for (const identity of sourceIdentities) {
         if (targetKeys.has(`${identity.identityType}:${identity.normalizedValueHash}`)) {
@@ -289,18 +295,62 @@ export class ExternalRequestersAdminService {
       identities,
     ] = await Promise.all([
       this.countWhere(tickets, eq(tickets.requesterId, requesterId), eq(tickets.supportIntegrationId, integrationId)),
-      this.countWhere(supportConversations, eq(supportConversations.externalRequesterId, requesterId), eq(supportConversations.supportIntegrationId, integrationId)),
-      this.countWhere(supportMessages, eq(supportMessages.externalRequesterId, requesterId), eq(supportMessages.supportIntegrationId, integrationId)),
-      this.countWhere(ticketComments, eq(ticketComments.externalRequesterId, requesterId), eq(ticketComments.supportIntegrationId, integrationId)),
-      this.countWhere(ticketHistory, eq(ticketHistory.externalRequesterId, requesterId), eq(ticketHistory.supportIntegrationId, integrationId)),
-      this.countWhere(trustedDevices, eq(trustedDevices.externalRequesterId, requesterId), eq(trustedDevices.supportIntegrationId, integrationId)),
-      this.countWhere(externalVerificationChallenges, eq(externalVerificationChallenges.externalRequesterId, requesterId), eq(externalVerificationChallenges.supportIntegrationId, integrationId)),
-      this.countWhere(outboxEvents, eq(outboxEvents.externalRequesterId, requesterId), eq(outboxEvents.supportIntegrationId, integrationId)),
-      this.countWhere(publicBootstrapGrants, eq(publicBootstrapGrants.externalRequesterId, requesterId), eq(publicBootstrapGrants.supportIntegrationId, integrationId)),
-      this.countWhere(attachments, eq(attachments.externalRequesterId, requesterId), eq(attachments.supportIntegrationId, integrationId)),
+      this.countWhere(
+        supportConversations,
+        eq(supportConversations.externalRequesterId, requesterId),
+        eq(supportConversations.supportIntegrationId, integrationId),
+      ),
+      this.countWhere(
+        supportMessages,
+        eq(supportMessages.externalRequesterId, requesterId),
+        eq(supportMessages.supportIntegrationId, integrationId),
+      ),
+      this.countWhere(
+        ticketComments,
+        eq(ticketComments.externalRequesterId, requesterId),
+        eq(ticketComments.supportIntegrationId, integrationId),
+      ),
+      this.countWhere(
+        ticketHistory,
+        eq(ticketHistory.externalRequesterId, requesterId),
+        eq(ticketHistory.supportIntegrationId, integrationId),
+      ),
+      this.countWhere(
+        trustedDevices,
+        eq(trustedDevices.externalRequesterId, requesterId),
+        eq(trustedDevices.supportIntegrationId, integrationId),
+      ),
+      this.countWhere(
+        externalVerificationChallenges,
+        eq(externalVerificationChallenges.externalRequesterId, requesterId),
+        eq(externalVerificationChallenges.supportIntegrationId, integrationId),
+      ),
+      this.countWhere(
+        outboxEvents,
+        eq(outboxEvents.externalRequesterId, requesterId),
+        eq(outboxEvents.supportIntegrationId, integrationId),
+      ),
+      this.countWhere(
+        publicBootstrapGrants,
+        eq(publicBootstrapGrants.externalRequesterId, requesterId),
+        eq(publicBootstrapGrants.supportIntegrationId, integrationId),
+      ),
+      this.countWhere(
+        attachments,
+        eq(attachments.externalRequesterId, requesterId),
+        eq(attachments.supportIntegrationId, integrationId),
+      ),
       this.countWhere(externalIdentities, conditions),
-      this.countWhere(auditLogs, eq(auditLogs.externalRequesterId, requesterId), eq(auditLogs.supportIntegrationId, integrationId)),
-      this.countWhere(idempotencyRecords, eq(idempotencyRecords.externalRequesterId, requesterId), eq(idempotencyRecords.supportIntegrationId, integrationId)),
+      this.countWhere(
+        auditLogs,
+        eq(auditLogs.externalRequesterId, requesterId),
+        eq(auditLogs.supportIntegrationId, integrationId),
+      ),
+      this.countWhere(
+        idempotencyRecords,
+        eq(idempotencyRecords.externalRequesterId, requesterId),
+        eq(idempotencyRecords.supportIntegrationId, integrationId),
+      ),
       this.drizzle.db
         .select({
           identityType: externalIdentities.identityType,

@@ -55,3 +55,4 @@ export * from './support-conversations';
 export * from './support-messages';
 export * from './outbox-events';
 export * from './external-deliveries';
+export * from './support-knowledge';
