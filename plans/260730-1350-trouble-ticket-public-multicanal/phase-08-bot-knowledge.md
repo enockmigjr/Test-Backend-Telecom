@@ -1,4 +1,8 @@
 # Phase 08 — Bot et connaissance publique
+## Statut
+
+- Base de connaissance livrée (étapes 1-4) : tables support_knowledge_articles/versions/grants (migration 0015), administration interne (création, édition avec historique append-only, publication/archivage, intégrations autorisées, audit), recherche publique par intégration (articles publiés uniquement) exposée au contrat public et au BFF du portail.
+- Reste : abstraction AiProvider, ToolPolicyService, orchestration SupportBotService (étapes 5-12) et UI conversationnelle du portail.
 
 ## Contexte
 
