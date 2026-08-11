@@ -85,9 +85,7 @@ export class DashboardSlaService {
       this.drizzle.db
         .select({ count: count() })
         .from(tickets)
-        .where(
-          and(where, openStatus, lte(tickets.resolutionDueAt, new Date(now.getTime() + 30 * 60 * 1000))),
-        ),
+        .where(and(where, openStatus, lte(tickets.resolutionDueAt, new Date(now.getTime() + 30 * 60 * 1000)))),
       this.drizzle.db
         .select({ count: count() })
         .from(tickets)
