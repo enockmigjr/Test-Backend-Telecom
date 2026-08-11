@@ -1598,6 +1598,197 @@
         ],
         "type": "object"
       },
+      "ExternalDeliveryListItemDto": {
+        "properties": {
+          "attemptCount": {
+            "type": "number"
+          },
+          "channel": {
+            "enum": [
+              "INTERNAL",
+              "WEB_PORTAL",
+              "WIDGET",
+              "WORDPRESS",
+              "EMAIL",
+              "WHATSAPP",
+              "API"
+            ],
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "deliveredAt": {
+            "nullable": true,
+            "type": "object"
+          },
+          "destinationKey": {
+            "description": "Clé de destination opaque (empreinte, jamais la valeur en clair).",
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "lastError": {
+            "description": "Catégorie d’erreur du dernier échec, sans contenu.",
+            "nullable": true,
+            "type": "object"
+          },
+          "outboxEventId": {
+            "description": "Événement outbox d’origine.",
+            "type": "string"
+          },
+          "providerMessageId": {
+            "nullable": true,
+            "type": "object"
+          },
+          "status": {
+            "enum": [
+              "PENDING",
+              "PROCESSING",
+              "DELIVERED",
+              "FAILED",
+              "DELIVERY_UNKNOWN"
+            ],
+            "type": "string"
+          },
+          "supportIntegrationId": {
+            "description": "Intégration de support concernée.",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "outboxEventId",
+          "supportIntegrationId",
+          "channel",
+          "destinationKey",
+          "status",
+          "attemptCount",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "ExternalRequesterDetailDto": {
+        "properties": {
+          "anonymizedAt": {
+            "description": "Date d’anonymisation si le profil a été effacé.",
+            "nullable": true,
+            "type": "object"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "displayName": {
+            "nullable": true,
+            "type": "object"
+          },
+          "id": {
+            "type": "string"
+          },
+          "lastSeenAt": {
+            "nullable": true,
+            "type": "object"
+          },
+          "locale": {
+            "type": "string"
+          },
+          "summary": {
+            "description": "Synthèse des impacts sans contenu des tickets ni des messages.",
+            "type": "object"
+          },
+          "supportIntegrationId": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "supportIntegrationId",
+          "locale",
+          "createdAt",
+          "updatedAt",
+          "summary"
+        ],
+        "type": "object"
+      },
+      "ExternalRequesterIdentityDto": {
+        "properties": {
+          "identityType": {
+            "enum": [
+              "EMAIL",
+              "PHONE",
+              "WORDPRESS"
+            ],
+            "type": "string"
+          },
+          "revokedAt": {
+            "nullable": true,
+            "type": "object"
+          },
+          "verifiedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "identityType",
+          "verifiedAt"
+        ],
+        "type": "object"
+      },
+      "ExternalRequesterListItemDto": {
+        "properties": {
+          "anonymizedAt": {
+            "description": "Date d’anonymisation si le profil a été effacé.",
+            "nullable": true,
+            "type": "object"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "displayName": {
+            "nullable": true,
+            "type": "object"
+          },
+          "id": {
+            "type": "string"
+          },
+          "lastSeenAt": {
+            "nullable": true,
+            "type": "object"
+          },
+          "locale": {
+            "type": "string"
+          },
+          "supportIntegrationId": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "supportIntegrationId",
+          "locale",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
       "IntegrationQuotaPolicyDto": {
         "properties": {
           "attachmentMaxBytes": {
@@ -7400,6 +7591,508 @@
         "summary": "Modifier un département (Admin uniquement)",
         "tags": [
           "departments"
+        ]
+      }
+    },
+    "/api/v1/external-deliveries": {
+      "get": {
+        "description": "Livraisons sortantes (email, futur WhatsApp) sans contenu ni secret. Lecture ADMINISTRATOR/SUPERVISOR.",
+        "operationId": "ExternalDeliveriesAdminController_list",
+        "parameters": [
+          {
+            "description": "Filtrer par intégration de support (UUID).",
+            "in": "query",
+            "name": "supportIntegrationId",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Canal de livraison.",
+            "in": "query",
+            "name": "channel",
+            "required": false,
+            "schema": {
+              "enum": [
+                "INTERNAL",
+                "WEB_PORTAL",
+                "WIDGET",
+                "WORDPRESS",
+                "EMAIL",
+                "WHATSAPP",
+                "API"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Statut de livraison.",
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "enum": [
+                "PENDING",
+                "PROCESSING",
+                "DELIVERED",
+                "FAILED",
+                "DELIVERY_UNKNOWN"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Numéro de page (commence à 1).",
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "description": "Éléments par page (max 100).",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "items": {
+                        "$ref": "#/components/schemas/ExternalDeliveryListItemDto"
+                      },
+                      "type": "array"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginationMeta"
+                    },
+                    "statusCode": {
+                      "maximum": 299,
+                      "minimum": 200,
+                      "type": "integer"
+                    },
+                    "success": {
+                      "enum": [
+                        true
+                      ],
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "statusCode",
+                    "meta",
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Liste paginée des livraisons."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Token JWT manquant ou expiré."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Rôle insuffisant — ADMINISTRATOR ou SUPERVISOR requis."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Liste paginée des livraisons externes",
+        "tags": [
+          "external-deliveries"
+        ]
+      }
+    },
+    "/api/v1/external-deliveries/{id}": {
+      "get": {
+        "description": "Détail d’une livraison sans contenu ni secret. Lecture ADMINISTRATOR/SUPERVISOR.",
+        "operationId": "ExternalDeliveriesAdminController_findOne",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/ExternalDeliveryListItemDto"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "maximum": 299,
+                      "minimum": 200,
+                      "type": "integer"
+                    },
+                    "success": {
+                      "enum": [
+                        true
+                      ],
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "statusCode",
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Livraison trouvée."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Token JWT manquant ou expiré."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Rôle insuffisant — ADMINISTRATOR ou SUPERVISOR requis."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Livraison introuvable."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Consulter une livraison externe",
+        "tags": [
+          "external-deliveries"
+        ]
+      }
+    },
+    "/api/v1/external-requesters": {
+      "get": {
+        "description": "Profils publics conservés côté serveur, sans compte interne. Jamais d’adresse email ou de secret en clair. Lecture ADMINISTRATOR/SUPERVISOR.",
+        "operationId": "ExternalRequestersController_list",
+        "parameters": [
+          {
+            "description": "Filtrer par intégration de support (UUID).",
+            "in": "query",
+            "name": "supportIntegrationId",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Recherche insensible à la casse sur le nom affiché.",
+            "in": "query",
+            "name": "search",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filtrer les profils anonymisés (true) ou actifs (false).",
+            "in": "query",
+            "name": "anonymized",
+            "required": false,
+            "schema": {
+              "enum": [
+                "true",
+                "false"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "description": "Numéro de page (commence à 1).",
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "type": "number"
+            }
+          },
+          {
+            "description": "Éléments par page (max 100).",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "items": {
+                        "$ref": "#/components/schemas/ExternalRequesterListItemDto"
+                      },
+                      "type": "array"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/PaginationMeta"
+                    },
+                    "statusCode": {
+                      "maximum": 299,
+                      "minimum": 200,
+                      "type": "integer"
+                    },
+                    "success": {
+                      "enum": [
+                        true
+                      ],
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "statusCode",
+                    "meta",
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Liste paginée des demandeurs."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Token JWT manquant ou expiré."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Rôle insuffisant — ADMINISTRATOR ou SUPERVISOR requis."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Liste paginée des demandeurs publics",
+        "tags": [
+          "external-requesters"
+        ]
+      }
+    },
+    "/api/v1/external-requesters/{id}": {
+      "get": {
+        "description": "Détail avec synthèse des impacts (tickets, conversations, appareils, identités vérifiées) sans contenu ni valeur en clair.",
+        "operationId": "ExternalRequestersController_detail",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/ExternalRequesterDetailDto"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "maximum": 299,
+                      "minimum": 200,
+                      "type": "integer"
+                    },
+                    "success": {
+                      "enum": [
+                        true
+                      ],
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "statusCode",
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Demandeur trouvé."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Token JWT manquant ou expiré."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Rôle insuffisant — ADMINISTRATOR ou SUPERVISOR requis."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Demandeur introuvable."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Consulter un demandeur public",
+        "tags": [
+          "external-requesters"
         ]
       }
     },

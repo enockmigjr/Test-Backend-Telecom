@@ -1,5 +1,10 @@
 # Phase 07 — Administration interne enrichie
 
+## Statut
+
+- Backend : routes d'administration posées — lecture SUPERVISOR/ADMINISTRATOR sur les intégrations (y compris appareils et métadonnées de secrets), contrôleur external-deliveries (liste paginée + détail) et module external-requesters (liste + détail avec synthèse d'impacts, jamais de valeur en clair). OpenAPI réexporté (126 opérations) et contrats verts.
+- Frontend interne : pages admin à créer (prochaine étape), puis « répondre au demandeur » distinct de la note interne, fusion de profils et rotation.
+
 ## Contexte
 
 La compatibilité minimale des acteurs est déjà déployée en phase 01b. Cette phase ajoute les opérations d’administration et l’expérience agent complète.

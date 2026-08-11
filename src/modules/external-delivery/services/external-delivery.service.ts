@@ -1,9 +1,12 @@
-import { Inject, Injectable } from '@nestjs/common';
-import { and, eq, isNull, lt, or, sql } from 'drizzle-orm';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { and, desc, eq, isNull, lt, or, sql } from 'drizzle-orm';
+import { normalizePagination } from '../../../common/helpers/normalized-pagination.helper';
+import { PaginationHelper } from '../../../common/helpers/pagination.helper';
 import { generateUuid } from '../../../common/helpers/uuidv7.helper';
 import { DrizzleProvider } from '../../../database/drizzle.provider';
 import { externalDeliveries, externalIdentities, outboxEvents, tickets } from '../../../database/schemas';
 import { IntegrationSecretCipherService } from '../../support-integrations/services/integration-secret-cipher.service';
+import { ExternalDeliveryQueryDto } from '../dto/external-delivery-query.dto';
 import { ChannelAdapter, EMAIL_CHANNEL_ADAPTER } from '../interfaces/channel-adapter.interface';
 
 const DELIVERY_LEASE_MS = 60_000;
@@ -175,6 +178,40 @@ export class ExternalDeliveryService {
       .limit(1);
     if (!delivery) throw new Error('DELIVERY_NOT_PERSISTED');
     return delivery;
+  }
+
+  async adminList(query: ExternalDeliveryQueryDto) {
+    const { page, limit } = normalizePagination(query.page, query.limit);
+    const conditions = [
+      query.supportIntegrationId ? eq(externalDeliveries.supportIntegrationId, query.supportIntegrationId) : undefined,
+      query.channel ? eq(externalDeliveries.channel, query.channel) : undefined,
+      query.status ? eq(externalDeliveries.status, query.status) : undefined,
+    ].filter((condition): condition is NonNullable<typeof condition> => Boolean(condition));
+    const where = conditions.length > 0 ? and(...conditions) : undefined;
+    const [count, rows] = await Promise.all([
+      this.drizzle.db
+        .select({ count: sql<number>`count(*)` })
+        .from(externalDeliveries)
+        .where(where),
+      this.drizzle.db
+        .select()
+        .from(externalDeliveries)
+        .where(where)
+        .orderBy(desc(externalDeliveries.createdAt))
+        .limit(limit)
+        .offset(PaginationHelper.getOffset(page, limit)),
+    ]);
+    return PaginationHelper.paginate(rows, Number(count[0]?.count ?? 0), page, limit);
+  }
+
+  async adminFindOne(id: string) {
+    const [delivery] = await this.drizzle.db
+      .select()
+      .from(externalDeliveries)
+      .where(eq(externalDeliveries.id, id))
+      .limit(1);
+    if (!delivery) throw new NotFoundException('Livraison externe introuvable.');
+    return { data: delivery };
   }
 }
 

@@ -55,6 +55,7 @@ import { ExternalIdentityModule } from './modules/external-identity/external-ide
 import { PublicSupportModule } from './modules/public-support/public-support.module';
 import { OutboxModule } from './modules/outbox/outbox.module';
 import { ExternalDeliveryModule } from './modules/external-delivery/external-delivery.module';
+import { ExternalRequestersModule } from './modules/external-requesters/external-requesters.module';
 import { IdempotencyInterceptor } from './common/interceptors/idempotency.interceptor';
 import { isAuthRateLimited } from './common/decorators/auth-rate-limited.decorator';
 
@@ -154,6 +155,7 @@ import { isAuthRateLimited } from './common/decorators/auth-rate-limited.decorat
     PublicSupportModule,
     OutboxModule,
     ExternalDeliveryModule,
+    ExternalRequestersModule,
   ],
   providers: [
     // Protection globale contre le surdimensionnement des requêtes (Rate Limiting)

@@ -17,7 +17,6 @@ import { IntegrationDeviceQueryDto } from './dto/integration-device-query.dto';
 @ApiTags('support-integrations')
 @ApiBearerAuth()
 @UseGuards(RolesGuard)
-@Roles('ADMINISTRATOR')
 @Controller('support-integrations')
 export class SupportIntegrationsController {
   constructor(
@@ -27,42 +26,49 @@ export class SupportIntegrationsController {
   ) {}
 
   @Post()
+  @Roles('ADMINISTRATOR')
   @ApiOperation({ summary: 'Créer une intégration de support en brouillon' })
   create(@Body() dto: CreateSupportIntegrationDto, @CurrentUser() user: JwtPayload) {
     return this.integrations.create(dto, user.sub);
   }
 
   @Get()
+  @Roles('ADMINISTRATOR', 'SUPERVISOR')
   @ApiOperation({ summary: 'Lister les intégrations sans exposer leurs secrets' })
   list() {
     return this.integrations.list();
   }
 
   @Get(':id')
+  @Roles('ADMINISTRATOR', 'SUPERVISOR')
   @ApiOperation({ summary: 'Consulter une intégration' })
   findOne(@Param('id') id: string) {
     return this.integrations.findOne(id);
   }
 
   @Patch(':id')
+  @Roles('ADMINISTRATOR')
   @ApiOperation({ summary: 'Modifier politiques, origines ou statut' })
   update(@Param('id') id: string, @Body() dto: UpdateSupportIntegrationDto, @CurrentUser() user: JwtPayload) {
     return this.integrations.update(id, dto, user.sub);
   }
 
   @Post(':id/credentials/rotate')
+  @Roles('ADMINISTRATOR')
   @ApiOperation({ summary: 'Chiffrer une nouvelle version de secret sans la retourner' })
   rotateSecret(@Param('id') id: string, @Body() dto: RotateIntegrationSecretDto, @CurrentUser() user: JwtPayload) {
     return this.secrets.rotate(id, dto.secret, user.sub);
   }
 
   @Get(':id/credentials')
+  @Roles('ADMINISTRATOR', 'SUPERVISOR')
   @ApiOperation({ summary: 'Lister les versions de secret sans exposer leur valeur chiffrée' })
   listCredentials(@Param('id') id: string) {
     return this.secrets.listMetadata(id);
   }
 
   @Post(':id/credentials/:credentialId/revoke')
+  @Roles('ADMINISTRATOR')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Révoquer une version de secret' })
   async revokeSecret(
@@ -74,12 +80,14 @@ export class SupportIntegrationsController {
   }
 
   @Get(':id/devices')
+  @Roles('ADMINISTRATOR', 'SUPERVISOR')
   @ApiOperation({ summary: 'Lister les appareils de confiance sans exposer leurs jetons' })
   listDevices(@Param('id') id: string, @Query() query: IntegrationDeviceQueryDto) {
     return this.devices.list(id, query.page, query.limit);
   }
 
   @Post(':id/devices/:deviceId/revoke')
+  @Roles('ADMINISTRATOR')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Révoquer un appareil de confiance' })
   async revokeDevice(
