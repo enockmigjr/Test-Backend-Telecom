@@ -3,7 +3,7 @@
 ## Statut
 
 - Backend : routes d'administration posées — lecture SUPERVISOR/ADMINISTRATOR sur les intégrations (y compris appareils et métadonnées de secrets), contrôleur external-deliveries (liste paginée + détail) et module external-requesters (liste + détail avec synthèse d'impacts, jamais de valeur en clair). OpenAPI réexporté (126 opérations) et contrats verts.
-- Frontend interne : pages admin à créer (prochaine étape), puis « répondre au demandeur » distinct de la note interne, fusion de profils et rotation.
+- Frontend interne : pages admin livrées (Intégrations avec édition, statut, rotation de secret et révocation ; Livraisons ; Demandeurs), navigation Administration, contrat OpenAPI régénéré (126 opérations).`n- « Répondre au demandeur » vs « Note interne » : déjà opérationnel dans la console (onglets distincts commentaire public / note interne).`n- Reste : fusion explicite de profils demandeur avec aperçu des impacts et audit obligatoire (étape 5).
 
 ## Contexte
 
