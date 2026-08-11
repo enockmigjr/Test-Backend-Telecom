@@ -147,7 +147,12 @@ export class AssignmentEngineService {
 
         const [ticketCat] = await tx.select().from(categories).where(eq(categories.id, ticket.categoryId)).limit(1);
 
-        const targetRole = ticketCat ? ticketCat.targetRole : null;
+        const targetRoles =
+          Array.isArray(ticketCat?.targetRoles) && ticketCat.targetRoles.length > 0
+            ? ticketCat.targetRoles
+            : ticketCat?.targetRole
+              ? [ticketCat.targetRole]
+              : [];
 
         for (const agent of eligibleAgents) {
           // Filtrer les tickets actifs de cet agent
@@ -173,8 +178,8 @@ export class AssignmentEngineService {
 
           // Bonus de correspondance de rôle implicite
           let roleMatchPenalty = 0;
-          if (targetRole && agent.role !== targetRole) {
-            // L'agent n'a pas le rôle technique idéal, on lui applique une pénalité virtuelle de charge
+          if (targetRoles.length > 0 && !targetRoles.includes(agent.role)) {
+            // L'agent n'a pas l'un des rôles techniques idéaux, on lui applique une pénalité virtuelle de charge
             // pour privilégier les agents spécialisés dans cette catégorie
             roleMatchPenalty = 20;
           }

@@ -27,4 +27,6 @@ export interface UpdateUserInput {
   lastName?: string;
   role?: string;
   departmentId?: string;
+  isAvailable?: boolean;
+  absenceEndsAt?: Date | string | null;
 }

@@ -12,7 +12,7 @@
  */
 
 import { Injectable, Logger } from '@nestjs/common';
-import { and, eq, gte, isNull, lt, notInArray, sql } from 'drizzle-orm';
+import { and, eq, gte, isNull, lt, notInArray, or, sql, type SQL } from 'drizzle-orm';
 import { DrizzleProvider } from '../../database/drizzle.provider';
 import { categories, departments, tickets, users } from '../../database/schemas';
 import { SlaAlertNotifierService } from './sla-alert-notifier.service';
@@ -26,6 +26,8 @@ type AlertKind = 'WARNING' | 'BREACH';
 @Injectable()
 export class SlaAlertProcessorService {
   private readonly logger = new Logger(SlaAlertProcessorService.name);
+  /** Relance des notifications de violation tant qu'un ticket reste ouvert et en retard (6 h). */
+  private static readonly BREACH_REPEAT_INTERVAL_MS = 6 * 60 * 60 * 1000;
   private static readonly CLOSED_STATUSES: Array<typeof tickets.$inferSelect.status> = [
     'RESOLVED',
     'CLOSED',
@@ -87,9 +89,8 @@ export class SlaAlertProcessorService {
     const warningSentAt =
       target === 'FIRST_RESPONSE' ? tickets.firstResponseWarningSentAt : tickets.resolutionWarningSentAt;
     const breachedAt = target === 'FIRST_RESPONSE' ? tickets.firstResponseBreachedAt : tickets.resolutionBreachedAt;
-    const conditions = [
+    const conditions: Array<SQL | undefined> = [
       isNull(tickets.deletedAt),
-      isNull(breachedAt),
       notInArray(tickets.status, SlaAlertProcessorService.CLOSED_STATUSES),
     ];
 
@@ -100,7 +101,18 @@ export class SlaAlertProcessorService {
     }
 
     if (kind === 'BREACH') {
-      conditions.push(lt(dueAt, now));
+      const breachCandidate = or(
+        isNull(breachedAt),
+        lt(
+          sql`COALESCE((${tickets.metadata}->>${this.breachNotifiedKey(target)})::timestamptz, to_timestamp(0))`,
+          new Date(now.getTime() - SlaAlertProcessorService.BREACH_REPEAT_INTERVAL_MS),
+        ),
+      );
+      conditions.push(
+        lt(dueAt, now),
+        // Première violation, ou relance périodique si la dernière notification est ancienne.
+        breachCandidate,
+      );
     } else {
       conditions.push(isNull(warningSentAt), gte(dueAt, now), lt(dueAt, threshold));
     }
@@ -141,32 +153,78 @@ export class SlaAlertProcessorService {
     threshold: Date,
   ): Promise<boolean> {
     const dueAt = target === 'FIRST_RESPONSE' ? tickets.firstResponseDueAt : tickets.resolutionDueAt;
-    const breachedAt = target === 'FIRST_RESPONSE' ? tickets.firstResponseBreachedAt : tickets.resolutionBreachedAt;
     const activeConditions = [
       eq(tickets.id, id),
       isNull(tickets.deletedAt),
-      isNull(breachedAt),
       notInArray(tickets.status, SlaAlertProcessorService.CLOSED_STATUSES),
       target === 'FIRST_RESPONSE' ? isNull(tickets.firstResponseAt) : isNull(tickets.slaPausedAt),
       kind === 'BREACH' ? lt(dueAt, now) : and(gte(dueAt, now), lt(dueAt, threshold)),
     ];
 
     if (target === 'FIRST_RESPONSE' && kind === 'BREACH') {
+      // Première violation : horodate la rupture, marque le ticket et mémorise l'envoi.
       const rows = await this.drizzle.db
         .update(tickets)
-        .set({ firstResponseBreachedAt: now, slaBreached: true })
-        .where(and(...activeConditions))
+        .set({
+          firstResponseBreachedAt: now,
+          slaBreached: true,
+          metadata: this.breachNotifiedMetadataSql(target, now),
+        })
+        .where(and(...activeConditions, isNull(tickets.firstResponseBreachedAt)))
         .returning({ id: tickets.id });
-      return rows.length > 0;
+      if (rows.length > 0) return true;
+      // Relance périodique : ticket déjà en rupture, on renvoie une alerte.
+      const repeatRows = await this.drizzle.db
+        .update(tickets)
+        .set({ metadata: this.breachNotifiedMetadataSql(target, now) })
+        .where(
+          and(
+            eq(tickets.id, id),
+            isNull(tickets.deletedAt),
+            notInArray(tickets.status, SlaAlertProcessorService.CLOSED_STATUSES),
+            isNull(tickets.firstResponseAt),
+            lt(dueAt, now),
+            sql`${tickets.firstResponseBreachedAt} IS NOT NULL`,
+            lt(
+              sql`COALESCE((${tickets.metadata}->>${this.breachNotifiedKey(target)})::timestamptz, to_timestamp(0))`,
+              new Date(now.getTime() - SlaAlertProcessorService.BREACH_REPEAT_INTERVAL_MS),
+            ),
+          ),
+        )
+        .returning({ id: tickets.id });
+      return repeatRows.length > 0;
     }
 
     if (target === 'RESOLUTION' && kind === 'BREACH') {
       const rows = await this.drizzle.db
         .update(tickets)
-        .set({ resolutionBreachedAt: now, slaBreached: true })
-        .where(and(...activeConditions))
+        .set({
+          resolutionBreachedAt: now,
+          slaBreached: true,
+          metadata: this.breachNotifiedMetadataSql(target, now),
+        })
+        .where(and(...activeConditions, isNull(tickets.resolutionBreachedAt)))
         .returning({ id: tickets.id });
-      return rows.length > 0;
+      if (rows.length > 0) return true;
+      const repeatRows = await this.drizzle.db
+        .update(tickets)
+        .set({ metadata: this.breachNotifiedMetadataSql(target, now) })
+        .where(
+          and(
+            eq(tickets.id, id),
+            isNull(tickets.deletedAt),
+            notInArray(tickets.status, SlaAlertProcessorService.CLOSED_STATUSES),
+            isNull(tickets.slaPausedAt),
+            lt(dueAt, now),
+            sql`${tickets.resolutionBreachedAt} IS NOT NULL`,
+            lt(
+              sql`COALESCE((${tickets.metadata}->>${this.breachNotifiedKey(target)})::timestamptz, to_timestamp(0))`,
+              new Date(now.getTime() - SlaAlertProcessorService.BREACH_REPEAT_INTERVAL_MS),
+            ),
+          ),
+        )
+        .returning({ id: tickets.id });
+      return repeatRows.length > 0;
     }
 
     if (target === 'FIRST_RESPONSE') {
@@ -202,13 +260,38 @@ export class SlaAlertProcessorService {
     if (target === 'FIRST_RESPONSE') {
       await this.drizzle.db
         .update(tickets)
-        .set({ firstResponseBreachedAt: null, slaBreached: sql`${tickets.resolutionBreachedAt} IS NOT NULL` })
+        .set({
+          firstResponseBreachedAt: null,
+          slaBreached: sql`${tickets.resolutionBreachedAt} IS NOT NULL`,
+          metadata: this.removeBreachNotifiedMetadataSql('FIRST_RESPONSE'),
+        })
         .where(eq(tickets.id, id));
       return;
     }
     await this.drizzle.db
       .update(tickets)
-      .set({ resolutionBreachedAt: null, slaBreached: sql`${tickets.firstResponseBreachedAt} IS NOT NULL` })
+      .set({
+        resolutionBreachedAt: null,
+        slaBreached: sql`${tickets.firstResponseBreachedAt} IS NOT NULL`,
+        metadata: this.removeBreachNotifiedMetadataSql('RESOLUTION'),
+      })
       .where(eq(tickets.id, id));
+  }
+
+  /** Clé JSONB utilisée pour mémoriser la dernière notification de violation d'un objectif SLA. */
+  private breachNotifiedKey(target: SlaTarget): string {
+    return target === 'FIRST_RESPONSE' ? 'firstResponseBreachNotifiedAt' : 'resolutionBreachNotifiedAt';
+  }
+
+  /** SQL JSONB : écrit l'horodatage de la dernière notification de violation. */
+  private breachNotifiedMetadataSql(target: SlaTarget, now: Date) {
+    return sql`COALESCE(${tickets.metadata}, '{}'::jsonb) || jsonb_build_object(${this.breachNotifiedKey(
+      target,
+    )}, to_jsonb(${now}::timestamptz))`;
+  }
+
+  /** SQL JSONB : retire l'horodatage de notification lors d'un retry. */
+  private removeBreachNotifiedMetadataSql(target: SlaTarget) {
+    return sql`COALESCE(${tickets.metadata}, '{}'::jsonb) - ${this.breachNotifiedKey(target)}`;
   }
 }

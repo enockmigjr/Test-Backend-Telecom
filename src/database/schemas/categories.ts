@@ -9,7 +9,7 @@
  * ============================================================================
  */
 
-import { pgTable, uuid, varchar, text, timestamp } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, text, timestamp, jsonb } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { tickets } from './tickets';
 import { slaPolicies } from './sla-policies';
@@ -22,6 +22,9 @@ export const categories = pgTable('categories', {
   id: uuid('id').primaryKey(),
   name: varchar('name', { length: 100 }).notNull().unique(),
   description: text('description'),
+  /** Rôles d'agents ciblés par l'auto-assignation (un ou plusieurs). */
+  targetRoles: jsonb('target_roles'),
+  /** Rôle cible unique historique, conservé pour compatibilité. */
   targetRole: varchar('target_role', { length: 100 }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true })

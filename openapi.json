@@ -623,6 +623,17 @@
             "description": "Rôle d'agent ciblé par cette catégorie pour l'auto-assignation",
             "example": "NOC_ENGINEER",
             "type": "object"
+          },
+          "targetRoles": {
+            "description": "Rôles d'agents ciblés par cette catégorie pour l'auto-assignation",
+            "example": [
+              "NOC_ENGINEER",
+              "TECHNICAL_SUPPORT_ENGINEER"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
           }
         },
         "required": [
@@ -652,15 +663,44 @@
       },
       "CreateDepartmentDto": {
         "properties": {
+          "assignmentStrategy": {
+            "default": "LEAST_LOADED",
+            "description": "Algorithme d'assignation (LEAST_LOADED par défaut, ROUND_ROBIN alternatif)",
+            "enum": [
+              "ROUND_ROBIN",
+              "LEAST_LOADED"
+            ],
+            "type": "string"
+          },
+          "autoAssignmentEnabled": {
+            "default": true,
+            "description": "Active l'assignation automatique",
+            "example": true,
+            "type": "boolean"
+          },
           "description": {
             "description": "Description du département",
             "example": "Service client — première ligne de support",
             "type": "string"
           },
+          "maxWorkloadPerAgent": {
+            "default": 100,
+            "description": "Charge maximale par agent",
+            "example": 100,
+            "type": "number"
+          },
           "name": {
             "description": "Nom du département",
             "example": "Customer Care",
             "type": "string"
+          },
+          "workloadWeights": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/WorkloadWeightsDto"
+              }
+            ],
+            "description": "Pondération de la charge (priorité / sévérité)"
           }
         },
         "required": [
@@ -4593,6 +4633,17 @@
             "description": "Nouveau rôle d'agent ciblé",
             "example": "NOC_ENGINEER",
             "type": "object"
+          },
+          "targetRoles": {
+            "description": "Rôles d'agents ciblés par cette catégorie pour l'auto-assignation",
+            "example": [
+              "NOC_ENGINEER",
+              "TECHNICAL_SUPPORT_ENGINEER"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
           }
         },
         "type": "object"
@@ -4614,14 +4665,40 @@
       },
       "UpdateDepartmentDto": {
         "properties": {
+          "assignmentStrategy": {
+            "description": "Algorithme d'assignation (LEAST_LOADED par défaut, ROUND_ROBIN alternatif)",
+            "enum": [
+              "ROUND_ROBIN",
+              "LEAST_LOADED"
+            ],
+            "type": "string"
+          },
+          "autoAssignmentEnabled": {
+            "description": "Active l'assignation automatique",
+            "example": true,
+            "type": "boolean"
+          },
           "description": {
             "description": "Nouvelle description du département",
             "type": "string"
+          },
+          "maxWorkloadPerAgent": {
+            "description": "Charge maximale par agent",
+            "example": 100,
+            "type": "number"
           },
           "name": {
             "description": "Nouveau nom du département",
             "example": "Network Operations Center",
             "type": "string"
+          },
+          "workloadWeights": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/WorkloadWeightsDto"
+              }
+            ],
+            "description": "Pondération de la charge (priorité / sévérité)"
           }
         },
         "type": "object"
@@ -4813,6 +4890,12 @@
       },
       "UpdateUserDto": {
         "properties": {
+          "absenceEndsAt": {
+            "description": "Fin d'absence (ISO 8601)",
+            "example": "2026-08-20T18:00:00.000Z",
+            "nullable": true,
+            "type": "string"
+          },
           "departmentId": {
             "description": "ID du département (UUID)",
             "example": "018b3d6f-7e8c-7123-89ab-cdef01234567",
@@ -4822,6 +4905,11 @@
             "description": "Prénom",
             "example": "Jean",
             "type": "string"
+          },
+          "isAvailable": {
+            "description": "Disponibilité de l'agent (false = pause)",
+            "example": true,
+            "type": "boolean"
           },
           "lastName": {
             "description": "Nom de famille",
@@ -5043,6 +5131,25 @@
           "data",
           "message"
         ],
+        "type": "object"
+      },
+      "WorkloadWeightsDto": {
+        "properties": {
+          "priority": {
+            "description": "Poids par priorité (LOW, MEDIUM, HIGH, CRITICAL)",
+            "example": {
+              "HIGH": 3
+            },
+            "type": "object"
+          },
+          "severity": {
+            "description": "Poids par sévérité (S1 à S4)",
+            "example": {
+              "S1": 5
+            },
+            "type": "object"
+          }
+        },
         "type": "object"
       }
     },

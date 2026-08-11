@@ -22,7 +22,8 @@ export class TicketAssignmentTargetService {
   constructor(private readonly drizzle: DrizzleProvider) {}
 
   /**
-   * Vérifie que l'agent ciblé est actif, présent et membre du département destinataire.
+   * Vérifie que l'agent ciblé est actif, disponible (ni pause, ni absence),
+   * et membre du département destinataire.
    *
    * @param userId UUID de l'agent destinataire.
    * @param departmentId UUID du département assigné au ticket.
@@ -30,7 +31,7 @@ export class TicketAssignmentTargetService {
    */
   async assertEligible(userId: string, departmentId: string): Promise<void> {
     const [target] = await this.drizzle.db
-      .select({ id: users.id })
+      .select({ id: users.id, isAvailable: users.isAvailable, absenceEndsAt: users.absenceEndsAt })
       .from(users)
       .where(
         and(
@@ -44,6 +45,16 @@ export class TicketAssignmentTargetService {
 
     if (!target) {
       throw new BadRequestException("L'utilisateur cible doit être actif et appartenir au département assigné.");
+    }
+
+    if (!target.isAvailable) {
+      throw new BadRequestException("L'utilisateur cible est en pause ou indisponible : assignation refusée.");
+    }
+
+    if (target.absenceEndsAt && target.absenceEndsAt > new Date()) {
+      throw new BadRequestException(
+        `L'utilisateur cible est en absence jusqu'au ${target.absenceEndsAt.toISOString()} : assignation refusée.`,
+      );
     }
   }
 }

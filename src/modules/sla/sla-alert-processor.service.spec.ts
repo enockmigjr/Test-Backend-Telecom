@@ -93,8 +93,12 @@ describe('SlaAlertProcessorService', () => {
 
     await service.process();
 
-    expect(updateQuery.set).toHaveBeenCalledWith({ firstResponseBreachedAt: expect.any(Date), slaBreached: true });
-    expect(updateQuery.set).toHaveBeenCalledWith({ resolutionBreachedAt: expect.any(Date), slaBreached: true });
+    expect(updateQuery.set).toHaveBeenCalledWith(
+      expect.objectContaining({ firstResponseBreachedAt: expect.any(Date), slaBreached: true }),
+    );
+    expect(updateQuery.set).toHaveBeenCalledWith(
+      expect.objectContaining({ resolutionBreachedAt: expect.any(Date), slaBreached: true }),
+    );
     expect(updateQuery.set).toHaveBeenCalledWith({ firstResponseWarningSentAt: expect.any(Date) });
     expect(updateQuery.set).toHaveBeenCalledWith({ resolutionWarningSentAt: expect.any(Date) });
     expect(notifier.notifyBreach).toHaveBeenNthCalledWith(1, firstResponseBreach, 'FIRST_RESPONSE', expect.any(Date));
@@ -119,7 +123,7 @@ describe('SlaAlertProcessorService', () => {
 
   it('ignore une alerte deja reclamee par une autre instance', async () => {
     selectQuery.limit.mockResolvedValueOnce([ticket('concurrent')]).mockResolvedValue([]);
-    updateQuery.returning.mockResolvedValueOnce([]);
+    updateQuery.returning.mockResolvedValueOnce([]).mockResolvedValue([]);
 
     await service.process();
 
@@ -134,10 +138,14 @@ describe('SlaAlertProcessorService', () => {
 
     await service.process();
 
-    expect(updateQuery.set).toHaveBeenCalledWith({ firstResponseBreachedAt: expect.any(Date), slaBreached: true });
-    expect(updateQuery.set).toHaveBeenCalledWith({
-      firstResponseBreachedAt: null,
-      slaBreached: expect.anything(),
-    });
+    expect(updateQuery.set).toHaveBeenCalledWith(
+      expect.objectContaining({ firstResponseBreachedAt: expect.any(Date), slaBreached: true }),
+    );
+    expect(updateQuery.set).toHaveBeenCalledWith(
+      expect.objectContaining({
+        firstResponseBreachedAt: null,
+        slaBreached: expect.anything(),
+      }),
+    );
   });
 });

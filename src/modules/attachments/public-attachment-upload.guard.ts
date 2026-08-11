@@ -42,8 +42,9 @@ export class PublicAttachmentUploadGuard implements CanActivate {
       .from(supportIntegrations)
       .where(and(eq(supportIntegrations.id, principal.supportIntegrationId), eq(supportIntegrations.status, 'ACTIVE')))
       .limit(1);
-    if (!integration || integration.features['publicAttachments'] !== true)
-      throw new NotFoundException('Fonction indisponible.');
+    const attachmentsEnabled =
+      integration.features['attachments'] === true || integration.features['publicAttachments'] === true;
+    if (!integration || !attachmentsEnabled) throw new NotFoundException('Fonction indisponible.');
     if (!(await this.antivirus.health())) throw new ServiceUnavailableException('Analyse antivirus indisponible.');
     await this.quotas.consume(
       'attachment-upload',

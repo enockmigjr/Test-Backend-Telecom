@@ -75,6 +75,8 @@ export class UsersService {
         lastName: users.lastName,
         role: users.role,
         isActive: users.isActive,
+        isAvailable: users.isAvailable,
+        absenceEndsAt: users.absenceEndsAt,
         departmentId: users.departmentId,
         departmentName: departments.name,
         lastLoginAt: users.lastLoginAt,
@@ -106,6 +108,8 @@ export class UsersService {
         lastName: users.lastName,
         role: users.role,
         isActive: users.isActive,
+        isAvailable: users.isAvailable,
+        absenceEndsAt: users.absenceEndsAt,
         mustChangePassword: users.mustChangePassword,
         departmentId: users.departmentId,
         lastLoginAt: users.lastLoginAt,
@@ -283,6 +287,10 @@ export class UsersService {
     if (dto.lastName !== undefined) updateData['lastName'] = dto.lastName;
     if (dto.role !== undefined) updateData['role'] = dto.role;
     if (dto.departmentId !== undefined) updateData['departmentId'] = dto.departmentId;
+    if (dto.isAvailable !== undefined) updateData['isAvailable'] = dto.isAvailable;
+    if (dto.absenceEndsAt !== undefined) {
+      updateData['absenceEndsAt'] = dto.absenceEndsAt === null ? null : new Date(dto.absenceEndsAt);
+    }
 
     if (Object.keys(updateData).length === 0) {
       throw new BadRequestException('Aucune donnée à mettre à jour.');

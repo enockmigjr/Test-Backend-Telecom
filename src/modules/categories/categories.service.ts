@@ -71,6 +71,7 @@ export class CategoriesService {
       name: dto.name,
       description: dto.description || null,
       targetRole: dto.targetRole || null,
+      targetRoles: this.resolveTargetRoles(dto),
     });
 
     this.logger.log(`Catégorie créée: ${dto.name} (${id})`);
@@ -105,6 +106,10 @@ export class CategoriesService {
     if (dto.name) updateData['name'] = dto.name;
     if (dto.description !== undefined) updateData['description'] = dto.description;
     if (dto.targetRole !== undefined) updateData['targetRole'] = dto.targetRole;
+    if (dto.targetRoles !== undefined) {
+      updateData['targetRoles'] = dto.targetRoles.length > 0 ? dto.targetRoles : null;
+      if (dto.targetRole === undefined) updateData['targetRole'] = dto.targetRoles[0] ?? null;
+    }
 
     await this.drizzle.db.update(categories).set(updateData).where(eq(categories.id, id));
 
@@ -144,5 +149,13 @@ export class CategoriesService {
     await this.drizzle.db.delete(categories).where(eq(categories.id, id));
     this.logger.log(`Catégorie supprimée: ${id}`);
     return { message: 'Catégorie supprimée avec succès.' };
+  }
+
+  /**
+   * Résout les rôles cibles : priorité au tableau `targetRoles`, repli sur `targetRole`.
+   */
+  private resolveTargetRoles(dto: CreateCategoryDto | UpdateCategoryDto): string[] | null {
+    if (dto.targetRoles && dto.targetRoles.length > 0) return [...dto.targetRoles];
+    return dto.targetRole ? [dto.targetRole] : null;
   }
 }

@@ -32,7 +32,7 @@ describe('TicketAssignmentTargetService', () => {
   /** Test : accepte uniquement une cible active du departement attendu */
 
   it('accepte uniquement une cible active du departement attendu', async () => {
-    limit.mockResolvedValue([{ id: 'user-001' }]);
+    limit.mockResolvedValue([{ id: 'user-001', isAvailable: true, absenceEndsAt: null }]);
 
     await expect(service.assertEligible('user-001', 'dept-001')).resolves.toBeUndefined();
   });
@@ -43,5 +43,21 @@ describe('TicketAssignmentTargetService', () => {
     limit.mockResolvedValue([]);
 
     await expect(service.assertEligible('user-002', 'dept-001')).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  /** Test : refuse une cible en pause ou indisponible */
+
+  it('refuse une cible en pause ou indisponible', async () => {
+    limit.mockResolvedValue([{ id: 'user-003', isAvailable: false, absenceEndsAt: null }]);
+
+    await expect(service.assertEligible('user-003', 'dept-001')).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  /** Test : refuse une cible en absence non terminee */
+
+  it('refuse une cible en absence non terminee', async () => {
+    limit.mockResolvedValue([{ id: 'user-004', isAvailable: true, absenceEndsAt: new Date(Date.now() + 86400000) }]);
+
+    await expect(service.assertEligible('user-004', 'dept-001')).rejects.toBeInstanceOf(BadRequestException);
   });
 });

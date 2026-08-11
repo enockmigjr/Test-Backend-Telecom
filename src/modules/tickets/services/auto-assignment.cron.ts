@@ -13,7 +13,7 @@
 
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
-import { eq, and, isNull, or, inArray, sql, lte, gt } from 'drizzle-orm';
+import { eq, and, isNull, or, inArray, sql, lte, gt, lt } from 'drizzle-orm';
 import { DrizzleProvider } from '../../../database/drizzle.provider';
 import { tickets, users, ticketHistory } from '../../../database/schemas';
 import { AssignmentEngineService } from './assignment-engine.service';
@@ -86,6 +86,9 @@ export class AutoAssignmentCron {
 
       // 3. Gérer les indisponibilités / absences prolongées et déloguer proprement si risque SLA
       await this.consolidateInactiveAgentsWorkload(now);
+
+      // 3bis. Escalader les tickets ASSIGNED en retard sans activité depuis le dépassement SLA
+      await this.escalateStaleOverdueTickets(now);
 
       // 4. Traiter les tickets non assignés en lots (critiques en premier)
       const unassignedTickets = await this.drizzle.db
@@ -260,6 +263,55 @@ export class AutoAssignmentCron {
           });
         });
       }
+    }
+  }
+
+  /**
+   * Escalade les tickets ASSIGNED dont l'echeance de resolution est depassee sans
+   * aucune activite depuis (updatedAt <= resolutionDueAt) : desassignation systeme
+   * puis re-acheminement vers le meilleur agent disponible. Borne a 10 par passage
+   * pour eviter tout effet de cascade ; l'horodatage est mis a jour pour eviter un re-déclenchement immediat.
+   */
+  private async escalateStaleOverdueTickets(now: Date): Promise<void> {
+    const candidates = await this.drizzle.db
+      .select({
+        id: tickets.id,
+        ticketNumber: tickets.ticketNumber,
+        supportIntegrationId: tickets.supportIntegrationId,
+      })
+      .from(tickets)
+      .where(
+        and(
+          eq(tickets.status, 'ASSIGNED'),
+          isNull(tickets.deletedAt),
+          isNull(tickets.slaPausedAt),
+          lt(tickets.resolutionDueAt, now),
+          lte(tickets.updatedAt, tickets.resolutionDueAt),
+        ),
+      )
+      .orderBy(tickets.resolutionDueAt)
+      .limit(10);
+
+    for (const ticket of candidates) {
+      await this.drizzle.runInTransaction(async () => {
+        await this.drizzle.db
+          .update(tickets)
+          .set({ assignedTo: null, status: 'REOPENED', updatedAt: now })
+          .where(eq(tickets.id, ticket.id));
+        await this.drizzle.db.insert(ticketHistory).values({
+          id: generateUuid(),
+          ticketId: ticket.id,
+          userId: null,
+          actorType: 'SYSTEM',
+          supportIntegrationId: ticket.supportIntegrationId,
+          action: 'STATUS_CHANGED',
+          oldValue: { status: 'ASSIGNED' },
+          newValue: { assignedTo: null, status: 'REOPENED' },
+          metadata: { reason: 'Escalade automatique : SLA de resolution depasse sans activite.' },
+        });
+      });
+      const routed = await this.assignmentEngine.routeTicket(ticket.id);
+      this.logger.log(`Ticket ${ticket.ticketNumber} en retard escalade automatiquement (routage reussi: ${routed}).`);
     }
   }
 }

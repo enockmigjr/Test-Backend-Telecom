@@ -59,7 +59,14 @@ export class DepartmentsService {
    * @param dto Nom et description optionnelle du département.
    * @throws ConflictException si le nom est déjà utilisé.
    */
-  async create(dto: { name: string; description?: string }) {
+  async create(dto: {
+    name: string;
+    description?: string;
+    autoAssignmentEnabled?: boolean;
+    assignmentStrategy?: string;
+    maxWorkloadPerAgent?: number;
+    workloadWeights?: { priority?: Record<string, number>; severity?: Record<string, number> } | null;
+  }) {
     const [existing] = await this.drizzle.db
       .select({ id: departments.id })
       .from(departments)
@@ -75,6 +82,10 @@ export class DepartmentsService {
       id,
       name: dto.name,
       description: dto.description || null,
+      autoAssignmentEnabled: dto.autoAssignmentEnabled ?? true,
+      assignmentStrategy: dto.assignmentStrategy ?? 'LEAST_LOADED',
+      maxWorkloadPerAgent: dto.maxWorkloadPerAgent ?? 100,
+      workloadWeights: dto.workloadWeights ?? null,
     });
 
     this.logger.log(`Département créé: ${dto.name} (${id})`);
@@ -90,12 +101,26 @@ export class DepartmentsService {
    * @param id UUID du département.
    * @param dto Modifications demandées.
    */
-  async update(id: string, dto: { name?: string; description?: string }) {
+  async update(
+    id: string,
+    dto: {
+      name?: string;
+      description?: string;
+      autoAssignmentEnabled?: boolean;
+      assignmentStrategy?: string;
+      maxWorkloadPerAgent?: number;
+      workloadWeights?: { priority?: Record<string, number>; severity?: Record<string, number> } | null;
+    },
+  ) {
     await this.findOne(id); // Vérifie l'existence du département
 
     const updateData: Record<string, unknown> = {};
     if (dto.name) updateData['name'] = dto.name;
     if (dto.description !== undefined) updateData['description'] = dto.description;
+    if (dto.autoAssignmentEnabled !== undefined) updateData['autoAssignmentEnabled'] = dto.autoAssignmentEnabled;
+    if (dto.assignmentStrategy !== undefined) updateData['assignmentStrategy'] = dto.assignmentStrategy;
+    if (dto.maxWorkloadPerAgent !== undefined) updateData['maxWorkloadPerAgent'] = dto.maxWorkloadPerAgent;
+    if (dto.workloadWeights !== undefined) updateData['workloadWeights'] = dto.workloadWeights;
 
     await this.drizzle.db.update(departments).set(updateData).where(eq(departments.id, id));
 

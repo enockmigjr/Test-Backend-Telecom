@@ -11,7 +11,7 @@
  */
 
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsUUID, IsIn, MaxLength, IsOptional } from 'class-validator';
+import { IsString, IsUUID, IsIn, MaxLength, IsOptional, IsBoolean, IsDateString } from 'class-validator';
 
 /** Liste canonique des 7 rôles autorisés dans l'application. */
 const VALID_ROLES = [
@@ -54,4 +54,21 @@ export class UpdateUserDto {
   @IsOptional()
   @IsUUID('all', { message: "L'identifiant du département doit être un UUID valide." })
   departmentId?: string;
+
+  /** Disponibilité de l'agent pour l'assignation (pause volontaire). */
+  @ApiPropertyOptional({ description: "Disponibilité de l'agent (false = pause)", example: true })
+  @IsOptional()
+  @IsBoolean()
+  isAvailable?: boolean;
+
+  /** Fin d'absence (vide pour annuler une absence en cours). */
+  @ApiPropertyOptional({
+    description: "Fin d'absence (ISO 8601)",
+    example: '2026-08-20T18:00:00.000Z',
+    type: String,
+    nullable: true,
+  })
+  @IsOptional()
+  @IsDateString()
+  absenceEndsAt?: string | null;
 }

@@ -178,6 +178,7 @@ describe('DashboardService', () => {
       avgResolutionTimeMinutes: 80,
       medianResolutionTimeMinutes: 55,
       p90ResolutionTimeMinutes: 175,
+      resolvedCount: 7,
     });
     expect(result.trend).toEqual([
       { period: '2026-07-06T00:00:00.000Z', avgResolutionTimeMinutes: 60.5 },

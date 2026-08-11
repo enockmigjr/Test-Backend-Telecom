@@ -152,8 +152,10 @@ export class PublicConversationAttachmentsService {
       .from(supportIntegrations)
       .where(and(eq(supportIntegrations.id, principal.supportIntegrationId), eq(supportIntegrations.status, 'ACTIVE')))
       .limit(1);
-    if (!integration || integration.features['publicAttachments'] !== true)
-      throw new NotFoundException('Fonction indisponible.');
+    if (!integration) throw new NotFoundException('Fonction indisponible.');
+    const attachmentsEnabled =
+      integration.features['attachments'] === true || integration.features['publicAttachments'] === true;
+    if (!attachmentsEnabled) throw new NotFoundException('Fonction indisponible.');
     const hourly = numberPolicy(integration.quotaPolicy['attachmentUploadsPerHour'], 20);
     const [used] = await this.drizzle.db
       .select({ count: count() })

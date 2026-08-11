@@ -79,7 +79,10 @@ export class DashboardService {
     }
 
     const rangeWhere = and(...conditions);
-    const openWhere = and(rangeWhere, sql`${tickets.status} NOT IN ('RESOLVED','CLOSED','CANCELLED')`);
+    const slaScope = [isNull(tickets.deletedAt), sql`${tickets.status} NOT IN ('RESOLVED','CLOSED','CANCELLED')`];
+    if (currentUser?.role === 'SUPERVISOR') slaScope.push(eq(tickets.assignedTeamId, currentUser.departmentId));
+    // Les indicateurs SLA portent sur tous les tickets ouverts, quelle que soit la période de création.
+    const openWhere = and(...slaScope);
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const tomorrowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
@@ -89,37 +92,43 @@ export class DashboardService {
     }
 
     // Exécution parallèle des 7 requêtes d'agrégation d'indicateurs
-    const [[totals], [openTickets], [], [resolvedToday], [createdToday], [breachedCount], [atRiskCount]] =
-      await Promise.all([
-        this.drizzle.db.select({ total: count() }).from(tickets).where(rangeWhere),
-        this.drizzle.db.select({ count: count() }).from(tickets).where(openWhere),
-        this.drizzle.db
-          .select({ count: count() })
-          .from(tickets)
-          .where(and(openWhere, eq(tickets.priority, 'CRITICAL' as const))),
-        this.drizzle.db
-          .select({ count: count() })
-          .from(tickets)
-          .where(and(...todayScope, gte(tickets.resolvedAt, todayStart), lt(tickets.resolvedAt, tomorrowStart))),
-        this.drizzle.db
-          .select({ count: count() })
-          .from(tickets)
-          .where(and(...todayScope, gte(tickets.createdAt, todayStart), lt(tickets.createdAt, tomorrowStart))),
-        this.drizzle.db
-          .select({ count: count() })
-          .from(tickets)
-          .where(and(openWhere, eq(tickets.slaBreached, true))),
-        this.drizzle.db
-          .select({ count: count() })
-          .from(tickets)
-          .where(
-            and(
-              openWhere,
-              gte(tickets.resolutionDueAt, new Date()),
-              lte(tickets.resolutionDueAt, new Date(Date.now() + 30 * 60 * 1000)),
-            ),
-          ),
-      ]);
+    const [
+      [totals],
+      [openTickets],
+      [],
+      [resolvedToday],
+      [createdToday],
+      [breachedCount],
+      [atRiskCount],
+      [overdueCount],
+    ] = await Promise.all([
+      this.drizzle.db.select({ total: count() }).from(tickets).where(rangeWhere),
+      this.drizzle.db.select({ count: count() }).from(tickets).where(openWhere),
+      this.drizzle.db
+        .select({ count: count() })
+        .from(tickets)
+        .where(and(openWhere, eq(tickets.priority, 'CRITICAL' as const))),
+      this.drizzle.db
+        .select({ count: count() })
+        .from(tickets)
+        .where(and(...todayScope, gte(tickets.resolvedAt, todayStart), lt(tickets.resolvedAt, tomorrowStart))),
+      this.drizzle.db
+        .select({ count: count() })
+        .from(tickets)
+        .where(and(...todayScope, gte(tickets.createdAt, todayStart), lt(tickets.createdAt, tomorrowStart))),
+      this.drizzle.db
+        .select({ count: count() })
+        .from(tickets)
+        .where(and(openWhere, eq(tickets.slaBreached, true))),
+      this.drizzle.db
+        .select({ count: count() })
+        .from(tickets)
+        .where(and(openWhere, lte(tickets.resolutionDueAt, new Date(Date.now() + 30 * 60 * 1000)))),
+      this.drizzle.db
+        .select({ count: count() })
+        .from(tickets)
+        .where(and(openWhere, lt(tickets.resolutionDueAt, new Date()))),
+    ]);
 
     const byStatus = await this.drizzle.db
       .select({ status: tickets.status, count: count() })
@@ -155,6 +164,7 @@ export class DashboardService {
         totalTracked: total,
         breached: Number(breachedCount?.count || 0),
         atRisk: Number(atRiskCount?.count || 0),
+        overdue: Number(overdueCount?.count || 0),
         compliant,
         complianceRate: total > 0 ? Number(((compliant / total) * 100).toFixed(2)) : 100,
       },
@@ -308,7 +318,7 @@ export class DashboardService {
         openTicketsCount: count(),
         criticalTicketsCount: sql<number>`COUNT(*) FILTER (WHERE ${tickets.priority} = 'CRITICAL')`,
         highTicketsCount: sql<number>`COUNT(*) FILTER (WHERE ${tickets.priority} = 'HIGH')`,
-        slaAtRiskCount: sql<number>`COUNT(*) FILTER (WHERE ${tickets.slaBreached} = false AND ${tickets.resolutionDueAt} <= NOW() + INTERVAL '30 minutes')`,
+        slaAtRiskCount: sql<number>`COUNT(*) FILTER (WHERE ${tickets.resolutionDueAt} <= NOW() + INTERVAL '30 minutes')`,
       })
       .from(tickets)
       .leftJoin(users, eq(tickets.assignedTo, users.id))
@@ -403,6 +413,7 @@ export class DashboardService {
         avgResolutionTimeMinutes: Math.round(Number(stats?.avgMinutes || 0)),
         medianResolutionTimeMinutes: Math.round(Number(stats?.medianMinutes || 0)),
         p90ResolutionTimeMinutes: Math.round(Number(stats?.p90Minutes || 0)),
+        resolvedCount: Number(stats?.resolvedCount || 0),
       },
       trend: trend.map((point) => ({
         period: new Date(point.period).toISOString(),

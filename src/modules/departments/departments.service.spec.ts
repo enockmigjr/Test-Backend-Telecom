@@ -202,6 +202,10 @@ describe('DepartmentsService', () => {
         id: '0192abcd-1234-7000-8000-000000000001',
         name: 'Support Technique',
         description: 'Departement support technique',
+        autoAssignmentEnabled: true,
+        assignmentStrategy: 'LEAST_LOADED',
+        maxWorkloadPerAgent: 100,
+        workloadWeights: null,
       });
       expect(result.message).toContain('créé');
       expect(result.data).toEqual(mockDepartment);

@@ -157,7 +157,8 @@ export class PublicAttachmentsService {
       .from(supportIntegrations)
       .where(and(eq(supportIntegrations.id, integrationId), eq(supportIntegrations.status, 'ACTIVE')))
       .limit(1);
-    if (!value || value.features['publicAttachments'] !== true) throw new NotFoundException('Fonction indisponible.');
+    const attachmentsEnabled = value.features['attachments'] === true || value.features['publicAttachments'] === true;
+    if (!value || !attachmentsEnabled) throw new NotFoundException('Fonction indisponible.');
     return value;
   }
 

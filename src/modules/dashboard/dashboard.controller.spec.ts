@@ -36,7 +36,7 @@ const overviewResult = {
   byStatus: { NEW: 10, ASSIGNED: 15, IN_PROGRESS: 20, RESOLVED: 80, CLOSED: 25 },
   byPriority: { LOW: 30, MEDIUM: 50, HIGH: 40, CRITICAL: 30 },
   bySeverity: { MINOR: 40, MAJOR: 60, CRITICAL: 50 },
-  sla: { totalTracked: 150, breached: 5, atRisk: 3, compliant: 145, complianceRate: 96.67 },
+  sla: { totalTracked: 150, breached: 5, atRisk: 3, overdue: 2, compliant: 145, complianceRate: 96.67 },
 };
 
 const ticketsByStatusResult = {
@@ -81,6 +81,7 @@ const slaComplianceResult = {
     firstResponseBreached: 3,
     resolutionBreached: 5,
     atRisk: 0,
+    overdue: 0,
     complianceRate: 96.67,
     firstResponseComplianceRate: 96.67,
     resolutionComplianceRate: 96.67,
@@ -132,7 +133,12 @@ const workloadResult = {
 
 const resolutionTimeResult = {
   period: { from: '2026-01-01T00:00:00Z', to: '2026-06-30T23:59:59Z' },
-  overall: { avgResolutionTimeMinutes: 360, medianResolutionTimeMinutes: 274, p90ResolutionTimeMinutes: 925 },
+  overall: {
+    avgResolutionTimeMinutes: 360,
+    medianResolutionTimeMinutes: 274,
+    p90ResolutionTimeMinutes: 925,
+    resolvedCount: 0,
+  },
   trend: [],
 };
 

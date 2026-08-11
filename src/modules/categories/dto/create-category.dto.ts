@@ -12,7 +12,7 @@
  */
 
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, MaxLength, IsOptional, IsIn } from 'class-validator';
+import { IsString, IsNotEmpty, MaxLength, IsOptional, IsIn, IsArray, ArrayUnique } from 'class-validator';
 
 /** Liste des rôles d'agents opérationnels éligibles à l'auto-assignation ciblée par catégorie. */
 const TARGET_AGENT_ROLES = [
@@ -49,6 +49,18 @@ export class CreateCategoryDto {
   @IsString()
   @IsIn(TARGET_AGENT_ROLES, { message: "Rôle d'agent cible invalide." })
   targetRole?: (typeof TARGET_AGENT_ROLES)[number];
+
+  /** Un ou plusieurs rôles d'agents spécialisés ciblés par l'auto-assignation. */
+  @ApiPropertyOptional({
+    description: "Rôles d'agents ciblés par cette catégorie pour l'auto-assignation",
+    example: ['NOC_ENGINEER', 'TECHNICAL_SUPPORT_ENGINEER'],
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique({ message: "Les rôles d'agents cibles doivent être uniques." })
+  @IsIn(TARGET_AGENT_ROLES, { each: true, message: "Rôle d'agent cible invalide." })
+  targetRoles?: (typeof TARGET_AGENT_ROLES)[number][];
 }
 
 /**
@@ -74,4 +86,16 @@ export class UpdateCategoryDto {
   @IsString()
   @IsIn(TARGET_AGENT_ROLES, { message: "Rôle d'agent cible invalide." })
   targetRole?: (typeof TARGET_AGENT_ROLES)[number];
+
+  /** Nouveaux rôles d'agents ciblés par l'auto-assignation (facultatif). */
+  @ApiPropertyOptional({
+    description: "Rôles d'agents ciblés par cette catégorie pour l'auto-assignation",
+    example: ['NOC_ENGINEER', 'TECHNICAL_SUPPORT_ENGINEER'],
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique({ message: "Les rôles d'agents cibles doivent être uniques." })
+  @IsIn(TARGET_AGENT_ROLES, { each: true, message: "Rôle d'agent cible invalide." })
+  targetRoles?: (typeof TARGET_AGENT_ROLES)[number][];
 }
