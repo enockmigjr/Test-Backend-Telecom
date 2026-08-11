@@ -76,3 +76,4 @@ Les superviseurs et administrateurs disposent d'Ã©crans utiles, denses et audita
 - Dashboard : carte « SLA en retard » (overdue), résolution moyenne « — » si aucune résolution sur la période, SLA masqué pour les tickets clos dans la liste.
 - Admin : formulaire départements (algorithme, auto-assignation, charge max), catégories multi-rôles, pause/absence utilisateur avec badge d'état.
 - Contrats OpenAPI régénérés et types frontend synchronisés.
+- Workload : colonnes « En retard » et « Disponibilité » par agent, résumé bsentAgentsCount, carte « Agents en pause/absence » au Dashboard.

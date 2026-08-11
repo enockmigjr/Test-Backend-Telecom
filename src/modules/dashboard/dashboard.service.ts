@@ -315,15 +315,18 @@ export class DashboardService {
         firstName: users.firstName,
         lastName: users.lastName,
         email: users.email,
+        isAvailable: users.isAvailable,
+        absenceEndsAt: users.absenceEndsAt,
         openTicketsCount: count(),
         criticalTicketsCount: sql<number>`COUNT(*) FILTER (WHERE ${tickets.priority} = 'CRITICAL')`,
         highTicketsCount: sql<number>`COUNT(*) FILTER (WHERE ${tickets.priority} = 'HIGH')`,
         slaAtRiskCount: sql<number>`COUNT(*) FILTER (WHERE ${tickets.resolutionDueAt} <= NOW() + INTERVAL '30 minutes')`,
+        overdueTicketsCount: sql<number>`COUNT(*) FILTER (WHERE ${tickets.resolutionDueAt} < NOW())`,
       })
       .from(tickets)
       .leftJoin(users, eq(tickets.assignedTo, users.id))
       .where(where)
-      .groupBy(tickets.assignedTo, users.firstName, users.lastName, users.email);
+      .groupBy(tickets.assignedTo, users.firstName, users.lastName, users.email, users.isAvailable, users.absenceEndsAt);
 
     const unassignedConditions = [
       isNull(tickets.deletedAt),
@@ -337,6 +340,12 @@ export class DashboardService {
       .from(tickets)
       .where(and(...unassignedConditions));
 
+    const now = new Date();
+    const absentAgentsCount = data.filter((agent) => {
+      if (agent.isAvailable === false) return true;
+      return agent.absenceEndsAt ? new Date(agent.absenceEndsAt) > now : false;
+    }).length;
+
     return {
       generatedAt: new Date().toISOString(),
       data: data.map((a) => ({
@@ -345,10 +354,12 @@ export class DashboardService {
         criticalTicketsCount: Number(a.criticalTicketsCount || 0),
         highTicketsCount: Number(a.highTicketsCount || 0),
         slaAtRiskCount: Number(a.slaAtRiskCount || 0),
+        overdueTicketsCount: Number(a.overdueTicketsCount || 0),
       })),
       summary: {
         totalAgents: data.length,
         totalOpenTickets: data.reduce((sum, a) => sum + Number(a.openTicketsCount), 0),
+        absentAgentsCount,
         avgTicketsPerAgent:
           data.length > 0
             ? Number((data.reduce((sum, a) => sum + Number(a.openTicketsCount), 0) / data.length).toFixed(1))

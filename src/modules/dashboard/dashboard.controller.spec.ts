@@ -126,9 +126,12 @@ const workloadResult = {
       criticalTicketsCount: 2,
       highTicketsCount: 3,
       slaAtRiskCount: 1,
+      overdueTicketsCount: 0,
+      isAvailable: true,
+      absenceEndsAt: null,
     },
   ],
-  summary: { totalAgents: 1, totalOpenTickets: 10, avgTicketsPerAgent: 10.0, unassignedTickets: 5 },
+  summary: { totalAgents: 1, totalOpenTickets: 10, absentAgentsCount: 0, avgTicketsPerAgent: 10.0, unassignedTickets: 5 },
 };
 
 const resolutionTimeResult = {
