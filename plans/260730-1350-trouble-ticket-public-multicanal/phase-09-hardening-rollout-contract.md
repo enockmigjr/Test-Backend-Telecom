@@ -72,3 +72,21 @@ Infrastructure : images, migrations de staging, healthchecks, alertes, sauvegard
 - Aucun accès inter-demandeur ou inter-intégration n’est possible.
 - Le retrait ultérieur du legacy est prouvé sûr, pas seulement supposé.
 - Ajouter un canal nécessite un adaptateur et ses politiques, pas une modification du cœur ticket.
+## Rollout progressif
+
+1. Backend public (sombre) : fait, opérationnel sur la pile compose.
+2. Portail + email pilote : fait (recette validée).
+3. Widget PhotoVault : fait (recette Chromium/Firefox/WebKit validée).
+4. Bot pilote : en attente du fournisseur IA.
+5. Autres intégrations (WhatsApp, sites tiers) : contrat d'adaptateur prêt, activation après décision.
+
+## Drill de pannes (procédure)
+
+- PostgreSQL arrêté : API en erreur 5xx standardisée, démarrage impossible ; restaurer le conteneur puis vérifier outbox (reprise après lease).
+- Redis arrêté : rate-limit dégradé, workers BullMQ en attente ; les tests unitaires simulent déjà Redis indisponible (jwt blacklist, token cleanup).
+- BullMQ arrêté : jobs SLA/delivery relancés au redémarrage (retry borné) ; vérifier external_deliveries (PENDING → FAILED après maxAttempts).
+- Email/Mailpit arrêté : delivery marquée PENDING puis FAILED après 5 tentatives, sans perte métier (ticket déjà créé).
+- ClamAV arrêté : scan en erreur → fichier en QUARANTINE/ERROR, jamais servi (gate antivirus).
+- WebSocket coupé : le portail bascule en polling (repli déjà implémenté).
+- WordPress hors ligne : le widget affiche le fallback pleine page ; aucun ticket n'est stocké côté WP.
+- Fournisseur IA indisponible : le bot répond unavailable → formulaire (couvert par spec).

@@ -1,0 +1,35 @@
+{
+  "generatedAt": "2026-08-11T12:27:41.349Z",
+  "repos": {
+    "backend": {
+      "path": "D:/Projet-KAMGOKO/Test Backend Telecom",
+      "sha": "e9efe5b61b6b1734c8ecb03e636effde3cca7907",
+      "version": "1.0.0"
+    },
+    "frontend": {
+      "path": "D:/Projet-KAMGOKO/Test Backend Telecom/frontend",
+      "sha": "7d96935d081339af0b50c383dad4cd17dbd9252c",
+      "version": "1.0.0"
+    },
+    "public-frontend": {
+      "path": "D:/Projet-KAMGOKO/Test Backend Telecom/public-frontend",
+      "sha": "0aa01b0ec45a80251316279b7f5723c6a78e0151",
+      "version": "0.1.0"
+    },
+    "connector": {
+      "path": "C:/xampp/htdocs/site-wordpress1/wp-content/plugins/trouble-ticket-connector",
+      "sha": "b85dd7f9394e136b3db9a1d49df2bb8704d57ddf",
+      "version": "n/a"
+    },
+    "photovault": {
+      "path": "C:/xampp/htdocs/site-wordpress1/wp-content/themes/PhotoVault",
+      "sha": "bab7cb27744b4a4dc9c23a6e7da3794720f9dada",
+      "version": "1.0.0"
+    }
+  },
+  "tests": {
+    "backend": "598 unitaires / 87 suites (hook husky)",
+    "frontend": "72 tests / 26 suites",
+    "public-frontend": "59 tests / 8 suites"
+  }
+}
