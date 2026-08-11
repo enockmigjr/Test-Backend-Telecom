@@ -14,7 +14,10 @@ export class ExternalRequesterQueryDto {
   @MaxLength(160)
   search?: string;
 
-  @ApiPropertyOptional({ enum: ['true', 'false'], description: 'Filtrer les profils anonymisés (true) ou actifs (false).' })
+  @ApiPropertyOptional({
+    enum: ['true', 'false'],
+    description: 'Filtrer les profils anonymisés (true) ou actifs (false).',
+  })
   @IsOptional()
   @IsIn(['true', 'false'])
   anonymized?: string;
