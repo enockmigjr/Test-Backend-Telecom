@@ -2,7 +2,8 @@
 ## Statut
 
 - Base de connaissance livrée (étapes 1-4) : tables support_knowledge_articles/versions/grants (migration 0015), administration interne (création, édition avec historique append-only, publication/archivage, intégrations autorisées, audit), recherche publique par intégration (articles publiés uniquement) exposée au contrat public et au BFF du portail.
-- Reste : abstraction AiProvider, ToolPolicyService, orchestration SupportBotService (étapes 5-12) et UI conversationnelle du portail.
+- Orchestration bot livrée (étapes 5-8, 12) : interface AiProvider stricte (aucun fournisseur factice en production), ToolPolicyService (liste fermée knowledge_search/save_draft/request_human, exécution déterministe), SupportBotService (historique borné, exécution des outils, métadonnées modèle/prompt/latence/coût/confiance, repli formulaire quand le fournisseur est absent ou en erreur), endpoint public POST conversations/:id/bot et feature flag features.bot par intégration.
+- Reste : adaptateur fournisseur reel (decision requise), budget/coupe-circuit avances, UI conversationnelle du portail (etapes 9-11).
 
 ## Contexte
 
