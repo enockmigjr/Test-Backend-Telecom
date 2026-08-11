@@ -78,6 +78,8 @@ export const RELEASE_RESPONSE_MODELS: Readonly<Record<string, ResponseModel>> = 
   ExternalDeliveriesAdminController_findOne: item('ExternalDeliveryListItemDto'),
   ExternalRequestersController_list: page('ExternalRequesterListItemDto'),
   ExternalRequestersController_detail: item('ExternalRequesterDetailDto'),
+  ExternalRequestersController_mergePreview: item('MergeRequesterPreviewDto'),
+  ExternalRequestersController_merge: item('MergeRequesterResultDto'),
   DepartmentsController_findAll: array('Department'),
   DepartmentsController_findOne: item('Department'),
   DepartmentsController_create: item('Department'),

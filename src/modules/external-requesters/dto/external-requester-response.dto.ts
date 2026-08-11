@@ -50,3 +50,56 @@ export class ExternalRequesterDetailDto extends ExternalRequesterListItemDto {
     identities: ExternalRequesterIdentityDto[];
   };
 }
+
+/** Aperçu des impacts d'une fusion, sans contenu ni valeur d'identité en clair. */
+export class MergeRequesterPreviewDto {
+  @ApiProperty()
+  requesterId: string;
+
+  @ApiProperty({ description: 'Références qui seront rattachées au profil cible.' })
+  moved: {
+    tickets: number;
+    conversations: number;
+    messages: number;
+    comments: number;
+    history: number;
+    trustedDevices: number;
+    identities: number;
+    verificationChallenges: number;
+    outboxEvents: number;
+    bootstrapGrants: number;
+    attachments: number;
+  };
+
+  @ApiProperty({
+    description:
+      'Identités vérifiées du profil source (types et dates uniquement, jamais la valeur).',
+    type: [ExternalRequesterIdentityDto],
+  })
+  identities: ExternalRequesterIdentityDto[];
+
+  @ApiProperty({
+    description: 'Références conservées telles quelles sur le profil source (historique immuable).',
+  })
+  kept: {
+    auditEntries: number;
+    idempotencyRecords: number;
+  };
+}
+
+export class MergeRequesterResultDto {
+  @ApiProperty()
+  merged: boolean;
+
+  @ApiProperty()
+  targetRequesterId: string;
+
+  @ApiProperty({ type: MergeRequesterPreviewDto })
+  moved: MergeRequesterPreviewDto['moved'];
+
+  @ApiProperty()
+  identityCollisionsRemoved: number;
+
+  @ApiProperty({ nullable: true })
+  displayNameAdopted: string | null;
+}

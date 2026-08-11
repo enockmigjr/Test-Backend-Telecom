@@ -1988,6 +1988,75 @@
         ],
         "type": "object"
       },
+      "MergeRequesterDto": {
+        "properties": {
+          "targetRequesterId": {
+            "description": "Profil cible de la fusion, dans la même intégration.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "targetRequesterId"
+        ],
+        "type": "object"
+      },
+      "MergeRequesterPreviewDto": {
+        "properties": {
+          "identities": {
+            "description": "Identités vérifiées du profil source (types et dates uniquement, jamais la valeur).",
+            "items": {
+              "$ref": "#/components/schemas/ExternalRequesterIdentityDto"
+            },
+            "type": "array"
+          },
+          "kept": {
+            "description": "Références conservées telles quelles sur le profil source (historique immuable).",
+            "type": "object"
+          },
+          "moved": {
+            "description": "Références qui seront rattachées au profil cible.",
+            "type": "object"
+          },
+          "requesterId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "requesterId",
+          "moved",
+          "identities",
+          "kept"
+        ],
+        "type": "object"
+      },
+      "MergeRequesterResultDto": {
+        "properties": {
+          "displayNameAdopted": {
+            "nullable": true,
+            "type": "object"
+          },
+          "identityCollisionsRemoved": {
+            "type": "number"
+          },
+          "merged": {
+            "type": "boolean"
+          },
+          "moved": {
+            "$ref": "#/components/schemas/MergeRequesterPreviewDto"
+          },
+          "targetRequesterId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "merged",
+          "targetRequesterId",
+          "moved",
+          "identityCollisionsRemoved",
+          "displayNameAdopted"
+        ],
+        "type": "object"
+      },
       "Notification": {
         "properties": {
           "createdAt": {
@@ -8091,6 +8160,237 @@
           }
         ],
         "summary": "Consulter un demandeur public",
+        "tags": [
+          "external-requesters"
+        ]
+      }
+    },
+    "/api/v1/external-requesters/{id}/merge": {
+      "post": {
+        "description": "Rattache toutes les références du profil source au profil cible (même intégration), supprime les identités en doublon et écrit une trace d’audit. Écriture ADMINISTRATOR uniquement.",
+        "operationId": "ExternalRequestersController_merge",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Clé unique de 1 à 128 caractères, obligatoire pour cette mutation.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MergeRequesterDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/MergeRequesterResultDto"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "maximum": 299,
+                      "minimum": 200,
+                      "type": "integer"
+                    },
+                    "success": {
+                      "enum": [
+                        true
+                      ],
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "statusCode",
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Fusion exécutée."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Fusion refusée (profil anonymisé ou même profil)."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Token JWT manquant ou expiré."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Rôle insuffisant — ADMINISTRATOR requis."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Profil source ou cible introuvable."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Fusionner un demandeur public vers un profil cible",
+        "tags": [
+          "external-requesters"
+        ]
+      }
+    },
+    "/api/v1/external-requesters/{id}/merge/preview": {
+      "post": {
+        "description": "Impacts détaillés sans mutation : tickets, conversations, messages, appareils, identités et doublons potentiels. Lecture ADMINISTRATOR/SUPERVISOR.",
+        "operationId": "ExternalRequestersController_mergePreview",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/MergeRequesterPreviewDto"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "statusCode": {
+                      "maximum": 299,
+                      "minimum": 200,
+                      "type": "integer"
+                    },
+                    "success": {
+                      "enum": [
+                        true
+                      ],
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "statusCode",
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Impacts de la fusion."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Token JWT manquant ou expiré."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Rôle insuffisant."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Demandeur introuvable."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Aperçu d’une fusion de profils demandeur",
         "tags": [
           "external-requesters"
         ]

@@ -1,18 +1,24 @@
-import { Controller, Get, Param, ParseUUIDPipe, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiExtraModels, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { RequireIdempotency } from '../../common/decorators/idempotent.decorator';
+import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { MergeRequesterDto } from './dto/merge-requester.dto';
 import { ExternalRequesterQueryDto } from './dto/external-requester-query.dto';
 import {
   ExternalRequesterDetailDto,
   ExternalRequesterIdentityDto,
   ExternalRequesterListItemDto,
+  MergeRequesterPreviewDto,
+  MergeRequesterResultDto,
 } from './dto/external-requester-response.dto';
 import { ExternalRequestersAdminService } from './services/external-requesters-admin.service';
 
 @ApiTags('external-requesters')
 @ApiBearerAuth()
-@ApiExtraModels(ExternalRequesterDetailDto, ExternalRequesterIdentityDto, ExternalRequesterListItemDto)
+@ApiExtraModels(ExternalRequesterDetailDto, ExternalRequesterIdentityDto, ExternalRequesterListItemDto, MergeRequesterPreviewDto, MergeRequesterResultDto)
 @UseGuards(RolesGuard)
 @Controller('external-requesters')
 export class ExternalRequestersController {
@@ -45,5 +51,37 @@ export class ExternalRequestersController {
   @ApiResponse({ status: 403, description: 'Rôle insuffisant — ADMINISTRATOR ou SUPERVISOR requis.' })
   detail(@Param('id', ParseUUIDPipe) id: string) {
     return this.requesters.detail(id);
+  }
+
+  @Post(':id/merge/preview')
+  @Roles('ADMINISTRATOR', 'SUPERVISOR')
+  @ApiOperation({
+    summary: 'Aperçu d’une fusion de profils demandeur',
+    description:
+      'Impacts détaillés sans mutation : tickets, conversations, messages, appareils, identités et doublons potentiels. Lecture ADMINISTRATOR/SUPERVISOR.',
+  })
+  @ApiResponse({ status: 200, description: 'Impacts de la fusion.' })
+  @ApiResponse({ status: 404, description: 'Demandeur introuvable.' })
+  @ApiResponse({ status: 401, description: 'Token JWT manquant ou expiré.' })
+  @ApiResponse({ status: 403, description: 'Rôle insuffisant.' })
+  mergePreview(@Param('id', ParseUUIDPipe) id: string) {
+    return this.requesters.mergePreview(id);
+  }
+
+  @Post(':id/merge')
+  @Roles('ADMINISTRATOR')
+  @RequireIdempotency()
+  @ApiOperation({
+    summary: 'Fusionner un demandeur public vers un profil cible',
+    description:
+      'Rattache toutes les références du profil source au profil cible (même intégration), supprime les identités en doublon et écrit une trace d’audit. Écriture ADMINISTRATOR uniquement.',
+  })
+  @ApiResponse({ status: 200, description: 'Fusion exécutée.' })
+  @ApiResponse({ status: 400, description: 'Fusion refusée (profil anonymisé ou même profil).' })
+  @ApiResponse({ status: 404, description: 'Profil source ou cible introuvable.' })
+  @ApiResponse({ status: 401, description: 'Token JWT manquant ou expiré.' })
+  @ApiResponse({ status: 403, description: 'Rôle insuffisant — ADMINISTRATOR requis.' })
+  merge(@Param('id', ParseUUIDPipe) id: string, @Body() dto: MergeRequesterDto, @CurrentUser() user: JwtPayload) {
+    return this.requesters.merge(id, dto, user.sub);
   }
 }
