@@ -10,7 +10,7 @@
  * ============================================================================
  */
 
-import { Injectable, OnModuleDestroy, Optional } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy, Optional } from '@nestjs/common';
 import { ThrottlerStorage } from '@nestjs/throttler';
 import { Redis } from 'ioredis';
 import { redisConfig } from './redis.config';
@@ -25,9 +25,11 @@ import { redisConfig } from './redis.config';
  */
 @Injectable()
 export class ThrottlerStorageRedisService implements ThrottlerStorage, OnModuleDestroy {
+  private readonly logger = new Logger(ThrottlerStorageRedisService.name);
   private redis: Redis;
   private readonly prefix = 'throttle';
   private ownsConnection = false;
+  private readonly memoryFallback = new Map<string, { hits: number; expiresAt: number }>();
 
   /**
    * Initialise le stockage Throttler en réutilisant une connexion ioredis existante ou en créant un client dédié.
@@ -42,11 +44,17 @@ export class ThrottlerStorageRedisService implements ThrottlerStorage, OnModuleD
         host: redisConfig.host,
         port: redisConfig.port,
         password: redisConfig.password || undefined,
-        enableOfflineQueue: true,
-        maxRetriesPerRequest: 3,
+        // Échec rapide hors ligne : le repli mémoire doit répondre immédiatement pendant une panne.
+        enableOfflineQueue: false,
+        maxRetriesPerRequest: 1,
         retryStrategy(times) {
-          return times > 3 ? null : Math.min(times * 200, 2000);
+          // Retry permanent plafonné : le client reconnate quand Redis revient.
+          return Math.min(times * 200, 5000);
         },
+      });
+      this.redis.on('error', (error: Error) => {
+        // Empêche un 'error' non géré de faire tomber le process pendant une panne Redis.
+        this.logger.warn(`Redis (throttler) indisponible : ${error.message}`);
       });
       this.ownsConnection = true;
     }
@@ -71,35 +79,67 @@ export class ThrottlerStorageRedisService implements ThrottlerStorage, OnModuleD
   ): Promise<{ totalHits: number; timeToExpire: number; isBlocked: boolean; timeToBlockExpire: number }> {
     const redisKey = this.buildKey(key, throttlerName);
 
-    // Exécution atomique INCR + TTL via pipeline Redis
-    const pipeline = this.redis.pipeline();
-    pipeline.incr(redisKey);
-    pipeline.ttl(redisKey);
+    try {
+      // Exécution atomique INCR + TTL via pipeline Redis
+      const pipeline = this.redis.pipeline();
+      pipeline.incr(redisKey);
+      pipeline.ttl(redisKey);
 
-    const results = await pipeline.exec();
-    const totalHits = (results?.[0]?.[1] as number) || 1;
-    const timeToExpire = (results?.[1]?.[1] as number) || ttl;
+      const results = await pipeline.exec();
+      const totalHits = (results?.[0]?.[1] as number) || 1;
+      const timeToExpire = (results?.[1]?.[1] as number) || ttl;
 
-    // Définir la durée de vie TTL lors de la création de la clé (1er appel)
-    if (totalHits === 1) {
-      await this.redis.expire(redisKey, Math.ceil(ttl / 1000));
+      // Définir la durée de vie TTL lors de la création de la clé (1er appel)
+      if (totalHits === 1) {
+        await this.redis.expire(redisKey, Math.ceil(ttl / 1000));
+      }
+
+      // Évaluation du dépassement de quota
+      const isBlocked = totalHits > limit;
+      const timeToBlockExpire = isBlocked ? blockDuration : 0;
+
+      if (isBlocked && blockDuration > 0) {
+        // Enregistrement de la clé de blocage avec durée de punition
+        const blockKey = `${redisKey}:blocked`;
+        await this.redis.set(blockKey, '1', 'PX', blockDuration);
+      }
+
+      return {
+        totalHits,
+        timeToExpire: Math.max(timeToExpire * 1000, 0), // Conversion secondes → millisecondes
+        isBlocked,
+        timeToBlockExpire,
+      };
+    } catch {
+      // Repli mémoire : le rate-limit se dégrade (compteur par processus) sans faire tomber l'API.
+      return this.incrementInMemory(redisKey, ttl, limit, blockDuration);
     }
+  }
 
-    // Évaluation du dépassement de quota
-    const isBlocked = totalHits > limit;
-    const timeToBlockExpire = isBlocked ? blockDuration : 0;
-
-    if (isBlocked && blockDuration > 0) {
-      // Enregistrement de la clé de blocage avec durée de punition
-      const blockKey = `${redisKey}:blocked`;
-      await this.redis.set(blockKey, '1', 'PX', blockDuration);
+  private incrementInMemory(
+    redisKey: string,
+    ttl: number,
+    limit: number,
+    blockDuration: number,
+  ): { totalHits: number; timeToExpire: number; isBlocked: boolean; timeToBlockExpire: number } {
+    const now = Date.now();
+    if (this.memoryFallback.size > 5000) {
+      for (const [key, candidate] of this.memoryFallback) {
+        if (candidate.expiresAt <= now) this.memoryFallback.delete(key);
+      }
     }
-
+    const entry = this.memoryFallback.get(redisKey);
+    if (!entry || entry.expiresAt <= now) {
+      this.memoryFallback.set(redisKey, { hits: 1, expiresAt: now + ttl });
+      return { totalHits: 1, timeToExpire: ttl, isBlocked: false, timeToBlockExpire: 0 };
+    }
+    entry.hits += 1;
+    const isBlocked = entry.hits > limit;
     return {
-      totalHits,
-      timeToExpire: Math.max(timeToExpire * 1000, 0), // Conversion secondes → millisecondes
+      totalHits: entry.hits,
+      timeToExpire: Math.max(entry.expiresAt - now, 0),
       isBlocked,
-      timeToBlockExpire,
+      timeToBlockExpire: isBlocked && blockDuration > 0 ? blockDuration : 0,
     };
   }
 

@@ -130,6 +130,10 @@ export class PublicSupportConfigService {
   get botCircuitOpenMs(): number {
     return boundedInteger('PUBLIC_SUPPORT_BOT_CIRCUIT_OPEN_MS', 600_000, 10_000, 3_600_000);
   }
+
+  get retentionInactiveDays(): number {
+    return boundedInteger('PUBLIC_SUPPORT_RETENTION_INACTIVE_DAYS', 395, 30, 3650);
+  }
 }
 
 function requiredSecret(name: string): string {

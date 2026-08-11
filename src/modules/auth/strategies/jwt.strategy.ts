@@ -11,7 +11,7 @@
  * ============================================================================
  */
 
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { JwtConfigService } from '../../../config/jwt.config';
@@ -26,6 +26,8 @@ import { eq, and, isNull } from 'drizzle-orm';
  */
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
+  private readonly logger = new Logger(JwtStrategy.name);
+
   constructor(
     private readonly jwtConfig: JwtConfigService,
     private readonly drizzle: DrizzleProvider,
@@ -46,20 +48,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
    * @throws UnauthorizedException (401) si le jeton est révoqué ou l'utilisateur inactif.
    */
   async validate(payload: JwtPayload) {
-    // 1. Contrôle multi-niveaux de révocation dans Redis
-    const redis = this.redisProvider.getClient();
-    const [isRevokedNew, isRevokedLegacy, userRevokedAfterRaw] = await Promise.all([
-      redis.exists(`jwt_bl:${payload.jti}`),
-      redis.sismember('jwt_blacklist', payload.jti),
-      redis.get(`jwt_user_bl:${payload.sub}`),
-    ]);
-    const userRevokedAfter = userRevokedAfterRaw ? Number(userRevokedAfterRaw) : null;
-    const revokedByLogoutAll =
-      userRevokedAfter !== null &&
-      Number.isFinite(userRevokedAfter) &&
-      (!payload.sessionIssuedAt || payload.sessionIssuedAt <= userRevokedAfter);
-
-    if (isRevokedNew || isRevokedLegacy || revokedByLogoutAll) {
+    if (await this.isRevoked(payload)) {
       throw new UnauthorizedException('Token révoqué.');
     }
 
@@ -92,5 +81,54 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       jti: payload.jti,
       sessionIssuedAt: payload.sessionIssuedAt,
     };
+  }
+
+  /**
+   * Vérifie la révocation dans Redis. Fail-open par défaut (configurable) :
+   * un jeton à signature valide et non expiré reste accepté si Redis est
+   * indisponible, plutôt que de faire tomber toute l'API en 500.
+   */
+  private async isRevoked(payload: JwtPayload): Promise<boolean> {
+    const redis = this.redisProvider.getClient();
+    try {
+      const [isRevokedNew, isRevokedLegacy, userRevokedAfterRaw] = await Promise.all([
+        this.withRedisTimeout(() => redis.exists(`jwt_bl:${payload.jti}`)),
+        this.withRedisTimeout(() => redis.sismember('jwt_blacklist', payload.jti)),
+        this.withRedisTimeout(() => redis.get(`jwt_user_bl:${payload.sub}`)),
+      ]);
+      const userRevokedAfter = userRevokedAfterRaw ? Number(userRevokedAfterRaw) : null;
+      const revokedByLogoutAll =
+        userRevokedAfter !== null &&
+        Number.isFinite(userRevokedAfter) &&
+        (!payload.sessionIssuedAt || payload.sessionIssuedAt <= userRevokedAfter);
+      return isRevokedNew === 1 || isRevokedLegacy === 1 || revokedByLogoutAll;
+    } catch (error: unknown) {
+      if (this.failOpenBlacklist()) {
+        this.logger.warn('Redis indisponible : contrôle de révocation JWT contourné (fail-open).');
+        return false;
+      }
+      throw error;
+    }
+  }
+
+  private failOpenBlacklist(): boolean {
+    return process.env['AUTH_REDIS_BLACKLIST_FAIL_OPEN'] !== 'false';
+  }
+
+  /**
+   * Borne chaque commande Redis à 1 s : le client partagé (BullMQ) a
+   * `maxRetriesPerRequest: null`, sinon une panne Redis ferait attendre
+   * indéfiniment chaque requête avant le repli fail-open.
+   */
+  private async withRedisTimeout<T>(run: () => Promise<T>, timeoutMs = 1000): Promise<T> {
+    let timer: NodeJS.Timeout | undefined;
+    const timeout = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error('REDIS_TIMEOUT')), timeoutMs);
+    });
+    try {
+      return await Promise.race([run(), timeout]);
+    } finally {
+      clearTimeout(timer);
+    }
   }
 }

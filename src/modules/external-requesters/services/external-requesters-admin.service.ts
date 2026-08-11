@@ -22,6 +22,7 @@ import {
   trustedDevices,
 } from '../../../database/schemas';
 import { AuditLogsService } from '../../audit-logs/audit-logs.service';
+import { systemActor, type TicketActor } from '../../tickets/domain/ticket-actor';
 import { ExternalRequesterQueryDto } from '../dto/external-requester-query.dto';
 import { MergeRequesterDto } from '../dto/merge-requester.dto';
 
@@ -265,6 +266,15 @@ export class ExternalRequestersAdminService {
   }
 
   async anonymize(id: string, userId: string) {
+    return this.anonymizeWithActor(id, { type: 'INTERNAL', userId }, 'EXTERNAL_REQUESTER_ANONYMIZED');
+  }
+
+  /** Variante pilotée par la rétention automatique : acteur SYSTÈME, action dédiée. */
+  async anonymizeByRetention(id: string) {
+    return this.anonymizeWithActor(id, systemActor(), 'EXTERNAL_REQUESTER_RETENTION_ANONYMIZED');
+  }
+
+  private async anonymizeWithActor(id: string, actor: TicketActor, action: string) {
     const requester = await this.requireRequester(id);
     const integrationId = requester.supportIntegrationId;
     return this.drizzle.runInTransaction(async () => {
@@ -319,7 +329,7 @@ export class ExternalRequestersAdminService {
           })
           .where(eq(externalRequesters.id, id));
       }
-      await this.audit.create(userId, 'EXTERNAL_REQUESTER_ANONYMIZED', 'external_requester', id, undefined, {
+      await this.audit.createByActor(actor, action, 'external_requester', id, undefined, {
         alreadyAnonymized,
         integrationId,
       });
