@@ -41,7 +41,7 @@ describe('PublicIntegrationConfigService', () => {
             logoUrl: 'https://cdn.example/logo.svg',
             privateToken: 'secret',
           },
-          features: { publicAttachments: true, publicRealtime: false, publicBot: true, adminConsole: true },
+          features: { attachments: true, realtime: false, bot: true, adminConsole: true },
         },
       ]),
     );

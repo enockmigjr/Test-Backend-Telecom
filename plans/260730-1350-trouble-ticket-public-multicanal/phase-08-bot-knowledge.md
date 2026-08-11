@@ -8,7 +8,7 @@
 - Adaptateur réel livré : OpenAiCompatibleAdapter (fetch, outils, usage, timeout), inactif par défaut. **DeepSeek en provider de première classe** : PUBLIC_SUPPORT_BOT_PROVIDER=deepseek + PUBLIC_SUPPORT_BOT_API_KEY (défauts https://api.deepseek.com / deepseek-chat, surchargeables). openai-compatible reste disponible. Le comportement disabled est préservé sans clé.
 - Assistant conversationnel livré dans le widget (bouton dédié, repli formulaire permanent) — étape 11 complète.
 - Budget et coupe-circuit livrés (étape 12) : budget quotidien par intégration (quotaPolicy.botRequestsPerDay, défaut configurable), coupe-circuit après échecs répétés (fenêtre configurable), métadonnées eason budget/circuit_open/provider_error — tests dédiés (le test a détecté et permis de corriger un bug de sentinelle du circuit).
-- Reste : activation (choix du fournisseur + clé).
+- **Bot activé et vérifié en conditions réelles** avec DeepSeek : réponse live (mode reply), métadonnées persistées (modèle deepseek-v4-flash, latence, coût estimé, confiance), outils et budget/coupe-circuit actifs. Correctifs associés : mapping des features public (publicBot lit features.bot) et CSP widget ouverte aux origines locales de développement (production strict sur allowedOrigins).
 
 ## Contexte
 

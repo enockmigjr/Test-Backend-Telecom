@@ -3,7 +3,11 @@ import { and, eq } from 'drizzle-orm';
 import { DrizzleProvider } from '../../../database/drizzle.provider';
 import { supportIntegrations } from '../../../database/schemas';
 
-const FEATURE_KEYS = ['publicAttachments', 'publicRealtime', 'publicBot'] as const;
+const FEATURE_KEYS: Readonly<Record<string, string>> = {
+  publicAttachments: 'attachments',
+  publicRealtime: 'realtime',
+  publicBot: 'bot',
+};
 
 @Injectable()
 export class PublicIntegrationConfigService {
@@ -26,7 +30,9 @@ export class PublicIntegrationConfigService {
         name: integration.name,
         frameAllowed: origin ? integration.allowedOrigins.includes(origin) : false,
         appearance: sanitizeAppearance(integration.appearance),
-        features: Object.fromEntries(FEATURE_KEYS.map((key) => [key, integration.features[key] === true])),
+        features: Object.fromEntries(
+          Object.entries(FEATURE_KEYS).map(([publicKey, dbKey]) => [publicKey, integration.features[dbKey] === true]),
+        ),
       },
     };
   }
