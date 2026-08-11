@@ -5,7 +5,8 @@
 - Débuté : script db:phase9-check (7 vérifications SQL de cohérence acteur/intégration/outbox/livraisons) — toutes vertes sur la base locale — et endpoint admin d'anonymisation des demandeurs (effacement des valeurs d'identité chiffrées, révocation appareils/challenges, audit, idempotent).
 - Migration 0016 appliquée : les 6 contraintes acteur NOT VALID (tickets presence/legacy/integration, audit_logs, ticket_comments, ticket_history) sont validées — données propres (0 violation).
 - Preuve code : openedByUserId est lu à 20 emplacements backend et en fallback frontend (openedByUserId ?? createdBy) ; created_by n'est plus le seul lecteur. Sa suppression reste soumise à la fenêtre de compatibilité.
-- Reste : rétention/effacement du contenu des messages (politique), tests de pannes, rollout PhotoVault et manifest par SHA.
+- Tests de pannes : spec SupportBotService couvrant les replis fournisseur absent/erreur (disabled/unavailable → formulaire) et livraison OK ; vérification live déjà effectuée (mode disabled sur la pile). Les autres voies (Redis/BullMQ down, ClamAV, outbox) restent couvertes par les specs existantes (queues.module, clamav-scanner, outbox).
+- Reste : rétention/effacement du contenu des messages (politique), drill complet des pannes PostgreSQL/email/WebSocket, rollout PhotoVault et manifest par SHA.
 
 ## Contexte
 
