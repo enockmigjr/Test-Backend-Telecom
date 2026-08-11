@@ -129,9 +129,16 @@ const workloadResult = {
       overdueTicketsCount: 0,
       isAvailable: true,
       absenceEndsAt: null,
+      lastActivityAt: '2026-06-30T11:00:00Z',
     },
   ],
-  summary: { totalAgents: 1, totalOpenTickets: 10, absentAgentsCount: 0, avgTicketsPerAgent: 10.0, unassignedTickets: 5 },
+  summary: {
+    totalAgents: 1,
+    totalOpenTickets: 10,
+    absentAgentsCount: 0,
+    avgTicketsPerAgent: 10.0,
+    unassignedTickets: 5,
+  },
 };
 
 const resolutionTimeResult = {

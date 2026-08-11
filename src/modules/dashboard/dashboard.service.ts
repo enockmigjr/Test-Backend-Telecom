@@ -322,11 +322,19 @@ export class DashboardService {
         highTicketsCount: sql<number>`COUNT(*) FILTER (WHERE ${tickets.priority} = 'HIGH')`,
         slaAtRiskCount: sql<number>`COUNT(*) FILTER (WHERE ${tickets.resolutionDueAt} <= NOW() + INTERVAL '30 minutes')`,
         overdueTicketsCount: sql<number>`COUNT(*) FILTER (WHERE ${tickets.resolutionDueAt} < NOW())`,
+        lastActivityAt: sql<Date>`MAX(${tickets.updatedAt})`,
       })
       .from(tickets)
       .leftJoin(users, eq(tickets.assignedTo, users.id))
       .where(where)
-      .groupBy(tickets.assignedTo, users.firstName, users.lastName, users.email, users.isAvailable, users.absenceEndsAt);
+      .groupBy(
+        tickets.assignedTo,
+        users.firstName,
+        users.lastName,
+        users.email,
+        users.isAvailable,
+        users.absenceEndsAt,
+      );
 
     const unassignedConditions = [
       isNull(tickets.deletedAt),
@@ -355,6 +363,7 @@ export class DashboardService {
         highTicketsCount: Number(a.highTicketsCount || 0),
         slaAtRiskCount: Number(a.slaAtRiskCount || 0),
         overdueTicketsCount: Number(a.overdueTicketsCount || 0),
+        lastActivityAt: a.lastActivityAt ? new Date(a.lastActivityAt).toISOString() : null,
       })),
       summary: {
         totalAgents: data.length,
