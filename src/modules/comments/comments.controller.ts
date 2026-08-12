@@ -106,7 +106,11 @@ export class CommentsController {
   @ApiResponse({ status: 201, description: 'Réponse publique créée.' })
   @ApiResponse({ status: 400, description: 'Le ticket n’a pas de demandeur externe.' })
   @ApiResponse({ status: 404, description: 'Ticket non trouvé.' })
-  async publicReply(@Param('ticketId') ticketId: string, @Body() dto: CreateCommentDto, @CurrentUser() user: JwtPayload) {
+  async publicReply(
+    @Param('ticketId') ticketId: string,
+    @Body() dto: CreateCommentDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
     return this.commentsService.createPublicReply(ticketId, user, dto.content);
   }
 

@@ -104,8 +104,8 @@ export class SlaAlertProcessorService {
       const breachCandidate = or(
         isNull(breachedAt),
         lt(
-          sql`COALESCE((${tickets.metadata}->>${this.breachNotifiedKey(target)})::timestamptz, to_timestamp(0))`,
-          new Date(now.getTime() - SlaAlertProcessorService.BREACH_REPEAT_INTERVAL_MS),
+            sql`COALESCE((${tickets.metadata}->>${this.breachNotifiedKeySql(target)})::timestamptz, to_timestamp(0))`,
+          new Date(now.getTime() - SlaAlertProcessorService.BREACH_REPEAT_INTERVAL_MS).toISOString(),
         ),
       );
       conditions.push(
@@ -186,8 +186,8 @@ export class SlaAlertProcessorService {
             lt(dueAt, now),
             sql`${tickets.firstResponseBreachedAt} IS NOT NULL`,
             lt(
-              sql`COALESCE((${tickets.metadata}->>${this.breachNotifiedKey(target)})::timestamptz, to_timestamp(0))`,
-              new Date(now.getTime() - SlaAlertProcessorService.BREACH_REPEAT_INTERVAL_MS),
+              sql`COALESCE((${tickets.metadata}->>${this.breachNotifiedKeySql(target)})::timestamptz, to_timestamp(0))`,
+              new Date(now.getTime() - SlaAlertProcessorService.BREACH_REPEAT_INTERVAL_MS).toISOString(),
             ),
           ),
         )
@@ -218,8 +218,8 @@ export class SlaAlertProcessorService {
             lt(dueAt, now),
             sql`${tickets.resolutionBreachedAt} IS NOT NULL`,
             lt(
-              sql`COALESCE((${tickets.metadata}->>${this.breachNotifiedKey(target)})::timestamptz, to_timestamp(0))`,
-              new Date(now.getTime() - SlaAlertProcessorService.BREACH_REPEAT_INTERVAL_MS),
+              sql`COALESCE((${tickets.metadata}->>${this.breachNotifiedKeySql(target)})::timestamptz, to_timestamp(0))`,
+              new Date(now.getTime() - SlaAlertProcessorService.BREACH_REPEAT_INTERVAL_MS).toISOString(),
             ),
           ),
         )
@@ -285,13 +285,18 @@ export class SlaAlertProcessorService {
 
   /** SQL JSONB : écrit l'horodatage de la dernière notification de violation. */
   private breachNotifiedMetadataSql(target: SlaTarget, now: Date) {
-    return sql`COALESCE(${tickets.metadata}, '{}'::jsonb) || jsonb_build_object(${this.breachNotifiedKey(
+    return sql`COALESCE(${tickets.metadata}, '{}'::jsonb) || jsonb_build_object(${this.breachNotifiedKeySql(
       target,
-    )}, to_jsonb(${now}::timestamptz))`;
+    )}, to_jsonb(${now.toISOString()}::timestamptz))`;
   }
 
   /** SQL JSONB : retire l'horodatage de notification lors d'un retry. */
   private removeBreachNotifiedMetadataSql(target: SlaTarget) {
-    return sql`COALESCE(${tickets.metadata}, '{}'::jsonb) - ${this.breachNotifiedKey(target)}`;
+    return sql`COALESCE(${tickets.metadata}, '{}'::jsonb) - ${this.breachNotifiedKeySql(target)}`;
+  }
+
+  /** Clé JSONB inlinée en littéral SQL (constante interne, jamais issue d'une entrée utilisateur). */
+  private breachNotifiedKeySql(target: SlaTarget) {
+    return sql.raw(`'${this.breachNotifiedKey(target)}'`);
   }
 }

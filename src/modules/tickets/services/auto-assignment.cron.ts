@@ -19,6 +19,7 @@ import { tickets, users, ticketHistory } from '../../../database/schemas';
 import { AssignmentEngineService } from './assignment-engine.service';
 import { generateUuid } from '../../../common/helpers/uuidv7.helper';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { SettingsService } from '../../settings/settings.service';
 
 /**
  * Service gérant le cycle de planification et d'acheminement automatique des tickets télécom.
@@ -32,6 +33,7 @@ export class AutoAssignmentCron {
     private readonly drizzle: DrizzleProvider,
     private readonly assignmentEngine: AssignmentEngineService,
     private readonly eventEmitter: EventEmitter2,
+    private readonly settingsService: SettingsService,
   ) {}
 
   /**
@@ -194,12 +196,13 @@ export class AutoAssignmentCron {
         shouldDeassign = true;
         reason = `Compte de l'agent désactivé (${agent.email})`;
       }
-      // Règle 2: Si l'agent a une absence planifiée de plus de 24h -> désassignation immédiate
+      // Règle 2: Si l'agent a une absence planifiée au-delà du seuil configurable -> désassignation immédiate
       else if (agent.absenceEndsAt) {
         const absenceDurationMs = new Date(agent.absenceEndsAt).getTime() - now.getTime();
-        if (absenceDurationMs > 24 * 60 * 60 * 1000) {
+        const thresholdHours = Number(await this.settingsService.getSetting('ABSENCE_REASSIGN_HOURS', '24')) || 24;
+        if (absenceDurationMs > thresholdHours * 60 * 60 * 1000) {
           shouldDeassign = true;
-          reason = `Absence prolongée planifiée de l'agent de plus de 24 heures (Fin: ${agent.absenceEndsAt.toLocaleString('fr-FR')})`;
+          reason = `Absence prolongée planifiée de l'agent de plus de ${thresholdHours} heures (Fin: ${agent.absenceEndsAt.toLocaleString('fr-FR')})`;
         }
       }
       // Règle 3: Si l'agent est simplement hors ligne (isAvailable = false) -> désassignation uniquement si risque SLA
