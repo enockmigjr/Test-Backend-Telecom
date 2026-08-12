@@ -9,6 +9,7 @@ import {
   text,
   timestamp,
   uniqueIndex,
+  unique,
   uuid,
   varchar,
 } from 'drizzle-orm/pg-core';
@@ -48,7 +49,7 @@ export const outboxEvents = pgTable(
   },
   (table) => ({
     deduplicationUnique: uniqueIndex('uq_outbox_events_deduplication_key').on(table.deduplicationKey),
-    integrationIdentityUnique: uniqueIndex('uq_outbox_events_id_integration').on(table.id, table.supportIntegrationId),
+    integrationIdentityUnique: unique('uq_outbox_events_id_integration').on(table.id, table.supportIntegrationId),
     mutationEventUnique: uniqueIndex('uq_outbox_events_mutation_event_version').on(
       table.mutationId,
       table.eventType,

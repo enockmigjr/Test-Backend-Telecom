@@ -22,6 +22,7 @@ import {
   timestamp,
   index,
   uniqueIndex,
+  unique,
   jsonb,
   integer,
 } from 'drizzle-orm/pg-core';
@@ -140,7 +141,7 @@ export const tickets = pgTable(
     idxTicketsCreatedBy: index('idx_tickets_created_by').on(table.createdBy),
     idxTicketsOpenedBy: index('idx_tickets_opened_by').on(table.openedByUserId),
     idxTicketsRequester: index('idx_tickets_requester').on(table.supportIntegrationId, table.requesterId),
-    integrationIdentityUnique: uniqueIndex('uq_tickets_id_integration').on(table.id, table.supportIntegrationId),
+    integrationIdentityUnique: unique('uq_tickets_id_integration').on(table.id, table.supportIntegrationId),
     idxTicketsCreatedAt: index('idx_tickets_created_at').on(table.createdAt),
     idxSlaProcessing: index('idx_sla_processing').on(table.status, table.priority),
     requesterIntegrationForeignKey: foreignKey({

@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { check, foreignKey, index, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
+import { check, foreignKey, index, jsonb, pgTable, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core';
 import { actorTypeEnum, supportMessageDirectionEnum } from './enums';
 import { externalRequesters } from './external-requesters';
 import { supportIntegrations } from './support-integrations';
@@ -28,7 +28,7 @@ export const supportMessages = pgTable(
   (table) => ({
     conversationIndex: index('idx_support_messages_conversation').on(table.conversationId, table.createdAt),
     requesterIndex: index('idx_support_messages_requester').on(table.supportIntegrationId, table.externalRequesterId),
-    integrationIdentityUnique: uniqueIndex('uq_support_messages_id_integration').on(
+    integrationIdentityUnique: unique('uq_support_messages_id_integration').on(
       table.id,
       table.supportIntegrationId,
     ),

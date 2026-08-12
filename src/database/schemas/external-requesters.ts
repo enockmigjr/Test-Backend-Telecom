@@ -1,5 +1,5 @@
 import { relations } from 'drizzle-orm';
-import { index, jsonb, pgTable, timestamp, uniqueIndex, uuid, varchar } from 'drizzle-orm/pg-core';
+import { index, jsonb, pgTable, timestamp, unique, uuid, varchar } from 'drizzle-orm/pg-core';
 import { supportIntegrations } from './support-integrations';
 
 /** Profil public conservé côté serveur, sans créer de compte utilisateur interne. */
@@ -23,7 +23,7 @@ export const externalRequesters = pgTable(
   },
   (table) => ({
     integrationIndex: index('idx_external_requesters_integration').on(table.supportIntegrationId),
-    integrationSubjectUnique: uniqueIndex('uq_external_requesters_id_integration').on(
+    integrationSubjectUnique: unique('uq_external_requesters_id_integration').on(
       table.id,
       table.supportIntegrationId,
     ),

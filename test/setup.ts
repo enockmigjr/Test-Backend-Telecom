@@ -5,6 +5,7 @@ import { GlobalExceptionFilter } from '../src/common/filters/global-exception.fi
 import { TransformInterceptor } from '../src/common/interceptors/transform.interceptor';
 import { Redis } from 'ioredis';
 import { redisConfig } from '../src/common/providers/redis.config';
+import { ANTIVIRUS_SCANNER } from '../src/modules/attachments/security/antivirus-scanner.interface';
 
 /**
  * Setup helper pour les tests E2E.
@@ -31,7 +32,15 @@ export async function createTestApp(): Promise<{ app: INestApplication; flushRed
 
   const moduleFixture: TestingModule = await Test.createTestingModule({
     imports: [AppModule],
-  }).compile();
+  })
+    // ClamAV n'est pas disponible dans l'environnement E2E : stub déterministe
+    // (le readiness health ne doit pas dépendre d'un conteneur externe).
+    .overrideProvider(ANTIVIRUS_SCANNER)
+    .useValue({
+      scan: async () => ({ clean: true }),
+      health: async () => true,
+    })
+    .compile();
 
   const app = moduleFixture.createNestApplication();
 

@@ -10,6 +10,8 @@ CREATE TABLE IF NOT EXISTS "public_bootstrap_grants" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
+-- L'index unique doit exister AVANT la FK composite qui le référence (Postgres 42830).
+CREATE UNIQUE INDEX IF NOT EXISTS "uq_trusted_devices_subject" ON "trusted_devices" USING btree ("id","support_integration_id","external_requester_id");--> statement-breakpoint
 DO $$ BEGIN
  ALTER TABLE "public_bootstrap_grants" ADD CONSTRAINT "public_bootstrap_grants_integration_fk" FOREIGN KEY ("support_integration_id") REFERENCES "public"."support_integrations"("id") ON DELETE restrict ON UPDATE no action;
 EXCEPTION
@@ -30,6 +32,5 @@ END $$;
 --> statement-breakpoint
 CREATE UNIQUE INDEX IF NOT EXISTS "uq_public_bootstrap_grants_code_hash" ON "public_bootstrap_grants" USING btree ("code_hash");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "idx_public_bootstrap_grants_expires_at" ON "public_bootstrap_grants" USING btree ("expires_at");--> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS "uq_trusted_devices_subject" ON "trusted_devices" USING btree ("id","support_integration_id","external_requester_id");--> statement-breakpoint
 ALTER TABLE "public_bootstrap_grants" ADD CONSTRAINT "public_bootstrap_grants_expiration_check"
   CHECK ("expires_at" > "created_at");

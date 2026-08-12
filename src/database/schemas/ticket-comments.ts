@@ -10,7 +10,7 @@
  */
 
 import { relations, sql } from 'drizzle-orm';
-import { check, foreignKey, index, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
+import { check, foreignKey, index, pgTable, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core';
 import { actorTypeEnum } from './enums';
 import { externalRequesters } from './external-requesters';
 import { supportIntegrations } from './support-integrations';
@@ -46,7 +46,7 @@ export const ticketComments = pgTable(
     idxCommentsTicket: index('idx_comments_ticket').on(table.ticketId),
     idxCommentsRequester: index('idx_comments_requester').on(table.supportIntegrationId, table.externalRequesterId),
     idxCommentsCorrection: index('idx_comments_correction').on(table.correctsCommentId),
-    integrationIdentityUnique: uniqueIndex('uq_ticket_comments_id_integration').on(
+    integrationIdentityUnique: unique('uq_ticket_comments_id_integration').on(
       table.id,
       table.supportIntegrationId,
     ),

@@ -122,8 +122,8 @@ services:
       SMTP_PORT: ${DOCKER_SMTP_PORT:-1025}
       CLAMAV_HOST: clamav
       CLAMAV_PORT: 3310
-      # SSO : local par défaut, basculer sur keycloak via .env (AUTH_PROVIDER=keycloak).
-      AUTH_PROVIDER: ${AUTH_PROVIDER:-local}
+      # SSO : Keycloak par défaut (l'identité est déléguée) ; local conservé pour les tests.
+      AUTH_PROVIDER: ${AUTH_PROVIDER:-keycloak}
       KEYCLOAK_ISSUER: ${KEYCLOAK_ISSUER:-http://localhost:8081/realms/telecom}
       KEYCLOAK_JWKS_URL: ${KEYCLOAK_JWKS_URL:-http://keycloak:8080/realms/telecom/protocol/openid-connect/certs}
       PUBLIC_SUPPORT_ORIGINS: ${PUBLIC_SUPPORT_ORIGINS:-http://support.localhost}
@@ -210,7 +210,7 @@ services:
       NODE_ENV: development
       BACKEND_INTERNAL_URL: http://api:3000
       REDIS_URL: ${DOCKER_REDIS_URL:-redis://redis:6379}
-      AUTH_PROVIDER: ${AUTH_PROVIDER:-local}
+      AUTH_PROVIDER: ${AUTH_PROVIDER:-keycloak}
       KEYCLOAK_ISSUER: ${KEYCLOAK_ISSUER:-http://localhost:8081/realms/telecom}
       KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-telecom-frontend}
       KEYCLOAK_REDIRECT_URI: ${KEYCLOAK_REDIRECT_URI:-http://localhost:3007/api/auth/keycloak/callback}

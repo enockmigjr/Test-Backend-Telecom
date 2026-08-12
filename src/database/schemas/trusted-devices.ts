@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { check, foreignKey, index, integer, pgTable, timestamp, uniqueIndex, uuid, varchar } from 'drizzle-orm/pg-core';
+import { check, foreignKey, index, integer, pgTable, timestamp, unique, uniqueIndex, uuid, varchar } from 'drizzle-orm/pg-core';
 import { externalRequesters } from './external-requesters';
 import { supportIntegrations } from './support-integrations';
 
@@ -21,7 +21,7 @@ export const trustedDevices = pgTable(
   },
   (table) => ({
     tokenUnique: uniqueIndex('uq_trusted_devices_token_hash').on(table.tokenHash),
-    subjectUnique: uniqueIndex('uq_trusted_devices_subject').on(
+    subjectUnique: unique('uq_trusted_devices_subject').on(
       table.id,
       table.supportIntegrationId,
       table.externalRequesterId,
