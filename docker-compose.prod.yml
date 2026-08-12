@@ -31,6 +31,19 @@ services:
       - redis-data:/data
     networks: [telecom-network]
 
+  clamav:
+    image: clamav/clamav:1.4.5-debian
+    restart: unless-stopped
+    volumes:
+      - clamav-data:/var/lib/clamav
+    healthcheck:
+      test: ['CMD-SHELL', 'clamdscan --ping 1']
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 120s
+    networks: [telecom-network]
+
   keycloak:
     build:
       context: ./keycloak-theme
@@ -57,17 +70,54 @@ services:
     image: ${REGISTRY:-registry.example.com}/telecom-api:${TAG:-latest}
     restart: unless-stopped
     environment:
+      NODE_ENV: production
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_USER: ${POSTGRES_USER:-telecom}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-telecom_secret}
+      DATABASE_NAME: ${POSTGRES_DB:-telecom_tickets}
       DATABASE_URL: ${DOCKER_DATABASE_URL:-postgresql://telecom:telecom_secret@postgres:5432/telecom_tickets}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
       REDIS_URL: redis://redis:6379
-      SMTP_HOST: ${SMTP_HOST}
+      SMTP_HOST: ${SMTP_HOST:?SMTP_HOST est requis en production}
       SMTP_PORT: ${SMTP_PORT:-587}
+      CLAMAV_HOST: clamav
+      CLAMAV_PORT: 3310
       AUTH_PROVIDER: ${AUTH_PROVIDER:-keycloak}
       KEYCLOAK_ISSUER: ${KEYCLOAK_ISSUER:-https://auth.example.com/realms/telecom}
+      KEYCLOAK_JWKS_URL: ${KEYCLOAK_JWKS_URL:-https://auth.example.com/realms/telecom/protocol/openid-connect/certs}
+      PUBLIC_SUPPORT_ORIGINS: ${PUBLIC_SUPPORT_ORIGINS:-https://portail.ticketing.example.com}
+      PUBLIC_SUPPORT_CONTACT_HASH_SECRET: ${PUBLIC_SUPPORT_CONTACT_HASH_SECRET:?secret requis en production}
+      PUBLIC_SUPPORT_MASTER_KEYS: ${PUBLIC_SUPPORT_MASTER_KEYS:?secret requis en production}
+      PUBLIC_SUPPORT_MASTER_KEY_VERSION: ${PUBLIC_SUPPORT_MASTER_KEY_VERSION:-1}
+      PUBLIC_SESSION_SECRET: ${PUBLIC_SESSION_SECRET:?secret requis en production}
+      PUBLIC_WS_COOKIE_NAME: ${PUBLIC_WS_COOKIE_NAME:-__Host-support_session,__Host-support_iframe_session}
+      PUBLIC_SUPPORT_BOT_PROVIDER: ${PUBLIC_SUPPORT_BOT_PROVIDER:-none}
+      PUBLIC_SUPPORT_BOT_API_KEY: ${PUBLIC_SUPPORT_BOT_API_KEY:-}
+      PUBLIC_SUPPORT_BOT_BASE_URL: ${PUBLIC_SUPPORT_BOT_BASE_URL:-}
+      PUBLIC_SUPPORT_BOT_MODEL: ${PUBLIC_SUPPORT_BOT_MODEL:-}
+      PUBLIC_SUPPORT_BOT_MAX_TOKENS: ${PUBLIC_SUPPORT_BOT_MAX_TOKENS:-800}
+      PUBLIC_SUPPORT_BOT_TIMEOUT_MS: ${PUBLIC_SUPPORT_BOT_TIMEOUT_MS:-20000}
+      PUBLIC_SUPPORT_BOT_DAILY_BUDGET: ${PUBLIC_SUPPORT_BOT_DAILY_BUDGET:-200}
+      PUBLIC_SUPPORT_BOT_CIRCUIT_OPEN_AFTER: ${PUBLIC_SUPPORT_BOT_CIRCUIT_OPEN_AFTER:-5}
+      PUBLIC_SUPPORT_BOT_CIRCUIT_OPEN_MS: ${PUBLIC_SUPPORT_BOT_CIRCUIT_OPEN_MS:-600000}
+      PUBLIC_SUPPORT_BOT_PROMPT_VERSION: ${PUBLIC_SUPPORT_BOT_PROMPT_VERSION:-2026-08-v1}
+      PUBLIC_SUPPORT_RETENTION_INACTIVE_DAYS: ${PUBLIC_SUPPORT_RETENTION_INACTIVE_DAYS:-395}
+      APP_NAME: ${APP_NAME:-Helpdesk Telecom}
+      APP_URL: ${APP_URL:-https://ticketing.example.com}
+      API_PUBLIC_URL: ${API_PUBLIC_URL:-https://ticketing.example.com/api/v1}
+      LOGO_URL: ${LOGO_URL:-https://ticketing.example.com/logo.png}
+      REPORT_DOWNLOAD_SECRET: ${REPORT_DOWNLOAD_SECRET:?secret requis en production}
+      REPORT_DOWNLOAD_TTL_SECONDS: ${REPORT_DOWNLOAD_TTL_SECONDS:-604800}
+      OTEL_ENABLED: ${OTEL_ENABLED:-false}
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_started
+      clamav:
+        condition: service_healthy
     networks: [telecom-network]
 
   public-frontend:
@@ -75,6 +125,8 @@ services:
     restart: unless-stopped
     environment:
       BACKEND_URL: http://api:3000
+      PUBLIC_SUPPORT_INTEGRATION_KEY: ${PUBLIC_SUPPORT_INTEGRATION_KEY:?secret requis en production}
+      PUBLIC_BFF_CSRF_SECRET: ${PUBLIC_BFF_CSRF_SECRET:?secret requis en production}
       PUBLIC_COOKIE_SECURE: 'true'
     networks: [telecom-network]
 
@@ -117,6 +169,7 @@ services:
 volumes:
   postgres-data:
   redis-data:
+  clamav-data:
 
 networks:
   telecom-network:

@@ -29,7 +29,7 @@ import { PublicReportsController } from './public-reports.controller';
     ReportDownloadLinkService,
     ReportSchedulerService,
   ],
-  exports: [ReportsService, ReportDownloadLinkService],
+  exports: [ReportsService, ReportQueryService, ReportDownloadLinkService],
 })
 /**
  * Module NestJS `ReportsModule` configurant les dépendances, contrôleurs et services associés.
