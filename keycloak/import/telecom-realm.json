@@ -28,7 +28,10 @@
       "directAccessGrantsEnabled": false,
       "protocol": "openid-connect",
       "redirectUris": ["http://localhost:3001/*", "https://ticketing.example.com/*"],
-      "webOrigins": ["http://localhost:3001", "https://ticketing.example.com"]
+      "webOrigins": ["http://localhost:3001", "https://ticketing.example.com"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      }
     }
   ],
   "users": [
