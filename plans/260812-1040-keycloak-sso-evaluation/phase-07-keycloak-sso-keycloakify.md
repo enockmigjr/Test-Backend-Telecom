@@ -80,7 +80,7 @@ Navigateur → frontend Next.js (BFF) → /api/auth/keycloak (code + PKCE) → K
 
 ### Preuves de validation (live)
 
-1. Discovery OIDC → 200, issuer `http://localhost:8080/realms/telecom`.
+1. Discovery OIDC → 200, issuer `http://localhost:8081/realms/telecom` (port 8081, 8080 étant utilisé par PhotoVault).
 2. Page de login SSO → HTTP 200 avec le thème `telecom-keycloak-theme` (shell + `window.kcContext` + chunk `KcPage` contenant le formulaire custom).
 3. Flux PKCE complet : auth → login `admin@telecom.local` (302 + code) → échange token (200, `access_token` RS256).
 4. `GET /api/v1/auth/me` avec le token Keycloak → 200 `{ email: admin@telecom.local, role: ADMINISTRATOR, departmentId: … }`.

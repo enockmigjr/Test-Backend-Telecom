@@ -4,7 +4,7 @@
  * Nécessite : le conteneur keycloak démarré et le realm importé.
  */
 
-const baseUrl = process.env.KEYCLOAK_URL ?? "http://localhost:8080";
+const baseUrl = process.env.KEYCLOAK_URL ?? "http://localhost:8081";
 const realm = "telecom";
 const admin = process.env.KEYCLOAK_ADMIN ?? "admin";
 const password = process.env.KEYCLOAK_ADMIN_PASSWORD ?? "Admin@1234";

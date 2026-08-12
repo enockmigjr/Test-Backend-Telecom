@@ -188,7 +188,7 @@ Accessible sur `http://localhost:3000/admin/queues`.
 
 | Variable | Défaut | Description |
 | --- | --- | --- |
-| `KEYCLOAK_ISSUER` | `http://localhost:8080/realms/telecom` | Issuer du realm Keycloak (JWKS RS256) |
+| `KEYCLOAK_ISSUER` | `http://localhost:8081/realms/telecom` | Issuer du realm Keycloak (JWKS RS256) — port 8081 car 8080 est utilisé par PhotoVault |
 | `KEYCLOAK_ADMIN` | `admin` | Compte admin du conteneur |
 | `KEYCLOAK_ADMIN_PASSWORD` | `Admin@1234` | Mot de passe admin (dev) |
 | `KEYCLOAK_REDIRECT_URI` | `http://localhost:3001/api/auth/keycloak/callback` | URI de callback du BFF |

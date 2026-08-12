@@ -345,7 +345,7 @@ make down
 | Promtail      | 9080       | Collecteur logs           |
 | Uptime Kuma   | 3002       | Monitoring uptime         |
 | ClamAV        | 3310       | Antivirus des pièces jointes publiques |
-| Keycloak      | 8080       | SSO (phase 07 en cours)   |
+| Keycloak      | 8081       | SSO Keycloak (8080 utilisé par PhotoVault) |
 
 ---
 

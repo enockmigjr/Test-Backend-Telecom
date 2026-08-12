@@ -35,15 +35,13 @@ services:
     restart: unless-stopped
     command: ["start", "--import-realm", "--http-port=8080", "--hostname=${KEYCLOAK_HOSTNAME:-auth.example.com}"]
     environment:
-      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
-      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
       KC_DB_USERNAME: ${POSTGRES_USER:-telecom}
       KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-telecom_secret}
       KC_PROXY: edge
-      # Nécessaire au thème Keycloakify v5 (FreeMarker + module system Java 21).
-      JAVA_OPTS_APPEND: --add-opens=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED
     volumes:
       - ./keycloak/import:/opt/keycloak/data/import:ro
     networks: [telecom-network]

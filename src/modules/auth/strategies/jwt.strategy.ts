@@ -39,6 +39,8 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
+      // Allowlist stricte : aucun algorithme de signature non prévu (anti alg-confusion).
+      algorithms: ['HS256', 'RS256'],
       // HS256 = jetons applicatifs ; RS256 = jetons Keycloak (clés publiques du realm).
       // passport-jwt attend un callback `done` : une promesse retournée sans appel
       // de callback laisserait chaque requête authentifiée en attente indéfiniment.
@@ -110,10 +112,14 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     };
   }
 
-  /** Jeton émis par le realm Keycloak (issuer configuré). */
+  /** Jeton émis par le realm Keycloak (issuer configuré, comparaison exacte). */
   private isKeycloakToken(payload: JwtPayload): boolean {
     const issuer = process.env['KEYCLOAK_ISSUER'];
-    return Boolean(issuer && typeof payload['iss'] === 'string' && payload['iss'].startsWith(issuer));
+    return Boolean(
+      issuer &&
+        typeof payload['iss'] === 'string' &&
+        payload['iss'].replace(/\/$/, '') === issuer.replace(/\/$/, ''),
+    );
   }
 
   /** Valide un jeton Keycloak : rôle depuis realm_access, profil métier lié par keycloakSubjectId. */
