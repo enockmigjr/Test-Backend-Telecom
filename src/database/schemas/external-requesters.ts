@@ -23,10 +23,7 @@ export const externalRequesters = pgTable(
   },
   (table) => ({
     integrationIndex: index('idx_external_requesters_integration').on(table.supportIntegrationId),
-    integrationSubjectUnique: unique('uq_external_requesters_id_integration').on(
-      table.id,
-      table.supportIntegrationId,
-    ),
+    integrationSubjectUnique: unique('uq_external_requesters_id_integration').on(table.id, table.supportIntegrationId),
     integrationCreatedIndex: index('idx_external_requesters_integration_created').on(
       table.supportIntegrationId,
       table.createdAt,

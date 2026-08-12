@@ -28,10 +28,7 @@ export const supportMessages = pgTable(
   (table) => ({
     conversationIndex: index('idx_support_messages_conversation').on(table.conversationId, table.createdAt),
     requesterIndex: index('idx_support_messages_requester').on(table.supportIntegrationId, table.externalRequesterId),
-    integrationIdentityUnique: unique('uq_support_messages_id_integration').on(
-      table.id,
-      table.supportIntegrationId,
-    ),
+    integrationIdentityUnique: unique('uq_support_messages_id_integration').on(table.id, table.supportIntegrationId),
     conversationIntegrationForeignKey: foreignKey({
       columns: [table.conversationId, table.supportIntegrationId],
       foreignColumns: [supportConversations.id, supportConversations.supportIntegrationId],

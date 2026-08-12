@@ -1,5 +1,16 @@
 import { sql } from 'drizzle-orm';
-import { check, foreignKey, index, integer, pgTable, timestamp, unique, uniqueIndex, uuid, varchar } from 'drizzle-orm/pg-core';
+import {
+  check,
+  foreignKey,
+  index,
+  integer,
+  pgTable,
+  timestamp,
+  unique,
+  uniqueIndex,
+  uuid,
+  varchar,
+} from 'drizzle-orm/pg-core';
 import { externalRequesters } from './external-requesters';
 import { supportIntegrations } from './support-integrations';
 

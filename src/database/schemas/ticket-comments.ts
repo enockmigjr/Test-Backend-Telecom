@@ -46,10 +46,7 @@ export const ticketComments = pgTable(
     idxCommentsTicket: index('idx_comments_ticket').on(table.ticketId),
     idxCommentsRequester: index('idx_comments_requester').on(table.supportIntegrationId, table.externalRequesterId),
     idxCommentsCorrection: index('idx_comments_correction').on(table.correctsCommentId),
-    integrationIdentityUnique: unique('uq_ticket_comments_id_integration').on(
-      table.id,
-      table.supportIntegrationId,
-    ),
+    integrationIdentityUnique: unique('uq_ticket_comments_id_integration').on(table.id, table.supportIntegrationId),
     requesterIntegrationForeignKey: foreignKey({
       columns: [table.externalRequesterId, table.supportIntegrationId],
       foreignColumns: [externalRequesters.id, externalRequesters.supportIntegrationId],
