@@ -48,17 +48,24 @@ export class SlaAlertProcessorService {
     const now = new Date();
     const warningMinutes = Number(await this.settingsService.getSetting('SLA_WARNING_MINUTES', '30')) || 30;
     const warningThreshold = new Date(now.getTime() + warningMinutes * 60 * 1000);
+    const emailEnabled = (await this.settingsService.getSetting('NOTIFICATIONS_SLA_BREACH_ENABLED', 'true')) !== 'false';
 
-    await this.processTarget('FIRST_RESPONSE', 'BREACH', now, warningThreshold);
-    await this.processTarget('RESOLUTION', 'BREACH', now, warningThreshold);
-    await this.processTarget('FIRST_RESPONSE', 'WARNING', now, warningThreshold);
-    await this.processTarget('RESOLUTION', 'WARNING', now, warningThreshold);
+    await this.processTarget('FIRST_RESPONSE', 'BREACH', now, warningThreshold, emailEnabled);
+    await this.processTarget('RESOLUTION', 'BREACH', now, warningThreshold, emailEnabled);
+    await this.processTarget('FIRST_RESPONSE', 'WARNING', now, warningThreshold, emailEnabled);
+    await this.processTarget('RESOLUTION', 'WARNING', now, warningThreshold, emailEnabled);
   }
 
   /**
    * Recherche et traite les tickets candidats pour un type d'alerte donné.
    */
-  private async processTarget(target: SlaTarget, kind: AlertKind, now: Date, threshold: Date): Promise<void> {
+  private async processTarget(
+    target: SlaTarget,
+    kind: AlertKind,
+    now: Date,
+    threshold: Date,
+    emailEnabled: boolean,
+  ): Promise<void> {
     const candidates = await this.findCandidates(target, kind, now, threshold);
 
     for (const ticket of candidates) {
@@ -67,7 +74,7 @@ export class SlaAlertProcessorService {
 
       try {
         this.logger.warn(`${kind} SLA ${target}: ${ticket.ticketNumber}`);
-        if (kind === 'BREACH') {
+        if (kind === 'BREACH' && emailEnabled) {
           await this.notifier.notifyBreach(ticket, target, now);
         } else {
           await this.notifier.notifyWarning(ticket, target, now);

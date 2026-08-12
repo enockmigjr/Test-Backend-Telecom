@@ -1063,6 +1063,11 @@ async function seed() {
       value: '30',
       description: 'Seuil d alerte SLA avant échéance (minutes)',
     },
+    {
+      key: 'NOTIFICATIONS_SLA_BREACH_ENABLED',
+      value: 'true',
+      description: 'Envoi des emails de violation SLA (true/false)',
+    },
   ];
 
   for (const s of settingsData) {
