@@ -49,7 +49,7 @@ export class SupportSatisfactionService {
       expiresAt,
     });
     const origin = process.env['PUBLIC_PORTAL_ORIGIN'] ?? 'http://localhost:3005';
-    return { url: `${origin}/satisfaction?t=${token}`, expiresAt: expiresAt.toISOString() };
+    return { url: `${origin}/satisfaction?t=${token}&id=${ticketId}`, expiresAt: expiresAt.toISOString() };
   }
 
   /** Consomme le lien : enregistre la note et le commentaire. */
@@ -89,8 +89,8 @@ export class SupportSatisfactionService {
     return {
       totalInvited: total,
       submitted: Number(row?.submitted ?? 0),
-      avgNote: total > 0 ? Number((Number(row?.avgNote ?? 0)).toFixed(2)) : 0,
-      responseRate: total > 0 ? Number((((Number(row?.submitted ?? 0)) / total) * 100).toFixed(2)) : 0,
+      avgNote: total > 0 ? Number(Number(row?.avgNote ?? 0).toFixed(2)) : 0,
+      responseRate: total > 0 ? Number(((Number(row?.submitted ?? 0) / total) * 100).toFixed(2)) : 0,
       distribution: {
         '1': Number(row?.note1 ?? 0),
         '2': Number(row?.note2 ?? 0),

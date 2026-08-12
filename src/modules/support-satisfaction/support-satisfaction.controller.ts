@@ -23,10 +23,7 @@ export class PublicSatisfactionController {
   @ApiOperation({ summary: 'Soumettre une note de satisfaction' })
   @ApiResponse({ status: 200, description: 'Satisfaction enregistrée.' })
   @ApiResponse({ status: 404, description: 'Lien invalide.' })
-  async submit(
-    @Param('ticketId', ParseUUIDPipe) ticketId: string,
-    @Body() dto: SubmitSatisfactionDto,
-  ) {
+  async submit(@Param('ticketId', ParseUUIDPipe) ticketId: string, @Body() dto: SubmitSatisfactionDto) {
     return this.service.submit(ticketId, dto.token, dto.note, dto.comment);
   }
 }

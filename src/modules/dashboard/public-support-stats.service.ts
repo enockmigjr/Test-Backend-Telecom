@@ -141,9 +141,7 @@ export class PublicSupportStatsService {
           invited: Number(satisfactionStats?.total ?? 0),
           submitted: Number(satisfactionStats?.submitted ?? 0),
           avgNote:
-            Number(satisfactionStats?.total ?? 0) > 0
-              ? Number(Number(satisfactionStats?.avgNote ?? 0).toFixed(2))
-              : 0,
+            Number(satisfactionStats?.total ?? 0) > 0 ? Number(Number(satisfactionStats?.avgNote ?? 0).toFixed(2)) : 0,
         },
       },
       byChannel: Array.from(channels, ([channel, value]) => ({ channel, ...value })),
