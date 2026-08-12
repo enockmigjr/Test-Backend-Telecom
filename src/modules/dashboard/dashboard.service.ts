@@ -379,6 +379,81 @@ export class DashboardService {
   }
 
   /**
+   * Performance individuelle des agents sur une période : volume résolu, violations SLA,
+   * délai moyen de résolution, tickets ouverts en retard/à risque et dernière activité.
+   */
+  async agentPerformance(from?: string, to?: string, currentUser?: JwtPayload) {
+    const fromDate = from ? new Date(from) : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    const toDate = to ? new Date(to) : new Date();
+    const now = new Date();
+    const targetDeptId = this.enforceSupervisorScope(undefined, currentUser);
+
+    const conditions = [isNull(tickets.deletedAt), sql`${tickets.assignedTo} IS NOT NULL`];
+    if (targetDeptId) conditions.push(eq(tickets.assignedTeamId, targetDeptId));
+    const where = and(...conditions);
+    const openStatus = sql`${tickets.status} NOT IN ('RESOLVED','CLOSED','CANCELLED')`;
+    const durationMinutes = sql<number>`EXTRACT(EPOCH FROM (${tickets.resolvedAt} - ${tickets.createdAt})) / 60`;
+
+    const rows = await this.drizzle.db
+      .select({
+        agentId: tickets.assignedTo,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        email: users.email,
+        role: users.role,
+        isAvailable: users.isAvailable,
+        absenceEndsAt: users.absenceEndsAt,
+        departmentName: departments.name,
+        openTicketsCount: sql<number>`COUNT(*) FILTER (WHERE ${openStatus})`,
+        criticalTicketsCount: sql<number>`COUNT(*) FILTER (WHERE ${openStatus} AND ${tickets.priority} = 'CRITICAL')`,
+        overdueTicketsCount: sql<number>`COUNT(*) FILTER (WHERE ${openStatus} AND ${tickets.resolutionDueAt} < ${now.toISOString()})`,
+        atRiskTicketsCount: sql<number>`COUNT(*) FILTER (WHERE ${openStatus} AND ${tickets.resolutionDueAt} <= ${new Date(now.getTime() + 30 * 60 * 1000).toISOString()})`,
+        resolvedInPeriod: sql<number>`COUNT(*) FILTER (WHERE ${tickets.resolvedAt} >= ${fromDate.toISOString()} AND ${tickets.resolvedAt} <= ${toDate.toISOString()})`,
+        slaBreachedCount: sql<number>`COUNT(*) FILTER (WHERE ${tickets.slaBreached} = true)`,
+        avgResolutionMinutes: sql<number>`COALESCE(AVG(${durationMinutes}) FILTER (WHERE ${tickets.resolvedAt} >= ${fromDate.toISOString()} AND ${tickets.resolvedAt} <= ${toDate.toISOString()}), 0)`,
+        lastActivityAt: sql<Date>`MAX(${tickets.updatedAt})`,
+      })
+      .from(tickets)
+      .leftJoin(users, eq(tickets.assignedTo, users.id))
+      .leftJoin(departments, eq(tickets.assignedTeamId, departments.id))
+      .where(where)
+      .groupBy(
+        tickets.assignedTo,
+        users.firstName,
+        users.lastName,
+        users.email,
+        users.role,
+        users.isAvailable,
+        users.absenceEndsAt,
+        departments.name,
+      )
+      .orderBy(users.firstName, users.lastName);
+
+    return {
+      generatedAt: now.toISOString(),
+      period: { from: fromDate.toISOString(), to: toDate.toISOString() },
+      data: rows.map((row) => ({
+        agentId: row.agentId,
+        firstName: row.firstName,
+        lastName: row.lastName,
+        email: row.email,
+        role: row.role,
+        isAvailable: row.isAvailable,
+        absenceEndsAt: row.absenceEndsAt ? new Date(row.absenceEndsAt).toISOString() : null,
+        departmentName: row.departmentName,
+        openTicketsCount: Number(row.openTicketsCount || 0),
+        criticalTicketsCount: Number(row.criticalTicketsCount || 0),
+        overdueTicketsCount: Number(row.overdueTicketsCount || 0),
+        atRiskTicketsCount: Number(row.atRiskTicketsCount || 0),
+        resolvedInPeriod: Number(row.resolvedInPeriod || 0),
+        slaBreachedCount: Number(row.slaBreachedCount || 0),
+        avgResolutionMinutes: Math.round(Number(row.avgResolutionMinutes || 0)),
+        lastActivityAt: row.lastActivityAt ? new Date(row.lastActivityAt).toISOString() : null,
+      })),
+    };
+  }
+
+  /**
    * Calcule les métriques statistiques de temps de résolution (moyenne, médiane P50, 90ème centile P90) et l'évolution temporelle.
    */
   async resolutionTime(

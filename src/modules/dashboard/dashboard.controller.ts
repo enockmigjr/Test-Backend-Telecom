@@ -205,6 +205,21 @@ export class DashboardController {
   }
 
   /**
+   * Performance individuelle des agents sur la période (résolutions, SLA, délais, activité).
+   */
+  @Get('agent-performance')
+  @Roles('ADMINISTRATOR', 'SUPERVISOR')
+  @ApiOperation({
+    summary: 'Performance des agents',
+    description:
+      'Retourne les indicateurs de performance par agent : tickets ouverts/critiques/en retard/à risque, résolutions sur la période, violations SLA, délai moyen de résolution et dernière activité.\n\n**Rôles autorisés :** ADMINISTRATOR, SUPERVISOR',
+  })
+  @ApiResponse({ status: 200, description: 'Performance par agent.' })
+  async agentPerformance(@Query() range: DateRangeDto, @CurrentUser() currentUser?: JwtPayload) {
+    return this.dashboardService.agentPerformance(range.from, range.to, currentUser);
+  }
+
+  /**
    * Distribution statistique des temps de résolution des tickets d'incidents (moyenne, médiane, P90).
    */
   @Get('resolution-time')
