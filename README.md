@@ -171,6 +171,20 @@ curl http://localhost:3000/api/v1/users \
   -H "Authorization: Bearer <accessToken>"
 ```
 
+### Comptes SSO Keycloak (après bascule `AUTH_PROVIDER=keycloak`)
+
+> Keycloak tourne sur **http://localhost:8081** (8080 est utilisé par PhotoVault).
+> Lancer `node keycloak/seed-users.mjs` (ou `make keycloak-seed`) pour créer les 105 comptes.
+
+| Usage                             | Identifiant                                          | Mot de passe    |
+| --------------------------------- | ---------------------------------------------------- | --------------- |
+| Login SSO — Administrateur        | `admin@telecom.local`                                | `Admin@1234`    |
+| Login SSO — Superviseur           | `supervisor@telecom.local`                           | `Super@1234`    |
+| Login SSO — 105 agents seed       | `agent.<ROLE>.<1..15>@telecom.local` (7 rôles × 15)  | `Telecom@2026!` |
+| Console admin Keycloak            | `admin` (définissable via `KEYCLOAK_ADMIN`)          | `Admin@1234`    |
+
+Le formulaire de login est thématisé (Keycloakify v11) : `http://localhost:8081/realms/telecom/protocol/openid-connect/auth`.
+
 ### Outils de monitoring
 
 | URL                                  | Service        | Identifiants         |
@@ -180,6 +194,7 @@ curl http://localhost:3000/api/v1/users \
 | `http://localhost:3000/admin/queues` | BullBoard      | `admin`/`bullboard`  |
 | `http://localhost:8025`              | Mailpit (mail) | Aucun                |
 | `http://localhost:3001`              | Grafana        | `admin`/`admin`      |
+| `http://localhost:8081/admin`        | Keycloak Admin | `admin`/`Admin@1234` |
 | `http://localhost:9090`              | Prometheus     | Aucun                |
 | `http://localhost:3002`              | Uptime Kuma    | Aucun (à configurer) |
 

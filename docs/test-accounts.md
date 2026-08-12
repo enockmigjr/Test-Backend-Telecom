@@ -132,3 +132,18 @@ curl -X POST http://localhost:3000/api/v1/tickets \
 | `http://localhost:8025`              | Mailpit (mail) | Aucun               |
 | `http://localhost:3001`              | Grafana        | `admin`/`admin`     |
 | `http://localhost:9090`              | Prometheus     | Aucun               |
+
+---
+
+## SSO Keycloak (AUTH_PROVIDER=keycloak)
+
+Keycloak tourne sur **http://localhost:8081** (8080 est utilisé par PhotoVault). Le realm `telecom` est importé au premier démarrage ; `make keycloak-seed` crée les 105 comptes métier.
+
+| Usage                     | Identifiant                                         | Mot de passe    |
+| ------------------------- | --------------------------------------------------- | --------------- |
+| Login SSO — Administrateur | `admin@telecom.local`                               | `Admin@1234`    |
+| Login SSO — Superviseur    | `supervisor@telecom.local`                          | `Super@1234`    |
+| 105 agents seed            | `agent.<ROLE>.<1..15>@telecom.local` (7 rôles × 15) | `Telecom@2026!` |
+| Console admin Keycloak     | `admin`                                             | `Admin@1234`    |
+
+Les comptes SSO sont liés aux profils métier (département, rôle) par email vérifié (`users.keycloakSubjectId`). La page de login est thématisée (Keycloakify v11) : `http://localhost:8081/realms/telecom/protocol/openid-connect/auth`.

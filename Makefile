@@ -7,10 +7,12 @@
 SHELL := /bin/sh
 COMPOSE ?= docker compose
 API ?= api
+KEYCLOAK_ADMIN ?= admin
+KEYCLOAK_ADMIN_PASSWORD ?= Admin@1234
 
 .PHONY: help env up down build restart logs ps health migrate seed db-reset keycloak-seed publish \
 	test unit e2e lint typecheck openapi \
-	api-logs db-shell redis-shell mailpit backup restore clean
+	api-logs db-shell redis-shell mailpit backup restore clean accounts
 
 help: ## Affiche les cibles disponibles
 	@echo "Cibles principales :"
@@ -53,8 +55,20 @@ seed: ## Charge les données de démonstration
 keycloak-up: ## Démarre Keycloak avec le realm importé
 	$(COMPOSE) up -d keycloak
 
-keycloak-seed: ## Crée 100+ comptes dans Keycloak
+keycloak-seed: ## Crée 105 comptes dans Keycloak (realm telecom, http://localhost:8081)
 	KEYCLOAK_ADMIN=$(KEYCLOAK_ADMIN) KEYCLOAK_ADMIN_PASSWORD=$(KEYCLOAK_ADMIN_PASSWORD) node keycloak/seed-users.mjs
+
+accounts: ## Affiche les comptes de démonstration principaux
+	@echo "Comptes de démonstration"
+	@echo "  Login local (AUTH_PROVIDER=local) :"
+	@echo "    admin@telecom.local / Admin@1234  (ADMINISTRATOR)"
+	@echo "    supervisor@telecom.local / Super@1234  (SUPERVISOR)"
+	@echo "    agent-cc1@telecom.local / Agent@1234  (CUSTOMER_SERVICE_AGENT)"
+	@echo "  SSO Keycloak (AUTH_PROVIDER=keycloak) - http://localhost:8081 :"
+	@echo "    admin@telecom.local / Admin@1234  (ADMINISTRATOR)"
+	@echo "    supervisor@telecom.local / Super@1234  (SUPERVISOR)"
+	@echo "    105 comptes seed : agent.<ROLE>.<1..15>@telecom.local / Telecom@2026!"
+	@echo "  Console admin Keycloak : http://localhost:8081/admin - $(KEYCLOAK_ADMIN) / $(KEYCLOAK_ADMIN_PASSWORD)"
 
 publish: ## Publie les images backend et portail sur le registry (REGISTRY/TAG)
 	@test -n "$(REGISTRY)" || (echo "Précisez REGISTRY=registry.example.com" && exit 1)
