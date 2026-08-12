@@ -39,8 +39,7 @@ export class KeycloakJwksService {
     }
     // KEYCLOAK_JWKS_URL dissocie l'URL publique (émise dans les tokens, atteignable
     // par le navigateur) de l'URL interne conteneurisée (nom de service Docker).
-    const jwksUrl =
-      process.env['KEYCLOAK_JWKS_URL'] ?? `${issuer}/protocol/openid-connect/certs`;
+    const jwksUrl = process.env['KEYCLOAK_JWKS_URL'] ?? `${issuer}/protocol/openid-connect/certs`;
     const response = await fetch(jwksUrl, {
       signal: AbortSignal.timeout(5_000),
     });
