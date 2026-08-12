@@ -13,10 +13,11 @@ import { Module } from '@nestjs/common';
 import { DashboardController } from './dashboard.controller';
 import { DashboardService } from './dashboard.service';
 import { DashboardSlaService } from './dashboard-sla.service';
+import { PublicSupportStatsService } from './public-support-stats.service';
 
 @Module({
   controllers: [DashboardController],
-  providers: [DashboardService, DashboardSlaService],
+  providers: [DashboardService, DashboardSlaService, PublicSupportStatsService],
 })
 /**
  * Module NestJS `DashboardModule` configurant les dépendances, contrôleurs et services associés.

@@ -18,6 +18,7 @@
 import { Controller, Get, Query, UseGuards, UseInterceptors } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { DashboardService } from './dashboard.service';
+import { PublicSupportStatsService } from './public-support-stats.service';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { DateRangeDto } from '../../common/dto/date-range.dto';
@@ -34,7 +35,25 @@ import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 @UseGuards(RolesGuard)
 @UseInterceptors(FieldProjectionInterceptor)
 export class DashboardController {
-  constructor(private readonly dashboardService: DashboardService) {}
+  constructor(
+    private readonly dashboardService: DashboardService,
+    private readonly publicSupportStats: PublicSupportStatsService,
+  ) {}
+
+  /**
+   * Statistiques agrégées du support public (conversations, demandeurs, messages, tickets publics).
+   */
+  @Get('public-support')
+  @Roles('ADMINISTRATOR', 'SUPERVISOR')
+  @ApiOperation({
+    summary: 'Statistiques du support public',
+    description:
+      'Retourne les indicateurs du support public : conversations, demandeurs, messages, tickets publics, délai moyen de première réponse et canaux.\n\n**Rôles autorisés :** ADMINISTRATOR, SUPERVISOR',
+  })
+  @ApiResponse({ status: 200, description: 'Statistiques du support public.' })
+  async publicSupport() {
+    return this.publicSupportStats.overview();
+  }
 
   /**
    * Synthèse globale des indicateurs clés de performance (KPIs).

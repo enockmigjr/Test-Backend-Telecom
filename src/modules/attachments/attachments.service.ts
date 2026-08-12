@@ -64,7 +64,10 @@ export class AttachmentsService {
 
     const id = generateUuid();
     try {
-      const actorColumns = toTicketActorColumns(internalActor(user.sub), parentTicket?.supportIntegrationId ?? undefined);
+      const actorColumns = toTicketActorColumns(
+        internalActor(user.sub),
+        parentTicket?.supportIntegrationId ?? undefined,
+      );
       const { userId, ...actorRest } = actorColumns;
       await this.drizzle.db.insert(attachments).values({
         id,
