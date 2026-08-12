@@ -104,18 +104,8 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   /** Valide un jeton Keycloak : rôle depuis realm_access, profil métier lié par keycloakSubjectId. */
   private async validateKeycloak(payload: JwtPayload) {
     const subject = payload.sub;
-    const [user] = await this.drizzle.db
-      .select({
-        id: users.id,
-        email: users.email,
-        role: users.role,
-        departmentId: users.departmentId,
-        isActive: users.isActive,
-        mustChangePassword: users.mustChangePassword,
-      })
-      .from(users)
-      .where(and(eq(users.keycloakSubjectId, subject), isNull(users.deletedAt)))
-      .limit(1);
+    const profile = await this.findProfileBySubject(subject);
+    const user = profile ?? (await this.bindProfileByEmail(payload, subject));
     if (!user || !user.isActive) {
       throw new UnauthorizedException('Profil métier introuvable pour ce compte SSO.');
     }
@@ -131,6 +121,47 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       jti: payload.jti,
       sessionIssuedAt: undefined,
     };
+  }
+
+  private async findProfileBySubject(subject: string) {
+    const [user] = await this.drizzle.db
+      .select({
+        id: users.id,
+        email: users.email,
+        role: users.role,
+        departmentId: users.departmentId,
+        isActive: users.isActive,
+        mustChangePassword: users.mustChangePassword,
+      })
+      .from(users)
+      .where(and(eq(users.keycloakSubjectId, subject), isNull(users.deletedAt)))
+      .limit(1);
+    return user;
+  }
+
+  /**
+   * Premier login SSO : lie le profil métier existant au sujet Keycloak via l'email
+   * vérifié par le fournisseur (jamais de création silencieuse).
+   */
+  private async bindProfileByEmail(payload: JwtPayload, subject: string) {
+    const email = typeof payload['email'] === 'string' ? payload['email'].toLowerCase().trim() : '';
+    const emailVerified = payload['email_verified'] !== false;
+    if (!email || !emailVerified) return undefined;
+    const [user] = await this.drizzle.db
+      .select({
+        id: users.id,
+        email: users.email,
+        role: users.role,
+        departmentId: users.departmentId,
+        isActive: users.isActive,
+        mustChangePassword: users.mustChangePassword,
+      })
+      .from(users)
+      .where(and(eq(users.email, email), isNull(users.deletedAt)))
+      .limit(1);
+    if (!user) return undefined;
+    await this.drizzle.db.update(users).set({ keycloakSubjectId: subject }).where(eq(users.id, user.id));
+    return user;
   }
 
   /** Extrait les rôles métier du claim realm_access (Keycloak). */

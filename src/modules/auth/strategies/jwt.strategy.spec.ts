@@ -95,4 +95,36 @@ describe('JwtStrategy — jeton Keycloak', () => {
       else process.env['KEYCLOAK_ISSUER'] = previousIssuer;
     }
   });
+
+  it('lie le profil métier au premier login via l email vérifié', async () => {
+    const previousIssuer = process.env['KEYCLOAK_ISSUER'];
+    process.env['KEYCLOAK_ISSUER'] = 'http://keycloak.test/realms/telecom';
+    const limit = jest.fn().mockResolvedValueOnce([]).mockResolvedValueOnce([activeUser]);
+    const updateMock = jest.fn(() => ({ set: jest.fn(() => ({ where: jest.fn(() => Promise.resolve(undefined)) })) }));
+    const drizzle = {
+      db: {
+        select: jest.fn(() => ({ from: jest.fn(() => ({ where: jest.fn(() => ({ limit })) })) })),
+        update: updateMock,
+      },
+    } as unknown as DrizzleProvider;
+    const redis = { getClient: jest.fn(() => ({ exists: jest.fn().mockResolvedValue(0) })) } as unknown as RedisProvider;
+    const jwtConfig = { accessSecret: 'test-access-secret-minimum-32-characters' } as JwtConfigService;
+    const keycloakJwks = { publicKey: jest.fn() } as unknown as KeycloakJwksService;
+    const strategy = new JwtStrategy(jwtConfig, drizzle, redis, keycloakJwks);
+    try {
+      const result = await strategy.validate({
+        sub: 'keycloak-subject-new',
+        email: 'agent@telecom.local',
+        email_verified: true,
+        jti: 'k-jti-2',
+        realm_access: { roles: ['FIELD_TECHNICIAN'] },
+        iss: 'http://keycloak.test/realms/telecom',
+      } as unknown as JwtPayload);
+      expect(result).toMatchObject({ id: 'user-001', role: 'FIELD_TECHNICIAN' });
+      expect(updateMock).toHaveBeenCalled();
+    } finally {
+      if (previousIssuer === undefined) delete process.env['KEYCLOAK_ISSUER'];
+      else process.env['KEYCLOAK_ISSUER'] = previousIssuer;
+    }
+  });
 });
