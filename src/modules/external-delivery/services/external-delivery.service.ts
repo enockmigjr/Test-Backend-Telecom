@@ -25,6 +25,7 @@ const OUTBOUND_EVENTS = new Set([
   'PUBLIC_TICKET_CLOSED',
   'PUBLIC_TICKET_REOPENED',
   'PUBLIC_HUMAN_HANDOFF_REQUESTED',
+  'SATISFACTION_REQUEST',
 ]);
 
 @Injectable()
@@ -134,6 +135,7 @@ export class ExternalDeliveryService {
         destination: target.destination,
         eventType: target.eventType,
         ...(target.ticketNumber ? { ticketNumber: target.ticketNumber } : {}),
+        ...(target.satisfactionUrl ? { satisfactionUrl: target.satisfactionUrl } : {}),
       });
       await this.drizzle.db
         .update(externalDeliveries)
@@ -172,6 +174,7 @@ export class ExternalDeliveryService {
         destinationKey: externalIdentities.normalizedValueHash,
         identityId: externalIdentities.id,
         ticketNumber: tickets.ticketNumber,
+        payload: outboxEvents.payload,
       })
       .from(outboxEvents)
       .leftJoin(tickets, eq(outboxEvents.aggregateId, tickets.id))
@@ -186,12 +189,19 @@ export class ExternalDeliveryService {
       )
       .where(eq(outboxEvents.id, eventId))
       .limit(1);
-    if (!row?.integrationId || !row.eventType.startsWith('PUBLIC_')) return undefined;
+    if (!row?.integrationId || (!row.eventType.startsWith('PUBLIC_') && row.eventType !== 'SATISFACTION_REQUEST')) {
+      return undefined;
+    }
+    const payload =
+      row.payload && typeof row.payload === 'object' && !Array.isArray(row.payload)
+        ? (row.payload as Record<string, unknown>)
+        : undefined;
     const [keyVersion, encrypted] = splitEncrypted(row.encryptedValue);
     return {
       ...row,
       integrationId: row.integrationId,
       destination: this.cipher.open(encrypted, keyVersion, `identity:${row.identityId}`),
+      satisfactionUrl: typeof payload?.['satisfactionUrl'] === 'string' ? payload['satisfactionUrl'] : undefined,
     };
   }
 

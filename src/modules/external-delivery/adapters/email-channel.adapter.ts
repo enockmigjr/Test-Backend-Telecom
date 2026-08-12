@@ -11,7 +11,11 @@ export class EmailChannelAdapter implements ChannelAdapter {
       input.destination,
       subjectFor(input.eventType, input.ticketNumber),
       'publicSupportEvent',
-      { eventLabel: labelFor(input.eventType), ticketNumber: input.ticketNumber },
+      {
+        eventLabel: labelFor(input.eventType),
+        ticketNumber: input.ticketNumber,
+        ...(input.satisfactionUrl ? { satisfactionUrl: input.satisfactionUrl } : {}),
+      },
       undefined,
       { messageId: `<public-support-${input.deliveryId}@telecom.local>` },
     );
@@ -35,6 +39,7 @@ function labelFor(eventType: string): string {
     PUBLIC_TICKET_CLOSED: 'Demande clôturée',
     PUBLIC_TICKET_REOPENED: 'Demande rouverte',
     PUBLIC_HUMAN_HANDOFF_REQUESTED: 'Transfert vers un conseiller demandé',
+    SATISFACTION_REQUEST: 'Votre avis compte',
   };
   return labels[eventType] ?? 'Mise à jour de votre demande';
 }

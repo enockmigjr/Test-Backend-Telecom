@@ -13,7 +13,16 @@
   Cette notification concerne votre demande adressée au support. Ouvrez votre espace de suivi habituel pour consulter les informations à jour.
 </p>
 
+{{#if satisfactionUrl}}
+<p class='email-text'>
+  Votre demande est désormais clôturée. Dites-nous comment s'est passée votre prise en charge :
+</p>
+<div class='btn-wrap'>
+  <a href='{{satisfactionUrl}}' class='btn-primary'>Donner mon avis</a>
+</div>
+{{else}}
 <div class='btn-wrap'>
   <a href='{{supportUrl}}' class='btn-primary'>Ouvrir mon espace de suivi</a>
 </div>
+{{/if}}
 {{/base}}

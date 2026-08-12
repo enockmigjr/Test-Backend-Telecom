@@ -3,6 +3,7 @@ export interface ChannelDeliveryInput {
   readonly destination: string;
   readonly eventType: string;
   readonly ticketNumber?: string;
+  readonly satisfactionUrl?: string;
 }
 
 export interface ChannelDeliveryResult {
