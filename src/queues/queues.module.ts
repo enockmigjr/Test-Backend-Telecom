@@ -19,6 +19,7 @@ import { AuditWorker } from './workers/audit.worker';
 import { ReportWorker } from './workers/report.worker';
 import { AssignmentWorker, ASSIGNMENT_QUEUE } from './workers/assignment.worker';
 import { AttachmentScanWorker } from './workers/attachment-scan.worker';
+import { ExternalDeliveryWorker } from './workers/external-delivery.worker';
 
 export const EMAIL_QUEUE = 'email-queue';
 export const NOTIFICATION_QUEUE = 'notification-queue';
@@ -32,6 +33,7 @@ export { ASSIGNMENT_QUEUE };
 import { ReportsModule } from '../modules/reports/reports.module';
 import { AttachmentsModule } from '../modules/attachments/attachments.module';
 import { TicketsModule } from '../modules/tickets/tickets.module';
+import { ExternalDeliveryModule } from '../modules/external-delivery/external-delivery.module';
 
 @Global()
 @Module({
@@ -39,6 +41,7 @@ import { TicketsModule } from '../modules/tickets/tickets.module';
     forwardRef(() => ReportsModule),
     AttachmentsModule,
     forwardRef(() => TicketsModule), // Requis pour injecter AssignmentEngineService dans AssignmentWorker
+    forwardRef(() => ExternalDeliveryModule), // Requis pour injecter ExternalDeliveryService dans ExternalDeliveryWorker
   ],
   providers: [
     {
@@ -93,6 +96,7 @@ import { TicketsModule } from '../modules/tickets/tickets.module';
     ReportWorker,
     AssignmentWorker,
     AttachmentScanWorker,
+    ExternalDeliveryWorker,
   ],
   exports: ['BullMQ_Queues'],
 })

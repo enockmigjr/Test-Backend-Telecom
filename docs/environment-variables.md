@@ -133,3 +133,64 @@ Accessible sur `http://localhost:3000/admin/queues`.
 | ----------------------------- | ------------- | --------------------------------------- |
 | `REPORT_DOWNLOAD_SECRET`      | _(à changer)_ | Secret pour les liens de téléchargement |
 | `REPORT_DOWNLOAD_TTL_SECONDS` | `604800`      | Durée de validité du lien (7 jours)     |
+
+---
+
+## Support public (identité et session)
+
+| Variable | Défaut | Description |
+| --- | --- | --- |
+| `PUBLIC_SUPPORT_MASTER_KEYS` | obligatoire | Clés maîtresses AES-256 versionnées (base64, séparées par des virgules) |
+| `PUBLIC_SUPPORT_MASTER_KEY_VERSION` | `1` | Version de clé maîtresse courante |
+| `PUBLIC_SUPPORT_CONTACT_HASH_SECRET` | obligatoire (≥ 32 car.) | HMAC des contacts et quotas publics |
+| `PUBLIC_SESSION_SECRET` | obligatoire (≥ 32 car.) | Signature des sessions publiques (distinct du JWT interne) |
+| `PUBLIC_SESSION_TTL_SECONDS` | `900` | Durée d'une session publique (300-3600) |
+| `PUBLIC_SESSION_ISSUER` / `PUBLIC_SESSION_AUDIENCE` | `telecom-public-support` / `telecom-public-bff` | Issuer/audience des sessions publiques |
+| `PUBLIC_SUPPORT_DEVICE_TRUST_DAYS` | `90` | Validité d'un appareil de confiance |
+| `PUBLIC_SUPPORT_DEVICE_POLICY_VERSION` | `1` | Version de la politique d'appareils |
+| `PUBLIC_SUPPORT_OTP_TTL_SECONDS` | `600` | Durée de vie d'un code OTP |
+| `PUBLIC_SUPPORT_OTP_MAX_ATTEMPTS` | `5` | Tentatives maximales par challenge |
+| `PUBLIC_SUPPORT_OTP_RESEND_SECONDS` | `60` | Délai avant renvoi |
+| `PUBLIC_ASSERTION_AUDIENCE` | `telecom-integration-assertion` | Audience des assertions WordPress |
+| `PUBLIC_ASSERTION_MAX_AGE_SECONDS` | `120` | Durée de vie d'une assertion (30-300) |
+| `PUBLIC_BOOTSTRAP_TTL_SECONDS` | `120` | Durée d'un code de transfert iframe |
+| `PUBLIC_SUPPORT_ORIGINS` | `http://localhost:3005` | Origines autorisées pour le WebSocket public |
+| `PUBLIC_PORTAL_ORIGIN` | `http://localhost:3005` | Origine du portail public (liens de satisfaction) |
+| `PUBLIC_WS_COOKIE_NAME` | `support_session,support_iframe_session` | Noms des cookies publics (préfixe `__Host-` en prod) |
+| `PUBLIC_SUPPORT_RETENTION_INACTIVE_DAYS` | `395` | Inactivité avant anonymisation d'un demandeur |
+| `PUBLIC_SUPPORT_SECRET_GRACE_MINUTES` | `15` | Grâce d'un secret d'intégration révoqué |
+
+## Bot (support public)
+
+| Variable | Défaut | Description |
+| --- | --- | --- |
+| `PUBLIC_SUPPORT_BOT_PROVIDER` | `none` | `openai-compatible` ou `deepseek` pour activer |
+| `PUBLIC_SUPPORT_BOT_API_KEY` | — | Clé API du fournisseur (activation réelle) |
+| `PUBLIC_SUPPORT_BOT_BASE_URL` | selon fournisseur | Base URL du fournisseur compatible OpenAI |
+| `PUBLIC_SUPPORT_BOT_MODEL` | `gpt-4o-mini` / `deepseek-chat` | Modèle utilisé |
+| `PUBLIC_SUPPORT_BOT_MAX_TOKENS` | `800` | Max tokens par réponse |
+| `PUBLIC_SUPPORT_BOT_TIMEOUT_MS` | `20000` | Timeout du fournisseur |
+| `PUBLIC_SUPPORT_BOT_DAILY_BUDGET` | `200` | Appels bot par jour par intégration |
+| `PUBLIC_SUPPORT_BOT_CIRCUIT_OPEN_AFTER` | `5` | Échecs avant ouverture du circuit breaker |
+| `PUBLIC_SUPPORT_BOT_CIRCUIT_OPEN_MS` | `600000` | Durée d'ouverture du circuit breaker |
+| `PUBLIC_SUPPORT_BOT_PROMPT_VERSION` | `2026-08-v1` | Version du prompt système |
+
+## ClamAV et quarantaine
+
+| Variable | Défaut | Description |
+| --- | --- | --- |
+| `CLAMAV_HOST` / `CLAMAV_PORT` | `localhost` / `3310` | Hôte du scanner antivirus |
+| `CLAMAV_TIMEOUT_MS` | `10000` | Timeout du scan |
+| `CLAMAV_MAX_FILE_SIZE` | `10485760` | Taille max scannée (10 Mo) |
+| `ATTACHMENT_QUARANTINE_RETENTION_HOURS` | `24` | Rétention des quarantaines |
+
+## SSO Keycloak (en cours)
+
+| Variable | Défaut | Description |
+| --- | --- | --- |
+| `KEYCLOAK_ISSUER` | `http://localhost:8080/realms/telecom` | Issuer du realm Keycloak (JWKS RS256) |
+| `KEYCLOAK_ADMIN` | `admin` | Compte admin du conteneur |
+| `KEYCLOAK_ADMIN_PASSWORD` | `Admin@1234` | Mot de passe admin (dev) |
+| `KEYCLOAK_REDIRECT_URI` | `http://localhost:3001/api/auth/keycloak/callback` | URI de callback du BFF |
+
+> Référence complète : 143 variables documentées dans `.env.example`.

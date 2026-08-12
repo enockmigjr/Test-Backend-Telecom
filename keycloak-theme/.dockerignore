@@ -1,6 +1,6 @@
 node_modules/
 build/
-build_keycloak/
 dist/
+build_keycloak/
 dist_keycloak/
 *.tsbuildinfo

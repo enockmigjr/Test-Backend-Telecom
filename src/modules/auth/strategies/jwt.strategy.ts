@@ -40,11 +40,26 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
       // HS256 = jetons applicatifs ; RS256 = jetons Keycloak (clés publiques du realm).
-      secretOrKeyProvider: async (_request: unknown, rawJwtToken: string) => {
-        const decoded = jwt.decode(rawJwtToken, { complete: true });
-        const header = decoded && typeof decoded === 'object' ? decoded.header : undefined;
-        if (header?.alg === 'RS256') return this.keycloakJwks.publicKey(header.kid);
-        return this.jwtConfig.accessSecret;
+      // passport-jwt attend un callback `done` : une promesse retournée sans appel
+      // de callback laisserait chaque requête authentifiée en attente indéfiniment.
+      secretOrKeyProvider: (
+        _request: unknown,
+        rawJwtToken: string,
+        done: (error: Error | null, secretOrKey?: string) => void,
+      ) => {
+        void (async () => {
+          try {
+            const decoded = jwt.decode(rawJwtToken, { complete: true });
+            const header = decoded && typeof decoded === 'object' ? decoded.header : undefined;
+            if (header?.alg === 'RS256') {
+              done(null, await this.keycloakJwks.publicKey(header.kid));
+              return;
+            }
+            done(null, this.jwtConfig.accessSecret);
+          } catch (error) {
+            done(error instanceof Error ? error : new Error('Échec de résolution de la clé JWT.'));
+          }
+        })();
       },
     });
   }

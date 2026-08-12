@@ -46,12 +46,15 @@ Avec BullMQ, la requête HTTP retourne immédiatement et l'email est envoyé en 
 | Rapport ticket      | `ticket-report.hbs`       | `ReportWorker` (async)          | Demandeur            | ✅ Actif |
 | Rapport SLA         | `sla-report.hbs`          | `ReportWorker` (async)          | Demandeur            | ✅ Actif |
 | Rapport hebdo       | `admin-weekly-report.hbs` | `ReportWorker` (async)          | Admin + Supervisor   | ✅ Actif |
+| Échec de rapport    | `report-failed.hbs`       | `ReportWorker` (async)          | Demandeur            | ✅ Actif |
+| Code de vérification (OTP public) | `otp.hbs` | `EmailContactVerificationProvider` | Demandeur public | ✅ Actif |
+| Événement support public (création, réponse, statut, satisfaction) | `public-support-event.hbs` | `EmailChannelAdapter` (external-delivery) | Demandeur public | ✅ Actif |
 
 ## Templates Handlebars
 
 **Dossier**: `src/modules/email/templates/*.hbs`
 
-10 templates HTML responsifs structurés avec un layout global parent :
+15 templates HTML responsifs structurés avec un layout global parent :
 
 - `base.hbs` — Layout global partagé (CSS inline, en-tête noir moderne, accents de couleur par type, footer unifié)
 - `ticket-created.hbs` — Confirmation création
@@ -64,6 +67,10 @@ Avec BullMQ, la requête HTTP retourne immédiatement et l'email est envoyé en 
 - `ticket-report.hbs` — E-mail de notification de rapport de ticket avec lien de téléchargement sécurisé
 - `sla-report.hbs` — E-mail de notification de rapport SLA global avec lien de téléchargement sécurisé
 - `admin-weekly-report.hbs` — Rapport hebdomadaire avec stats et lien de téléchargement sécurisé
+- `report-failed.hbs` — Échec de génération de rapport
+- `otp.hbs` — Code de vérification du support public
+- `public-support-event.hbs` — Événements support public (email sortant par canal)
+- `reset-password.hbs` — Réinitialisation de mot de passe (réservé)
 
 Tous les templates s'abonnent dynamiquement au layout parent `base.hbs` pour un design unifié et cohérent.
 
@@ -95,6 +102,6 @@ SMTP_SECURE=true
 | --------------------------------------------------------------- | -------------------------------- |
 | `src/modules/email/email.service.ts`                            | Service Nodemailer + Handlebars  |
 | `src/modules/email/email.module.ts`                             | Module global                    |
-| `src/modules/email/templates/*.hbs`                             | 11 templates HTML                |
+| `src/modules/email/templates/*.hbs`                             | 15 templates HTML                |
 | `src/queues/workers/email.worker.ts`                            | Consommateur EMAIL_QUEUE → envoi |
 | `src/modules/tickets/listeners/ticket-notification.listener.ts` | Producteur → ajoute jobs email   |

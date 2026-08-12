@@ -5,7 +5,7 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql)
 ![Redis](https://img.shields.io/badge/Redis-7-DC382D?logo=redis)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker)
-![Tests](https://img.shields.io/badge/Tests-563%20passed-success)
+![Tests](https://img.shields.io/badge/Tests-89%20spec%20files-success)
 ![License](https://img.shields.io/badge/License-UNLICENSED-lightgrey)
 
 Backend **NestJS** pour la plateforme de gestion des tickets d'incidents télécoms.
@@ -19,7 +19,7 @@ Utilisé par le Service Client, NOC, Facturation, Support Technique et Opératio
 - [Démarrage Rapide](#-démarrage-rapide)
 - [Comptes de Test](#-comptes-de-test-complet)
 - [Architecture](#️-architecture)
-- [Modules](#-modules-16)
+- [Modules](#-modules-25)
 - [Flux Asynchrone](#-flux-asynchrone-bullmq)
 - [Sécurité](#️-sécurité)
 - [Observabilité](#-observabilité)
@@ -90,13 +90,13 @@ pnpm run start:dev
 ### Tests
 
 ```bash
-# Tests unitaires (453 tests)
+# Tests unitaires (89 fichiers spec)
 pnpm run test:unit
 
-# Tests end-to-end (110 tests)
+# Tests end-to-end (24 fichiers E2E/intégration)
 pnpm run test:e2e
 
-# Tous les tests (563 tests)
+# Tous les tests (113 fichiers — comptage réel à exécuter)
 pnpm run test:all
 ```
 
@@ -188,7 +188,7 @@ curl http://localhost:3000/api/v1/users \
 ## 🏗️ Architecture
 
 ```
-16 modules NestJS · 15 tables PostgreSQL · 60 routes REST · 6 workers BullMQ · 6 queues
+25 modules NestJS · 31 tables PostgreSQL · 144 opérations OpenAPI · 8 workers BullMQ · 8 queues
 ```
 
 ### Schéma Entité-Relation (ERD Simplifié)
@@ -214,7 +214,7 @@ flowchart LR
 
 ---
 
-## 📦 Modules (16)
+## 📦 Modules (25)
 
 | Module           | Responsabilité                                                                               |
 | ---------------- | -------------------------------------------------------------------------------------------- |
@@ -230,9 +230,18 @@ flowchart LR
 | `sla`            | Politiques SLA, cron engine \*/5 min, breach/warning detection                               |
 | `dashboard`      | 7 endpoints: overview, status, priority, departments, SLA, workload, resolution              |
 | `audit-logs`     | Immutable write-only, recherche multi-filtres                                                |
-| `email`          | Nodemailer dev/prod, 10 templates Handlebars + layout global unifié base.hbs                 |
-| `reports`        | Génération PDF premium (PDFKit) envoyés en pièces jointes, rapports asynchrones via BullMQ   |
+| `email`          | Nodemailer dev/prod, 15 templates Handlebars + layout global unifié base.hbs                 |
+| `reports`        | Génération PDF premium (PDFKit), rapports asynchrones, lien signé HMAC expirable             |
 | `settings`       | Paramètres système globaux dynamiques (heures et jours ouvrables, limite de tickets actifs)  |
+| `support-satisfaction` | Note 1-5, lien signé unique (TTL 14 j), email automatique à la clôture                 |
+| `public-support` | Portail public : catalogue, conversations (draft → confirm), timeline, préférences           |
+| `external-identity` | Identité publique : OTP email, appareils de confiance, assertions WordPress               |
+| `support-integrations` | Tenants multi-sites : origines, routage, quotas, secrets chiffrés                        |
+| `external-requesters` | Demandeurs publics : fusion de profils, anonymisation, rétention                          |
+| `support-knowledge` | Base documentaire publique versionnée, cloisonnée par intégration                         |
+| `support-bot`    | Assistant optionnel (budget, circuit breaker, outils fermés, repli formulaire)              |
+| `outbox`         | Événements durables écrits dans la transaction métier, publication bornée                   |
+| `external-delivery` | Livraisons sortantes : adaptateur email, statuts observables, rejeu                        |
 | `app`            | Module racine, health checks, métriques Prometheus                                           |
 
 ---
@@ -261,6 +270,10 @@ SlaEngineService (@Cron */5 min)
   ├── WebSocket emit (supervisor + assigné)
   ├── NOTIFICATION_QUEUE → NotificationWorker → DB + WebSocket
   └── EMAIL_QUEUE        → EmailWorker       → Alerte SLA
+
+Événement outbox (support public) → OutboxPublisherService (@Interval 1 s)
+  ├── external-delivery-queue → ExternalDeliveryWorker → EmailChannelAdapter (email demandeur)
+  └── attachment-scan-queue → AttachmentScanWorker → ClamAV → promotion clean/
 ```
 
 ---
@@ -270,8 +283,8 @@ SlaEngineService (@Cron */5 min)
 - **Auth**: JWT access + refresh rotation SHA-256, Argon2id (memory 64MB, time 3, parallelism 4)
 - **RBAC**: 7 rôles, `JwtAuthGuard` + `RolesGuard` + `@Roles()`
 - **ABAC**: Cloisonnement départemental (agents/superviseurs voient uniquement leur département)
-- **Rate Limiting**: Redis distribué (100 req/15min, 10 login/heure/IP)
-- **Idempotence**: `@Idempotent()` + header `Idempotency-Key` (cache Redis 24h)
+- **Rate Limiting**: Redis distribué (défauts 1000 req/15min, 20 login/heure/IP)
+- **Idempotence**: `@Idempotent()` + header `Idempotency-Key` (table PostgreSQL, TTL 24h)
 - **Soft Delete**: users, tickets, departments — aucune suppression physique
 
 ### Rôles et permissions (matrice RBAC)
@@ -305,7 +318,7 @@ NestJS (Pino JSON)
 
 ---
 
-## 🐳 Docker Compose (13 services)
+## 🐳 Docker Compose (15 services)
 
 ```bash
 # Services essentiels seulement
@@ -331,12 +344,14 @@ make down
 | Tempo         | 3200       | Tracing distribué         |
 | Promtail      | 9080       | Collecteur logs           |
 | Uptime Kuma   | 3002       | Monitoring uptime         |
+| ClamAV        | 3310       | Antivirus des pièces jointes publiques |
+| Keycloak      | 8080       | SSO (phase 07 en cours)   |
 
 ---
 
-## 🖥️ Frontend (2 dépôts)
+## 🖥️ Frontends (3 dépôts)
 
-Ce projet dispose de **deux frontends** :
+Ce projet dispose de **trois frontends** :
 
 ### 1. Frontend Embarqué (`./frontend/`)
 
@@ -368,6 +383,19 @@ pnpm dev
 
 > 📖 Voir le README du frontend externe pour la documentation complète.
 
+### 3. Portail public + widget (`public-frontend/`)
+
+Dépôt Git autonome (ignoré par le backend). Portail pleine page et widget iframe pour le support public.
+
+```bash
+cd public-frontend
+pnpm install
+pnpm dev
+```
+
+- **Auth**: BFF même origine, cookies HttpOnly publics + CSRF
+- **Port**: `http://localhost:3005` (par défaut)
+
 ---
 
 ## 📋 Scripts & Makefile
@@ -378,10 +406,10 @@ pnpm dev
 | ------------------------- | --------------------------------- |
 | `pnpm run start:dev`      | Développement hot-reload          |
 | `pnpm run build`          | Compilation TypeScript            |
-| `pnpm run test`           | Tests unitaires (453 tests)       |
+| `pnpm run test`           | Tests unitaires (89 fichiers spec)|
 | `pnpm run test:unit`      | Tests unitaires (chemin src/)     |
-| `pnpm run test:e2e`       | Tests end-to-end (110 tests)      |
-| `pnpm run test:all`       | Tous les tests (563 tests)        |
+| `pnpm run test:e2e`       | Tests end-to-end (24 fichiers)    |
+| `pnpm run test:all`       | Tous les tests (113 fichiers — comptage réel à exécuter) |
 | `pnpm run test:cov`       | Tests avec couverture             |
 | `pnpm run db:push`        | Pousser schéma Drizzle            |
 | `pnpm run db:seed`        | Données de test (14 utilisateurs) |
@@ -475,25 +503,25 @@ pnpm run start:dev
 
 | Fichier                                                                          | Contenu                                           |
 | -------------------------------------------------------------------------------- | ------------------------------------------------- |
-| [CHANGELOG.md](CHANGELOG.md)                                                     | Historique complet des versions (v1.0.0 → v1.4.2) |
+| [CHANGELOG.md](CHANGELOG.md)                                                     | Historique complet des versions (v1.0.0 → 2026-08-12) |
 | [CONTRIBUTING.md](CONTRIBUTING.md)                                               | Guide de contribution                             |
 | [docs/quick-start.md](docs/quick-start.md)                                       | Guide de démarrage rapide (5 min)                 |
-| [docs/routes.md](docs/routes.md)                                                 | Catalogue complet des 60 routes API               |
+| [docs/routes.md](docs/routes.md)                                                 | Catalogue complet des 144 opérations API (généré depuis OpenAPI) |
 | [docs/architecture-flows.md](docs/architecture-flows.md)                         | 10 diagrammes Mermaid                             |
-| [docs/database-schema.md](docs/database-schema.md)                               | Schéma de base de données (15 tables)             |
+| [docs/database-schema.md](docs/database-schema.md)                               | Schéma de base de données (31 tables)             |
 | [docs/ticket-lifecycle.md](docs/ticket-lifecycle.md)                             | Machine à états des tickets (9 statuts)           |
 | [docs/domain-events.md](docs/domain-events.md)                                   | Événements domaine EventEmitter2                  |
 | [docs/security.md](docs/security.md)                                             | Guide de sécurité (auth, RBAC, rate limiting)     |
 | [docs/test-accounts.md](docs/test-accounts.md)                                   | Comptes de test et identifiants                   |
-| [docs/testing.md](docs/testing.md)                                               | Guide des tests (563 tests)                       |
+| [docs/testing.md](docs/testing.md)                                               | Guide des tests (89 spec + 24 E2E/intégration)    |
 | [docs/environment-variables.md](docs/environment-variables.md)                   | Référence variables d'env                         |
 | [docs/deployment.md](docs/deployment.md)                                         | Guide de déploiement production                   |
 | [docs/emails.md](docs/emails.md)                                                 | Architecture email, templates, flux               |
 | [docs/observability.md](docs/observability.md)                                   | Prometheus, Loki, Tempo, Grafana, alertes         |
 | [docs/websockets.md](docs/websockets.md)                                         | WebSocket temps réel, rooms, scaling              |
-| [docs/jobs-and-workers.md](docs/jobs-and-workers.md)                             | Architecture BullMQ et 6 workers                  |
-| [docs/workers.md](docs/workers.md)                                               | Détail des 6 workers BullMQ                       |
+| [docs/jobs-and-workers.md](docs/jobs-and-workers.md)                             | Architecture BullMQ et 8 workers                  |
+| [docs/workers.md](docs/workers.md)                                               | Détail des 8 workers BullMQ                       |
 | [docs/troubleshooting.md](docs/troubleshooting.md)                               | Résolution des erreurs courantes                  |
 | [docs/implementation-status.md](docs/implementation-status.md)                   | État production-readiness                         |
 | [docs/detailed-design-assignment-sla.md](docs/detailed-design-assignment-sla.md) | Choix d'archi SLA & Auto-Assignation              |
-| [.env.example](.env.example)                                                     | 70+ variables d'environnement documentées         |
+| [.env.example](.env.example)                                                     | 143 variables d'environnement documentées         |

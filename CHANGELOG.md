@@ -4,6 +4,49 @@ Tous les changements notables sont documentés ici. Format basé sur [Keep a Cha
 
 ---
 
+## [Unreleased] — 2026-08-12
+
+### Added
+
+- **Support public multicanal (phases 00→08)** : contrat OpenAPI public déterministe (`openapi.public.json`, 33 opérations), modèle d'acteur `INTERNAL / EXTERNAL_REQUESTER / SYSTEM`, modules `public-support`, `external-identity`, `support-integrations`, `external-requesters`, `support-knowledge`, `support-bot`, `outbox`, `external-delivery` et `support-satisfaction`.
+- **Identité publique sans compte** : OTP email (code 6 chiffres, quotas anti-abus), appareils de confiance 90 jours renouvelables, assertions signées WordPress à usage unique, session publique JWT séparée de l'interne, code de transfert iframe → pleine page.
+- **Admission et conversations publiques** : catalogue par intégration, matrice impact × urgence, routage vers département/équipe, parcours `create → draft → confirm` atomique, transfert humain, idempotence.
+- **Pièces jointes publiques sécurisées** : quarantaine systématique, inspection du type réel, scan ClamAV, quotas par demandeur/IP/intégration, idempotence d'upload.
+- **Temps réel public** : namespace WebSocket `/public-support` distinct de `/ws` interne, événements `public.refresh`.
+- **Livraison externe fiable** : boîte d'envoi (`outbox_events`), statuts de livraison observables, rejeu après panne fournisseur, adaptateur email (contrat `ChannelAdapter` prêt pour d'autres canaux).
+- **Base documentaire publique** : articles versionnés, publications/archivage, cloisonnement par intégration, recherche publique.
+- **Bot assistant optionnel** : adaptateur OpenAI-compatible / DeepSeek, budget quotidien par intégration, circuit breaker, liste fermée d'outils (`knowledge_search`, `save_draft`, `request_human`), repli formulaire.
+- **Satisfaction client** : lien signé unique (TTL 14 jours), soumission note 1-5 + commentaire, stats, email automatique à la clôture d'un ticket public.
+- **Rétention et RGPD** : anonymisation automatique des demandeurs inactifs (défaut 395 jours), purge des challenges OTP et idempotences, fusion de profils demandeur avec aperçu d'impact et audit.
+- **Dashboards enrichis** : performance individuelle des agents (score pondéré 40/30/20/10, réouvertures, 1re réponse, médiane), Mon activité (agent), workload par agent avec retards et disponibilité, `atRisk`/`overdue` réels, stats support public.
+- **Agents** : pause / reprise / absence planifiée (courte auto ≤ 7 jours, prolongée admin/superviseur), seuil de réassignation configurable.
+- **SLA** : seuil d'alerte configurable (`SLA_WARNING_MINUTES`), interrupteur des emails de violation, alertes récurrentes, escalade automatique des tickets assignés en retard, désassignation d'urgence affinée.
+- **Réponse explicite au demandeur** (option B) : action séparée de la note interne, correction liée (`correctsCommentId`), première réponse horodatée.
+- **Fondation SSO Keycloak** : service docker-compose, seed de realm, script 100+ comptes, colonne `keycloakSubjectId`, stratégie JWT hybride HS256/RS256 (JWKS), liaison automatique du profil métier au premier login.
+- **DevOps** : scripts PowerShell de sauvegarde/restauration PostgreSQL, Makefile enrichi, compose production HTTPS, publication d'images, générateur de manifest de release par SHA.
+- **Contrats OpenAPI** : passage de 60 à 144 opérations documentées ; contrat public projeté, sanitizé et testé.
+
+### Changed
+
+- `QueuesModule` : 8 files BullMQ (`email`, `notification`, `sla`, `audit`, `report`, `assignment`, `external-delivery`, `attachment-scan`) ; `ExternalDeliveryWorker` est désormais enregistré dans `QueuesModule` comme les 7 autres workers.
+- `docs/` : catalogue de routes régénéré depuis `openapi.json`, documentation d'état, d'événements, de jobs/workers, de schéma, WebSocket, emails et tests mise à jour sur le code réel.
+- README, CHANGELOG et AGENTS.md alignés sur l'état courant (25 modules, 31 tables, 8 files/workers).
+
+### Fixed
+
+- SLA : relances de violation fiabilisées (listage JSONB inline), seuil d'absence prolongée configurable, calcul `atRisk`/`overdue` corrigé.
+- Commentaires : respect de la contrainte d'acteur (`userId` → `authorId`).
+- Support public : correspondance des feature flags avec les clés de stockage, rejeu des livraisons après panne, origines localhost autorisées en dev, secrets branchés dans compose.
+- Résilience Redis : blacklist JWT avec fail-open configurable et repli mémoire du throttler.
+- CI/E2E : snapshot OpenAPI stable, résolution IPv4 de Redis, attentes d'accents français corrigées.
+
+### Internal
+
+- Validation des contraintes d'acteur SQL (phase 09), drills de panne PostgreSQL/Redis/email documentés, cohérence migrations/schéma, manifest de release régénéré.
+- Préparation SSO : thème Keycloakify (`keycloak-theme/`), migration `0019` en cours, `keycloakSubjectId` sur `users`.
+
+---
+
 ## [1.4.3] — 2026-07-28
 
 ### Added

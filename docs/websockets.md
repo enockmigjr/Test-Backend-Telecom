@@ -1,107 +1,67 @@
 # WebSockets — Temps Réel
 
-## Architecture
+Dernière mise à jour : 2026-08-12
 
-```
-Client (navigateur)
-  │
-  ├── connexion WS: ws://${API_HOST:-localhost}:${API_PORT:-3000}/ws
-  │     auth: { token: "Bearer <jwt>" }
-  │
-  ▼
-TelecomWebSocketGateway (Socket.io)
-  │
-  ├── JWT vérifié (jsonwebtoken)
-  ├── Rooms automatiques:
-  │     user:{userId}
-  │     department:{deptId}
-  │     role:{role}
-  │
-  └── RedisIoAdapter (scaling horizontal)
-        └── Redis pub/sub partagé entre instances API
-```
+Le backend expose **deux namespaces Socket.IO distincts** :
 
-## Où sont utilisés les WebSockets ?
+1. `/ws` — espace interne (agents, superviseurs, administrateurs)
+2. `/public-support` — espace public (demandeurs, portail, widget)
 
-### 1. NotificationWorker (`src/queues/workers/notification.worker.ts`)
+## Namespace interne `/ws`
 
-Quand une notification est créée (ticket assigné, escaladé...), le worker vérifie si l'utilisateur est connecté et lui envoie l'événement en temps réel :
+### Authentification
 
-```typescript
-if (this.wsGateway.isUserConnected(userId)) {
-  this.wsGateway.emitToUser(userId, 'notification.created', {
-    type,
-    title,
-    message,
-    referenceType,
-    referenceId,
-  });
-}
-```
+Le token d'accès JWT est lu dans le **cookie HttpOnly** posé par le BFF (`__Host-access-token` en production, `access_token` en dev) — pas dans un token de query. `WebSocketAuthService` vérifie la signature, la non-révocation Redis et le statut du compte ; les utilisateurs devant changer leur mot de passe sont refusés.
 
-### 2. Événements émis
+### Rooms automatiques
 
-| Événement               | Room                                  | Déclencheur                                                      |
-| ----------------------- | ------------------------------------- | ---------------------------------------------------------------- |
-| `notification.created`  | `user:{id}`                           | NotificationWorker (via NOTIFICATION_QUEUE)                      |
-| `ticket.created`        | `department:{id}` + `role:SUPERVISOR` | TicketNotificationListener                                       |
-| `ticket.assigned`       | `user:{id}`                           | TicketNotificationListener                                       |
-| `ticket.escalated`      | `user:{id}` + `role:SUPERVISOR`       | TicketNotificationListener                                       |
-| `ticket.resolved`       | `role:SUPERVISOR`                     | TicketNotificationListener                                       |
-| `ticket.closed`         | `role:SUPERVISOR`                     | TicketNotificationListener + SlaEngineService (auto-clôture 48h) |
-| `ticket.reopened`       | `role:SUPERVISOR`                     | TicketNotificationListener                                       |
-| `ticket.deassigned`     | `user:{id}` + `role:SUPERVISOR`       | TicketNotificationListener                                       |
-| `ticket.status_changed` | `role:SUPERVISOR`                     | TicketNotificationListener                                       |
-| `ticket.sla_breached`   | `user:{id}` + `role:SUPERVISOR`       | SlaEngineService (cron)                                          |
-| `ticket.sla_warning`    | `user:{id}` + `role:SUPERVISOR`       | SlaEngineService (cron)                                          |
+| Room | Membres | Usage |
+| --- | --- | --- |
+| `user:{userId}` | l'utilisateur (tous ses onglets) | notifications personnelles, assignations |
+| `department:{departmentId}` | le département | nouveaux tickets, changements de statut |
+| `session:{jti}` | la session JWT | déconnexion immédiate sur révocation |
 
-### 3. Rooms
+### Événements émis
 
-| Room                  | Membres                            | Usage                                    |
-| --------------------- | ---------------------------------- | ---------------------------------------- |
-| `user:{userId}`       | L'utilisateur uniquement           | Notifications personnelles, assignations |
-| `department:{deptId}` | Tous les membres du département    | Nouveaux tickets, changements de statut  |
-| `role:{role}`         | Tous les utilisateurs avec ce rôle | Alertes superviseurs, annonces admin     |
+`notification.created`, `ticket.created`, `ticket.assigned`, `ticket.escalated`, `ticket.resolved`, `ticket.closed`, `ticket.reopened`, `ticket.deassigned`, `ticket.status_changed`, `ticket.sla_warning`, `ticket.sla_breached`.
 
-## Authentification WebSocket
+Émetteurs : `TicketNotificationListener` (direct) et `NotificationWorker` (après persistance) — voir la note sur la double émission dans les analyses techniques.
 
-Le client envoie le JWT lors de la connexion :
+### Révocation de session
 
-```javascript
-const socket = io('http://${API_HOST:-localhost}:${API_PORT:-3000}/ws', {
-  auth: { token: 'Bearer eyJ...' },
-});
-// Ou en query param:
-const socket = io('http://${API_HOST:-localhost}:${API_PORT:-3000}/ws', {
-  query: { token: 'eyJ...' },
-});
-```
+`TelecomWebSocketGateway` écoute `auth.session.revoked` et `auth.user-sessions.revoked` et déconnecte immédiatement les sockets concernés (rooms `session:{jti}` / `user:{userId}`).
 
-Le gateway vérifie le JWT avec `jsonwebtoken` et extrait `sub`, `role`, `departmentId`. Si le token est invalide → déconnexion immédiate.
+## Namespace public `/public-support`
+
+### Authentification
+
+Cookie de session publique (portail et widget) validé par `PublicWebSocketAuthService` + `PublicSessionService` ; l'origine du handshake doit figurer dans `PUBLIC_SUPPORT_ORIGINS` (préfixe `__Host-` imposé en production).
+
+### Rooms
+
+- `public:requester:{integrationId}:{requesterId}` — room principale du demandeur
+- `public:conversation:{id}` et `public:ticket:{id}` — rejointes pour les conversations/tickets récents (100 max)
+
+### Événements émis
+
+`public.refresh` avec `{ resource: 'ticket' | 'conversation' | 'attachment', id }`, déclenché par `PublicRealtimeNotifierService` après publication d'un événement outbox.
 
 ## Scaling Horizontal
 
-**Fichier**: `src/websocket/redis-io.adapter.ts`
+`RedisIoAdapter` (`src/websocket/redis-io.adapter.ts`) synchronise les deux namespaces entre instances via Redis pub/sub ; il est installé dans `main.ts` avec `app.useWebSocketAdapter`.
 
-En production avec plusieurs instances API, les WebSockets sont synchronisés via Redis :
+## CORS
 
-```
-Instance A ←→ Redis pub/sub ←→ Instance B
-    │                              │
-    ├── Client 1 (user:123)       ├── Client 2 (user:456)
-    │                              │
-```
-
-Quand Instance A émet `emitToUser('user:456', ...)`, Redis pub/sub transmet à Instance B qui a le client 456.
-
-**Activation**: `main.ts` initialise `RedisIoAdapter` et l'enregistre via `app.useWebSocketAdapter(redisAdapter)`.
+- Interne : `websocket-cors.ts` (liste `CORS_ORIGIN`, joker interdit en production)
+- Public : `public-websocket-cors.ts` (liste `PUBLIC_SUPPORT_ORIGINS`, joker interdit en production)
 
 ## Fichiers clés
 
-| Fichier                                                         | Rôle                                  |
-| --------------------------------------------------------------- | ------------------------------------- |
-| `src/websocket/websocket.gateway.ts`                            | Gateway Socket.io principal           |
-| `src/websocket/websocket.module.ts`                             | Module global (exporté partout)       |
-| `src/websocket/redis-io.adapter.ts`                             | Adapter Redis pour scaling            |
-| `src/queues/workers/notification.worker.ts`                     | Consommateur — émet vers WebSocket    |
-| `src/modules/tickets/listeners/ticket-notification.listener.ts` | Producteur — ajoute jobs notification |
+| Fichier | Rôle |
+| --- | --- |
+| `src/websocket/websocket.gateway.ts` | Gateway interne `/ws` |
+| `src/websocket/public-support.gateway.ts` | Gateway publique `/public-support` |
+| `src/websocket/websocket-auth.service.ts` | Auth JWT interne (cookie) |
+| `src/websocket/public-websocket-auth.service.ts` | Auth session publique (cookie portail/widget) |
+| `src/websocket/public-realtime-notifier.service.ts` | Notification `public.refresh` depuis l'outbox |
+| `src/websocket/redis-io.adapter.ts` | Adapter Redis pour le scaling |

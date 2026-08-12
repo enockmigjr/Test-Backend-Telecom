@@ -1,216 +1,344 @@
-# Catalogue Complet des Routes API
+﻿# Catalogue Complet des Routes API
 
-**Base URL**: `http://localhost:${API_PORT:-3000}/${API_PREFIX:-api/v1}`
-**Documentation Swagger**: `http://localhost:${API_PORT:-3000}/api/docs`
+**Source** : `openapi.json` (généré par `pnpm run openapi:export`) — contrat réel vérifié : **120 chemins / 144 opérations** (dont 33 opérations publiques dans `openapi.public.json`).
+**Base URL** : `http://localhost:${API_PORT:-3000}/${API_PREFIX:-api/v1}`
+**Documentation interactive** : `http://localhost:${API_PORT:-3000}/api/docs`
 
----
+> Ce catalogue est généré depuis le contrat OpenAPI ; il remplace les versions écrites à la main qui n'étaient plus à jour.
 
-## Authentification (`/auth`)
+## Résumé par tag
 
-| Méthode | Route                   | Auth   | Rôles | Description                                                                |
-| ------- | ----------------------- | ------ | ----- | -------------------------------------------------------------------------- |
-| `POST`  | `/auth/login`           | Public | -     | Connexion utilisateur (rate limit: 10/heure/IP)                            |
-| `POST`  | `/auth/refresh`         | Public | -     | Rafraîchir la paire de tokens (rotation)                                   |
-| `POST`  | `/auth/logout`          | Bearer | Tous  | Déconnexion — révoque le refresh token fourni + blacklist JTI access token |
-| `POST`  | `/auth/logout-all`      | Bearer | Tous  | Déconnexion de toutes les sessions actives                                 |
-| `GET`   | `/auth/me`              | Bearer | Tous  | Profil de l'utilisateur connecté                                           |
-| `PUT`   | `/auth/change-password` | Bearer | Tous  | Changer le mot de passe                                                    |
+| Tag | Opérations |
+| --- | --- |
+| tickets | 15 |
+| Support public - demandes | 12 |
+| dashboard | 10 |
+| reports | 9 |
+| support-integrations | 9 |
+| users | 9 |
+| Support public - identité | 7 |
+| auth | 6 |
+| attachments | 5 |
+| categories | 5 |
+| comments | 5 |
+| departments | 5 |
+| external-requesters | 5 |
+| internal-notes | 4 |
+| notifications | 4 |
+| Support public - pièces jointes pré-ticket | 4 |
+| Support public - pièces jointes | 4 |
+| sla | 4 |
+| support-knowledge | 4 |
+| audit-logs | 2 |
+| external-deliveries | 2 |
+| health | 2 |
+| Support public - connaissance | 2 |
+| Support public - appareils | 2 |
+| Settings | 2 |
+| root | 1 |
+| metrics | 1 |
+| Support public - configuration | 1 |
+| Support public - bot | 1 |
+| Support public - satisfaction | 1 |
+| Tickets - satisfaction | 1 |
 
----
+**Total : 144 opérations sur 120 chemins.**
 
-## Départements (`/departments`)
+## attachments
 
-| Méthode  | Route              | Auth   | Rôles         | Description                                             |
-| -------- | ------------------ | ------ | ------------- | ------------------------------------------------------- |
-| `GET`    | `/departments`     | Bearer | Tous          | Liste des départements (utilisateurs authentifiés)      |
-| `GET`    | `/departments/:id` | Bearer | Tous          | Détails d'un département                                |
-| `POST`   | `/departments`     | Bearer | ADMINISTRATOR | Créer un département                                    |
-| `PATCH`  | `/departments/:id` | Bearer | ADMINISTRATOR | Modifier un département                                 |
-| `DELETE` | `/departments/:id` | Bearer | ADMINISTRATOR | Supprimer un département (bloqué si users/tickets liés) |
+| Méthode | Route | Description | Auth |
+| --- | --- | --- | --- |
+| `POST` | `/attachments` | Uploader une piece jointe | Bearer JWT |
+| `DELETE` | `/attachments/{id}` | Supprimer une piece jointe visible | Bearer JWT |
+| `GET` | `/attachments/{id}/download` | Telecharger une piece jointe visible | Bearer JWT |
+| `GET` | `/attachments/{id}/preview` | Prévisualiser une pièce jointe visible | Bearer JWT |
+| `GET` | `/tickets/{ticketId}/attachments` | Lister les pieces jointes visibles d'un ticket | Bearer JWT |
 
----
+## audit-logs
 
-## Catégories (`/categories`)
+| Méthode | Route | Description | Auth |
+| --- | --- | --- | --- |
+| `GET` | `/audit-logs` | Consulter les journaux d'audit | Bearer JWT |
+| `GET` | `/audit-logs/{id}` | Détail d'un événement d'audit | Bearer JWT |
 
-| Méthode  | Route             | Auth   | Rôles         | Description                                                       |
-| -------- | ----------------- | ------ | ------------- | ----------------------------------------------------------------- |
-| `GET`    | `/categories`     | Bearer | Tous          | Liste de toutes les catégories                                    |
-| `GET`    | `/categories/:id` | Bearer | Tous          | Détails d'une catégorie                                           |
-| `POST`   | `/categories`     | Bearer | ADMINISTRATOR | Créer une catégorie (définit le rôle cible pour auto-assignation) |
-| `PATCH`  | `/categories/:id` | Bearer | ADMINISTRATOR | Modifier une catégorie (nom, description, targetRole)             |
-| `DELETE` | `/categories/:id` | Bearer | ADMINISTRATOR | Supprimer une catégorie (si non liée)                             |
+## auth
 
----
+| Méthode | Route | Description | Auth |
+| --- | --- | --- | --- |
+| `PUT` | `/auth/change-password` | Changer le mot de passe | Bearer JWT |
+| `POST` | `/auth/login` | Connexion utilisateur | Public |
+| `POST` | `/auth/logout` | Déconnexion (révoque le refresh token + blackliste l'access token) | Bearer JWT |
+| `POST` | `/auth/logout-all` | Déconnexion de toutes les sessions actives | Bearer JWT |
+| `GET` | `/auth/me` | Profil de l'utilisateur connecté | Bearer JWT |
+| `POST` | `/auth/refresh` | Rafraîchir la paire de tokens (rotation) | Public |
 
-## Utilisateurs (`/users`)
+## categories
 
-| Méthode | Route                   | Auth   | Rôles                                  | Description                                           |
-| ------- | ----------------------- | ------ | -------------------------------------- | ----------------------------------------------------- |
-| `GET`   | `/users`                | Bearer | ADMINISTRATOR, SUPERVISOR              | Liste paginée, triable, filtrable                     |
-| `GET`   | `/users/me`             | Bearer | Tous                                   | Profil détaillé de l'utilisateur connecté             |
-| `GET`   | `/users/:id`            | Bearer | ADMINISTRATOR, SUPERVISOR, ou soi-même | Détails d'un utilisateur                              |
-| `POST`  | `/users`                | Bearer | ADMINISTRATOR                          | Créer un utilisateur (mot de passe temporaire généré) |
-| `PATCH` | `/users/:id`            | Bearer | ADMINISTRATOR, SUPERVISOR              | Modifier un utilisateur                               |
-| `PATCH` | `/users/:id/deactivate` | Bearer | ADMINISTRATOR                          | Désactiver un compte                                  |
-| `PATCH` | `/users/:id/activate`   | Bearer | ADMINISTRATOR                          | Réactiver un compte                                   |
+| Méthode | Route | Description | Auth |
+| --- | --- | --- | --- |
+| `GET` | `/categories` | Liste de toutes les catégories | Bearer JWT |
+| `POST` | `/categories` | Créer une catégorie (Admin uniquement) | Bearer JWT |
+| `DELETE` | `/categories/{id}` | Supprimer une catégorie (Admin uniquement) | Bearer JWT |
+| `GET` | `/categories/{id}` | Détails d'une catégorie | Bearer JWT |
+| `PATCH` | `/categories/{id}` | Modifier une catégorie (Admin uniquement) | Bearer JWT |
 
----
+## comments
 
-## Tickets (`/tickets`)
+| Méthode | Route | Description | Auth |
+| --- | --- | --- | --- |
+| `DELETE` | `/comments/{id}` | Supprimer un commentaire | Bearer JWT |
+| `PATCH` | `/comments/{id}` | Modifier un commentaire | Bearer JWT |
+| `GET` | `/tickets/{ticketId}/comments` | Commentaires publics d'un ticket | Bearer JWT |
+| `POST` | `/tickets/{ticketId}/comments` | Ajouter un commentaire public | Bearer JWT |
+| `POST` | `/tickets/{ticketId}/public-reply` | Répondre au demandeur externe | Bearer JWT |
 
-| Méthode  | Route                              | Auth   | Rôles                                        | Description                                                   |
-| -------- | ---------------------------------- | ------ | -------------------------------------------- | ------------------------------------------------------------- |
-| `POST`   | `/tickets`                         | Bearer | Tous                                         | Créer un ticket d'incident                                    |
-| `GET`    | `/tickets`                         | Bearer | Tous                                         | Rechercher des tickets (filtres combinés, pagination)         |
-| `GET`    | `/tickets/:id`                     | Bearer | Tous (selon visibilité)                      | Détails complets d'un ticket                                  |
-| `PATCH`  | `/tickets/:id`                     | Bearer | Ownership-based (créateur/assigné/SUP/ADMIN) | Mettre à jour un ticket (champs selon ownership)              |
-| `POST`   | `/tickets/:id/assign`              | Bearer | Agent (auto-assign NEW), SUPERVISOR, ADMIN   | Assigner un ticket à un agent                                 |
-| `POST`   | `/tickets/:id/reassign`            | Bearer | Assigné actuel, SUPERVISOR, ADMIN            | Réassigner un ticket à un autre agent                         |
-| `POST`   | `/tickets/:id/escalate`            | Bearer | Assigné (hiérarchique), SUPERVISOR, ADMIN    | Escalader un ticket (changer agent + département)             |
-| `POST`   | `/tickets/:id/start`               | Bearer | Assigné, SUPERVISOR, ADMIN                   | Commencer le traitement (ASSIGNED → IN_PROGRESS)              |
-| `POST`   | `/tickets/:id/resolve`             | Bearer | Assigné, SUPERVISOR, ADMIN                   | Marquer comme résolu (IN_PROGRESS → RESOLVED)                 |
-| `POST`   | `/tickets/:id/close`               | Bearer | Assigné, SUPERVISOR, ADMIN                   | Clôturer un ticket résolu (RESOLVED → CLOSED)                 |
-| `POST`   | `/tickets/:id/reopen`              | Bearer | Créateur CS Agent, SUPERVISOR, ADMIN         | Réouvrir un ticket (≤ 30 jours, raison obligatoire ≥ 10 car.) |
-| `POST`   | `/tickets/:id/pending-customer`    | Bearer | Assigné, SUPERVISOR, ADMIN                   | Mettre en attente client (IN_PROGRESS → PENDING_CUSTOMER)     |
-| `POST`   | `/tickets/:id/pending-third-party` | Bearer | Assigné, SUPERVISOR, ADMIN                   | Mettre en attente tiers (IN_PROGRESS → PENDING_THIRD_PARTY)   |
-| `GET`    | `/tickets/:id/history`             | Bearer | Tous (selon visibilité)                      | Historique complet du ticket                                  |
-| `DELETE` | `/tickets/:id`                     | Bearer | ADMINISTRATOR                                | Suppression logique (soft delete)                             |
+## dashboard
 
-**Filtres de recherche** (query params sur `GET /tickets`):
+| Méthode | Route | Description | Auth |
+| --- | --- | --- | --- |
+| `GET` | `/dashboard/agent-performance` | Performance des agents | Bearer JWT |
+| `GET` | `/dashboard/departments` | Performance par département | Bearer JWT |
+| `GET` | `/dashboard/my-activity` | Mon activité | Bearer JWT |
+| `GET` | `/dashboard/overview` | KPIs globaux de la plateforme | Bearer JWT |
+| `GET` | `/dashboard/public-support` | Statistiques du support public | Bearer JWT |
+| `GET` | `/dashboard/resolution-time` | Temps moyen de résolution | Bearer JWT |
+| `GET` | `/dashboard/sla-compliance` | Conformité SLA détaillée | Bearer JWT |
+| `GET` | `/dashboard/tickets-by-priority` | Tickets par priorité avec breaches SLA | Bearer JWT |
+| `GET` | `/dashboard/tickets-by-status` | Tickets par statut avec âge moyen | Bearer JWT |
+| `GET` | `/dashboard/workload` | Charge des agents + tickets non assignés | Bearer JWT |
 
-- `status`, `priority`, `severity`, `category`
-- `assignedTo`, `assignedTeam`, `departmentId`
-- `search` (texte: titre, description, numéro ticket)
-- `from`, `to` (plage de dates ISO 8601)
-- `page`, `limit`, `sort`, `order`
+## departments
 
----
+| Méthode | Route | Description | Auth |
+| --- | --- | --- | --- |
+| `GET` | `/departments` | Liste des départements (outil interne) | Bearer JWT |
+| `POST` | `/departments` | Créer un département (Admin uniquement) | Bearer JWT |
+| `DELETE` | `/departments/{id}` | Supprimer un département (Admin uniquement, soft delete) | Bearer JWT |
+| `GET` | `/departments/{id}` | Détails d'un département | Bearer JWT |
+| `PATCH` | `/departments/{id}` | Modifier un département (Admin uniquement) | Bearer JWT |
 
-## Commentaires Publics (`/comments`)
+## external-deliveries
 
-| Méthode  | Route                         | Auth   | Rôles                     | Description                       |
-| -------- | ----------------------------- | ------ | ------------------------- | --------------------------------- |
-| `GET`    | `/tickets/:ticketId/comments` | Bearer | Tous (visibilité ticket)  | Commentaires d'un ticket (paginé) |
-| `POST`   | `/tickets/:ticketId/comments` | Bearer | Tous                      | Ajouter un commentaire public     |
-| `PATCH`  | `/comments/:id`               | Bearer | Auteur, SUPERVISOR, ADMIN | Modifier un commentaire           |
-| `DELETE` | `/comments/:id`               | Bearer | Auteur, SUPERVISOR, ADMIN | Supprimer un commentaire          |
+| Méthode | Route | Description | Auth |
+| --- | --- | --- | --- |
+| `GET` | `/external-deliveries` | Liste paginée des livraisons externes | Bearer JWT |
+| `GET` | `/external-deliveries/{id}` | Consulter une livraison externe | Bearer JWT |
 
----
+## external-requesters
 
-## Notes Internes (`/internal-notes`)
+| Méthode | Route | Description | Auth |
+| --- | --- | --- | --- |
+| `GET` | `/external-requesters` | Liste paginée des demandeurs publics | Bearer JWT |
+| `GET` | `/external-requesters/{id}` | Consulter un demandeur public | Bearer JWT |
+| `POST` | `/external-requesters/{id}/anonymize` | Anonymiser un demandeur public | Bearer JWT |
+| `POST` | `/external-requesters/{id}/merge` | Fusionner un demandeur public vers un profil cible | Bearer JWT |
+| `POST` | `/external-requesters/{id}/merge/preview` | Aperçu d’une fusion de profils demandeur | Bearer JWT |
 
-| Méthode  | Route                               | Auth   | Rôles                      | Description                |
-| -------- | ----------------------------------- | ------ | -------------------------- | -------------------------- |
-| `GET`    | `/tickets/:ticketId/internal-notes` | Bearer | Tous sauf FIELD_TECHNICIAN | Notes internes d'un ticket |
-| `POST`   | `/tickets/:ticketId/internal-notes` | Bearer | Tous sauf FIELD_TECHNICIAN | Ajouter une note interne   |
-| `PATCH`  | `/internal-notes/:id`               | Bearer | Auteur, SUPERVISOR, ADMIN  | Modifier une note          |
-| `DELETE` | `/internal-notes/:id`               | Bearer | Auteur, SUPERVISOR, ADMIN  | Supprimer une note         |
+## health
 
----
+| Méthode | Route | Description | Auth |
+| --- | --- | --- | --- |
+| `GET` | `/health` | Liveness check — le processus est-il vivant ? | Public |
+| `GET` | `/health/ready` | Readiness check — les dépendances sont-elles connectées ? | Public |
 
-## Pièces Jointes (`/attachments`)
+## internal-notes
 
-| Méthode  | Route                       | Auth   | Rôles                       | Description                               |
-| -------- | --------------------------- | ------ | --------------------------- | ----------------------------------------- |
-| `POST`   | `/attachments`              | Bearer | Tous                        | Uploader un fichier (multipart/form-data) |
-| `GET`    | `/attachments/:id/download` | Bearer | Tous (visibilité)           | Télécharger un fichier                    |
-| `DELETE` | `/attachments/:id`          | Bearer | Uploader, SUPERVISOR, ADMIN | Supprimer une pièce jointe                |
+| Méthode | Route | Description | Auth |
+| --- | --- | --- | --- |
+| `DELETE` | `/internal-notes/{id}` | Supprimer une note interne | Bearer JWT |
+| `PATCH` | `/internal-notes/{id}` | Modifier une note interne | Bearer JWT |
+| `GET` | `/tickets/{ticketId}/internal-notes` | Notes internes d'un ticket | Bearer JWT |
+| `POST` | `/tickets/{ticketId}/internal-notes` | Ajouter une note interne | Bearer JWT |
 
----
+## metrics
 
-## Notifications (`/notifications`)
+| Méthode | Route | Description | Auth |
+| --- | --- | --- | --- |
+| `GET` | `/metrics` | Métriques Prometheus (format OpenMetrics) | Public |
 
-| Méthode | Route                     | Auth   | Rôles        | Description                             |
-| ------- | ------------------------- | ------ | ------------ | --------------------------------------- |
-| `GET`   | `/notifications`          | Bearer | Tous         | Notifications de l'utilisateur (paginé) |
-| `GET`   | `/notifications/unread`   | Bearer | Tous         | Notifications non lues                  |
-| `PATCH` | `/notifications/:id/read` | Bearer | Propriétaire | Marquer comme lue                       |
-| `PATCH` | `/notifications/read-all` | Bearer | Tous         | Tout marquer comme lu                   |
+## notifications
 
----
+| Méthode | Route | Description | Auth |
+| --- | --- | --- | --- |
+| `GET` | `/notifications` | Notifications de l'utilisateur connecté | Bearer JWT |
+| `PATCH` | `/notifications/{id}/read` | Marquer une notification comme lue | Bearer JWT |
+| `PATCH` | `/notifications/read-all` | Marquer toutes les notifications comme lues | Bearer JWT |
+| `GET` | `/notifications/unread` | Notifications non lues | Bearer JWT |
 
-## Politiques SLA (`/sla-policies`)
+## reports
 
-| Méthode | Route               | Auth   | Rôles         | Description                |
-| ------- | ------------------- | ------ | ------------- | -------------------------- |
-| `GET`   | `/sla-policies`     | Bearer | Tous          | Liste des politiques SLA   |
-| `GET`   | `/sla-policies/:id` | Bearer | Tous          | Détail d'une politique SLA |
-| `POST`  | `/sla-policies`     | Bearer | ADMINISTRATOR | Créer une politique SLA    |
-| `PATCH` | `/sla-policies/:id` | Bearer | ADMINISTRATOR | Modifier une politique SLA |
+| Méthode | Route | Description | Auth |
+| --- | --- | --- | --- |
+| `GET` | `/reports` | Lister les rapports générés | Bearer JWT |
+| `GET` | `/reports/{id}` | Consulter l'état d'un rapport généré | Bearer JWT |
+| `GET` | `/reports/{id}/download` | Télécharger le PDF d un rapport généré | Bearer JWT |
+| `GET` | `/reports/public/{id}/download` | Télécharger un rapport depuis un lien signé et temporaire | Public |
+| `GET` | `/reports/sla` | Rapport SLA sur une période (synchrone — données JSON) | Bearer JWT |
+| `POST` | `/reports/sla/generate` | Générer un rapport SLA PDF (asynchrone) | Bearer JWT |
+| `GET` | `/reports/ticket/{id}` | Obtenir les données du rapport d un ticket (synchrone — données JSON) | Bearer JWT |
+| `POST` | `/reports/ticket/{id}/generate` | Générer un rapport PDF détaillé pour un ticket (asynchrone) | Bearer JWT |
+| `POST` | `/reports/weekly/generate` | Générer un rapport hebdomadaire PDF (asynchrone) | Bearer JWT |
 
----
+## root
 
-## Dashboard (`/dashboard`) — 7 endpoints
+| Méthode | Route | Description | Auth |
+| --- | --- | --- | --- |
+| `GET` | `/` | Informations sur l'API | Public |
 
-| Méthode | Route                            | Auth   | Rôles             | Description                                                                              |
-| ------- | -------------------------------- | ------ | ----------------- | ---------------------------------------------------------------------------------------- |
-| `GET`   | `/dashboard/overview`            | Bearer | SUPERVISOR, ADMIN | KPIs globaux (params: from, to)                                                          |
-| `GET`   | `/dashboard/tickets-by-status`   | Bearer | SUPERVISOR, ADMIN | Tickets par statut + âge moyen (params: from, to, departmentId)                          |
-| `GET`   | `/dashboard/tickets-by-priority` | Bearer | SUPERVISOR, ADMIN | Tickets par priorité + breaches SLA (params: from, to, status)                           |
-| `GET`   | `/dashboard/departments`         | Bearer | SUPERVISOR, ADMIN | Performance par département (params: from, to)                                           |
-| `GET`   | `/dashboard/sla-compliance`      | Bearer | SUPERVISOR, ADMIN | Conformité SLA + tendance (params: from, to, departmentId, priority, category)           |
-| `GET`   | `/dashboard/workload`            | Bearer | SUPERVISOR, ADMIN | Charge des agents + tickets non assignés (params: departmentId)                          |
-| `GET`   | `/dashboard/resolution-time`     | Bearer | SUPERVISOR, ADMIN | Temps de résolution moyen/médian/p90 (params: from, to, groupBy, departmentId, priority) |
+## Settings
 
----
+| Méthode | Route | Description | Auth |
+| --- | --- | --- | --- |
+| `GET` | `/settings` | Lister tous les paramètres système globaux | Bearer JWT |
+| `PATCH` | `/settings/{key}` | Mettre à jour un paramètre système par sa clé | Bearer JWT |
 
-## Journaux d'Audit (`/audit-logs`)
+## sla
 
-| Méthode | Route             | Auth   | Rôles             | Description                      |
-| ------- | ----------------- | ------ | ----------------- | -------------------------------- |
-| `GET`   | `/audit-logs`     | Bearer | SUPERVISOR, ADMIN | Rechercher dans les logs d'audit |
-| `GET`   | `/audit-logs/:id` | Bearer | SUPERVISOR, ADMIN | Détail d'un événement d'audit    |
+| Méthode | Route | Description | Auth |
+| --- | --- | --- | --- |
+| `GET` | `/sla-policies` | Liste des politiques SLA | Bearer JWT |
+| `POST` | `/sla-policies` | Créer une politique SLA (Admin) | Bearer JWT |
+| `GET` | `/sla-policies/{id}` | Détails d'une politique SLA | Bearer JWT |
+| `PATCH` | `/sla-policies/{id}` | Modifier les délais SLA (Admin) | Bearer JWT |
 
-**Filtres** (query params):
+## Support public - appareils
 
-- `userId`, `action`, `entityType`, `from`, `to`, `page`, `limit`
+| Méthode | Route | Description | Auth |
+| --- | --- | --- | --- |
+| `GET` | `/public-support/session/devices` | Lister les appareils de confiance du demandeur | Session publique |
+| `DELETE` | `/public-support/session/devices/{id}` | Révoquer un appareil de confiance précis | Session publique |
 
----
+## Support public - bot
 
-## Rapports (`/reports`)
+| Méthode | Route | Description | Auth |
+| --- | --- | --- | --- |
+| `POST` | `/public-support/conversations/{id}/bot` | Envoyer un message au bot de la conversation | Session publique |
 
-| Méthode | Route                          | Auth   | Rôles             | Description                                                                                                       |
-| ------- | ------------------------------ | ------ | ----------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `GET`   | `/reports/ticket/:id`          | Bearer | SUPERVISOR, ADMIN | Détails du rapport d'un ticket (synchrone — données JSON)                                                         |
-| `POST`  | `/reports/ticket/:id/generate` | Bearer | SUPERVISOR, ADMIN | Générer un rapport d'incident PDF (async, répond 202 avec `reportId`, envoie email avec lien de téléchargement)   |
-| `GET`   | `/reports/sla`                 | Bearer | SUPERVISOR, ADMIN | Rapport SLA synchrone (params: from, to — données JSON)                                                           |
-| `POST`  | `/reports/sla/generate`        | Bearer | SUPERVISOR, ADMIN | Générer un rapport SLA PDF (async, répond 202 avec `reportId`, envoie email avec lien de téléchargement)          |
-| `POST`  | `/reports/weekly/generate`     | Bearer | SUPERVISOR, ADMIN | Générer un rapport hebdomadaire PDF (async, répond 202 avec `reportId`, envoie email avec lien de téléchargement) |
-| `GET`   | `/reports`                     | Bearer | ADMINISTRATOR     | Lister l'ensemble des rapports générés en asynchrone (paginé)                                                     |
-| `GET`   | `/reports/:id/download`        | Bearer | SUPERVISOR, ADMIN | Télécharger le fichier PDF physique d'un rapport généré (si prêt, restreint à l'admin/demandeur)                  |
+## Support public - configuration
 
----
+| Méthode | Route | Description | Auth |
+| --- | --- | --- | --- |
+| `GET` | `/public-support/config` | Charger la configuration publique bornée d'une intégration | Public |
 
-## Paramètres Système Globaux (`/settings`)
+## Support public - connaissance
 
-| Méthode | Route            | Auth   | Rôles             | Description                                               |
-| ------- | ---------------- | ------ | ----------------- | --------------------------------------------------------- |
-| `GET`   | `/settings`      | Bearer | SUPERVISOR, ADMIN | Lister l'ensemble des paramètres système globaux          |
-| `PATCH` | `/settings/:key` | Bearer | ADMINISTRATOR     | Mettre à jour la valeur d'un paramètre système par sa clé |
+| Méthode | Route | Description | Auth |
+| --- | --- | --- | --- |
+| `GET` | `/public-support/knowledge/{slug}` | Consulter un article public par slug | Session publique |
+| `GET` | `/public-support/knowledge/search` | Rechercher des articles publics de cette intégration | Session publique |
 
----
+## Support public - demandes
 
-## Racine & Santé
+| Méthode | Route | Description | Auth |
+| --- | --- | --- | --- |
+| `GET` | `/public-support/catalog` | Catalogue public autorisé pour cette intégration | Session publique |
+| `POST` | `/public-support/conversations` | Démarrer une conversation de support | Session publique |
+| `GET` | `/public-support/conversations/{id}` | Reprendre une conversation ou son brouillon | Session publique |
+| `POST` | `/public-support/conversations/{id}/confirm` | Confirmer et créer atomiquement le ticket | Session publique |
+| `PATCH` | `/public-support/conversations/{id}/draft` | Enregistrer le brouillon qualifié | Session publique |
+| `POST` | `/public-support/conversations/{id}/handoff` | Demander explicitement un transfert humain | Session publique |
+| `GET` | `/public-support/preferences` | Consulter le profil public conservé | Session publique |
+| `PATCH` | `/public-support/preferences` | Mettre à jour le nom et la langue du profil public | Session publique |
+| `GET` | `/public-support/tickets` | Lister uniquement les demandes du contact courant | Session publique |
+| `GET` | `/public-support/tickets/{id}` | Consulter une demande publique | Session publique |
+| `POST` | `/public-support/tickets/{id}/comments` | Ajouter un commentaire demandeur | Session publique |
+| `GET` | `/public-support/tickets/{id}/timeline` | Consulter la timeline publique filtrée | Session publique |
 
-| Méthode | Route           | Auth   | Description                                                  |
-| ------- | --------------- | ------ | ------------------------------------------------------------ |
-| `GET`   | `/`             | Public | Informations sur l'API (nom, version, docs, health, metrics) |
-| `GET`   | `/health`       | Public | Liveness check (uptime, mémoire)                             |
-| `GET`   | `/health/ready` | Public | Readiness check (PostgreSQL + Redis ping)                    |
-| `GET`   | `/metrics`      | Public | Métriques Prometheus au format OpenMetrics                   |
+## Support public - identité
 
----
+| Méthode | Route | Description | Auth |
+| --- | --- | --- | --- |
+| `POST` | `/public-support/identity/assertion/exchange` | Échanger une assertion signée contre une session publique | Assertion signée |
+| `POST` | `/public-support/identity/email/consume` | Vérifier le code et ouvrir une session publique | Public |
+| `POST` | `/public-support/identity/email/request` | Demander un code de vérification email | Public |
+| `POST` | `/public-support/session/bootstrap/consume` | Consommer une fois un code de transfert | Public |
+| `POST` | `/public-support/session/bootstrap/request` | Créer un code de transfert iframe vers pleine page | Session publique |
+| `POST` | `/public-support/session/restore` | Restaurer et faire tourner la confiance de l’appareil | Appareil de confiance + clé |
+| `POST` | `/public-support/session/revoke-device` | Révoquer l’appareil courant | Session publique |
 
-## Supervision BullMQ (`/admin/queues`)
+## Support public - pièces jointes
 
-| Méthode | Route           | Auth                             | Description                                     |
-| ------- | --------------- | -------------------------------- | ----------------------------------------------- |
-| `GET`   | `/admin/queues` | Basic Auth (prod) / Public (dev) | Interface BullBoard de supervision des 6 queues |
+| Méthode | Route | Description | Auth |
+| --- | --- | --- | --- |
+| `GET` | `/public-support/tickets/{ticketId}/attachments` | Lister les pièces jointes et leur état de scan | Session publique |
+| `POST` | `/public-support/tickets/{ticketId}/attachments` | Déposer une pièce jointe en quarantaine | Session publique |
+| `GET` | `/public-support/tickets/{ticketId}/attachments/{attachmentId}/download` | Télécharger uniquement une pièce jointe déclarée saine | Session publique |
+| `GET` | `/public-support/tickets/{ticketId}/attachments/{attachmentId}/status` | Consulter l'état d'analyse d'une pièce jointe | Session publique |
 
-En production, protéger avec `BULLBOARD_USER` et `BULLBOARD_PASSWORD` dans `.env`.
+## Support public - pièces jointes pré-ticket
 
----
+| Méthode | Route | Description | Auth |
+| --- | --- | --- | --- |
+| `GET` | `/public-support/conversations/{conversationId}/attachments` | Lister les fichiers de la conversation | Session publique |
+| `POST` | `/public-support/conversations/{conversationId}/attachments` | Déposer un fichier avant création du ticket | Session publique |
+| `GET` | `/public-support/conversations/{conversationId}/attachments/{attachmentId}/download` | Télécharger un fichier pré-ticket sain | Session publique |
+| `GET` | `/public-support/conversations/{conversationId}/attachments/{attachmentId}/status` | Consulter l'état du scan | Session publique |
 
-**Total: 60 routes sur 15 contrôleurs (dont 1 route admin BullBoard)**
+## Support public - satisfaction
 
----
+| Méthode | Route | Description | Auth |
+| --- | --- | --- | --- |
+| `POST` | `/public-support/tickets/{ticketId}/satisfaction` | Soumettre une note de satisfaction | Public |
+
+## support-integrations
+
+| Méthode | Route | Description | Auth |
+| --- | --- | --- | --- |
+| `GET` | `/support-integrations` | Lister les intégrations sans exposer leurs secrets | Bearer JWT |
+| `POST` | `/support-integrations` | Créer une intégration de support en brouillon | Bearer JWT |
+| `GET` | `/support-integrations/{id}` | Consulter une intégration | Bearer JWT |
+| `PATCH` | `/support-integrations/{id}` | Modifier politiques, origines ou statut | Bearer JWT |
+| `GET` | `/support-integrations/{id}/credentials` | Lister les versions de secret sans exposer leur valeur chiffrée | Bearer JWT |
+| `POST` | `/support-integrations/{id}/credentials/{credentialId}/revoke` | Révoquer une version de secret | Bearer JWT |
+| `POST` | `/support-integrations/{id}/credentials/rotate` | Chiffrer une nouvelle version de secret sans la retourner | Bearer JWT |
+| `GET` | `/support-integrations/{id}/devices` | Lister les appareils de confiance sans exposer leurs jetons | Bearer JWT |
+| `POST` | `/support-integrations/{id}/devices/{deviceId}/revoke` | Révoquer un appareil de confiance | Bearer JWT |
+
+## support-knowledge
+
+| Méthode | Route | Description | Auth |
+| --- | --- | --- | --- |
+| `GET` | `/support-knowledge` | Liste paginée des articles de connaissance | Bearer JWT |
+| `POST` | `/support-knowledge` | Créer un article de connaissance | Bearer JWT |
+| `GET` | `/support-knowledge/{id}` | Consulter un article avec son historique | Bearer JWT |
+| `PATCH` | `/support-knowledge/{id}` | Modifier, publier ou archiver un article | Bearer JWT |
+
+## tickets
+
+| Méthode | Route | Description | Auth |
+| --- | --- | --- | --- |
+| `GET` | `/tickets` | Rechercher des tickets | Bearer JWT |
+| `POST` | `/tickets` | Créer un ticket d'incident | Bearer JWT |
+| `DELETE` | `/tickets/{id}` | Supprimer un ticket (soft delete, Admin uniquement) | Bearer JWT |
+| `GET` | `/tickets/{id}` | Détails d'un ticket | Bearer JWT |
+| `PATCH` | `/tickets/{id}` | Mettre à jour un ticket | Bearer JWT |
+| `POST` | `/tickets/{id}/assign` | Assigner un ticket à un agent | Bearer JWT |
+| `POST` | `/tickets/{id}/close` | Clôturer un ticket résolu | Bearer JWT |
+| `POST` | `/tickets/{id}/escalate` | Escalader un ticket | Bearer JWT |
+| `GET` | `/tickets/{id}/history` | Historique complet d'un ticket | Bearer JWT |
+| `POST` | `/tickets/{id}/pending-customer` | Mettre en attente du client (IN_PROGRESS -> PENDING_CUSTOMER) | Bearer JWT |
+| `POST` | `/tickets/{id}/pending-third-party` | Mettre en attente tiers (IN_PROGRESS -> PENDING_THIRD_PARTY) | Bearer JWT |
+| `POST` | `/tickets/{id}/reassign` | Réassigner un ticket à un autre agent | Bearer JWT |
+| `POST` | `/tickets/{id}/reopen` | Réouvrir un ticket clôturé | Bearer JWT |
+| `POST` | `/tickets/{id}/resolve` | Marquer un ticket comme résolu | Bearer JWT |
+| `POST` | `/tickets/{id}/start` | Démarrer le traitement d'un ticket | Bearer JWT |
+
+## Tickets - satisfaction
+
+| Méthode | Route | Description | Auth |
+| --- | --- | --- | --- |
+| `POST` | `/tickets/{ticketId}/satisfaction-token` | Générer un lien de satisfaction | Bearer JWT |
+
+## users
+
+| Méthode | Route | Description | Auth |
+| --- | --- | --- | --- |
+| `GET` | `/users` | Liste paginée des utilisateurs | Bearer JWT |
+| `POST` | `/users` | Créer un utilisateur | Bearer JWT |
+| `GET` | `/users/{id}` | Détails d'un utilisateur | Bearer JWT |
+| `PATCH` | `/users/{id}` | Modifier un utilisateur | Bearer JWT |
+| `PATCH` | `/users/{id}/activate` | Réactiver un compte | Bearer JWT |
+| `PATCH` | `/users/{id}/deactivate` | Désactiver un compte | Bearer JWT |
+| `GET` | `/users/me` | Profil de l'utilisateur connecté | Bearer JWT |
+| `PATCH` | `/users/me/absence` | Déclarer / annuler son absence | Bearer JWT |
+| `PATCH` | `/users/me/availability` | Mettre en pause / reprendre (self-service) | Bearer JWT |

@@ -28,6 +28,7 @@ import { NotificationWorker } from './workers/notification.worker';
 import { SlaWorker } from './workers/sla.worker';
 import { AuditWorker } from './workers/audit.worker';
 import { ReportWorker } from './workers/report.worker';
+import { ExternalDeliveryWorker } from './workers/external-delivery.worker';
 import { EmailService } from '../modules/email/email.service';
 import { DrizzleProvider } from '../database/drizzle.provider';
 import { TelecomWebSocketGateway } from '../websocket/websocket.gateway';
@@ -179,13 +180,20 @@ describe('QueuesModule', () => {
       expect(reportWorker).toBeDefined();
       expect(reportWorker).toBeInstanceOf(ReportWorker);
     });
+
+    /** Test : doit résoudre ExternalDeliveryWorker */
+    it('doit résoudre ExternalDeliveryWorker', () => {
+      const externalDeliveryWorker = moduleRef.get<ExternalDeliveryWorker>(ExternalDeliveryWorker);
+      expect(externalDeliveryWorker).toBeDefined();
+      expect(externalDeliveryWorker).toBeInstanceOf(ExternalDeliveryWorker);
+    });
   });
 
   // ─── Injection token BullMQ_Queues ────────────────────────────────────────
 
   describe('BullMQ_Queues', () => {
-    /** Test : doit résoudre le token BullMQ_Queues avec 6 queues */
-    it('doit résoudre le token BullMQ_Queues avec 6 queues', () => {
+    /** Test : doit résoudre le token BullMQ_Queues avec 8 queues */
+    it('doit résoudre le token BullMQ_Queues avec 8 queues', () => {
       const queues = moduleRef.get<Record<string, Queue>>('BullMQ_Queues');
       expect(queues).toBeDefined();
       expect(queues.email).toBeDefined();
@@ -242,7 +250,7 @@ describe('QueuesModule', () => {
   // ─── Cycle de vie ──────────────────────────────────────────────────────────
 
   describe('onModuleInit', () => {
-    it("doit logger l'initialisation des 6 workers", () => {
+    it("doit logger l'initialisation des 8 workers", () => {
       const queuesModule = moduleRef.get<QueuesModule>(QueuesModule);
       queuesModule.onModuleInit();
 

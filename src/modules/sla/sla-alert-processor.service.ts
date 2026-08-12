@@ -48,7 +48,8 @@ export class SlaAlertProcessorService {
     const now = new Date();
     const warningMinutes = Number(await this.settingsService.getSetting('SLA_WARNING_MINUTES', '30')) || 30;
     const warningThreshold = new Date(now.getTime() + warningMinutes * 60 * 1000);
-    const emailEnabled = (await this.settingsService.getSetting('NOTIFICATIONS_SLA_BREACH_ENABLED', 'true')) !== 'false';
+    const emailEnabled =
+      (await this.settingsService.getSetting('NOTIFICATIONS_SLA_BREACH_ENABLED', 'true')) !== 'false';
 
     await this.processTarget('FIRST_RESPONSE', 'BREACH', now, warningThreshold, emailEnabled);
     await this.processTarget('RESOLUTION', 'BREACH', now, warningThreshold, emailEnabled);

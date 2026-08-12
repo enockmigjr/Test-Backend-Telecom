@@ -2,7 +2,10 @@
   "realm": "telecom",
   "enabled": true,
   "displayName": "Telecom Ticket Management",
-  "loginTheme": "keycloakify",
+  "loginTheme": "telecom-keycloak-theme",
+  "internationalizationEnabled": true,
+  "defaultLocale": "fr",
+  "supportedLocales": ["fr", "en"],
   "registrationAllowed": false,
   "resetPasswordAllowed": true,
   "roles": {

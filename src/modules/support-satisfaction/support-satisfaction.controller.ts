@@ -2,7 +2,7 @@
  * Contrôleur de satisfaction : création du lien (interne) et soumission (public).
  */
 import { Body, Controller, Param, ParseUUIDPipe, Post, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Auth, AuthMode } from '../../common/decorators/auth-mode.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -29,6 +29,7 @@ export class PublicSatisfactionController {
 }
 
 @ApiTags('Tickets - satisfaction')
+@ApiBearerAuth()
 @Controller('tickets')
 @UseGuards(RolesGuard)
 @Auth(AuthMode.INTERNAL)

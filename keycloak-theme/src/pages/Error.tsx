@@ -1,4 +1,4 @@
-import type { KcContext } from "keycloakify";
+import type { KcContext } from "../login/KcContext";
 
 export function ErrorPage({ kcContext }: { kcContext: Extract<KcContext, { pageId: "error.ftl" }> }) {
   return (

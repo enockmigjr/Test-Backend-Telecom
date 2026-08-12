@@ -1,94 +1,72 @@
 # Événements Domaine
 
+Dernière mise à jour : 2026-08-12
+
 ## Vue d'ensemble
 
-Le système utilise **EventEmitter2** pour découpler les opérations principales des effets secondaires (notifications, audit, SLA). Les événements sont émis de manière synchrone mais les listeners effectuent des traitements asynchrones via BullMQ.
+Le système utilise deux mécanismes d'événements complémentaires :
 
----
+1. **EventEmitter2 (in-process)** : les listeners déclenchent des effets de bord (notifications, audit, SLA, assignation) sans bloquer la réponse HTTP.
+2. **Outbox (durable)** : les événements publics/support sont écrits dans `outbox_events` **dans la même transaction** que la mutation métier, puis publiés vers les files BullMQ par `OutboxPublisherService`. C'est le seul chemin fiable pour les livraisons externes (gate absolue : aucune notification externe ne dépend uniquement d'EventEmitter ou Redis).
 
-## Événements émis
+## Événements EventEmitter2 émis
 
-| Événement               | Émetteur             | Payload                                       |
-| ----------------------- | -------------------- | --------------------------------------------- |
-| `ticket.created`        | TicketsService       | `{ ticket, creator }`                         |
-| `ticket.status.changed` | TicketsService       | `{ ticket, oldStatus, newStatus, changedBy }` |
-| `ticket.assigned`       | TicketsService       | `{ ticket, fromUser, toUser, assignedBy }`    |
-| `ticket.resolved`       | TicketsService       | `{ ticket, resolvedBy }`                      |
-| `ticket.closed`         | TicketsService       | `{ ticket, closedBy }`                        |
-| `ticket.reopened`       | TicketsService       | `{ ticket, reopenedBy }`                      |
-| `comment.created`       | CommentsService      | `{ comment, ticket, author }`                 |
-| `internal-note.created` | InternalNotesService | `{ note, ticket, author }`                    |
-| `sla.warning`           | SlaEngineService     | `{ ticket, type, deadline }`                  |
-| `sla.breached`          | SlaEngineService     | `{ ticket, type }`                            |
-| `user.created`          | UsersService         | `{ user, temporaryPassword }`                 |
+| Événement | Émetteur | Payload |
+| --- | --- | --- |
+| `ticket.created` | `TicketsService.createFromCommand` | `{ ticket, actor }` |
+| `ticket.status_changed` | `TicketsService.changeStatus`, `SlaAutoCloseService` | `{ ticketId, oldStatus, newStatus, actor, supportIntegrationId }` |
+| `ticket.assigned` | `TicketsService.assign`, `AssignmentEngineService.routeTicket` | `{ ticketId, assignedTo, actor, supportIntegrationId }` |
+| `ticket.escalated` | `TicketsService.escalate` | `{ ticketId, escalatedTo, actor, supportIntegrationId }` |
+| `ticket.resolved` / `ticket.closed` / `ticket.reopened` / `ticket.cancelled` | `TicketsService.changeStatus`, `SlaAutoCloseService` (closed) | `{ ticketId, actor, supportIntegrationId }` |
+| `ticket.deassigned` | `AutoAssignmentCron` | `{ ticketId, deassignedAgentId, reason, departmentId }` |
+| `ticket.unassigned` | `AutoAssignmentCron` | `{ ticketId, ticketNumber }` |
+| `auth.session.revoked` | `AuthService.logout` | `{ userId, jti }` |
+| `auth.user-sessions.revoked` | `AuthService.logoutAll` | `{ userId }` |
 
----
+## Listeners EventEmitter2
 
-## Listeners
+| Listener | Événements écoutés | Effets |
+| --- | --- | --- |
+| `TicketNotificationListener` | created, assigned, escalated, resolved, closed, reopened, status_changed, deassigned | WebSocket + notifications in-app + emails (via files) |
+| `TicketAuditListener` | created, assigned, status_changed, closed, reopened | file `audit-queue` → `audit_logs` |
+| `TicketSlaListener` | created, resolved, closed | planifie/annule le job SLA différé (`sla-breach-{ticketId}`) |
+| `TicketAssignmentListener` | created, unassigned | file `assignment-queue` → routage automatique |
+| `TicketSatisfactionListener` | closed | génère un lien de satisfaction et écrit un événement outbox |
+| `TelecomWebSocketGateway` | auth.session.revoked, auth.user-sessions.revoked | déconnecte immédiatement les sockets concernés |
 
-### TicketNotificationListener
+## Événements outbox (`outbox_events`)
 
-Écoute les événements tickets et produit des jobs BullMQ :
+Types d'événements écrits transactionnellement (défini dans `src/modules/tickets/domain/ticket-creation-command.ts` et les services publics) :
 
-```
-ticket.created →
-  ├── EMAIL_QUEUE     → email au créateur + superviseurs
-  ├── NOTIFICATION_QUEUE → notification in-app
-  ├── AUDIT_QUEUE     → log d'audit
-  └── SLA_QUEUE       → job delayed (vérification breach)
+`TICKET_CREATED`, `PUBLIC_TICKET_CREATED`, `PUBLIC_REPLY_CREATED`, `PUBLIC_REPLY_CORRECTED`, `PUBLIC_REQUESTER_COMMENT_CREATED`, `PUBLIC_CONVERSATION_STARTED`, `PUBLIC_DRAFT_SAVED`, `PUBLIC_PREFERENCES_UPDATED`, `PUBLIC_ATTACHMENT_QUARANTINED`, `PUBLIC_INFORMATION_REQUESTED`, `PUBLIC_STATUS_CHANGED`, `PUBLIC_TICKET_RESOLVED`, `PUBLIC_TICKET_CLOSED`, `PUBLIC_TICKET_REOPENED`, `PUBLIC_HUMAN_HANDOFF_REQUESTED`, `SATISFACTION_REQUEST`.
 
-ticket.assigned →
-  ├── EMAIL_QUEUE     → email au nouvel assigné
-  ├── NOTIFICATION_QUEUE → notification in-app
-  └── AUDIT_QUEUE     → log d'audit
-
-ticket.status.changed →
-  ├── NOTIFICATION_QUEUE → notification in-app
-  └── AUDIT_QUEUE     → log d'audit
-```
-
-### UserNotificationListener
+Cycle de vie d'un événement outbox :
 
 ```
-user.created →
-  └── EMAIL_QUEUE → email de bienvenue + mot de passe temporaire
+Transaction métier (insert outbox_events PENDING)
+        │
+        ▼
+OutboxPublisherService (@Interval 1 s) — claim transactionnel, lease 60 s
+        │
+        ├─ PUBLIC_ATTACHMENT_QUARANTINED → attachment-scan-queue
+        └─ autres → external-delivery-queue
+        │
+        ▼
+ExternalDeliveryService.dispatch — external_deliveries (PENDING → PROCESSING → DELIVERED/FAILED)
+        │
+        └─ EmailChannelAdapter (template public-support-event)
 ```
 
-### SlaNotificationListener
-
-```
-sla.warning →
-  ├── EMAIL_QUEUE     → email d'alerte
-  ├── NOTIFICATION_QUEUE → notification in-app
-  └── WebSocket emit  → push temps réel
-
-sla.breached →
-  ├── EMAIL_QUEUE     → email d'alerte critique
-  ├── NOTIFICATION_QUEUE → notification in-app
-  └── WebSocket emit  → push temps réel
-```
-
----
+Chaque événement porte `mutationId`, `schemaVersion`, `deduplicationKey`, `aggregateType`/`aggregateId`, l'acteur et le payload. Les reprises sont exponentielles, bornées par `maxAttempts` ; un échec final est visible (`FAILED` + `lastError`).
 
 ## Architecture
 
 ```
-Controller → Service → EventEmitter2.emit('event', payload)
-                              │
-                    ┌─────────┴─────────┐
-                    │     Listeners      │
-                    │  (@OnEvent async)  │
-                    └─────────┬─────────┘
-                              │
-                    ┌─────────┴─────────┐
-                    │   BullMQ Queues    │
-                    │  (asynchrone)      │
-                    └─────────┬─────────┘
-                              │
-                    ┌─────────┴─────────┐
-                    │     Workers        │
-                    │  (traitement)      │
-                    └───────────────────┘
+Service métier
+   │
+   ├─ emitAfterCommit → EventEmitter2 → listeners → BullMQ (email, notification, audit, sla, assignment)
+   │
+   └─ transaction → outbox_events → publisher → external-delivery / attachment-scan
 ```
 
-**Avantage** : le contrôleur retourne immédiatement la réponse HTTP. Les emails, notifications, audit et SLA sont traités en arrière-plan sans impacter la latence.
+Avantage : la réponse HTTP n'attend ni email, ni notification, ni PDF ; et les événements destinés au public ne peuvent pas être perdus entre PostgreSQL et Redis.

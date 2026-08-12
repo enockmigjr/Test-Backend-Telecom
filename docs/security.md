@@ -42,6 +42,17 @@ Chaque `POST /auth/refresh` :
 
 ---
 
+### Modes d'authentification
+
+Le guard global `RequestAuthGuard` aiguille chaque route vers un mode explicite (`@Auth(...)`) :
+
+| Mode | Mécanisme | Routes |
+| --- | --- | --- |
+| `INTERNAL` | JWT Bearer (access token, blacklist Redis, rotation refresh) | ticketing interne, users, dashboard, reports… |
+| `PUBLIC_SESSION` | JWT de session publique (issuer/audience distincts, appareil de confiance actif) | portail public, widget, bot, knowledge |
+| `INTEGRATION_ASSERTION` | Assertion signée serveur→serveur (WordPress), usage unique (nonce Redis), origine exacte | échange d'assertion |
+| `ANONYMOUS` | Aucun | login, health, metrics, config publique, soumission de satisfaction |
+
 ## Autorisation (RBAC + ABAC)
 
 ### 7 rôles hiérarchiques
@@ -80,9 +91,10 @@ Distribué via Redis (ThrottlerStorageRedisService) :
 
 | Route                | Limite        | Fenêtre    |
 | -------------------- | ------------- | ---------- |
-| Général              | 100 requêtes  | 15 minutes |
-| `POST /auth/login`   | 10 tentatives | 1 heure/IP |
-| `POST /auth/refresh` | 20 tentatives | 15 minutes |
+| Général (défaut)     | 1000 requêtes | 15 minutes |
+| Routes sensibles (défaut, ex. `POST /auth/login`) | 20 tentatives | 1 heure/IP |
+
+Les valeurs sont configurables via `THROTTLE_TTL` / `THROTTLE_LIMIT` / `THROTTLE_AUTH_TTL` / `THROTTLE_AUTH_LIMIT`. Le stockage Redis est distribué avec repli mémoire en cas de panne Redis.
 
 ### Réinitialiser (dev uniquement)
 
@@ -103,8 +115,9 @@ curl -X POST /api/v1/tickets \
   -d '{ ... }'
 ```
 
-- Cache Redis pendant 24h
+- Table `idempotency_records` (PostgreSQL) avec TTL 24h, fingerprint du body
 - Retourne la réponse mise en cache si la clé existe
+- `@RequireIdempotency()` impose la clé sur les mutations publiques (portail, widget, bot)
 
 ---
 
@@ -167,6 +180,15 @@ Toutes les actions critiques sont enregistrées dans la table `audit_logs` (immu
 Chaque entrée contient : userId, action, entityType, entityId, oldValue, newValue, ipAddress, userAgent.
 
 ---
+
+## Support public (identité externe)
+
+- **OTP email** : code 6 chiffres haché (HMAC), destination chiffrée AES-256-GCM, quotas par IP/contact/intégration, réponses uniformes anti-énumération.
+- **Appareils de confiance** : jetons opaques hachés, validité 90 jours renouvelable, politique versionnée (révocation/raccourcissement administrés).
+- **Assertions WordPress** : JWT signé avec les secrets d'intégration versionnés, audience dédiée, durée bornée (≤ 120 s), nonce anti-rejeu Redis, origine exacte.
+- **Pièces jointes publiques** : quarantaine obligatoire, inspection du type réel (`file-type`), scan ClamAV, promotion `clean/` uniquement si `CLEAN`, quotas par demandeur/IP/intégration.
+- **Secrets d'intégration** : chiffrés AES-256-GCM avec clés maîtresses versionnées, rotation avec grâce, jamais renvoyés par l'API ni journalisés.
+- **Rétention** : anonymisation automatique des demandeurs inactifs, purge des challenges OTP et idempotences, fusion de profils auditée.
 
 ## Secrets et variables sensibles
 
