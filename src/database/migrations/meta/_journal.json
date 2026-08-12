@@ -134,6 +134,13 @@
       "when": 1786532226899,
       "tag": "0018_hot_tigra",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1786535398949,
+      "tag": "0019_panoramic_robbie_robertson",
+      "breakpoints": true
     }
   ]
 }

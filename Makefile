@@ -8,7 +8,7 @@ SHELL := /bin/sh
 COMPOSE ?= docker compose
 API ?= api
 
-.PHONY: help env up down build restart logs ps health migrate seed db-reset \
+.PHONY: help env up down build restart logs ps health migrate seed db-reset keycloak-seed \
 	test unit e2e lint typecheck openapi \
 	api-logs db-shell redis-shell mailpit backup restore clean
 
@@ -49,6 +49,12 @@ migrate: ## Applique les migrations de base de données
 
 seed: ## Charge les données de démonstration
 	$(COMPOSE) exec $(API) pnpm db:seed
+
+keycloak-up: ## Démarre Keycloak avec le realm importé
+	$(COMPOSE) up -d keycloak
+
+keycloak-seed: ## Crée 100+ comptes dans Keycloak
+	KEYCLOAK_ADMIN=$(KEYCLOAK_ADMIN) KEYCLOAK_ADMIN_PASSWORD=$(KEYCLOAK_ADMIN_PASSWORD) node keycloak/seed-users.mjs
 
 db-reset: ## Réinitialise le schéma et recharge le seed
 	$(COMPOSE) exec $(API) pnpm db:reset

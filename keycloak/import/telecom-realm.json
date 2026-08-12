@@ -1,0 +1,54 @@
+{
+  "realm": "telecom",
+  "enabled": true,
+  "displayName": "Telecom Ticket Management",
+  "loginTheme": "keycloakify",
+  "registrationAllowed": false,
+  "resetPasswordAllowed": true,
+  "roles": {
+    "realm": [
+      { "name": "ADMINISTRATOR" },
+      { "name": "SUPERVISOR" },
+      { "name": "CUSTOMER_SERVICE_AGENT" },
+      { "name": "NOC_ENGINEER" },
+      { "name": "BILLING_AGENT" },
+      { "name": "TECHNICAL_SUPPORT_ENGINEER" },
+      { "name": "FIELD_TECHNICIAN" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "telecom-frontend",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "protocol": "openid-connect",
+      "redirectUris": ["http://localhost:3001/*", "https://ticketing.example.com/*"],
+      "webOrigins": ["http://localhost:3001", "https://ticketing.example.com"]
+    }
+  ],
+  "users": [
+    {
+      "username": "admin@telecom.local",
+      "email": "admin@telecom.local",
+      "firstName": "Admin",
+      "lastName": "Système",
+      "enabled": true,
+      "emailVerified": true,
+      "realmRoles": ["ADMINISTRATOR"],
+      "credentials": [{ "type": "password", "value": "Admin@1234", "temporary": false }]
+    },
+    {
+      "username": "supervisor@telecom.local",
+      "email": "supervisor@telecom.local",
+      "firstName": "Super",
+      "lastName": "Viseur",
+      "enabled": true,
+      "emailVerified": true,
+      "realmRoles": ["SUPERVISOR"],
+      "credentials": [{ "type": "password", "value": "Super@1234", "temporary": false }]
+    }
+  ],
+  "defaultRoles": []
+}

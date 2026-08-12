@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "keycloak_subject_id" varchar(128);

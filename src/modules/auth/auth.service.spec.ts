@@ -47,6 +47,7 @@ jest.mock('../../common/helpers/uuidv7.helper', () => ({
 const mockUser = {
   id: 'user-1234-5678',
   email: 'admin@telecom.local',
+  keycloakSubjectId: null,
   passwordHash: '$argon2id$hashed-password-value',
   firstName: 'Admin',
   lastName: 'Principal',

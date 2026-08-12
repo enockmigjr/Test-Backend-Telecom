@@ -60,6 +60,25 @@ services:
     networks:
       - telecom-network
 
+# ============================================
+  # Keycloak SSO (source d'identité, thème Keycloakify)
+  # ============================================
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.7.0
+    container_name: telecom-keycloak
+    restart: unless-stopped
+    command: ["start-dev", "--import-realm", "--http-port=8080"]
+    environment:
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-Admin@1234}
+      KC_HTTP_RELATIVE_PATH: /
+    ports:
+      - '8080:8080'
+    volumes:
+      - ./keycloak/import:/opt/keycloak/data/import:ro
+    networks:
+      - telecom-network
+
   # ============================================
   # API NestJS (dev)
   # ============================================

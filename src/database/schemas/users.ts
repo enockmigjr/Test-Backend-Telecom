@@ -30,6 +30,8 @@ export const users = pgTable(
       .references(() => departments.id),
     // Adresse email professionnelle unique sert d'identifiant de connexion
     email: varchar('email', { length: 255 }).notNull().unique(),
+    // Sujet Keycloak (SSO) : source de vérité de l'identité, null tant que le compte est local.
+    keycloakSubjectId: varchar('keycloak_subject_id', { length: 128 }),
     // Mot de passe sécurisé et haché (Argon2id)
     passwordHash: text('password_hash').notNull(),
     // Prénom
