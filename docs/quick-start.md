@@ -99,8 +99,8 @@ curl -X POST http://localhost:3000/api/v1/auth/login \
 cd "../Test frontend Telecom"
 pnpm install
 cp .env.example .env.local
-pnpm dev -p 3001
-# → http://localhost:3001
+pnpm dev -p 3007
+# → http://localhost:3007
 ```
 
 ### Frontend embarqué (BFF)
@@ -109,7 +109,7 @@ pnpm dev -p 3001
 cd frontend
 pnpm install
 pnpm dev
-# → http://localhost:3001
+# → http://localhost:3007
 ```
 
 ---

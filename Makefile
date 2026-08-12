@@ -31,8 +31,8 @@ down: ## Arrête la stack (sans supprimer les volumes)
 build: ## Reconstruit les images puis démarre la stack
 	$(COMPOSE) up -d --build
 
-restart: ## Redémarre l'API et le portail public
-	$(COMPOSE) restart $(API) public-frontend
+restart: ## Redémarre l'API, le frontend interne et le portail public
+	$(COMPOSE) restart $(API) frontend public-frontend
 
 logs: ## Suit les logs de l'API
 	$(COMPOSE) logs -f --tail=100 $(API)

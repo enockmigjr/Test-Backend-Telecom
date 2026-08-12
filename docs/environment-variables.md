@@ -16,7 +16,7 @@ Voir `.env.example` pour les valeurs par défaut.
 | `APP_URL`       | ❌          | `http://localhost:3000`          | URL publique de l'API                               |
 | `LOGO_URL`      | ❌          | `http://localhost:3000/logo.png` | Logo dans les emails                                |
 | `LOGIN_URL`     | ❌          | `http://localhost:3000/login`    | Lien login dans les emails                          |
-| `DASHBOARD_URL` | ❌          | `http://localhost:3001`          | URL du frontend                                     |
+| `DASHBOARD_URL` | ❌          | `http://localhost:3007`          | URL du frontend (3001 = Grafana)                    |
 
 ---
 
@@ -191,6 +191,6 @@ Accessible sur `http://localhost:3000/admin/queues`.
 | `KEYCLOAK_ISSUER` | `http://localhost:8081/realms/telecom` | Issuer du realm Keycloak (JWKS RS256) — port 8081 car 8080 est utilisé par PhotoVault |
 | `KEYCLOAK_ADMIN` | `admin` | Compte admin du conteneur |
 | `KEYCLOAK_ADMIN_PASSWORD` | `Admin@1234` | Mot de passe admin (dev) |
-| `KEYCLOAK_REDIRECT_URI` | `http://localhost:3001/api/auth/keycloak/callback` | URI de callback du BFF |
+| `KEYCLOAK_REDIRECT_URI` | `http://localhost:3007/api/auth/keycloak/callback` | URI de callback du BFF |
 
 > Référence complète : 143 variables documentées dans `.env.example`.

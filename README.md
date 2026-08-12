@@ -173,7 +173,7 @@ curl http://localhost:3000/api/v1/users \
 
 ### Comptes SSO Keycloak (après bascule `AUTH_PROVIDER=keycloak`)
 
-> Keycloak tourne sur **http://localhost:8081** (8080 est utilisé par PhotoVault).
+> Keycloak tourne sur **http://localhost:8081**
 > Lancer `node keycloak/seed-users.mjs` (ou `make keycloak-seed`) pour créer les 105 comptes.
 
 | Usage                             | Identifiant                                          | Mot de passe    |
@@ -349,6 +349,7 @@ make down
 | Service       | Port       | Description               |
 | ------------- | ---------- | ------------------------- |
 | API NestJS    | 3000       | Backend REST API          |
+| Frontend (BFF) | 3007      | Console opérationnelle (3001 = Grafana) |
 | PostgreSQL 16 | 5432       | Base de données           |
 | Redis 7       | 6379       | Cache + sessions + queues |
 | Nginx         | 80, 443    | Reverse proxy             |
@@ -364,9 +365,9 @@ make down
 
 ---
 
-## 🖥️ Frontends (3 dépôts)
+## 🖥️ Frontends (2 dépôts)
 
-Ce projet dispose de **trois frontends** :
+Ce projet dispose de **deux frontends** :
 
 ### 1. Frontend Embarqué (`./frontend/`)
 
@@ -380,25 +381,9 @@ pnpm dev
 
 - **Tech**: Next.js 16, React 19, TanStack Query, shadcn/ui, Socket.IO
 - **Auth**: Cookies HttpOnly (pas de localStorage)
-- **Port**: `http://localhost:3001` (par défaut)
+- **Port**: `http://localhost:3007` (par défaut — 3001 est réservé à Grafana)
 
-### 2. Frontend Externe (`../Test frontend Telecom/`)
-
-Dépôt Git séparé. Architecture SPA classique avec tokens en mémoire (Zustand).
-
-```bash
-cd "../Test frontend Telecom"
-pnpm install
-pnpm dev
-```
-
-- **Tech**: Next.js 16, React 19, TanStack Query, Radix UI, Tailwind CSS 4
-- **Auth**: Bearer tokens en mémoire (Zustand store)
-- **Port**: `http://localhost:3000` (changeable via `next dev -p 3001`)
-
-> 📖 Voir le README du frontend externe pour la documentation complète.
-
-### 3. Portail public + widget (`public-frontend/`)
+### 2. Portail public + widget (`public-frontend/`)
 
 Dépôt Git autonome (ignoré par le backend). Portail pleine page et widget iframe pour le support public.
 

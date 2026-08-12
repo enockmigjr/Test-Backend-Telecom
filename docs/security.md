@@ -138,7 +138,7 @@ Helmet applique automatiquement les headers :
 Configuré via `CORS_ORIGIN` (liste de domaines séparés par des virgules) :
 
 ```env
-CORS_ORIGIN=http://localhost:3000,http://localhost:3001
+CORS_ORIGIN=http://localhost:3000,http://localhost:3007
 ```
 
 ---

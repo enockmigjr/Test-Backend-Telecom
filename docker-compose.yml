@@ -186,6 +186,36 @@ services:
       - telecom-network
 
   # ============================================
+  # Frontend interne (BFF Next.js) — port 3007 (3001 est réservé à Grafana)
+  # ============================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: telecom-frontend
+    restart: unless-stopped
+    ports:
+      - '3007:3000'
+    environment:
+      NODE_ENV: production
+      BACKEND_INTERNAL_URL: http://api:3000
+      REDIS_URL: ${DOCKER_REDIS_URL:-redis://redis:6379}
+      AUTH_PROVIDER: ${AUTH_PROVIDER:-local}
+      KEYCLOAK_ISSUER: ${KEYCLOAK_ISSUER:-http://localhost:8081/realms/telecom}
+      KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-telecom-frontend}
+      KEYCLOAK_REDIRECT_URI: ${KEYCLOAK_REDIRECT_URI:-http://localhost:3007/api/auth/keycloak/callback}
+      PUBLIC_APP_ORIGIN: ${PUBLIC_APP_ORIGIN:-http://localhost:3007}
+      AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-false}
+      AUTH_CSRF_SECRET: ${AUTH_CSRF_SECRET:-local-compose-csrf-secret-change-before-production}
+    expose:
+      - '3000'
+    depends_on:
+      - api
+      - redis
+    networks:
+      - telecom-network
+
+  # ============================================
   # Nginx Reverse Proxy
   # ============================================
   nginx:
