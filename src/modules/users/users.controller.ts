@@ -89,7 +89,7 @@ export class UsersController {
   /** Route de déclaration d'absence (courte auto, prolongée admin/superviseur) */
   @Patch('me/absence')
   @ApiOperation({
-    summary: "Déclarer / annuler son absence",
+    summary: 'Déclarer / annuler son absence',
     description:
       "L'absence courte (<= 7 jours) est libre ; l'absence prolongée doit être déclarée par un ADMINISTRATOR ou SUPERVISOR.",
   })

@@ -13,9 +13,9 @@
  */
 
 import { Injectable, ForbiddenException } from '@nestjs/common';
-import { and, gte, lt, lte, eq, sql, isNull, count, SQL } from 'drizzle-orm';
+import { and, gte, lt, lte, eq, sql, isNull, count, inArray, SQL } from 'drizzle-orm';
 import { DrizzleProvider } from '../../database/drizzle.provider';
-import { tickets, departments, users } from '../../database/schemas';
+import { departments, ticketHistory, tickets, users } from '../../database/schemas';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { DashboardSlaService } from './dashboard-sla.service';
 
@@ -409,8 +409,12 @@ export class DashboardService {
         overdueTicketsCount: sql<number>`COUNT(*) FILTER (WHERE ${openStatus} AND ${tickets.resolutionDueAt} < ${now.toISOString()})`,
         atRiskTicketsCount: sql<number>`COUNT(*) FILTER (WHERE ${openStatus} AND ${tickets.resolutionDueAt} <= ${new Date(now.getTime() + 30 * 60 * 1000).toISOString()})`,
         resolvedInPeriod: sql<number>`COUNT(*) FILTER (WHERE ${tickets.resolvedAt} >= ${fromDate.toISOString()} AND ${tickets.resolvedAt} <= ${toDate.toISOString()})`,
+        closedInPeriod: sql<number>`COUNT(*) FILTER (WHERE ${tickets.closedAt} >= ${fromDate.toISOString()} AND ${tickets.closedAt} <= ${toDate.toISOString()})`,
         slaBreachedCount: sql<number>`COUNT(*) FILTER (WHERE ${tickets.slaBreached} = true)`,
+        firstResponseCompliant: sql<number>`COUNT(*) FILTER (WHERE ${tickets.firstResponseAt} IS NOT NULL AND ${tickets.firstResponseAt} <= ${tickets.firstResponseDueAt})`,
+        firstResponseCount: sql<number>`COUNT(*) FILTER (WHERE ${tickets.firstResponseAt} IS NOT NULL)`,
         avgResolutionMinutes: sql<number>`COALESCE(AVG(${durationMinutes}) FILTER (WHERE ${tickets.resolvedAt} >= ${fromDate.toISOString()} AND ${tickets.resolvedAt} <= ${toDate.toISOString()}), 0)`,
+        medianResolutionMinutes: sql<number>`COALESCE(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY ${durationMinutes}) FILTER (WHERE ${tickets.resolvedAt} >= ${fromDate.toISOString()} AND ${tickets.resolvedAt} <= ${toDate.toISOString()}), 0)`,
         lastActivityAt: sql<Date>`MAX(${tickets.updatedAt})`,
       })
       .from(tickets)
@@ -429,27 +433,70 @@ export class DashboardService {
       )
       .orderBy(users.firstName, users.lastName);
 
+    const agentIds = rows.map((row) => row.agentId).filter((id): id is string => Boolean(id));
+    const reopenedRows =
+      agentIds.length > 0
+        ? await this.drizzle.db
+            .select({
+              agentId: tickets.assignedTo,
+              reopenedCount: count(),
+            })
+            .from(ticketHistory)
+            .innerJoin(tickets, eq(ticketHistory.ticketId, tickets.id))
+            .where(
+              and(
+                eq(ticketHistory.action, 'STATUS_CHANGED'),
+                sql`${ticketHistory.newValue}->>'status' = 'REOPENED'`,
+                inArray(tickets.assignedTo, agentIds),
+              ),
+            )
+            .groupBy(tickets.assignedTo)
+        : [];
+    const reopenedByAgent = new Map(reopenedRows.map((row) => [row.agentId, Number(row.reopenedCount)]));
+
     return {
       generatedAt: now.toISOString(),
       period: { from: fromDate.toISOString(), to: toDate.toISOString() },
-      data: rows.map((row) => ({
-        agentId: row.agentId,
-        firstName: row.firstName,
-        lastName: row.lastName,
-        email: row.email,
-        role: row.role,
-        isAvailable: row.isAvailable,
-        absenceEndsAt: row.absenceEndsAt ? new Date(row.absenceEndsAt).toISOString() : null,
-        departmentName: row.departmentName,
-        openTicketsCount: Number(row.openTicketsCount || 0),
-        criticalTicketsCount: Number(row.criticalTicketsCount || 0),
-        overdueTicketsCount: Number(row.overdueTicketsCount || 0),
-        atRiskTicketsCount: Number(row.atRiskTicketsCount || 0),
-        resolvedInPeriod: Number(row.resolvedInPeriod || 0),
-        slaBreachedCount: Number(row.slaBreachedCount || 0),
-        avgResolutionMinutes: Math.round(Number(row.avgResolutionMinutes || 0)),
-        lastActivityAt: row.lastActivityAt ? new Date(row.lastActivityAt).toISOString() : null,
-      })),
+      data: rows.map((row) => {
+        const agentId = row.agentId;
+        const resolved = Number(row.resolvedInPeriod || 0);
+        const firstResponseCount = Number(row.firstResponseCount || 0);
+        const firstResponseComplianceRate =
+          firstResponseCount > 0
+            ? Math.round((Number(row.firstResponseCompliant || 0) / firstResponseCount) * 100)
+            : 100;
+        const reopenedCount = agentId ? (reopenedByAgent.get(agentId) ?? 0) : 0;
+        const avgResolutionMinutes = Math.round(Number(row.avgResolutionMinutes || 0));
+        const score = this.performanceScore(
+          Number(row.slaBreachedCount || 0),
+          resolved,
+          avgResolutionMinutes,
+          reopenedCount,
+        );
+        return {
+          agentId,
+          firstName: row.firstName,
+          lastName: row.lastName,
+          email: row.email,
+          role: row.role,
+          isAvailable: row.isAvailable,
+          absenceEndsAt: row.absenceEndsAt ? new Date(row.absenceEndsAt).toISOString() : null,
+          departmentName: row.departmentName,
+          openTicketsCount: Number(row.openTicketsCount || 0),
+          criticalTicketsCount: Number(row.criticalTicketsCount || 0),
+          overdueTicketsCount: Number(row.overdueTicketsCount || 0),
+          atRiskTicketsCount: Number(row.atRiskTicketsCount || 0),
+          resolvedInPeriod: resolved,
+          closedInPeriod: Number(row.closedInPeriod || 0),
+          slaBreachedCount: Number(row.slaBreachedCount || 0),
+          firstResponseComplianceRate,
+          avgResolutionMinutes,
+          medianResolutionMinutes: Math.round(Number(row.medianResolutionMinutes || 0)),
+          reopenedCount,
+          score,
+          lastActivityAt: row.lastActivityAt ? new Date(row.lastActivityAt).toISOString() : null,
+        };
+      }),
     };
   }
 
@@ -517,6 +564,23 @@ export class DashboardService {
         lastActivityAt: stats?.lastActivityAt ? new Date(stats.lastActivityAt).toISOString() : null,
       },
     };
+  }
+
+  /**
+   * Score d'évaluation pondéré d'un agent (0-100).
+   * Pondérations validées : 40 % respect SLA, 30 % volume résolu, 20 % vitesse, 10 % réouvertures.
+   */
+  private performanceScore(
+    slaBreachedCount: number,
+    resolvedInPeriod: number,
+    avgResolutionMinutes: number,
+    reopenedCount: number,
+  ): number {
+    const slaScore = Math.max(0, 100 - slaBreachedCount * 10);
+    const volumeScore = Math.min(100, resolvedInPeriod * 5);
+    const speedScore = Math.max(0, 100 - Math.round(avgResolutionMinutes / 6));
+    const reopenScore = Math.max(0, 100 - reopenedCount * 20);
+    return Math.round(0.4 * slaScore + 0.3 * volumeScore + 0.2 * speedScore + 0.1 * reopenScore);
   }
 
   /**
