@@ -220,6 +220,19 @@ export class DashboardController {
   }
 
   /**
+   * Activité de l'utilisateur courant (accessible à tous les utilisateurs authentifiés).
+   */
+  @Get('my-activity')
+  @ApiOperation({
+    summary: "Mon activité",
+    description: 'Retourne les indicateurs personnels de l\'utilisateur courant : tickets ouverts/en retard/à risque, résolutions du mois, SLA et disponibilité.',
+  })
+  @ApiResponse({ status: 200, description: "Mon activité." })
+  async myActivity(@CurrentUser() currentUser: JwtPayload) {
+    return this.dashboardService.myActivity(currentUser);
+  }
+
+  /**
    * Distribution statistique des temps de résolution des tickets d'incidents (moyenne, médiane, P90).
    */
   @Get('resolution-time')

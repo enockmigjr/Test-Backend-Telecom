@@ -454,6 +454,72 @@ export class DashboardService {
   }
 
   /**
+   * Activité de l'utilisateur courant : ses tickets, son SLA, son état de disponibilité.
+   */
+  async myActivity(currentUser: JwtPayload) {
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const openStatus = sql`${tickets.status} NOT IN ('RESOLVED','CLOSED','CANCELLED')`;
+    const where = and(isNull(tickets.deletedAt), eq(tickets.assignedTo, currentUser.sub));
+    const durationMinutes = sql<number>`EXTRACT(EPOCH FROM (${tickets.resolvedAt} - ${tickets.createdAt})) / 60`;
+
+    const [[stats], [profile]] = await Promise.all([
+      this.drizzle.db
+        .select({
+          openTicketsCount: sql<number>`COUNT(*) FILTER (WHERE ${openStatus})`,
+          criticalTicketsCount: sql<number>`COUNT(*) FILTER (WHERE ${openStatus} AND ${tickets.priority} = 'CRITICAL')`,
+          overdueTicketsCount: sql<number>`COUNT(*) FILTER (WHERE ${openStatus} AND ${tickets.resolutionDueAt} < ${now.toISOString()})`,
+          atRiskTicketsCount: sql<number>`COUNT(*) FILTER (WHERE ${openStatus} AND ${tickets.resolutionDueAt} <= ${new Date(now.getTime() + 30 * 60 * 1000).toISOString()})`,
+          resolvedThisMonth: sql<number>`COUNT(*) FILTER (WHERE ${tickets.resolvedAt} >= ${monthStart.toISOString()})`,
+          slaBreachedCount: sql<number>`COUNT(*) FILTER (WHERE ${tickets.slaBreached} = true)`,
+          avgResolutionMinutes: sql<number>`COALESCE(AVG(${durationMinutes}) FILTER (WHERE ${tickets.resolvedAt} >= ${monthStart.toISOString()}), 0)`,
+          lastActivityAt: sql<Date>`MAX(${tickets.updatedAt})`,
+        })
+        .from(tickets)
+        .where(where),
+      this.drizzle.db
+        .select({
+          firstName: users.firstName,
+          lastName: users.lastName,
+          email: users.email,
+          role: users.role,
+          departmentName: departments.name,
+          isAvailable: users.isAvailable,
+          absenceEndsAt: users.absenceEndsAt,
+        })
+        .from(users)
+        .leftJoin(departments, eq(users.departmentId, departments.id))
+        .where(eq(users.id, currentUser.sub))
+        .limit(1),
+    ]);
+
+    return {
+      generatedAt: now.toISOString(),
+      profile: profile
+        ? {
+            firstName: profile.firstName,
+            lastName: profile.lastName,
+            email: profile.email,
+            role: profile.role,
+            departmentName: profile.departmentName,
+            isAvailable: profile.isAvailable,
+            absenceEndsAt: profile.absenceEndsAt ? new Date(profile.absenceEndsAt).toISOString() : null,
+          }
+        : null,
+      summary: {
+        openTicketsCount: Number(stats?.openTicketsCount || 0),
+        criticalTicketsCount: Number(stats?.criticalTicketsCount || 0),
+        overdueTicketsCount: Number(stats?.overdueTicketsCount || 0),
+        atRiskTicketsCount: Number(stats?.atRiskTicketsCount || 0),
+        resolvedThisMonth: Number(stats?.resolvedThisMonth || 0),
+        slaBreachedCount: Number(stats?.slaBreachedCount || 0),
+        avgResolutionMinutes: Math.round(Number(stats?.avgResolutionMinutes || 0)),
+        lastActivityAt: stats?.lastActivityAt ? new Date(stats.lastActivityAt).toISOString() : null,
+      },
+    };
+  }
+
+  /**
    * Calcule les métriques statistiques de temps de résolution (moyenne, médiane P50, 90ème centile P90) et l'évolution temporelle.
    */
   async resolutionTime(

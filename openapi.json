@@ -6951,6 +6951,44 @@
         ]
       }
     },
+    "/api/v1/dashboard/my-activity": {
+      "get": {
+        "description": "Retourne les indicateurs personnels de l'utilisateur courant : tickets ouverts/en retard/à risque, résolutions du mois, SLA et disponibilité.",
+        "operationId": "DashboardController_myActivity",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiSuccessResponse"
+                }
+              }
+            },
+            "description": "Mon activité."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mon activité",
+        "tags": [
+          "dashboard"
+        ]
+      }
+    },
     "/api/v1/dashboard/overview": {
       "get": {
         "description": "Retourne les indicateurs clés de performance : volume de tickets, répartition par statut/priorité/sévérité, conformité SLA.\n\n**Rôles autorisés :** ADMINISTRATOR, SUPERVISOR",
