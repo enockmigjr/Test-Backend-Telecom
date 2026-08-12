@@ -52,3 +52,5 @@ Contexte : aujourd'hui, un commentaire interne posÃ© sur un ticket public est **
 ## Statut de la phase
 - FAIT (poussé) : option B — route POST /tickets/:id/public-reply + action « Répondre au demandeur ». Vérifié live.
 - EN COURS : satisfaction (note 1-5 + lien signé) et bascule commentaires internes uniquement.
+- MAJ : satisfaction complète livrée (lien signé 14 j one-time, page publique /satisfaction, stats dashboard, vérifié live).
+- RESTE (5c) : envoi automatique du lien par email à la clôture — nécessite un arbitrage sur le mécanisme (outbox external-delivery avec URL dans l'email, ou email direct via BullMQ). Le lien est générable manuellement (admin/superviseur) dès maintenant.
