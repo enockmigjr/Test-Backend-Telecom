@@ -92,6 +92,25 @@ export class CommentsController {
   }
 
   /**
+   * Répondre explicitement à un demandeur externe depuis l'interne.
+   */
+  @Post('tickets/:ticketId/public-reply')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Répondre au demandeur externe',
+    description:
+      'Crée une réponse publique au demandeur (timeline + email) sur un ticket provenant du support public. Le ticket doit posséder un demandeur externe.',
+  })
+  @ApiParam({ name: 'ticketId', description: 'UUID du ticket concerné' })
+  @ApiBody({ type: CreateCommentDto })
+  @ApiResponse({ status: 201, description: 'Réponse publique créée.' })
+  @ApiResponse({ status: 400, description: 'Le ticket n’a pas de demandeur externe.' })
+  @ApiResponse({ status: 404, description: 'Ticket non trouvé.' })
+  async publicReply(@Param('ticketId') ticketId: string, @Body() dto: CreateCommentDto, @CurrentUser() user: JwtPayload) {
+    return this.commentsService.createPublicReply(ticketId, user, dto.content);
+  }
+
+  /**
    * Modifie le texte d'un commentaire public existant.
    *
    * @param id Identifiant UUID du commentaire.

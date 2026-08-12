@@ -16102,6 +16102,84 @@
         ]
       }
     },
+    "/api/v1/tickets/{ticketId}/public-reply": {
+      "post": {
+        "description": "Crée une réponse publique au demandeur (timeline + email) sur un ticket provenant du support public. Le ticket doit posséder un demandeur externe.",
+        "operationId": "CommentsController_publicReply",
+        "parameters": [
+          {
+            "description": "UUID du ticket concerné",
+            "in": "path",
+            "name": "ticketId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCommentDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiSuccessResponse"
+                }
+              }
+            },
+            "description": "Réponse publique créée."
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Le ticket n’a pas de demandeur externe."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Ticket non trouvé."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Répondre au demandeur externe",
+        "tags": [
+          "comments"
+        ]
+      }
+    },
     "/api/v1/users": {
       "get": {
         "description": "Retourne la liste paginée de tous les utilisateurs actifs avec leur département.\n\n**Rôles autorisés :** ADMINISTRATOR, SUPERVISOR",

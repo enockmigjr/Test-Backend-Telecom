@@ -11,7 +11,14 @@
  * ============================================================================
  */
 
-import { ConflictException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { and, eq, sql } from 'drizzle-orm';
 import { normalizePagination } from '../../common/helpers/normalized-pagination.helper';
 import { PaginationHelper } from '../../common/helpers/pagination.helper';
@@ -109,6 +116,23 @@ export class CommentsService {
       ticket?.supportIntegrationId ?? undefined,
       correctsCommentId,
     );
+  }
+
+  /**
+   * Réponse explicite à un demandeur externe (option B) : le commentaire interne est
+   * persisté et une réponse publique (timeline + email) est émise pour le demandeur.
+   */
+  async createPublicReply(ticketId: string, user: JwtPayload, content: string) {
+    await this.ticketAccess.assertTicketVisible(ticketId, user);
+    const [ticket] = await this.drizzle.db
+      .select({ supportIntegrationId: tickets.supportIntegrationId })
+      .from(tickets)
+      .where(eq(tickets.id, ticketId))
+      .limit(1);
+    if (!ticket?.supportIntegrationId) {
+      throw new BadRequestException("Ce ticket n'a pas de demandeur externe.");
+    }
+    return this.createByActor(ticketId, internalActor(user.sub), content, ticket.supportIntegrationId);
   }
 
   /** Persiste un commentaire après que le cas d'usage appelant a autorisé l'acteur. */
