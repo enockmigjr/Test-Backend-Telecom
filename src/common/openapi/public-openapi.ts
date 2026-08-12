@@ -2,6 +2,7 @@ import { OpenAPIObject } from '@nestjs/swagger';
 
 import { PUBLIC_SUPPORT_AUDIENCE, PUBLIC_SUPPORT_AUDIENCE_EXTENSION } from './public-support-api.decorator';
 import { sanitizeComponents, sanitizeOperation } from './public-openapi-sanitizer';
+import { isRecord } from '../utils/helpers';
 
 const METHODS = ['get', 'put', 'post', 'delete', 'options', 'head', 'patch', 'trace'] as const;
 const COMPONENT_SECTIONS = [
@@ -23,10 +24,6 @@ type PathsObject = OpenAPIObject['paths'];
 type PathItemObject = PathsObject[string];
 type OperationObject = NonNullable<PathItemObject['get']>;
 type ComponentsObject = NonNullable<OpenAPIObject['components']>;
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
 
 function isPublicSupportOperation(operation: OperationObject | undefined): operation is OperationObject {
   const value: unknown = operation;

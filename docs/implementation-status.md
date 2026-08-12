@@ -23,9 +23,9 @@ Dernière mise à jour : 2026-08-12
 | BullMQ | 8 files (email, notification, sla, audit, report, assignment, external-delivery, attachment-scan) et 8 workers, tous enregistrés dans `QueuesModule` |
 | Domain Events | EventEmitter2 (tickets, auth, SLA, satisfaction) + 15+ événements outbox écrits dans la transaction métier |
 | Swagger | 28 tags, 144 opérations OpenAPI (120 chemins) ; contrat public projeté `openapi.public.json` (33 opérations), tests de non-fuite |
-| Prometheus / Grafana | 9 métriques custom + defaults, alerting, dashboards |
+| Prometheus / Grafana | 10 métriques custom + defaults, alerting, dashboards |
 | OpenTelemetry | SDK auto-instrumentation (HTTP, Express, NestJS, PostgreSQL, Redis) → Tempo |
-| Email | Nodemailer dev (Mailpit)/prod, 15 templates Handlebars + layout base.hbs, fallback inline réduit |
+| Email | Nodemailer dev (Mailpit)/prod, 15 templates Handlebars + layout base.hbs, repli générique sans contenu dupliqué |
 | PDF Reports | PDFKit premium, génération asynchrone, lien signé HMAC expirable, notification succès/échec |
 | Support public | Portail + widget (public-frontend), admission (catalogue, routage, impact × urgence), conversations, timeline publique, préférences |
 | Identité publique | OTP email, appareils de confiance 90 j, assertions WordPress, session publique JWT distincte, quotas anti-abus, identités chiffrées AES-GCM |
@@ -48,7 +48,7 @@ Dernière mise à jour : 2026-08-12
 | Rétention | Validation de la rétention/anonymisation sur données réelles et arbitrage du fail-open Redis |
 | Bot | Clé API fournisseur (`PUBLIC_SUPPORT_BOT_API_KEY`) requise pour activer le bot |
 | SSO Keycloak | Phases 6 à 8 du plan `260812-1040-keycloak-sso-evaluation` (déploiement prod, Keycloak + Keycloakify, config admin étendue) |
-| Tests | Comptage réel à re-exécuter : 89 fichiers spec + 24 fichiers E2E/intégration (manifest : 598 unitaires / 87 suites) |
+| Tests | 92 fichiers spec (628 tests / 92 suites, vérifiés le 12/08/2026) + 24 fichiers E2E/intégration |
 
 ## Verdict
 

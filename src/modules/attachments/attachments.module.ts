@@ -28,6 +28,7 @@ import { PublicConversationAttachmentsService } from './public-conversation-atta
 import { PublicAttachmentUploadGuard } from './public-attachment-upload.guard';
 import { ExternalIdentityModule } from '../external-identity/external-identity.module';
 import { PublicAttachmentIdempotencyService } from './public-attachment-idempotency.service';
+import { PublicAttachmentUploadService } from './public-attachment-upload.service';
 
 /**
  * Module responsable de l'upload, du téléchargement et de la suppression des pièces jointes associées aux tickets.
@@ -47,6 +48,7 @@ import { PublicAttachmentIdempotencyService } from './public-attachment-idempote
     PublicConversationAttachmentsService,
     PublicAttachmentUploadGuard,
     PublicAttachmentIdempotencyService,
+    PublicAttachmentUploadService,
     { provide: ANTIVIRUS_SCANNER, useExisting: ClamavScannerService },
   ],
   exports: [AttachmentsService, LocalStorageService, AttachmentScanService, ANTIVIRUS_SCANNER],

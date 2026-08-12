@@ -4,6 +4,7 @@ import { hostname } from 'os';
 import { redisConfig } from '../../common/providers/redis.config';
 import { ExternalDeliveryService } from '../../modules/external-delivery/services/external-delivery.service';
 import { EXTERNAL_DELIVERY_QUEUE } from '../queues.module';
+import { errorCategory } from '../../common/utils/helpers';
 
 interface ExternalDeliveryJob {
   readonly outboxEventId: string;
@@ -41,11 +42,4 @@ export class ExternalDeliveryWorker implements OnModuleInit, OnModuleDestroy {
   async onModuleDestroy(): Promise<void> {
     await this.worker?.close();
   }
-}
-
-function errorCategory(error: unknown): string {
-  if (typeof error !== 'object' || error === null) return 'UnknownError';
-  const name = 'name' in error && typeof error.name === 'string' ? error.name : 'Error';
-  const code = 'code' in error && typeof error.code === 'string' ? error.code : undefined;
-  return code ? `${name}:${code}` : name;
 }

@@ -5,7 +5,7 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql)
 ![Redis](https://img.shields.io/badge/Redis-7-DC382D?logo=redis)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker)
-![Tests](https://img.shields.io/badge/Tests-89%20spec%20files-success)
+![Tests](https://img.shields.io/badge/Tests-92%20spec%20files-success)
 ![License](https://img.shields.io/badge/License-UNLICENSED-lightgrey)
 
 Backend **NestJS** pour la plateforme de gestion des tickets d'incidents télécoms.
@@ -90,13 +90,13 @@ pnpm run start:dev
 ### Tests
 
 ```bash
-# Tests unitaires (89 fichiers spec)
+# Tests unitaires (92 fichiers spec)
 pnpm run test:unit
 
 # Tests end-to-end (24 fichiers E2E/intégration)
 pnpm run test:e2e
 
-# Tous les tests (113 fichiers — comptage réel à exécuter)
+# Tous les tests (116 fichiers — 92 spec + 24 E2E/intégration)
 pnpm run test:all
 ```
 
@@ -406,10 +406,10 @@ pnpm dev
 | ------------------------- | --------------------------------- |
 | `pnpm run start:dev`      | Développement hot-reload          |
 | `pnpm run build`          | Compilation TypeScript            |
-| `pnpm run test`           | Tests unitaires (89 fichiers spec)|
+| `pnpm run test`           | Tests unitaires (92 fichiers spec)|
 | `pnpm run test:unit`      | Tests unitaires (chemin src/)     |
 | `pnpm run test:e2e`       | Tests end-to-end (24 fichiers)    |
-| `pnpm run test:all`       | Tous les tests (113 fichiers — comptage réel à exécuter) |
+| `pnpm run test:all`       | Tous les tests (116 fichiers — 92 spec + 24 E2E/intégration) |
 | `pnpm run test:cov`       | Tests avec couverture             |
 | `pnpm run db:push`        | Pousser schéma Drizzle            |
 | `pnpm run db:seed`        | Données de test (14 utilisateurs) |
@@ -513,7 +513,7 @@ pnpm run start:dev
 | [docs/domain-events.md](docs/domain-events.md)                                   | Événements domaine EventEmitter2                  |
 | [docs/security.md](docs/security.md)                                             | Guide de sécurité (auth, RBAC, rate limiting)     |
 | [docs/test-accounts.md](docs/test-accounts.md)                                   | Comptes de test et identifiants                   |
-| [docs/testing.md](docs/testing.md)                                               | Guide des tests (89 spec + 24 E2E/intégration)    |
+| [docs/testing.md](docs/testing.md)                                               | Guide des tests (92 spec + 24 E2E/intégration)    |
 | [docs/environment-variables.md](docs/environment-variables.md)                   | Référence variables d'env                         |
 | [docs/deployment.md](docs/deployment.md)                                         | Guide de déploiement production                   |
 | [docs/emails.md](docs/emails.md)                                                 | Architecture email, templates, flux               |

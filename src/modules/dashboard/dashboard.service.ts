@@ -101,6 +101,7 @@ export class DashboardService {
       [breachedCount],
       [atRiskCount],
       [overdueCount],
+      [compliantCount],
     ] = await Promise.all([
       this.drizzle.db.select({ total: count() }).from(tickets).where(rangeWhere),
       this.drizzle.db.select({ count: count() }).from(tickets).where(openWhere),
@@ -128,6 +129,10 @@ export class DashboardService {
         .select({ count: count() })
         .from(tickets)
         .where(and(openWhere, lt(tickets.resolutionDueAt, new Date()))),
+      this.drizzle.db
+        .select({ count: count() })
+        .from(tickets)
+        .where(and(openWhere, eq(tickets.slaBreached, false))),
     ]);
 
     const byStatus = await this.drizzle.db
@@ -147,7 +152,7 @@ export class DashboardService {
       .groupBy(tickets.severity);
 
     const total = Number(totals?.total || 0);
-    const compliant = total - Number(breachedCount?.count || 0);
+    const compliant = Number(compliantCount?.count || 0);
 
     return {
       period: { from: fromDate.toISOString(), to: toDate.toISOString() },

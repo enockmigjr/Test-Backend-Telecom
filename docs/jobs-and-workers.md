@@ -35,7 +35,7 @@ Tous les workers sont enregistrés dans `src/queues/queues.module.ts` (module gl
 
 | Fréquence | Tâche | Fichier |
 | --- | --- | --- |
-| Toutes les 2 min | Auto-assignation, consolidation de charge, désassignation d'urgence, escalade des tickets ASSIGNED en retard | `src/modules/tickets/services/auto-assignment.cron.ts` |
+| Toutes les 2 min | Auto-assignation, consolidation de charge, désassignation d'urgence, escalade des tickets ASSIGNED en retard (rattrapage idempotent ; passages sans travail comptabilisés par `telecom_assignment_cron_noop_total`) | `src/modules/tickets/services/auto-assignment.cron.ts` |
 | Toutes les 5 min | Contrôle SLA (warning < 30 min, breach), auto-clôture 48 h | `src/modules/sla/sla-engine.service.ts`, `sla-alert-processor.service.ts`, `sla-auto-close.service.ts` |
 | Toutes les 5 min | Récupération des scans de pièces jointes bloqués (SCANNING stale) | `src/modules/attachments/security/attachment-quarantine-cleanup.service.ts` |
 | Toutes les heures | Purge des quarantaines expirées, fichiers temporaires, quarantaines promues | idem |

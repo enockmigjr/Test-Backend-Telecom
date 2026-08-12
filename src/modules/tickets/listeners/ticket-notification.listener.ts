@@ -14,7 +14,6 @@ import { Injectable, Logger, Inject } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { Queue } from 'bullmq';
 import { eq, and, isNull } from 'drizzle-orm';
-import { EMAIL_QUEUE, NOTIFICATION_QUEUE } from '../../../queues/queues.module';
 import { BullMqQueues } from '../../../queues/queues.types';
 import {
   TicketCreatedEvent,
@@ -55,11 +54,11 @@ export class TicketNotificationListener {
   ) {}
 
   private get emailQueue(): Queue {
-    return this.queues[EMAIL_QUEUE] ?? this.queues['email'];
+    return this.queues.email;
   }
 
   private get notificationQueue(): Queue {
-    return this.queues[NOTIFICATION_QUEUE] ?? this.queues['notification'];
+    return this.queues.notification;
   }
 
   /** Récupère l'email ET le nom complet d'un utilisateur */
@@ -155,7 +154,9 @@ export class TicketNotificationListener {
   /** Enfile une notification de façon résiliente */
   private async createNotification(data: Record<string, unknown>): Promise<void> {
     try {
-      await this.notificationQueue.add('create-notification', data);
+      // Le listener émet déjà l'événement de domaine en WebSocket direct :
+      // on demande au worker de ne pas re-émettre notification.created (déduplication).
+      await this.notificationQueue.add('create-notification', { ...data, emitWs: false });
     } catch (err) {
       this.logger.warn(`Notification queue unavailable. Job dropped: ${String(err)}`);
     }

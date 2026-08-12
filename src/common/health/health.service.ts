@@ -17,6 +17,7 @@ import { Redis } from 'ioredis';
 import { redisConfig } from '../providers/redis.config';
 import { BullMqQueues } from '../../queues/queues.types';
 import { ANTIVIRUS_SCANNER, AntivirusScanner } from '../../modules/attachments/security/antivirus-scanner.interface';
+import { errorCategory } from '../utils/helpers';
 
 /**
  * Service réalisant le diagnostic de disponibilité des composants d'infrastructure.
@@ -82,11 +83,4 @@ export class HealthService {
 
     return results;
   }
-}
-
-function errorCategory(error: unknown): string {
-  if (typeof error !== 'object' || error === null) return 'UnknownError';
-  const name = 'name' in error && typeof error.name === 'string' ? error.name : 'Error';
-  const code = 'code' in error && typeof error.code === 'string' ? error.code : undefined;
-  return code ? `${name}:${code}` : name;
 }

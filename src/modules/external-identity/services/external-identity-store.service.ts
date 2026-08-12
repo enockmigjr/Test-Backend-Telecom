@@ -10,6 +10,7 @@ import {
 } from '../../../database/schemas';
 import { IntegrationSecretCipherService } from '../../support-integrations/services/integration-secret-cipher.service';
 import { VerificationOutcome } from './verification-outcome';
+import { splitEncrypted } from '../../../common/utils/helpers';
 
 @Injectable()
 export class ExternalIdentityStoreService {
@@ -124,12 +125,4 @@ export class ExternalIdentityStoreService {
     const sealed = this.cipher.seal(value, `identity:${identityId}`);
     return `${sealed.keyVersion}:${sealed.encryptedSecret}`;
   }
-}
-
-function splitEncrypted(value: string): readonly [number, string] {
-  const separator = value.indexOf(':');
-  const version = Number(value.slice(0, separator));
-  const encrypted = value.slice(separator + 1);
-  if (!Number.isSafeInteger(version) || version < 1 || !encrypted) throw new Error('Destination chiffrée invalide.');
-  return [version, encrypted];
 }

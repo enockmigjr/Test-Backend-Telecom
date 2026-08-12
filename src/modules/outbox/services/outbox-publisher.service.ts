@@ -4,6 +4,7 @@ import { hostname } from 'os';
 import { BullMqQueues } from '../../../queues/queues.types';
 import { OutboxService } from './outbox.service';
 import { PublicRealtimeNotifierService } from '../../../websocket/public-realtime-notifier.service';
+import { errorCategory } from '../../../common/utils/helpers';
 
 @Injectable()
 export class OutboxPublisherService {
@@ -53,11 +54,4 @@ export class OutboxPublisherService {
       this.running = false;
     }
   }
-}
-
-function errorCategory(error: unknown): string {
-  if (typeof error !== 'object' || error === null) return 'UnknownError';
-  const name = 'name' in error && typeof error.name === 'string' ? error.name : 'Error';
-  const code = 'code' in error && typeof error.code === 'string' ? error.code : undefined;
-  return code ? `${name}:${code}` : name;
 }

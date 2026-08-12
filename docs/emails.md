@@ -74,6 +74,8 @@ Avec BullMQ, la requête HTTP retourne immédiatement et l'email est envoyé en 
 
 Tous les templates s'abonnent dynamiquement au layout parent `base.hbs` pour un design unifié et cohérent.
 
+> En cas de template `.hbs` manquant ou d'erreur de rendu, `EmailWorker` utilise un **repli générique** (`fallbackTemplate`) : aucun contenu n'est dupliqué dans le code, les `.hbs` restent la source unique.
+
 ## Configuration
 
 **DEV** (automatique si `NODE_ENV=development`):

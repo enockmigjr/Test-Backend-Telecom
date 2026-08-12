@@ -9,6 +9,7 @@ import { AuditLogsService } from '../../audit-logs/audit-logs.service';
 import { CreateSupportIntegrationDto, UpdateSupportIntegrationDto } from '../dto/support-integration.dto';
 import { normalizeExactOrigins } from './integration-origin-policy';
 import { DevicePolicyImpact, IntegrationTrustPolicyService } from './integration-trust-policy.service';
+import { policyNumber } from '../../../common/utils/helpers';
 
 @Injectable()
 export class SupportIntegrationsService {
@@ -180,9 +181,4 @@ function summarize(
     features: value.features,
     ...(devicePolicyImpact === undefined ? {} : { devicePolicyImpact }),
   };
-}
-
-function policyNumber(policy: Record<string, unknown> | undefined, key: string, fallback: number): number {
-  const value = policy?.[key];
-  return typeof value === 'number' && Number.isSafeInteger(value) && value > 0 ? value : fallback;
 }

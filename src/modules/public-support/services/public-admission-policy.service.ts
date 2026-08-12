@@ -9,6 +9,7 @@ import {
   supportIntegrations,
 } from '../../../database/schemas';
 import { PublicAdmissionResult, PublicRouteTarget, PublicTicketDraft } from '../interfaces/public-admission.interface';
+import { stringArray } from '../../../common/utils/helpers';
 
 type Priority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 type Severity = 'S1' | 'S2' | 'S3' | 'S4';
@@ -133,10 +134,6 @@ function isOneOf<const T extends readonly string[]>(value: unknown, values: T): 
 
 function record(value: unknown): Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
-}
-
-function stringArray(value: unknown): string[] {
-  return Array.isArray(value) ? value.filter(isString) : [];
 }
 
 function isString(value: unknown): value is string {

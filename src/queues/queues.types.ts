@@ -18,7 +18,10 @@ import { Queue } from 'bullmq';
 export interface BullMqQueues {
   email: Queue;
   notification: Queue;
+  sla: Queue;
+  audit: Queue;
+  report: Queue;
+  assignment: Queue;
   externalDelivery: Queue;
   attachmentScan: Queue;
-  [key: string]: Queue;
 }

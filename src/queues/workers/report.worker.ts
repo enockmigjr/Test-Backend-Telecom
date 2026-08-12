@@ -11,13 +11,13 @@
 
 import { Injectable, Logger, OnModuleInit, OnModuleDestroy, Inject } from '@nestjs/common';
 import { Worker, Job } from 'bullmq';
-import { generateUuid } from '../../common/helpers/uuidv7.helper';
-import { eq, and, isNull, gte, lte, count, sql } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import { redisConfig } from '../../common/providers/redis.config';
 import { REPORT_QUEUE } from '../queues.module';
 import { DrizzleProvider } from '../../database/drizzle.provider';
-import { tickets, users, departments, categories } from '../../database/schemas';
+import { users } from '../../database/schemas';
 import { ReportsService } from '../../modules/reports/reports.service';
+import { ReportQueryService } from '../../modules/reports/report-query.service';
 import { LocalStorageService } from '../../modules/attachments/storage/local-storage.service';
 import { BullMqQueues } from '../queues.types';
 import { ReportDownloadLinkService } from '../../modules/reports/report-download-link.service';
@@ -40,6 +40,7 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
     private readonly drizzle: DrizzleProvider,
     @Inject('BullMQ_Queues') private readonly queues: BullMqQueues,
     private readonly reportsService: ReportsService,
+    private readonly reportQuery: ReportQueryService,
     private readonly storage: LocalStorageService,
     private readonly downloadLinks: ReportDownloadLinkService,
   ) {}
@@ -56,19 +57,11 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
       async (job: Job) => {
         const { type, data } = job.data;
 
-        let reportId = data.reportId;
+        const reportId = data.reportId;
         if (!reportId) {
-          reportId = generateUuid();
-          try {
-            await this.reportsService.createReport({
-              id: reportId,
-              type: type === 'weekly-report' ? 'weekly-report' : type,
-              status: 'pending',
-              requestedBy: data.requestedBy || '00000000-0000-0000-0000-000000000000', // valeur factice si système
-            });
-          } catch (e) {
-            this.logger.warn(`Impossible de creer la ligne de rapport en DB: ${String(e)}`);
-          }
+          // Les contrôleurs et le scheduler créent toujours la ligne `reports` avec un id :
+          // aucun faux UUID technique ne doit être injecté (modèle d'acteur SYSTEM).
+          throw new Error('REPORT_ID_REQUIRED');
         }
 
         switch (type) {
@@ -158,33 +151,8 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
 
   private async generateTicketReport(reportId: string, ticketId: string, requestedBy: string): Promise<void> {
     try {
-      const [ticket] = await this.drizzle.db
-        .select({
-          id: tickets.id,
-          ticketNumber: tickets.ticketNumber,
-          title: tickets.title,
-          description: tickets.description,
-          status: tickets.status,
-          priority: tickets.priority,
-          severity: tickets.severity,
-          category: categories.name,
-          createdAt: tickets.createdAt,
-          resolvedAt: tickets.resolvedAt,
-          closedAt: tickets.closedAt,
-          customerName: tickets.customerName,
-          resolutionSummary: tickets.resolutionSummary,
-          departmentName: departments.name,
-        })
-        .from(tickets)
-        .leftJoin(departments, eq(tickets.departmentId, departments.id))
-        .leftJoin(categories, eq(tickets.categoryId, categories.id))
-        .where(and(eq(tickets.id, ticketId), isNull(tickets.deletedAt)))
-        .limit(1);
-
-      if (!ticket) {
-        throw new Error(`Ticket ${ticketId} introuvable ou supprime`);
-      }
-
+      // Les données du rapport sont extraites par ReportQueryService (source unique).
+      const { ticket } = await this.reportQuery.ticketReport(ticketId);
       const ticketNumber = ticket.ticketNumber as string;
 
       // Générer le PDF
@@ -271,50 +239,18 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
     requestedBy: string,
     departmentId?: string,
   ): Promise<void> {
-    // Gérer les valeurs par défaut si non spécifiées ou invalides
-    let fromDate = from ? new Date(from) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    let toDate = to ? new Date(to) : new Date();
-
-    if (isNaN(fromDate.getTime())) {
-      fromDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    }
-    if (isNaN(toDate.getTime())) {
-      toDate = new Date();
-    }
-
-    const fromStr = fromDate.toLocaleDateString('fr-FR');
-    const toStr = toDate.toLocaleDateString('fr-FR');
+    let fromStr = '';
+    let toStr = '';
 
     try {
-      const where = and(
-        gte(tickets.createdAt, fromDate),
-        lte(tickets.createdAt, toDate),
-        isNull(tickets.deletedAt),
-        departmentId ? eq(tickets.assignedTeamId, departmentId) : undefined,
-      );
-
-      const [stats] = await this.drizzle.db
-        .select({
-          total: count(),
-          breached: sql<number>`COUNT(*) FILTER (WHERE ${tickets.slaBreached} = true)`,
-          avgResolutionMinutes: sql<number>`COALESCE(AVG(EXTRACT(EPOCH FROM (${tickets.resolvedAt} - ${tickets.createdAt})) / 60) FILTER (WHERE ${tickets.resolvedAt} IS NOT NULL), 0)`,
-        })
-        .from(tickets)
-        .where(where);
-
-      const byPriority = await this.drizzle.db
-        .select({
-          priority: tickets.priority,
-          count: count(),
-          breached: sql<number>`COUNT(*) FILTER (WHERE ${tickets.slaBreached} = true)`,
-        })
-        .from(tickets)
-        .where(where)
-        .groupBy(tickets.priority);
-
-      const total = Number(stats?.total || 0);
-      const breached = Number(stats?.breached || 0);
-      const avgMin = Math.round(Number(stats?.avgResolutionMinutes || 0));
+      // Les agrégats SLA sont calculés par ReportQueryService (source unique, identique à l'endpoint /reports/sla).
+      const report = await this.reportQuery.slaReport(from, to, departmentId);
+      const { total, breached, avgResolutionMinutes: avgMin } = report.summary;
+      const byPriority = report.byPriority;
+      const fromDate = new Date(report.period.from);
+      const toDate = new Date(report.period.to);
+      fromStr = fromDate.toLocaleDateString('fr-FR');
+      toStr = toDate.toLocaleDateString('fr-FR');
 
       // Générer le PDF
       const pdfBuffer = await this.reportsService.generateSlaPdf(
@@ -356,7 +292,7 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
       // Envoyer l'email
       const email = await this.getUserEmail(requestedBy);
       if (email) {
-        const dashboardUrl = process.env['DASHBOARD_URL'] || 'http://localhost:3001';
+        const dashboardUrl = process.env['DASHBOARD_URL'] || 'http://localhost:3007';
         await this.sendEmail(email, '📊 Rapport SLA', 'slaReport', {
           periodStart: fromDate.toLocaleDateString('fr-FR'),
           periodEnd: toDate.toLocaleDateString('fr-FR'),
@@ -408,49 +344,16 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
     try {
       const now = new Date();
       const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      const where = and(gte(tickets.createdAt, weekAgo), lte(tickets.createdAt, now), isNull(tickets.deletedAt));
-
-      // Stats de la semaine
-      const [[totals], [resolved], [openCount], [breached]] = await Promise.all([
-        this.drizzle.db.select({ count: count() }).from(tickets).where(where),
-        this.drizzle.db
-          .select({ count: count() })
-          .from(tickets)
-          .where(and(where, eq(tickets.status, 'RESOLVED' as const))),
-        this.drizzle.db
-          .select({ count: count() })
-          .from(tickets)
-          .where(and(where, sql`${tickets.status} NOT IN ('RESOLVED','CLOSED','CANCELLED')`)),
-        this.drizzle.db
-          .select({ count: count() })
-          .from(tickets)
-          .where(and(where, eq(tickets.slaBreached, true))),
-      ]);
-
-      const [avgStats] = await this.drizzle.db
-        .select({
-          avgMin: sql<number>`COALESCE(AVG(EXTRACT(EPOCH FROM (${tickets.resolvedAt} - ${tickets.createdAt})) / 60) FILTER (WHERE ${tickets.resolvedAt} IS NOT NULL), 0)`,
-        })
-        .from(tickets)
-        .where(and(where, sql`${tickets.resolvedAt} IS NOT NULL`));
-
-      const byPriority = await this.drizzle.db
-        .select({
-          priority: tickets.priority,
-          count: count(),
-          breached: sql<number>`COUNT(*) FILTER (WHERE ${tickets.slaBreached} = true)`,
-        })
-        .from(tickets)
-        .where(where)
-        .groupBy(tickets.priority);
-
-      const totalCreated = Number(totals?.count || 0);
-      const totalResolved = Number(resolved?.count || 0);
-      const totalOpen = Number(openCount?.count || 0);
-      const slaBreaches = Number(breached?.count || 0);
+      // Stats de la semaine calculées par ReportQueryService (source unique).
+      const stats = await this.reportQuery.weeklyReport(weekAgo, now);
+      const totalCreated = stats.totalCreated;
+      const totalResolved = stats.totalResolved;
+      const totalOpen = stats.totalOpen;
+      const slaBreaches = stats.slaBreaches;
+      const avgMin = stats.avgResolutionMinutes;
+      const byPriority = stats.byPriority;
       const complianceRate =
         totalCreated > 0 ? (((totalCreated - slaBreaches) / totalCreated) * 100).toFixed(1) : '100';
-      const avgMin = Math.round(Number(avgStats?.avgMin || 0));
 
       const weekNumber = String(
         Math.ceil((now.getTime() - new Date(now.getFullYear(), 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000)),
@@ -496,7 +399,7 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
       // Envoyer l'email
       const email = await this.getUserEmail(requestedBy);
       if (email) {
-        const dashboardUrl = process.env['DASHBOARD_URL'] || 'http://localhost:3001';
+        const dashboardUrl = process.env['DASHBOARD_URL'] || 'http://localhost:3007';
         await this.sendEmail(email, `📈 Rapport Hebdomadaire — Semaine ${weekNumber}`, 'adminWeeklyReport', {
           weekNumber,
           periodStart: weekAgo.toLocaleDateString('fr-FR'),

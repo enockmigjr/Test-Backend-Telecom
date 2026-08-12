@@ -15,6 +15,7 @@ import postgres from 'postgres';
 import * as schema from './schemas';
 import { DatabaseConfigService } from '../config/database.config';
 import { AsyncLocalStorage } from 'async_hooks';
+import { errorCategory } from '../common/utils/helpers';
 
 /**
  * Type TypeScript représentant l'instance typée de la base de données.
@@ -97,11 +98,4 @@ export class DrizzleProvider implements OnModuleInit {
     }
     void effect();
   }
-}
-
-function errorCategory(error: unknown): string {
-  if (typeof error !== 'object' || error === null) return 'UnknownError';
-  const name = 'name' in error && typeof error.name === 'string' ? error.name : 'Error';
-  const code = 'code' in error && typeof error.code === 'string' ? error.code : undefined;
-  return code ? `${name}:${code}` : name;
 }

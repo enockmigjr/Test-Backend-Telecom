@@ -12,20 +12,16 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { Queue } from 'bullmq';
-import { AUDIT_QUEUE } from '../../../queues/queues.module';
 import {
   TicketCreatedEvent,
   TicketStatusChangedEvent,
   TicketAssignedEvent,
   TicketClosedEvent,
   TicketReopenedEvent,
+  TicketDeassignedEvent,
 } from '../domain/ticket.events';
-import { toTicketActorColumns } from '../domain/ticket-actor';
-
-interface BullMqQueues {
-  audit: Queue;
-  [key: string]: Queue;
-}
+import { systemActor, toTicketActorColumns } from '../domain/ticket-actor';
+import { BullMqQueues } from '../../../queues/queues.types';
 
 /**
  * Listener d'audit pour les événements de domaine Ticket.
@@ -46,7 +42,7 @@ export class TicketAuditListener {
   constructor(@Inject('BullMQ_Queues') private readonly queues: BullMqQueues) {}
 
   private get auditQueue(): Queue {
-    return this.queues[AUDIT_QUEUE] ?? this.queues['audit'];
+    return this.queues.audit;
   }
 
   /**
@@ -131,6 +127,22 @@ export class TicketAuditListener {
       action: 'TICKET_REOPENED',
       entityType: 'ticket',
       entityId: event.ticketId,
+    });
+  }
+
+  /**
+   * Transmet un journal d'audit lors d'une désassignation automatique (système).
+   * Complète `ticket_history` : la désassignation d'urgence devait être tracée
+   * dans les deux registres (historique métier + piste de conformité).
+   */
+  @OnEvent('ticket.deassigned')
+  async handleDeassigned(event: TicketDeassignedEvent): Promise<void> {
+    await this.enqueue('audit-log', {
+      ...toTicketActorColumns(systemActor()),
+      action: 'TICKET_DEASSIGNED',
+      entityType: 'ticket',
+      entityId: event.ticketId,
+      newValue: { deassignedAgentId: event.deassignedAgentId, reason: event.reason },
     });
   }
 }

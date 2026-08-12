@@ -5,6 +5,7 @@ import { externalRequesters, ticketComments, ticketHistory, tickets, users } fro
 import { PublicPrincipal } from '../../external-identity/interfaces/public-principal.interface';
 import { PublicStatusMapperService } from './public-status-mapper.service';
 import { PublicTicketAccessService } from './public-ticket-access.service';
+import { isRecord } from '../../../common/utils/helpers';
 
 @Injectable()
 export class PublicTimelineService {
@@ -86,9 +87,6 @@ export class PublicTimelineService {
   }
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
 function isTicketStatus(value: unknown): value is typeof tickets.$inferSelect.status {
   return (
     typeof value === 'string' &&

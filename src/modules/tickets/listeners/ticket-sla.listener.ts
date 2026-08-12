@@ -12,13 +12,8 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { Queue } from 'bullmq';
-import { SLA_QUEUE } from '../../../queues/queues.module';
 import { TicketCreatedEvent, TicketResolvedEvent, TicketClosedEvent } from '../domain/ticket.events';
-
-interface BullMqQueues {
-  sla: Queue;
-  [key: string]: Queue;
-}
+import { BullMqQueues } from '../../../queues/queues.types';
 
 /**
  * Listener SLA pour les événements de domaine Ticket.
@@ -30,7 +25,7 @@ export class TicketSlaListener {
   constructor(@Inject('BullMQ_Queues') private readonly queues: BullMqQueues) {}
 
   private get slaQueue(): Queue {
-    return this.queues[SLA_QUEUE] ?? this.queues['sla'];
+    return this.queues.sla;
   }
 
   /**

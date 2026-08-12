@@ -28,7 +28,7 @@ Le système utilise deux mécanismes d'événements complémentaires :
 | Listener | Événements écoutés | Effets |
 | --- | --- | --- |
 | `TicketNotificationListener` | created, assigned, escalated, resolved, closed, reopened, status_changed, deassigned | WebSocket + notifications in-app + emails (via files) |
-| `TicketAuditListener` | created, assigned, status_changed, closed, reopened | file `audit-queue` → `audit_logs` |
+| `TicketAuditListener` | created, assigned, status_changed, closed, reopened, deassigned | file `audit-queue` → `audit_logs` |
 | `TicketSlaListener` | created, resolved, closed | planifie/annule le job SLA différé (`sla-breach-{ticketId}`) |
 | `TicketAssignmentListener` | created, unassigned | file `assignment-queue` → routage automatique |
 | `TicketSatisfactionListener` | closed | génère un lien de satisfaction et écrit un événement outbox |
@@ -70,3 +70,12 @@ Service métier
 ```
 
 Avantage : la réponse HTTP n'attend ni email, ni notification, ni PDF ; et les événements destinés au public ne peuvent pas être perdus entre PostgreSQL et Redis.
+
+## Qui écrit quoi (double traçabilité)
+
+| Registre | Écrit par | Sert à | Lecture |
+| --- | --- | --- | --- |
+| `ticket_history` | En direct dans la transaction métier (`TicketHistoryService.recordByActor`) | Timeline du ticket, réouvertures, frise | `GET /tickets/:id/history` |
+| `audit_logs` | Via `audit-queue` (`TicketAuditListener` → `AuditWorker`) | Conformité, actions critiques | `GET /audit-logs` (ADMIN/SUPERVISOR) |
+
+Les deux registres doivent être alimentés pour chaque mutation majeure. La désassignation d'urgence (`ticket.deassigned`) écrit les deux depuis 2026-08-12 ; toute nouvelle mutation doit vérifier cette règle.

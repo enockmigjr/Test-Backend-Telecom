@@ -5,7 +5,8 @@ import { PublicSupportConfigService } from '../../../config/public-support.confi
 import { DrizzleProvider } from '../../../database/drizzle.provider';
 import { supportIntegrations, trustedDevices } from '../../../database/schemas';
 import { PublicIdentityCryptoService } from './public-identity-crypto.service';
-import { policyNumber, trustedDevicePolicy } from './trusted-device-policy';
+import { trustedDevicePolicy } from './trusted-device-policy';
+import { policyNumber } from '../../../common/utils/helpers';
 
 export interface IssuedTrustedDevice {
   readonly deviceId: string;

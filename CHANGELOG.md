@@ -39,11 +39,25 @@ Tous les changements notables sont documentés ici. Format basé sur [Keep a Cha
 - Support public : correspondance des feature flags avec les clés de stockage, rejeu des livraisons après panne, origines localhost autorisées en dev, secrets branchés dans compose.
 - Résilience Redis : blacklist JWT avec fail-open configurable et repli mémoire du throttler.
 - CI/E2E : snapshot OpenAPI stable, résolution IPv4 de Redis, attentes d'accents français corrigées.
+- Dashboard `overview` : `compliant` calculé par filtre SQL explicite (même périmètre que `breached`).
+- Rapports : le faux UUID `00000000-…` du worker est remplacé par une erreur explicite `REPORT_ID_REQUIRED`.
+
+### Refactor technique (dette)
+
+- Helpers centralisés dans `src/common/utils/helpers.ts` (`errorCategory`, `isRecord`, `policyNumber`, `positiveNumber`, `stringArray`, `splitEncrypted`) avec spec — remplacement des ~20 copies locales.
+- `BullMqQueues` typé avec les 8 files ; suppression des fallbacks `?? this.queues['x']` dans les listeners/notifiers.
+- Déduplication WebSocket : `emitWs: false` côté producteurs qui émettent déjà l'événement de domaine ; `NotificationWorker` reste l'émetteur par défaut.
+- `ReportWorker` consomme `ReportQueryService` (ticket, SLA, hebdomadaire) au lieu de recalculer les agrégats ; `weeklyReport()` ajouté au service de requêtes.
+- Templates email inline dupliqués supprimés ; repli générique `fallbackTemplate` (source unique : les `.hbs`).
+- Service d'upload public commun `PublicAttachmentUploadService` (ticket + conversation pré-ticket) avec spec.
+- Métrique `telecom_assignment_cron_noop_total` pour mesurer les passages sans travail du cron d'auto-assignation.
+- Audit : `ticket.deassigned` désormais tracé dans `audit_logs` (acteur SYSTEM).
 
 ### Internal
 
 - Validation des contraintes d'acteur SQL (phase 09), drills de panne PostgreSQL/Redis/email documentés, cohérence migrations/schéma, manifest de release régénéré.
 - Préparation SSO : thème Keycloakify (`keycloak-theme/`), migration `0019` en cours, `keycloakSubjectId` sur `users`.
+- Suite unitaire vérifiée le 12/08/2026 : 92 suites / 628 tests verts, build TypeScript vert.
 
 ---
 

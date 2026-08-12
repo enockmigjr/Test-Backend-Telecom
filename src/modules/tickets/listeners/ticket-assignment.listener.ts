@@ -12,13 +12,8 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { Queue } from 'bullmq';
-import { ASSIGNMENT_QUEUE } from '../../../queues/queues.module';
 import { TicketCreatedEvent } from '../domain/ticket.events';
-
-interface BullMqQueues {
-  assignment: Queue;
-  [key: string]: Queue;
-}
+import { BullMqQueues } from '../../../queues/queues.types';
 
 /**
  * Listener d'assignation automatique pour les événements de domaine Ticket.
@@ -30,7 +25,7 @@ export class TicketAssignmentListener {
   constructor(@Inject('BullMQ_Queues') private readonly queues: BullMqQueues) {}
 
   private get assignmentQueue(): Queue {
-    return this.queues[ASSIGNMENT_QUEUE] ?? this.queues['assignment'];
+    return this.queues.assignment;
   }
 
   /**

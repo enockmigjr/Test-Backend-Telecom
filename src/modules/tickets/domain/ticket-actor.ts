@@ -1,3 +1,5 @@
+import { isRecord } from '../../../common/utils/helpers';
+
 export type TicketActor =
   | { readonly type: 'INTERNAL'; readonly userId: string }
   | {
@@ -74,10 +76,6 @@ export function toTicketActorColumns(actor: TicketActor, contextIntegrationId?: 
     externalRequesterId: null,
     supportIntegrationId: contextIntegrationId ?? null,
   };
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function exactKeys(value: Record<string, unknown>, expected: string[]): boolean {

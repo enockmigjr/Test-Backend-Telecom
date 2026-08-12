@@ -14,7 +14,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { Queue } from 'bullmq';
 import { MetricsService } from '../../common/metrics/metrics.service';
-import { EMAIL_QUEUE, NOTIFICATION_QUEUE } from '../../queues/queues.module';
 import { BullMqQueues } from '../../queues/queues.types';
 import { TelecomWebSocketGateway } from '../../websocket/websocket.gateway';
 import { SlaAlertTicket, SlaTarget } from './sla-alert.types';
@@ -54,6 +53,7 @@ export class SlaAlertNotifierService {
         message: `${minutesRemaining} minute(s) avant l'échéance ${this.targetLabel(target)} du ticket.`,
         referenceType: 'ticket',
         referenceId: ticket.id,
+        emitWs: false, // l'événement ticket.sla_warning est déjà émis en direct
       },
       { jobId: this.jobId(ticket.id, target, 'warning-notification') },
     );
@@ -90,6 +90,7 @@ export class SlaAlertNotifierService {
         message: `L'échéance ${this.targetLabel(target)} du ticket a été dépassée.`,
         referenceType: 'ticket',
         referenceId: ticket.id,
+        emitWs: false, // l'événement ticket.sla_breached est déjà émis en direct
       },
       { jobId: this.jobId(ticket.id, target, 'breach-notification') },
     );
@@ -191,10 +192,10 @@ export class SlaAlertNotifierService {
   }
 
   private get emailQueue(): Queue {
-    return this.queues[EMAIL_QUEUE] ?? this.queues.email;
+    return this.queues.email;
   }
 
   private get notificationQueue(): Queue {
-    return this.queues[NOTIFICATION_QUEUE] ?? this.queues.notification;
+    return this.queues.notification;
   }
 }

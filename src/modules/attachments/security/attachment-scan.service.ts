@@ -6,6 +6,7 @@ import { LocalStorageService } from '../storage/local-storage.service';
 import { ANTIVIRUS_SCANNER, AntivirusScanner } from './antivirus-scanner.interface';
 import { AttachmentContentInspectorService } from './attachment-content-inspector.service';
 import { PublicSupportGateway } from '../../../websocket/public-support.gateway';
+import { errorCategory, stringArray } from '../../../common/utils/helpers';
 
 const STALE_SCAN_MS = 2 * 60_000;
 
@@ -160,18 +161,7 @@ export class AttachmentScanService {
   }
 }
 
-function stringArray(value: unknown): string[] {
-  return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
-}
-
 function canonicalFilename(original: string, extension: string): string {
   const stem = original.replace(/\.[^.]*$/, '').replace(/[^a-zA-Z0-9_-]/g, '_') || 'attachment';
   return `${stem}.${extension}`;
-}
-
-function errorCategory(error: unknown): string {
-  if (typeof error !== 'object' || error === null) return 'UnknownError';
-  const name = 'name' in error && typeof error.name === 'string' ? error.name : 'Error';
-  const code = 'code' in error && typeof error.code === 'string' ? error.code : undefined;
-  return code ? `${name}:${code}` : name;
 }

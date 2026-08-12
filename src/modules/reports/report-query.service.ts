@@ -109,6 +109,52 @@ export class ReportQueryService {
   }
 
   /**
+   * Statistiques hebdomadaires : volume créé/résolu/ouvert, violations SLA et temps moyen.
+   * Utilisées par ReportWorker pour le rapport hebdomadaire (une seule source de requêtes).
+   */
+  async weeklyReport(from: Date, to: Date) {
+    const where = and(gte(tickets.createdAt, from), lte(tickets.createdAt, to), isNull(tickets.deletedAt));
+    const [[totals], [resolved], [openCount], [breached], [avgStats], byPriority] = await Promise.all([
+      this.drizzle.db.select({ count: count() }).from(tickets).where(where),
+      this.drizzle.db
+        .select({ count: count() })
+        .from(tickets)
+        .where(and(where, eq(tickets.status, 'RESOLVED' as const))),
+      this.drizzle.db
+        .select({ count: count() })
+        .from(tickets)
+        .where(and(where, sql`${tickets.status} NOT IN ('RESOLVED','CLOSED','CANCELLED')`)),
+      this.drizzle.db
+        .select({ count: count() })
+        .from(tickets)
+        .where(and(where, eq(tickets.slaBreached, true))),
+      this.drizzle.db
+        .select({
+          avgMin: sql<number>`COALESCE(AVG(EXTRACT(EPOCH FROM (${tickets.resolvedAt} - ${tickets.createdAt})) / 60) FILTER (WHERE ${tickets.resolvedAt} IS NOT NULL), 0)`,
+        })
+        .from(tickets)
+        .where(and(where, sql`${tickets.resolvedAt} IS NOT NULL`)),
+      this.drizzle.db
+        .select({
+          priority: tickets.priority,
+          count: count(),
+          breached: sql<number>`COUNT(*) FILTER (WHERE ${tickets.slaBreached} = true)`,
+        })
+        .from(tickets)
+        .where(where)
+        .groupBy(tickets.priority),
+    ]);
+    return {
+      totalCreated: Number(totals?.count ?? 0),
+      totalResolved: Number(resolved?.count ?? 0),
+      totalOpen: Number(openCount?.count ?? 0),
+      slaBreaches: Number(breached?.count ?? 0),
+      avgResolutionMinutes: Math.round(Number(avgStats?.avgMin ?? 0)),
+      byPriority,
+    };
+  }
+
+  /**
    * Récupère les métadonnées d'un rapport par son identifiant unique.
    *
    * @param id UUID du rapport.

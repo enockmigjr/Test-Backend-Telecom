@@ -14,6 +14,7 @@ import { ExternalIdentityStoreService } from './external-identity-store.service'
 import { PublicIdentityCryptoService } from './public-identity-crypto.service';
 import { PublicRateLimitService } from './public-rate-limit.service';
 import { VerificationOutcome } from './verification-outcome';
+import { policyNumber } from '../../../common/utils/helpers';
 
 @Injectable()
 export class ContactVerificationService {
@@ -154,9 +155,4 @@ export class ContactVerificationService {
 
 function uniformRequest(challengeId: string) {
   return { data: { challengeId }, message: 'Si la demande est valide, un code de vérification sera envoyé.' };
-}
-
-function policyNumber(policy: Record<string, unknown> | null, key: string, fallback: number): number {
-  const value = policy?.[key];
-  return typeof value === 'number' && Number.isSafeInteger(value) && value > 0 ? value : fallback;
 }

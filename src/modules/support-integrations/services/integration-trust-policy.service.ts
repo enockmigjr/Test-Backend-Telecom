@@ -3,6 +3,7 @@ import { and, eq, isNull, sql } from 'drizzle-orm';
 import { PublicSupportConfigService } from '../../../config/public-support.config';
 import { DrizzleProvider } from '../../../database/drizzle.provider';
 import { trustedDevices } from '../../../database/schemas';
+import { policyNumber } from '../../../common/utils/helpers';
 
 export interface DevicePolicyImpact {
   readonly revokedDevices: number;
@@ -50,9 +51,4 @@ export class IntegrationTrustPolicyService {
       .returning({ id: trustedDevices.id });
     return { revokedDevices: 0, shortenedDevices: shortened.length };
   }
-}
-
-function policyNumber(policy: Record<string, unknown>, key: string, fallback: number): number {
-  const value = policy[key];
-  return typeof value === 'number' && Number.isSafeInteger(value) && value > 0 ? value : fallback;
 }

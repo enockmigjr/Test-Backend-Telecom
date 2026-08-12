@@ -17,6 +17,7 @@ import type { Transporter } from 'nodemailer';
 import * as Handlebars from 'handlebars';
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import { errorCategory } from '../../common/utils/helpers';
 
 /**
  * Service gérant la mise en page HTML, la compilation Handlebars et l'envoi SMTP d'emails.
@@ -176,147 +177,22 @@ export class EmailService {
     }
   }
 
-  templates = {
-    reportFailed: (data: { reportId: string; errorMessage: string }) => `
-      <h2>❌ Échec de génération de rapport</h2>
-      <p>Bonjour,</p>
-      <p>La génération du rapport (ID : <strong>${data.reportId}</strong>) a échoué.</p>
-      <p><strong>Détails de l'erreur :</strong></p>
-      <blockquote style="background:#f9f9f9;border-left:5px solid #dc2626;padding:10px;margin:10px 0;">
-        ${data.errorMessage}
-      </blockquote>
-      <p>Veuillez réessayer ultérieurement ou contacter l'équipe support.</p>
-      <hr><small>Telecom Ticket Management — Message automatique d'erreur</small>
-    `,
-
-    ticketCreated: (data: { ticketNumber: string; title: string; priority: string; category?: string }) => `
-      <h2>Ticket créé — ${data.ticketNumber}</h2>
-      <p><strong>Titre:</strong> ${data.title}</p>
-      <p><strong>Catégorie:</strong> ${data.category ?? 'Non renseigne'}</p>
-      <p><strong>Priorité:</strong> ${data.priority}</p>
-      <p>Votre ticket a été enregistré et sera traité dans les plus brefs délais.</p>
-      <hr><small>Telecom Ticket Management — Ne pas répondre à cet email</small>
-    `,
-
-    ticketAssigned: (data: {
-      ticketNumber: string;
-      ticketTitle?: string;
-      title?: string;
-      supervisorName?: string;
-      category?: string;
-      severity?: string;
-      priority?: string;
-      department?: string;
-      slaDueAt?: string;
-    }) => `
-      <h2>Ticket assigné — ${data.ticketNumber}</h2>
-      <p><strong>Titre:</strong> ${data.ticketTitle ?? data.title ?? 'Sans titre'}</p>
-      <p><strong>Assigné par:</strong> ${data.supervisorName ?? 'Un superviseur'}</p>
-      <p><strong>Catégorie:</strong> ${data.category ?? 'Non renseigne'}</p>
-      <p><strong>Sévérité/Priorité:</strong> ${data.severity ?? data.priority ?? 'Non renseigne'}</p>
-      <p><strong>Département:</strong> ${data.department ?? 'Non renseigne'}</p>
-      <p><strong>SLA résolution:</strong> ${data.slaDueAt ?? 'Non renseigne'}</p>
-      <p>Ce ticket vous a été assigné. Veuillez en prendre connaissance.</p>
-      <hr><small>Telecom Ticket Management — Ne pas répondre à cet email</small>
-    `,
-
-    ticketDeassigned: (data: { ticketNumber: string; ticketTitle?: string; title?: string; reason: string }) => `
-      <h2>📋 Ticket désassigné d'urgence — ${data.ticketNumber}</h2>
-      <p><strong>Titre:</strong> ${data.ticketTitle ?? data.title ?? 'Sans titre'}</p>
-      <p><strong>Motif:</strong> ${data.reason}</p>
-      <p>Le ticket a été désassigné automatiquement pour cause d'indisponibilité afin d'éviter une violation de SLA.</p>
-      <hr><small>Telecom Ticket Management — Ne pas répondre à cet email</small>
-    `,
-
-    slaBreach: (data: {
-      ticketNumber: string;
-      ticketTitle?: string;
-      title?: string;
-      slaExpiredAt?: string;
-      overdueBy?: string;
-    }) => `
-      <h2>⚠�? Alerte SLA — ${data.ticketNumber}</h2>
-      <p><strong>Titre:</strong> ${data.ticketTitle ?? data.title ?? 'Sans titre'}</p>
-      <p><strong>Échéance dépassée:</strong> ${data.slaExpiredAt ?? 'Non renseigne'}</p>
-      <p><strong>Retard:</strong> ${data.overdueBy ?? 'Non renseigne'}</p>
-      <p style="color:red;">Le SLA de ce ticket a été dépassé. Action immédiate requise.</p>
-      <hr><small>Telecom Ticket Management — Alerte automatique</small>
-    `,
-
-    slaWarning: (data: {
-      ticketNumber: string;
-      ticketTitle?: string;
-      slaDueAt?: string;
-      remainingMinutes?: number;
-    }) => `
-      <h2>Alerte SLA proche � ${data.ticketNumber}</h2>
-      <p><strong>Titre:</strong> ${data.ticketTitle ?? 'Sans titre'}</p>
-      <p><strong>�ch�ance:</strong> ${data.slaDueAt ?? 'Non renseigne'}</p>
-      <p><strong>Temps restant:</strong> ${data.remainingMinutes ?? 'N/A'} minutes</p>
-      <p>Veuillez traiter ce ticket rapidement pour �viter une violation SLA.</p>
-      <hr><small>Telecom Ticket Management � Alerte automatique</small>
-    `,
-
-    passwordChanged: (data: { firstName: string; email?: string; changeDate: string }) => `
-      <h2>🔒 Mot de passe modifié</h2>
-      <p>Bonjour <strong>${data.firstName}</strong>,</p>
-      <p>Votre mot de passe a été modifié le ${data.changeDate}.</p>
-      <p>Si vous n'êtes pas à l'origine de cette modification, contactez immédiatement votre administrateur.</p>
-      <hr><small>Telecom Ticket Management — Sécurité</small>
-    `,
-
-    accountCreated: (data: {
-      firstName: string;
-      lastName: string;
-      email: string;
-      temporaryPassword: string;
-      role?: string;
-      departmentName?: string;
-      loginUrl: string;
-    }) => `
-      <h2>👤 Compte créé — Bienvenue</h2>
-      <p>Bonjour <strong>${data.firstName} ${data.lastName}</strong>,</p>
-      <p>Votre compte a été créé: <strong>${data.email}</strong></p>
-      <p>Rôle: <strong>${data.role ?? 'Non renseigne'}</strong></p>
-      <p>Departement: <strong>${data.departmentName ?? 'Non renseigne'}</strong></p>
-      <p>Mot de passe temporaire: <code>${data.temporaryPassword}</code></p>
-      <p><a href="${data.loginUrl}">Se connecter</a></p>
-      <hr><small>Telecom Ticket Management — Ne pas répondre à cet email</small>
-    `,
-
-    adminWeeklyReport: (data: {
-      weekNumber: string;
-      periodStart: string;
-      periodEnd: string;
-      totalCreated: number;
-      totalResolved: number;
-      totalOpen: number;
-      slaBreaches: number;
-      complianceRate: string;
-      avgResolutionMinutes: number;
-    }) => `
-      <h2>📈 Rapport Hebdomadaire — Semaine ${data.weekNumber}</h2>
-      <p><strong>Période:</strong> ${data.periodStart} → ${data.periodEnd}</p>
-      <table><tr><td>Créés:</td><td>${data.totalCreated}</td></tr>
-      <tr><td>Résolus:</td><td>${data.totalResolved}</td></tr>
-      <tr><td>Ouverts:</td><td>${data.totalOpen}</td></tr>
-      <tr><td>Violations SLA:</td><td>${data.slaBreaches}</td></tr>
-      <tr><td>Conformité:</td><td>${data.complianceRate}%</td></tr>
-      <tr><td>Temps moyen:</td><td>${data.avgResolutionMinutes} min</td></tr></table>
-      <hr><small>Telecom Ticket Management — Rapport automatique</small>
-    `,
-  };
+  /**
+   * Repli générique si un template Handlebars (.hbs) est introuvable.
+   * Aucun contenu dupliqué : les 15 modèles officiels vivent dans src/modules/email/templates/.
+   */
+  fallbackTemplate(templateName: string): string {
+    const safeName = templateName.replace(/[^a-zA-Z0-9_-]/g, '');
+    return [
+      '<h2>Notification automatique</h2>',
+      `<p>Le modèle <strong>${safeName}</strong> est indisponible.</p>`,
+      "<p>Veuillez contacter l'équipe support.</p>",
+    ].join('');
+  }
 }
 
 function maskEmail(value: string): string {
   const separator = value.lastIndexOf('@');
   if (separator < 1) return '[contact masqué]';
   return `${value[0]}***${value.slice(separator)}`;
-}
-
-function errorCategory(error: unknown): string {
-  if (typeof error !== 'object' || error === null) return 'UnknownError';
-  const name = 'name' in error && typeof error.name === 'string' ? error.name : 'Error';
-  const code = 'code' in error && typeof error.code === 'string' ? error.code : undefined;
-  return code ? `${name}:${code}` : name;
 }

@@ -14,6 +14,7 @@ import { PublicTicketAccessService } from '../public-support/services/public-tic
 import { DrizzleProvider } from '../../database/drizzle.provider';
 import { supportIntegrations } from '../../database/schemas';
 import { ANTIVIRUS_SCANNER, AntivirusScanner } from './security/antivirus-scanner.interface';
+import { policyNumber } from '../../common/utils/helpers';
 
 interface UploadRequest extends Request {
   user?: PublicPrincipal;
@@ -51,21 +52,16 @@ export class PublicAttachmentUploadGuard implements CanActivate {
       [
         {
           value: `requester:${principal.externalRequesterId}`,
-          limit: numberPolicy(integration.quotaPolicy, 'attachmentUploadsPerHour', 20),
+          limit: policyNumber(integration.quotaPolicy, 'attachmentUploadsPerHour', 20),
         },
-        { value: `ip:${request.ip}`, limit: numberPolicy(integration.quotaPolicy, 'attachmentUploadsPerIpHour', 50) },
+        { value: `ip:${request.ip}`, limit: policyNumber(integration.quotaPolicy, 'attachmentUploadsPerIpHour', 50) },
         {
           value: `integration:${principal.supportIntegrationId}`,
-          limit: numberPolicy(integration.quotaPolicy, 'attachmentUploadsPerIntegrationHour', 1000),
+          limit: policyNumber(integration.quotaPolicy, 'attachmentUploadsPerIntegrationHour', 1000),
         },
       ],
       3600,
     );
     return true;
   }
-}
-
-function numberPolicy(policy: Record<string, unknown>, key: string, fallback: number): number {
-  const value = policy[key];
-  return typeof value === 'number' && Number.isSafeInteger(value) && value > 0 ? value : fallback;
 }

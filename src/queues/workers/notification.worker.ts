@@ -32,7 +32,7 @@ export class NotificationWorker implements OnModuleInit, OnModuleDestroy {
     this.worker = new Worker(
       NOTIFICATION_QUEUE,
       async (job: Job) => {
-        const { userId, type, title, message, referenceType, referenceId } = job.data;
+        const { userId, type, title, message, referenceType, referenceId, emitWs } = job.data;
 
         // 1. Persister en base
         await this.drizzle.db.insert(notifications).values({
@@ -46,7 +46,7 @@ export class NotificationWorker implements OnModuleInit, OnModuleDestroy {
         });
 
         // 2. Émettre en temps réel si l'utilisateur est connecté
-        if (this.wsGateway.isUserConnected(userId)) {
+        if (emitWs !== false && this.wsGateway.isUserConnected(userId)) {
           this.wsGateway.emitToUser(userId, 'notification.created', {
             type,
             title,

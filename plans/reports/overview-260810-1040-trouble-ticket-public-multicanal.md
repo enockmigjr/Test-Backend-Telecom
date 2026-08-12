@@ -36,9 +36,9 @@
 |---|---|---|
 | 00–05 | Contrats, données, sécurité, admission, portail, widget | ✅ implémenté et commité |
 | 06 | Connecteur WordPress + miroir + runtime | ✅ implémenté et recette validée ; reste la publication du dépôt distant (décision utilisateur) |
-| 07 | Administration interne enrichie | ⬜ pas commencée : pages intégrations/demandeurs/livraisons, « répondre au demandeur » vs « note interne », appareils, fusion de profils, rotation de secrets |
-| 08 | Bot et connaissance publique | ⬜ pas commencée : base documentaire, abstraction IA, outils fermés, parcours brouillon/confirmation/handoff |
-| 09 | Durcissement, rollout, migration finale | ⬜ contraintes acteur, tests de pannes, manifest par SHA, rétention/anonymisation |
+| 07 | Administration interne enrichie | ✅ implémentée et commitée (11-12/08) : pages intégrations/demandeurs/livraisons, « répondre au demandeur » vs « note interne », appareils, fusion de profils, rotation de secrets |
+| 08 | Bot et connaissance publique | ✅ implémentée et commitée (11-12/08) : base documentaire, abstraction IA (DeepSeek/OpenAI-compatible), outils fermés, parcours brouillon/confirmation/handoff ; bot inactif sans clé API |
+| 09 | Durcissement, rollout, migration finale | ◐ en cours (12/08) : contraintes acteur validées, tests de pannes, manifest par SHA, rétention/anonymisation commitées ; reste la validation de la rétention sur données réelles |
 
 ## 3. Nouveaux défis (avec l'évolution demandée)
 

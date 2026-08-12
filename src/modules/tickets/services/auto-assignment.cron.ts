@@ -20,6 +20,7 @@ import { AssignmentEngineService } from './assignment-engine.service';
 import { generateUuid } from '../../../common/helpers/uuidv7.helper';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { SettingsService } from '../../settings/settings.service';
+import { MetricsService } from '../../../common/metrics/metrics.service';
 
 /**
  * Service gérant le cycle de planification et d'acheminement automatique des tickets télécom.
@@ -34,6 +35,7 @@ export class AutoAssignmentCron {
     private readonly assignmentEngine: AssignmentEngineService,
     private readonly eventEmitter: EventEmitter2,
     private readonly settingsService: SettingsService,
+    private readonly metricsService: MetricsService,
   ) {}
 
   /**
@@ -125,6 +127,9 @@ export class AutoAssignmentCron {
             }),
           );
         }
+      } else {
+        // Passage sans travail : comptabilisé pour mesurer le coût réel du rattrapage.
+        this.metricsService.assignmentCronNoOpTotal.inc();
       }
 
       this.logger.log("Job d'auto-assignation et de consolidation complété.");

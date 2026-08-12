@@ -1,3 +1,5 @@
+import { isRecord } from '../utils/helpers';
+
 /**
  * ============================================================================
  * FICHIER : src/common/openapi/stable-json.ts
@@ -13,10 +15,6 @@
 /**
  * Prédicat TypeScript vérifiant si la valeur transmise est un objet dictionnaire (non null, non tableau).
  */
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
 /**
  * Fonction récursive triant alphabétiquement les clés de tous les objets contenus dans la structure.
  *

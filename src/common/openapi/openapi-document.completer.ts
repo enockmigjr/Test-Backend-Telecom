@@ -22,6 +22,7 @@ import {
 import { OPENAPI_SCHEMAS } from './openapi.schemas';
 import { businessEnvelope } from './business-envelope.schema';
 import { RELEASE_RESPONSE_MODELS } from './response-model.map';
+import { isRecord } from '../utils/helpers';
 
 /** Liste immuable des méthodes HTTP supportées par la spécification OpenAPI. */
 const METHODS = ['get', 'post', 'put', 'patch', 'delete', 'options', 'head'] as const;
@@ -134,8 +135,4 @@ function normalizeBooleanEnums(value: unknown): void {
     value['type'] = 'boolean';
   }
   for (const nested of Object.values(value)) normalizeBooleanEnums(nested);
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }

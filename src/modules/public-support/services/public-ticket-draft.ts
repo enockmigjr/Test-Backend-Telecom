@@ -1,6 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 import { SavePublicTicketDraftDto } from '../dto/public-conversation.dto';
 import { PublicTicketDraft } from '../interfaces/public-admission.interface';
+import { isRecord } from '../../../common/utils/helpers';
 
 export function normalizeDraft(dto: SavePublicTicketDraftDto): PublicTicketDraft {
   return {
@@ -33,10 +34,6 @@ export function publicDraft(value: unknown): PublicTicketDraft | null {
   } catch {
     return null;
   }
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function isLevel(value: unknown): value is 'LOW' | 'MEDIUM' | 'HIGH' {

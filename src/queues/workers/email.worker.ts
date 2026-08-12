@@ -47,10 +47,8 @@ export class EmailWorker implements OnModuleInit, OnModuleDestroy {
           await this.emailService.sendTemplate(to, subject, template, data, mailAttachments);
         } catch (err) {
           this.logger.warn(`Échec de l'envoi via template .hbs, passage au fallback inline: ${(err as Error).message}`);
-          // Repli sur le générateur HTML d'urgence inline si le fichier template est introuvable
-          const html =
-            this.emailService.templates[template as keyof typeof this.emailService.templates]?.(data) ||
-            `<p>Template "${template}" non trouvé. Données: ${JSON.stringify(data)}</p>`;
+          // Repli générique : aucun contenu dupliqué (les .hbs restent la source unique).
+          const html = this.emailService.fallbackTemplate(template);
           await this.emailService.send(to, subject, html, mailAttachments);
         }
       },

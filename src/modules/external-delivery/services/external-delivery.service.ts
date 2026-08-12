@@ -10,6 +10,7 @@ import { externalDeliveries, externalIdentities, outboxEvents, tickets } from '.
 import { IntegrationSecretCipherService } from '../../support-integrations/services/integration-secret-cipher.service';
 import { ExternalDeliveryQueryDto } from '../dto/external-delivery-query.dto';
 import { ChannelAdapter, EMAIL_CHANNEL_ADAPTER } from '../interfaces/channel-adapter.interface';
+import { errorCategory, splitEncrypted } from '../../../common/utils/helpers';
 
 const DELIVERY_LEASE_MS = 60_000;
 const MAX_ATTEMPTS = 5;
@@ -264,19 +265,4 @@ export class ExternalDeliveryService {
     if (!delivery) throw new NotFoundException('Livraison externe introuvable.');
     return { data: delivery };
   }
-}
-
-function splitEncrypted(value: string): readonly [number, string] {
-  const separator = value.indexOf(':');
-  const version = Number(value.slice(0, separator));
-  const encrypted = value.slice(separator + 1);
-  if (!Number.isSafeInteger(version) || version < 1 || !encrypted) throw new Error('IDENTITY_CIPHERTEXT_INVALID');
-  return [version, encrypted];
-}
-
-function errorCategory(error: unknown): string {
-  if (typeof error !== 'object' || error === null) return 'UnknownError';
-  const name = 'name' in error && typeof error.name === 'string' ? error.name : 'Error';
-  const code = 'code' in error && typeof error.code === 'string' ? error.code : undefined;
-  return code ? `${name}:${code}` : name;
 }

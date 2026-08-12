@@ -1,3 +1,5 @@
+import { isRecord } from '../utils/helpers';
+
 /**
  * ============================================================================
  * FICHIER : src/common/interceptors/transform.interceptor.ts
@@ -15,10 +17,6 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 /** Predicat TypeScript vérifiant si une valeur est un objet non nul. */
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
-}
-
 /**
  * Intercepteur NestJS interceptant les retours de contrôleurs pour harmoniser la réponse HTTP de succès.
  */

@@ -36,6 +36,8 @@ export class MetricsService implements OnModuleInit {
   readonly slaBreachesTotal: Counter;
   /** Compteur des lectures ayant encore besoin de l'identite acteur historique. */
   readonly legacyTicketActorFallbackTotal: Counter;
+  /** Compteur des passages du cron d'auto-assignation sans travail à faire (no-op). */
+  readonly assignmentCronNoOpTotal: Counter;
 
   // ─── Métriques utilisateurs & WebSockets ────────────────
   /** Jauge du nombre d'utilisateurs uniques actuellement connectés. */
@@ -92,6 +94,12 @@ export class MetricsService implements OnModuleInit {
       name: 'telecom_legacy_ticket_actor_fallback_total',
       help: "Nombre de lectures utilisant encore l'identite acteur historique",
       labelNames: ['surface'],
+      registers: [this.registry],
+    });
+
+    this.assignmentCronNoOpTotal = new Counter({
+      name: 'telecom_assignment_cron_noop_total',
+      help: "Nombre de passages du cron d'auto-assignation sans ticket à router (no-op)",
       registers: [this.registry],
     });
 

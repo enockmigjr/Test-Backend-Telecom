@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { and, asc, eq, inArray, lt, lte, or } from 'drizzle-orm';
 import { DrizzleProvider } from '../../../database/drizzle.provider';
 import { outboxEvents, OutboxEvent } from '../../../database/schemas';
+import { errorCategory } from '../../../common/utils/helpers';
 
 const LEASE_MS = 60_000;
 
@@ -74,11 +75,4 @@ export class OutboxService {
         and(eq(outboxEvents.id, event.id), eq(outboxEvents.status, 'PROCESSING'), eq(outboxEvents.lockedBy, workerId)),
       );
   }
-}
-
-function errorCategory(error: unknown): string {
-  if (typeof error !== 'object' || error === null) return 'UnknownError';
-  const name = 'name' in error && typeof error.name === 'string' ? error.name : 'Error';
-  const code = 'code' in error && typeof error.code === 'string' ? error.code : undefined;
-  return code ? `${name}:${code}` : name;
 }
