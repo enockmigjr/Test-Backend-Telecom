@@ -49,3 +49,6 @@ Contexte : aujourd'hui, un commentaire interne posÃ© sur un ticket public est **
 
 - Unitaires : persistance rÃ©ponse publique, token satisfaction (expiration, hash, unicitÃ©).
 - E2E : parcours demandeur (commentaire interne invisible, rÃ©ponse publique visible), notation.
+## Statut de la phase
+- FAIT (poussé) : option B — route POST /tickets/:id/public-reply + action « Répondre au demandeur ». Vérifié live.
+- EN COURS : satisfaction (note 1-5 + lien signé) et bascule commentaires internes uniquement.

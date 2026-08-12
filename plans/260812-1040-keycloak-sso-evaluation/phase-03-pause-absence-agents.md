@@ -50,3 +50,6 @@ Rendre la pause et l'absence réellement utilisables dans l'application (le mote
 - Unitaires : service availability (bornes, validation), cron (réaffectation bornée, historique, notification).
 - Intégration : candidat exclu après pause ; rééligible après reprise.
 - E2E frontend : pause/reprise depuis le menu utilisateur, absence planifiée depuis la fiche admin.
+## Statut de la phase
+- FAIT (pouss�) : pause/reprise self-service (PATCH /users/me/availability), absence (PATCH /users/me/absence, > 7 jours = ADMINISTRATOR/SUPERVISOR), UI Param�tres.
+- FAIT (pouss�) : seuil ABSENCE_REASSIGN_HOURS configurable dans le cron.

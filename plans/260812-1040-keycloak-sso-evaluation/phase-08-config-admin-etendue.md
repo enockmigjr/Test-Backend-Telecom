@@ -43,3 +43,5 @@ Exposer dans l'UI admin tous les réglages déjà supportés par le backend (set
 - Unitaires : validation DTO, defaults.
 - Intégration : modification d'un réglage → effet observable sur le service concerné (ex. seuil d'escalade).
 - E2E : édition des sections settings.
+## Statut de la phase
+- PARTIEL : pond�rations de charge (fait). RESTE : settings syst�me, seuils, notifications, bot.

@@ -35,3 +35,5 @@ Rendre le déploiement (local et cible production) reproductible : conteneurs, i
 
 - Smoke script : santé API, login, une requête dashboard.
 - (Prod) test de restauration après perte simulée du volume.
+## Statut de la phase
+- FAIT (pouss�) : Makefile de base. RESTE : scripts PowerShell, backup/restore, compose prod.

@@ -46,3 +46,5 @@ Endpoints existants enrichis + nouveau endpoint `GET /api/v1/dashboard/agent-per
 - Unitaires : nouveaux agrÃ©gats (mock drizzle), score pondÃ©rÃ© (cas limites 0 ticket).
 - Contrat OpenAPI mis Ã  jour (compte d'opÃ©rations).
 - E2E frontend : accÃ¨s page, tri, filtre, export.
+## Statut de la phase
+- FAIT (poussé) : endpoint agent-performance enrichi (résolus/clôturés, réouvertures, conformité 1re réponse, médiane, score 40/30/20/10) + page /admin/performance (tri, export CSV). Vérifié live.

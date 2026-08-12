@@ -62,3 +62,5 @@ Navigateur → frontend Next.js (BFF) → /api/auth/keycloak (code + PKCE) → K
 - Unitaires : stratégie JWT (jetons signés/non signés, issuer, rôles), mapping sub.
 - E2E : parcours login/logout SSO, accès RBAC, session expirée → retour Keycloak.
 - Contrat OpenAPI : compte d'opérations ajusté si routes locales retirées.
+## Statut de la phase
+- � LANCER : recherche version Keycloak (web), realm seed, adaptateur JWT, th�me Keycloakify (couleurs valid�es #172033/#1d4ed8).

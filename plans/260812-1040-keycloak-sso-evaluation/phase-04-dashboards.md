@@ -51,3 +51,5 @@ Blocs séparés (recommandé) :
 
 - Unitaires : `myActivity` (agrégats, scope utilisateur).
 - E2E frontend : accès agent, valeurs cohérentes, navigation.
+## Statut de la phase
+- FAIT (pouss�) : page /mon-activite (endpoint my-activity) + navigation ; onglets Interne / Support public sur /dashboard.
