@@ -127,6 +127,13 @@
       "when": 1786466467400,
       "tag": "0017_tense_butterfly",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1786532226899,
+      "tag": "0018_hot_tigra",
+      "breakpoints": true
     }
   ]
 }

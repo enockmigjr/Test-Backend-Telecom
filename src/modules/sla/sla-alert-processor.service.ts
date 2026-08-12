@@ -104,7 +104,7 @@ export class SlaAlertProcessorService {
       const breachCandidate = or(
         isNull(breachedAt),
         lt(
-            sql`COALESCE((${tickets.metadata}->>${this.breachNotifiedKeySql(target)})::timestamptz, to_timestamp(0))`,
+          sql`COALESCE((${tickets.metadata}->>${this.breachNotifiedKeySql(target)})::timestamptz, to_timestamp(0))`,
           new Date(now.getTime() - SlaAlertProcessorService.BREACH_REPEAT_INTERVAL_MS).toISOString(),
         ),
       );

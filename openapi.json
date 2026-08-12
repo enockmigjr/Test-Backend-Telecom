@@ -3902,6 +3902,31 @@
         ],
         "type": "object"
       },
+      "SubmitSatisfactionDto": {
+        "properties": {
+          "comment": {
+            "description": "Commentaire libre",
+            "maxLength": 2000,
+            "type": "string"
+          },
+          "note": {
+            "description": "Note de 1 à 5",
+            "maximum": 5,
+            "minimum": 1,
+            "type": "number"
+          },
+          "token": {
+            "description": "Jeton opaque reçu par email",
+            "minLength": 32,
+            "type": "string"
+          }
+        },
+        "required": [
+          "token",
+          "note"
+        ],
+        "type": "object"
+      },
       "Ticket": {
         "properties": {
           "_meta": {
@@ -11637,6 +11662,67 @@
         "x-api-audience": "public-support"
       }
     },
+    "/api/v1/public-support/tickets/{ticketId}/satisfaction": {
+      "post": {
+        "operationId": "PublicSatisfactionController_submit",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "ticketId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitSatisfactionDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiSuccessResponse"
+                }
+              }
+            },
+            "description": "Satisfaction enregistrée."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Lien invalide."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "summary": "Soumettre une note de satisfaction",
+        "tags": [
+          "Support public - satisfaction"
+        ]
+      }
+    },
     "/api/v1/reports": {
       "get": {
         "description": "Retourne tous les rapports pour un administrateur et uniquement ses propres rapports pour un superviseur.",
@@ -16177,6 +16263,47 @@
         "summary": "Répondre au demandeur externe",
         "tags": [
           "comments"
+        ]
+      }
+    },
+    "/api/v1/tickets/{ticketId}/satisfaction-token": {
+      "post": {
+        "operationId": "InternalSatisfactionController_createToken",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "ticketId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiSuccessResponse"
+                }
+              }
+            },
+            "description": "Lien de satisfaction généré."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "summary": "Générer un lien de satisfaction",
+        "tags": [
+          "Tickets - satisfaction"
         ]
       }
     },

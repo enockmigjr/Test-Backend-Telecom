@@ -28,6 +28,7 @@ export * from './ticket-assignments';
 export * from './ticket-comments';
 /** Réexportation des symboles pour l'importation centralisée. */
 export * from './ticket-internal-notes';
+export * from './ticket-satisfaction';
 /** Réexportation des symboles pour l'importation centralisée. */
 export * from './attachments';
 /** Réexportation des symboles pour l'importation centralisée. */

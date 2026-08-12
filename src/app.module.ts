@@ -27,6 +27,7 @@ import { DatabaseModule } from './database/database.module';
 
 // Importation des 16 modules métier du backend
 import { AuthModule } from './modules/auth/auth.module';
+import { SupportSatisfactionModule } from './modules/support-satisfaction/support-satisfaction.module';
 import { RequestAuthGuard } from './modules/auth/guards/request-auth.guard';
 import { PasswordChangeRequiredGuard } from './modules/auth/guards/password-change-required.guard';
 import { DepartmentsModule } from './modules/departments/departments.module';
@@ -137,6 +138,7 @@ import { isAuthRateLimited } from './common/decorators/auth-rate-limited.decorat
     EmailModule,
     ReportsModule,
     AuthModule,
+    SupportSatisfactionModule,
     DepartmentsModule,
     CategoriesModule,
     UsersModule,

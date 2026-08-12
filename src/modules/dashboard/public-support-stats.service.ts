@@ -13,7 +13,13 @@
 import { Injectable } from '@nestjs/common';
 import { and, count, isNull, sql } from 'drizzle-orm';
 import { DrizzleProvider } from '../../database/drizzle.provider';
-import { externalRequesters, supportConversations, supportMessages, tickets } from '../../database/schemas';
+import {
+  externalRequesters,
+  supportConversations,
+  supportMessages,
+  ticketSatisfaction,
+  tickets,
+} from '../../database/schemas';
 
 /**
  * Service d'agrégation des indicateurs du support public.
@@ -39,6 +45,7 @@ export class PublicSupportStatsService {
       conversationStatuses,
       ticketChannels,
       recentRequesters,
+      [satisfactionStats],
     ] = await Promise.all([
       this.drizzle.db
         .select({
@@ -98,6 +105,13 @@ export class PublicSupportStatsService {
         .from(externalRequesters)
         .orderBy(sql`${externalRequesters.lastSeenAt} DESC NULLS LAST`)
         .limit(5),
+      this.drizzle.db
+        .select({
+          total: count(),
+          submitted: sql<number>`COUNT(*) FILTER (WHERE ${ticketSatisfaction.consumedAt} IS NOT NULL)`,
+          avgNote: sql<number>`COALESCE(AVG(${ticketSatisfaction.note}), 0)`,
+        })
+        .from(ticketSatisfaction),
     ]);
 
     const channels = new Map<string, { conversations: number; tickets: number }>();
@@ -123,6 +137,14 @@ export class PublicSupportStatsService {
         publicTickets: Number(ticketTotals?.total ?? 0),
         openPublicTickets: Number(ticketTotals?.open ?? 0),
         avgFirstResponseMinutes: Math.round(Number(responseStats?.avgMinutes || 0)),
+        satisfaction: {
+          invited: Number(satisfactionStats?.total ?? 0),
+          submitted: Number(satisfactionStats?.submitted ?? 0),
+          avgNote:
+            Number(satisfactionStats?.total ?? 0) > 0
+              ? Number(Number(satisfactionStats?.avgNote ?? 0).toFixed(2))
+              : 0,
+        },
       },
       byChannel: Array.from(channels, ([channel, value]) => ({ channel, ...value })),
       byStatus: conversationStatuses.map((row) => ({
