@@ -123,10 +123,13 @@ export class CommentsService {
     return this.drizzle.runInTransaction(async () => {
       if (correctsCommentId)
         await this.publicReplies.assertCorrectionTarget(ticketId, contextIntegrationId, correctsCommentId);
+      const actorColumns = toTicketActorColumns(actor, contextIntegrationId);
+      const { userId, ...actorRest } = actorColumns;
       await this.drizzle.db.insert(ticketComments).values({
         id,
         ticketId,
-        ...toTicketActorColumns(actor, contextIntegrationId),
+        ...actorRest,
+        authorId: userId,
         content,
         correctsCommentId,
       });

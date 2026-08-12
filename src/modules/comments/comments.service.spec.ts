@@ -43,6 +43,7 @@ describe('CommentsService - isolation ticket', () => {
     insert: jest.fn(() => ({ values: insertValues })),
     update: jest.fn(),
     delete: jest.fn(),
+    runInTransaction: jest.fn((fn: () => Promise<unknown>) => fn()),
   };
   const publicReplies = { assertCorrectionTarget: jest.fn(), persist: jest.fn() };
   const ticketAccess = { assertTicketVisible: jest.fn() };
@@ -54,7 +55,10 @@ describe('CommentsService - isolation ticket', () => {
     const moduleRef = await Test.createTestingModule({
       providers: [
         CommentsService,
-        { provide: DrizzleProvider, useValue: { db } },
+        {
+          provide: DrizzleProvider,
+          useValue: { db, runInTransaction: jest.fn((fn: () => Promise<unknown>) => fn()) },
+        },
         { provide: TicketAccessService, useValue: ticketAccess },
         { provide: PublicReplyPersistenceService, useValue: publicReplies },
       ],
@@ -88,6 +92,21 @@ describe('CommentsService - isolation ticket', () => {
     ticketAccess.assertTicketVisible.mockRejectedValue(new ForbiddenException());
     await expect(service.create('ticket-other', user, 'Contenu')).rejects.toBeInstanceOf(ForbiddenException);
     expect(db.insert).not.toHaveBeenCalled();
+  });
+
+  /** Test : cree un commentaire interne avec l auteur mappe sur authorId */
+
+  it('cree un commentaire interne avec l auteur mappe sur authorId', async () => {
+    select
+      .mockReturnValueOnce(query([{ supportIntegrationId: null }]))
+      .mockReturnValueOnce(query([{ id: 'comment-new', ticketId: 'ticket-001', authorId: user.sub }]));
+
+    await service.create('ticket-001', user, 'Contenu valide');
+
+    expect(db.insert).toHaveBeenCalledWith(expect.anything());
+    expect(insertValues).toHaveBeenCalledWith(
+      expect.objectContaining({ actorType: 'INTERNAL', authorId: user.sub, externalRequesterId: null }),
+    );
   });
 
   /** Test : refuse la modification hors scope avant toute ecriture */
