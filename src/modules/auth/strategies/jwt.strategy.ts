@@ -116,9 +116,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   private isKeycloakToken(payload: JwtPayload): boolean {
     const issuer = process.env['KEYCLOAK_ISSUER'];
     return Boolean(
-      issuer &&
-        typeof payload['iss'] === 'string' &&
-        payload['iss'].replace(/\/$/, '') === issuer.replace(/\/$/, ''),
+      issuer && typeof payload['iss'] === 'string' && payload['iss'].replace(/\/$/, '') === issuer.replace(/\/$/, ''),
     );
   }
 
