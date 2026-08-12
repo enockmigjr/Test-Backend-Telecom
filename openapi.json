@@ -5136,6 +5136,9 @@
       "WorkloadWeightsDto": {
         "properties": {
           "priority": {
+            "additionalProperties": {
+              "type": "number"
+            },
             "description": "Poids par priorité (LOW, MEDIUM, HIGH, CRITICAL)",
             "example": {
               "HIGH": 3
@@ -5143,6 +5146,9 @@
             "type": "object"
           },
           "severity": {
+            "additionalProperties": {
+              "type": "number"
+            },
             "description": "Poids par sévérité (S1 à S4)",
             "example": {
               "S1": 5
@@ -6783,6 +6789,65 @@
         ]
       }
     },
+    "/api/v1/dashboard/agent-performance": {
+      "get": {
+        "description": "Retourne les indicateurs de performance par agent : tickets ouverts/critiques/en retard/à risque, résolutions sur la période, violations SLA, délai moyen de résolution et dernière activité.\n\n**Rôles autorisés :** ADMINISTRATOR, SUPERVISOR",
+        "operationId": "DashboardController_agentPerformance",
+        "parameters": [
+          {
+            "description": "Date de début (ISO 8601)",
+            "in": "query",
+            "name": "from",
+            "required": false,
+            "schema": {
+              "example": "2026-01-01T00:00:00Z",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Date de fin (ISO 8601)",
+            "in": "query",
+            "name": "to",
+            "required": false,
+            "schema": {
+              "example": "2026-06-23T23:59:59Z",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiSuccessResponse"
+                }
+              }
+            },
+            "description": "Performance par agent."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Performance des agents",
+        "tags": [
+          "dashboard"
+        ]
+      }
+    },
     "/api/v1/dashboard/departments": {
       "get": {
         "description": "Statistiques de performance pour chaque département : tickets ouverts, résolus, fermés, conformes SLA, temps moyen de résolution.\n\n**Rôles autorisés :** ADMINISTRATOR, SUPERVISOR",
@@ -6984,6 +7049,44 @@
           }
         ],
         "summary": "KPIs globaux de la plateforme",
+        "tags": [
+          "dashboard"
+        ]
+      }
+    },
+    "/api/v1/dashboard/public-support": {
+      "get": {
+        "description": "Retourne les indicateurs du support public : conversations, demandeurs, messages, tickets publics, délai moyen de première réponse et canaux.\n\n**Rôles autorisés :** ADMINISTRATOR, SUPERVISOR",
+        "operationId": "DashboardController_publicSupport",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiSuccessResponse"
+                }
+              }
+            },
+            "description": "Statistiques du support public."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Statistiques du support public",
         "tags": [
           "dashboard"
         ]

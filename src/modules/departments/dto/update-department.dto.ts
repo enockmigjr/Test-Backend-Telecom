@@ -26,12 +26,20 @@ import { ASSIGNMENT_STRATEGIES } from './create-department.dto';
 
 /** Pondération de charge optionnelle par priorité et sévérité. */
 class WorkloadWeightsDto {
-  @ApiPropertyOptional({ description: 'Poids par priorité (LOW, MEDIUM, HIGH, CRITICAL)', example: { HIGH: 3 } })
+  @ApiPropertyOptional({
+    description: 'Poids par priorité (LOW, MEDIUM, HIGH, CRITICAL)',
+    example: { HIGH: 3 },
+    additionalProperties: { type: 'number' },
+  })
   @IsOptional()
   @IsObject()
   priority?: Record<string, number>;
 
-  @ApiPropertyOptional({ description: 'Poids par sévérité (S1 à S4)', example: { S1: 5 } })
+  @ApiPropertyOptional({
+    description: 'Poids par sévérité (S1 à S4)',
+    example: { S1: 5 },
+    additionalProperties: { type: 'number' },
+  })
   @IsOptional()
   @IsObject()
   severity?: Record<string, number>;
