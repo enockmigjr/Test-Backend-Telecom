@@ -14,8 +14,10 @@
 import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
+import * as jwt from 'jsonwebtoken';
 import { JwtConfigService } from '../../../config/jwt.config';
 import { JwtPayload } from '../interfaces/jwt-payload.interface';
+import { KeycloakJwksService } from '../services/keycloak-jwks.service';
 import { DrizzleProvider } from '../../../database/drizzle.provider';
 import { RedisProvider } from '../../../common/providers/redis.provider';
 import { users } from '../../../database/schemas';
@@ -32,11 +34,18 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     private readonly jwtConfig: JwtConfigService,
     private readonly drizzle: DrizzleProvider,
     private readonly redisProvider: RedisProvider,
+    private readonly keycloakJwks: KeycloakJwksService,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: jwtConfig.accessSecret,
+      // HS256 = jetons applicatifs ; RS256 = jetons Keycloak (clés publiques du realm).
+      secretOrKeyProvider: async (_request: unknown, rawJwtToken: string) => {
+        const decoded = jwt.decode(rawJwtToken, { complete: true });
+        const header = decoded && typeof decoded === 'object' ? decoded.header : undefined;
+        if (header?.alg === 'RS256') return this.keycloakJwks.publicKey(header.kid);
+        return this.jwtConfig.accessSecret;
+      },
     });
   }
 
@@ -48,6 +57,9 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
    * @throws UnauthorizedException (401) si le jeton est révoqué ou l'utilisateur inactif.
    */
   async validate(payload: JwtPayload) {
+    if (this.isKeycloakToken(payload)) {
+      return this.validateKeycloak(payload);
+    }
     if (await this.isRevoked(payload)) {
       throw new UnauthorizedException('Token révoqué.');
     }
@@ -81,6 +93,53 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       jti: payload.jti,
       sessionIssuedAt: payload.sessionIssuedAt,
     };
+  }
+
+  /** Jeton émis par le realm Keycloak (issuer configuré). */
+  private isKeycloakToken(payload: JwtPayload): boolean {
+    const issuer = process.env['KEYCLOAK_ISSUER'];
+    return Boolean(issuer && typeof payload['iss'] === 'string' && payload['iss'].startsWith(issuer));
+  }
+
+  /** Valide un jeton Keycloak : rôle depuis realm_access, profil métier lié par keycloakSubjectId. */
+  private async validateKeycloak(payload: JwtPayload) {
+    const subject = payload.sub;
+    const [user] = await this.drizzle.db
+      .select({
+        id: users.id,
+        email: users.email,
+        role: users.role,
+        departmentId: users.departmentId,
+        isActive: users.isActive,
+        mustChangePassword: users.mustChangePassword,
+      })
+      .from(users)
+      .where(and(eq(users.keycloakSubjectId, subject), isNull(users.deletedAt)))
+      .limit(1);
+    if (!user || !user.isActive) {
+      throw new UnauthorizedException('Profil métier introuvable pour ce compte SSO.');
+    }
+    const roles = this.extractRealmRoles(payload);
+    const role = roles.length > 0 ? roles[0] : user.role;
+    return {
+      sub: user.id,
+      id: user.id,
+      email: user.email,
+      role,
+      departmentId: user.departmentId,
+      mustChangePassword: user.mustChangePassword,
+      jti: payload.jti,
+      sessionIssuedAt: undefined,
+    };
+  }
+
+  /** Extrait les rôles métier du claim realm_access (Keycloak). */
+  private extractRealmRoles(payload: JwtPayload): string[] {
+    const record = payload as unknown as Record<string, unknown>;
+    const realmAccess = record['realm_access'];
+    if (!realmAccess || typeof realmAccess !== 'object' || Array.isArray(realmAccess)) return [];
+    const roles = (realmAccess as Record<string, unknown>)['roles'];
+    return Array.isArray(roles) ? roles.filter((role): role is string => typeof role === 'string') : [];
   }
 
   /**

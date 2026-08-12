@@ -15,6 +15,7 @@ import { RedisProvider } from '../../../common/providers/redis.provider';
 import { JwtConfigService } from '../../../config/jwt.config';
 import { DrizzleProvider } from '../../../database/drizzle.provider';
 import { JwtPayload } from '../interfaces/jwt-payload.interface';
+import { KeycloakJwksService } from '../services/keycloak-jwks.service';
 import { JwtStrategy } from './jwt.strategy';
 
 const activeUser = {
@@ -38,7 +39,10 @@ function createStrategy(userRevokedAfter: string | null) {
   };
   const redisProvider = { getClient: jest.fn(() => redis) } as unknown as RedisProvider;
   const jwtConfig = { accessSecret: 'test-access-secret-minimum-32-characters' } as JwtConfigService;
-  return new JwtStrategy(jwtConfig, drizzle, redisProvider);
+  const keycloakJwks = {
+    publicKey: jest.fn().mockResolvedValue('-----BEGIN CERTIFICATE-----test-----END CERTIFICATE-----'),
+  } as unknown as KeycloakJwksService;
+  return new JwtStrategy(jwtConfig, drizzle, redisProvider, keycloakJwks);
 }
 
 function payload(sessionIssuedAt: number): JwtPayload {
@@ -69,5 +73,26 @@ describe('JwtStrategy — révocation globale', () => {
     await expect(strategy.validate(payload(2001))).resolves.toEqual(
       expect.objectContaining({ sub: activeUser.id, sessionIssuedAt: 2001 }),
     );
+  });
+});
+
+describe('JwtStrategy — jeton Keycloak', () => {
+  it('résout le profil métier via keycloakSubjectId et le rôle du realm', async () => {
+    const previousIssuer = process.env['KEYCLOAK_ISSUER'];
+    process.env['KEYCLOAK_ISSUER'] = 'http://keycloak.test/realms/telecom';
+    const strategy = createStrategy(null);
+    try {
+      const result = await strategy.validate({
+        sub: 'keycloak-subject-123',
+        email: 'agent@telecom.local',
+        jti: 'k-jti',
+        realm_access: { roles: ['NOC_ENGINEER', 'CUSTOMER_SERVICE_AGENT'] },
+        iss: 'http://keycloak.test/realms/telecom',
+      } as unknown as JwtPayload);
+      expect(result).toMatchObject({ id: 'user-001', role: 'NOC_ENGINEER' });
+    } finally {
+      if (previousIssuer === undefined) delete process.env['KEYCLOAK_ISSUER'];
+      else process.env['KEYCLOAK_ISSUER'] = previousIssuer;
+    }
   });
 });
