@@ -17,6 +17,7 @@ import { DrizzleProvider } from '../../database/drizzle.provider';
 import { categories, departments, tickets, users } from '../../database/schemas';
 import { SlaAlertNotifierService } from './sla-alert-notifier.service';
 import { SlaAlertTicket, SlaTarget } from './sla-alert.types';
+import { SettingsService } from '../settings/settings.service';
 
 type AlertKind = 'WARNING' | 'BREACH';
 
@@ -37,6 +38,7 @@ export class SlaAlertProcessorService {
   constructor(
     private readonly drizzle: DrizzleProvider,
     private readonly notifier: SlaAlertNotifierService,
+    private readonly settingsService: SettingsService,
   ) {}
 
   /**
@@ -44,7 +46,8 @@ export class SlaAlertProcessorService {
    */
   async process(): Promise<void> {
     const now = new Date();
-    const warningThreshold = new Date(now.getTime() + 30 * 60 * 1000); // Seuil d'avertissement fixé à 30 minutes
+    const warningMinutes = Number(await this.settingsService.getSetting('SLA_WARNING_MINUTES', '30')) || 30;
+    const warningThreshold = new Date(now.getTime() + warningMinutes * 60 * 1000);
 
     await this.processTarget('FIRST_RESPONSE', 'BREACH', now, warningThreshold);
     await this.processTarget('RESOLUTION', 'BREACH', now, warningThreshold);

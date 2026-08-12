@@ -13,6 +13,7 @@ import { DrizzleProvider } from '../../database/drizzle.provider';
 import { SlaAlertNotifierService } from './sla-alert-notifier.service';
 import { SlaAlertProcessorService } from './sla-alert-processor.service';
 import { SlaAlertTicket } from './sla-alert.types';
+import { SettingsService } from '../settings/settings.service';
 
 interface SelectQueryMock {
   from: jest.Mock;
@@ -75,6 +76,7 @@ describe('SlaAlertProcessorService', () => {
     service = new SlaAlertProcessorService(
       { db } as unknown as DrizzleProvider,
       notifier as unknown as SlaAlertNotifierService,
+      { getSetting: jest.fn().mockResolvedValue('30') } as unknown as SettingsService,
     );
   });
 
