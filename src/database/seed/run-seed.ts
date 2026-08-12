@@ -1053,6 +1053,16 @@ async function seed() {
       value: '1,2,3,4,5',
       description: 'Jours de la semaine ouvrables (1=Lundi, ..., 5=Vendredi, 6=Samedi, 0=Dimanche)',
     },
+    {
+      key: 'ABSENCE_REASSIGN_HOURS',
+      value: '24',
+      description: 'Au-delà de cette durée d absence planifiée (heures), les tickets sont réassignés automatiquement',
+    },
+    {
+      key: 'SLA_WARNING_MINUTES',
+      value: '30',
+      description: 'Seuil d alerte SLA avant échéance (minutes)',
+    },
   ];
 
   for (const s of settingsData) {

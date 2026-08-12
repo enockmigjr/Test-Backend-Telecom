@@ -1,0 +1,92 @@
+# ============================================================================
+# Compose production (HTTPS via nginx + images publiées sur un registry).
+# Usage :
+#   docker compose -f docker-compose.prod.yml up -d --build
+# Prérequis : certs/privkey.pem + certs/fullchain.pem (ou mappez vos certificats),
+#             variables d'env de production (voir .env.example).
+# ============================================================================
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-telecom}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-telecom_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-telecom_tickets}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U telecom -d telecom_tickets']
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    networks: [telecom-network]
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    networks: [telecom-network]
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.7.0
+    restart: unless-stopped
+    command: ["start", "--import-realm", "--http-port=8080", "--hostname=${KEYCLOAK_HOSTNAME:-auth.example.com}"]
+    environment:
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: ${POSTGRES_USER:-telecom}
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-telecom_secret}
+      KC_PROXY: edge
+    volumes:
+      - ./keycloak/import:/opt/keycloak/data/import:ro
+    networks: [telecom-network]
+
+  api:
+    image: ${REGISTRY:-registry.example.com}/telecom-api:${TAG:-latest}
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: ${DOCKER_DATABASE_URL:-postgresql://telecom:telecom_secret@postgres:5432/telecom_tickets}
+      REDIS_URL: redis://redis:6379
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      AUTH_PROVIDER: ${AUTH_PROVIDER:-local}
+      KEYCLOAK_ISSUER: ${KEYCLOAK_ISSUER}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks: [telecom-network]
+
+  public-frontend:
+    image: ${REGISTRY:-registry.example.com}/telecom-public-frontend:${TAG:-latest}
+    restart: unless-stopped
+    environment:
+      BACKEND_URL: http://api:3000
+      PUBLIC_COOKIE_SECURE: 'true'
+    networks: [telecom-network]
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
+      - ./certs:/etc/nginx/certs:ro
+    depends_on: [api, public-frontend]
+    networks: [telecom-network]
+
+volumes:
+  postgres-data:
+  redis-data:
+
+networks:
+  telecom-network:
+    driver: bridge

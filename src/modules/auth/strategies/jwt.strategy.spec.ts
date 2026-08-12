@@ -107,7 +107,9 @@ describe('JwtStrategy — jeton Keycloak', () => {
         update: updateMock,
       },
     } as unknown as DrizzleProvider;
-    const redis = { getClient: jest.fn(() => ({ exists: jest.fn().mockResolvedValue(0) })) } as unknown as RedisProvider;
+    const redis = {
+      getClient: jest.fn(() => ({ exists: jest.fn().mockResolvedValue(0) })),
+    } as unknown as RedisProvider;
     const jwtConfig = { accessSecret: 'test-access-secret-minimum-32-characters' } as JwtConfigService;
     const keycloakJwks = { publicKey: jest.fn() } as unknown as KeycloakJwksService;
     const strategy = new JwtStrategy(jwtConfig, drizzle, redis, keycloakJwks);

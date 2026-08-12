@@ -8,7 +8,7 @@ SHELL := /bin/sh
 COMPOSE ?= docker compose
 API ?= api
 
-.PHONY: help env up down build restart logs ps health migrate seed db-reset keycloak-seed \
+.PHONY: help env up down build restart logs ps health migrate seed db-reset keycloak-seed publish \
 	test unit e2e lint typecheck openapi \
 	api-logs db-shell redis-shell mailpit backup restore clean
 
@@ -55,6 +55,14 @@ keycloak-up: ## Démarre Keycloak avec le realm importé
 
 keycloak-seed: ## Crée 100+ comptes dans Keycloak
 	KEYCLOAK_ADMIN=$(KEYCLOAK_ADMIN) KEYCLOAK_ADMIN_PASSWORD=$(KEYCLOAK_ADMIN_PASSWORD) node keycloak/seed-users.mjs
+
+publish: ## Publie les images backend et portail sur le registry (REGISTRY/TAG)
+	@test -n "$(REGISTRY)" || (echo "Précisez REGISTRY=registry.example.com" && exit 1)
+	@docker tag testbackendtelecom-api $(REGISTRY)/telecom-api:$(TAG)
+	@docker tag testbackendtelecom-public-frontend $(REGISTRY)/telecom-public-frontend:$(TAG)
+	@docker push $(REGISTRY)/telecom-api:$(TAG)
+	@docker push $(REGISTRY)/telecom-public-frontend:$(TAG)
+	@echo "Images publiées : $(REGISTRY)/telecom-api:$(TAG), $(REGISTRY)/telecom-public-frontend:$(TAG)"
 
 db-reset: ## Réinitialise le schéma et recharge le seed
 	$(COMPOSE) exec $(API) pnpm db:reset
