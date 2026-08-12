@@ -23,13 +23,17 @@ env: ## Prépare .env depuis .env.example (ne remplace pas un .env existant)
 	@test -f .env || cp .env.example .env
 	@test -f .env && echo "Fichier .env prêt."
 
-up: ## Démarre toute la stack en arrière-plan
+up: ## Démarre toute la stack en arrière-plan (base keycloak créée si besoin)
+	$(COMPOSE) up -d postgres
+	$(MAKE) keycloak-db
 	$(COMPOSE) up -d
 
 down: ## Arrête la stack (sans supprimer les volumes)
 	$(COMPOSE) down
 
-build: ## Reconstruit les images puis démarre la stack
+build: ## Reconstruit les images puis démarre la stack (base keycloak créée si besoin)
+	$(COMPOSE) up -d --build postgres
+	$(MAKE) keycloak-db
 	$(COMPOSE) up -d --build
 
 restart: ## Redémarre l'API, le frontend interne et le portail public
@@ -54,6 +58,7 @@ seed: ## Charge les données de démonstration
 	$(COMPOSE) exec $(API) pnpm db:seed
 
 keycloak-db: ## Crée la base PostgreSQL `keycloak` si absente (idempotent)
+	@docker exec telecom-postgres sh -c 'until pg_isready -U telecom -d telecom_tickets >/dev/null 2>&1; do sleep 1; done'
 	@docker exec telecom-postgres psql -U telecom -d telecom_tickets -tAc "SELECT 1 FROM pg_database WHERE datname='keycloak'" | grep -q 1 \
 		|| docker exec telecom-postgres psql -U telecom -d telecom_tickets -c "CREATE DATABASE keycloak"
 	@echo "Base PostgreSQL 'keycloak' prête."
