@@ -224,10 +224,11 @@ export class DashboardController {
    */
   @Get('my-activity')
   @ApiOperation({
-    summary: "Mon activité",
-    description: 'Retourne les indicateurs personnels de l\'utilisateur courant : tickets ouverts/en retard/à risque, résolutions du mois, SLA et disponibilité.',
+    summary: 'Mon activité',
+    description:
+      "Retourne les indicateurs personnels de l'utilisateur courant : tickets ouverts/en retard/à risque, résolutions du mois, SLA et disponibilité.",
   })
-  @ApiResponse({ status: 200, description: "Mon activité." })
+  @ApiResponse({ status: 200, description: 'Mon activité.' })
   async myActivity(@CurrentUser() currentUser: JwtPayload) {
     return this.dashboardService.myActivity(currentUser);
   }

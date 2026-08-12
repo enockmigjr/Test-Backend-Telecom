@@ -16,6 +16,8 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiQuery, 
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { SetAbsenceDto } from './dto/set-absence.dto';
+import { SetAvailabilityDto } from './dto/set-availability.dto';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -69,6 +71,33 @@ export class UsersController {
   @ApiResponse({ status: 401, description: 'Non authentifié.' })
   async me(@CurrentUser() user: JwtPayload) {
     return this.usersService.findOne(user.sub);
+  }
+
+  /** Route de mise en pause / reprise volontaire (self-service, tout rôle authentifié) */
+  @Patch('me/availability')
+  @ApiOperation({
+    summary: 'Mettre en pause / reprendre (self-service)',
+    description:
+      "Permet à un agent de se mettre en pause ou de reprendre. L'agent en pause est exclu de l'auto-assignation.",
+  })
+  @ApiBody({ type: SetAvailabilityDto })
+  @ApiResponse({ status: 200, description: 'Disponibilité mise à jour.' })
+  async setAvailability(@Body() dto: SetAvailabilityDto, @CurrentUser() user: JwtPayload) {
+    return this.usersService.setAvailability(user.sub, dto.available);
+  }
+
+  /** Route de déclaration d'absence (courte auto, prolongée admin/superviseur) */
+  @Patch('me/absence')
+  @ApiOperation({
+    summary: "Déclarer / annuler son absence",
+    description:
+      "L'absence courte (<= 7 jours) est libre ; l'absence prolongée doit être déclarée par un ADMINISTRATOR ou SUPERVISOR.",
+  })
+  @ApiBody({ type: SetAbsenceDto })
+  @ApiResponse({ status: 200, description: 'Absence enregistrée.' })
+  @ApiResponse({ status: 403, description: 'Absence prolongée non autorisée pour ce rôle.' })
+  async setAbsence(@Body() dto: SetAbsenceDto, @CurrentUser() user: JwtPayload) {
+    return this.usersService.setOwnAbsence(user.sub, dto.absenceEndsAt, user);
   }
 
   /** Route de consultation des détails d'un utilisateur par son ID */

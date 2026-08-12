@@ -3725,6 +3725,29 @@
         ],
         "type": "object"
       },
+      "SetAbsenceDto": {
+        "properties": {
+          "absenceEndsAt": {
+            "description": "Fin d'absence (ISO 8601) ; vide pour annuler",
+            "example": "2026-08-20T18:00:00.000Z",
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "SetAvailabilityDto": {
+        "properties": {
+          "available": {
+            "description": "Disponibilité (false = pause, true = reprise)",
+            "example": false,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "available"
+        ],
+        "type": "object"
+      },
       "Setting": {
         "properties": {
           "createdAt": {
@@ -16848,6 +16871,112 @@
           }
         ],
         "summary": "Profil de l'utilisateur connecté",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/api/v1/users/me/absence": {
+      "patch": {
+        "description": "L'absence courte (<= 7 jours) est libre ; l'absence prolongée doit être déclarée par un ADMINISTRATOR ou SUPERVISOR.",
+        "operationId": "UsersController_setAbsence",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetAbsenceDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiSuccessResponse"
+                }
+              }
+            },
+            "description": "Absence enregistrée."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Absence prolongée non autorisée pour ce rôle."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Déclarer / annuler son absence",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/api/v1/users/me/availability": {
+      "patch": {
+        "description": "Permet à un agent de se mettre en pause ou de reprendre. L'agent en pause est exclu de l'auto-assignation.",
+        "operationId": "UsersController_setAvailability",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetAvailabilityDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiSuccessResponse"
+                }
+              }
+            },
+            "description": "Disponibilité mise à jour."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Erreur standardisée."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mettre en pause / reprendre (self-service)",
         "tags": [
           "users"
         ]

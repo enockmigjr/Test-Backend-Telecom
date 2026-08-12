@@ -343,6 +343,51 @@ export class UsersService {
   }
 
   /**
+   * Mise en pause / reprise volontaire d'un agent (self-service).
+   */
+  async setAvailability(userId: string, available: boolean) {
+    const user = await this.findOne(userId);
+    if (available && user.isAvailable) {
+      throw new BadRequestException('Cet utilisateur est déjà disponible.');
+    }
+    if (!available && user.isAvailable === false) {
+      throw new BadRequestException('Cet utilisateur est déjà en pause.');
+    }
+    await this.drizzle.db.update(users).set({ isAvailable: available }).where(eq(users.id, userId));
+    const data = await this.findOne(userId);
+    return { message: available ? 'Disponibilité rétablie.' : 'Mise en pause effectuée.', data };
+  }
+
+  /**
+   * Déclaration d'absence d'un agent. L'absence courte (<= 7 jours) est libre ;
+   * une absence prolongée nécessite un rôle ADMINISTRATOR ou SUPERVISOR.
+   */
+  async setOwnAbsence(userId: string, absenceEndsAt?: Date | string | null, currentUser?: JwtPayload) {
+    const end = absenceEndsAt ? new Date(absenceEndsAt) : null;
+    if (end && Number.isNaN(end.getTime())) {
+      throw new BadRequestException("La fin d'absence doit être une date valide.");
+    }
+    if (end && end <= new Date()) {
+      throw new BadRequestException("La fin d'absence doit être dans le futur.");
+    }
+    const prolongedDays = 7;
+    if (end && currentUser && !['ADMINISTRATOR', 'SUPERVISOR'].includes(currentUser.role)) {
+      const maxSelfEnd = new Date(Date.now() + prolongedDays * 24 * 60 * 60 * 1000);
+      if (end > maxSelfEnd) {
+        throw new ForbiddenException(
+          `Une absence prolongée (> ${prolongedDays} jours) doit être déclarée par un administrateur ou superviseur.`,
+        );
+      }
+    }
+    await this.drizzle.db
+      .update(users)
+      .set({ absenceEndsAt: end, ...(end ? { isAvailable: false } : {}) })
+      .where(eq(users.id, userId));
+    const data = await this.findOne(userId);
+    return { message: end ? 'Absence enregistrée.' : 'Absence annulée.', data };
+  }
+
+  /**
    * Envoie l'email de bienvenue avec le mot de passe temporaire via la file d'attente BullMQ.
    */
   private async sendWelcomeEmail(
