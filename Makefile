@@ -12,7 +12,8 @@ KEYCLOAK_ADMIN_PASSWORD ?= Admin@1234
 
 .PHONY: help env up down build restart logs ps health migrate seed db-reset keycloak-seed publish \
 	test unit e2e lint typecheck openapi \
-	api-logs db-shell redis-shell mailpit backup restore clean accounts
+	api-logs db-shell redis-shell mailpit backup restore clean accounts \
+	keycloak-db keycloak-up prod-up prod-down prod-build
 
 help: ## Affiche les cibles disponibles
 	@echo "Cibles principales :"
@@ -52,7 +53,13 @@ migrate: ## Applique les migrations de base de données
 seed: ## Charge les données de démonstration
 	$(COMPOSE) exec $(API) pnpm db:seed
 
-keycloak-up: ## Démarre Keycloak avec le realm importé
+keycloak-db: ## Crée la base PostgreSQL `keycloak` si absente (idempotent)
+	@docker exec telecom-postgres psql -U telecom -d telecom_tickets -tAc "SELECT 1 FROM pg_database WHERE datname='keycloak'" | grep -q 1 \
+		|| docker exec telecom-postgres psql -U telecom -d telecom_tickets -c "CREATE DATABASE keycloak"
+	@echo "Base PostgreSQL 'keycloak' prête."
+
+keycloak-up: ## Démarre Keycloak avec le realm importé (base keycloak créée si besoin)
+	$(MAKE) keycloak-db
 	$(COMPOSE) up -d keycloak
 
 keycloak-seed: ## Crée 105 comptes dans Keycloak (realm telecom, http://localhost:8081)
@@ -74,9 +81,22 @@ publish: ## Publie les images backend et portail sur le registry (REGISTRY/TAG)
 	@test -n "$(REGISTRY)" || (echo "Précisez REGISTRY=registry.example.com" && exit 1)
 	@docker tag testbackendtelecom-api $(REGISTRY)/telecom-api:$(TAG)
 	@docker tag testbackendtelecom-public-frontend $(REGISTRY)/telecom-public-frontend:$(TAG)
+	@docker tag testbackendtelecom-frontend $(REGISTRY)/telecom-frontend:$(TAG)
+	@docker tag testbackendtelecom-keycloak $(REGISTRY)/telecom-keycloak:$(TAG)
 	@docker push $(REGISTRY)/telecom-api:$(TAG)
 	@docker push $(REGISTRY)/telecom-public-frontend:$(TAG)
-	@echo "Images publiées : $(REGISTRY)/telecom-api:$(TAG), $(REGISTRY)/telecom-public-frontend:$(TAG)"
+	@docker push $(REGISTRY)/telecom-frontend:$(TAG)
+	@docker push $(REGISTRY)/telecom-keycloak:$(TAG)
+	@echo "Images publiées : api, public-frontend, frontend, keycloak (tag $(TAG))"
+
+prod-up: ## Démarre la stack production (HTTPS via nginx)
+	$(COMPOSE) -f docker-compose.prod.yml up -d
+
+prod-down: ## Arrête la stack production
+	$(COMPOSE) -f docker-compose.prod.yml down
+
+prod-build: ## Construit les images production (api, frontend, portail, keycloak)
+	$(COMPOSE) -f docker-compose.prod.yml build
 
 db-reset: ## Réinitialise le schéma et recharge le seed
 	$(COMPOSE) exec $(API) pnpm db:reset

@@ -14,6 +14,7 @@ services:
       - '5432:5432'
     volumes:
       - postgres-data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U telecom -d telecom_tickets']
       interval: 10s
@@ -74,12 +75,20 @@ services:
       KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin}
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-Admin@1234}
       KC_HTTP_RELATIVE_PATH: /
+      # Parité dev/prod : Keycloak utilise PostgreSQL (base `keycloak`).
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: ${POSTGRES_USER:-telecom}
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-telecom_secret}
     ports:
       # 8080 est utilisé par PhotoVault sur l'hôte : Keycloak expose 8081,
       # le port interne du conteneur reste 8080 (nom de service keycloak).
       - '8081:8080'
     volumes:
       - ./keycloak/import:/opt/keycloak/data/import:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
     networks:
       - telecom-network
 

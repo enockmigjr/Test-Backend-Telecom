@@ -15,6 +15,7 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-telecom_tickets}
     volumes:
       - postgres-data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U telecom -d telecom_tickets']
       interval: 15s
@@ -31,12 +32,15 @@ services:
     networks: [telecom-network]
 
   keycloak:
-    image: quay.io/keycloak/keycloak:26.7.0
+    build:
+      context: ./keycloak-theme
+      dockerfile: Dockerfile
+    image: ${REGISTRY:-registry.example.com}/telecom-keycloak:${TAG:-latest}
     restart: unless-stopped
     command: ["start", "--import-realm", "--http-port=8080", "--hostname=${KEYCLOAK_HOSTNAME:-auth.example.com}"]
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin}
-      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?KEYCLOAK_ADMIN_PASSWORD est requis en production}
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
       KC_DB_USERNAME: ${POSTGRES_USER:-telecom}
@@ -45,6 +49,9 @@ services:
     volumes:
       - ./keycloak/import:/opt/keycloak/data/import:ro
     networks: [telecom-network]
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   api:
     image: ${REGISTRY:-registry.example.com}/telecom-api:${TAG:-latest}
@@ -54,8 +61,8 @@ services:
       REDIS_URL: redis://redis:6379
       SMTP_HOST: ${SMTP_HOST}
       SMTP_PORT: ${SMTP_PORT:-587}
-      AUTH_PROVIDER: ${AUTH_PROVIDER:-local}
-      KEYCLOAK_ISSUER: ${KEYCLOAK_ISSUER}
+      AUTH_PROVIDER: ${AUTH_PROVIDER:-keycloak}
+      KEYCLOAK_ISSUER: ${KEYCLOAK_ISSUER:-https://auth.example.com/realms/telecom}
     depends_on:
       postgres:
         condition: service_healthy
@@ -71,6 +78,30 @@ services:
       PUBLIC_COOKIE_SECURE: 'true'
     networks: [telecom-network]
 
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: ${REGISTRY:-registry.example.com}/telecom-frontend:${TAG:-latest}
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      BACKEND_INTERNAL_URL: http://api:3000
+      REDIS_URL: redis://redis:6379
+      AUTH_PROVIDER: ${AUTH_PROVIDER:-keycloak}
+      KEYCLOAK_ISSUER: ${KEYCLOAK_ISSUER:-https://auth.example.com/realms/telecom}
+      KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-telecom-frontend}
+      KEYCLOAK_REDIRECT_URI: ${KEYCLOAK_REDIRECT_URI:-https://ticketing.example.com/api/auth/keycloak/callback}
+      PUBLIC_APP_ORIGIN: ${PUBLIC_APP_ORIGIN:-https://ticketing.example.com}
+      AUTH_COOKIE_SECURE: 'true'
+      AUTH_CSRF_SECRET: ${AUTH_CSRF_SECRET:?AUTH_CSRF_SECRET est requis en production}
+    expose:
+      - '3000'
+    depends_on:
+      - api
+      - redis
+    networks: [telecom-network]
+
   nginx:
     image: nginx:1.27-alpine
     restart: unless-stopped
@@ -80,7 +111,7 @@ services:
     volumes:
       - ./nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
       - ./certs:/etc/nginx/certs:ro
-    depends_on: [api, public-frontend]
+    depends_on: [api, frontend, public-frontend, keycloak]
     networks: [telecom-network]
 
 volumes:
