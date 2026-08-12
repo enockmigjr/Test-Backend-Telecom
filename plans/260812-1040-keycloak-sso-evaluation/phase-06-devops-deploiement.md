@@ -37,3 +37,4 @@ Rendre le d√©ploiement (local et cible production) reproductible : conteneurs, i
 - (Prod) test de restauration apr√®s perte simul√©e du volume.
 ## Statut de la phase
 - FAIT (poussÈ) : Makefile de base. RESTE : scripts PowerShell, backup/restore, compose prod.
+- MAJ : scripts PowerShell (dev.ps1) + sauvegarde/restauration PostgreSQL testÈes en live (backup 245 Ko). RESTE : compose prod (HTTPS/registry).

@@ -10,7 +10,7 @@ API ?= api
 
 .PHONY: help env up down build restart logs ps health migrate seed db-reset \
 	test unit e2e lint typecheck openapi \
-	api-logs db-shell redis-shell mailpit clean
+	api-logs db-shell redis-shell mailpit backup restore clean
 
 help: ## Affiche les cibles disponibles
 	@echo "Cibles principales :"
@@ -79,6 +79,20 @@ redis-shell: ## Ouvre redis-cli dans le conteneur Redis
 
 mailpit: ## Ouvre l'interface Mailpit (http://localhost:9025)
 	@echo "Mailpit : http://localhost:9025"
+
+backup: ## Sauvegarde PostgreSQL dans backups/
+	@mkdir -p backups
+	@docker exec telecom-postgres pg_dump -U telecom -d telecom_tickets -F c -f /tmp/telecom-backup.dump
+	@docker cp telecom-postgres:/tmp/telecom-backup.dump backups/telecom-$(shell date +%Y%m%d-%H%M%S).dump
+	@docker exec telecom-postgres rm -f /tmp/telecom-backup.dump
+	@echo "Sauvegarde créée dans backups/"
+
+restore: ## Restaure un dump (usage : make restore FILE=backups/xxx.dump)
+	@test -n "$(FILE)" || (echo "Précisez FILE=backups/xxx.dump" && exit 1)
+	@docker cp "$(FILE)" telecom-postgres:/tmp/telecom-restore.dump
+	@docker exec telecom-postgres pg_restore -U telecom -d telecom_tickets --clean --if-exists /tmp/telecom-restore.dump
+	@docker exec telecom-postgres rm -f /tmp/telecom-restore.dump
+	@echo "Restauration terminée."
 
 clean: ## Supprime conteneurs et volumes (⚠️ détruit les données)
 	@echo "ATTENTION : cette cible supprime les volumes de données."
