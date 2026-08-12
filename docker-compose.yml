@@ -212,6 +212,7 @@ services:
       REDIS_URL: ${DOCKER_REDIS_URL:-redis://redis:6379}
       AUTH_PROVIDER: ${AUTH_PROVIDER:-keycloak}
       KEYCLOAK_ISSUER: ${KEYCLOAK_ISSUER:-http://localhost:8081/realms/telecom}
+      KEYCLOAK_INTERNAL_ISSUER: ${KEYCLOAK_INTERNAL_ISSUER:-http://keycloak:8080/realms/telecom}
       KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-telecom-frontend}
       KEYCLOAK_REDIRECT_URI: ${KEYCLOAK_REDIRECT_URI:-http://localhost:3007/api/auth/keycloak/callback}
       PUBLIC_APP_ORIGIN: ${PUBLIC_APP_ORIGIN:-http://localhost:3007}
