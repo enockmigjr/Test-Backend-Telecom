@@ -115,7 +115,10 @@ export class CategoriesService {
     await this.drizzle.db.update(categories).set(updateData).where(eq(categories.id, id));
 
     const [updated] = await this.drizzle.db.select().from(categories).where(eq(categories.id, id)).limit(1);
-    return { message: 'Catégorie mise à jour avec succès.', data: { ...updated, targetRoles: updated.targetRoles ?? [] } };
+    return {
+      message: 'Catégorie mise à jour avec succès.',
+      data: { ...updated, targetRoles: updated.targetRoles ?? [] },
+    };
   }
 
   /**
