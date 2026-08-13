@@ -545,7 +545,8 @@ export class DashboardService {
     const where = and(isNull(tickets.deletedAt), eq(tickets.assignedTo, currentUser.sub));
     const durationMinutes = sql<number>`EXTRACT(EPOCH FROM (${tickets.resolvedAt} - ${tickets.createdAt})) / 60`;
 
-    const [[stats], [profile], reopenedRows] = await Promise.all([
+    const sevenDaysAgo = new Date(now.getTime() - 6 * 24 * 3_600_000);
+    const [[stats], [profile], reopenedRows, trendRows] = await Promise.all([
       this.drizzle.db
         .select({
           totalAssigned: sql<number>`COUNT(*)`,
@@ -590,6 +591,21 @@ export class DashboardService {
           ),
         )
         .groupBy(tickets.assignedTo),
+      this.drizzle.db
+        .select({
+          day: sql<string>`TO_CHAR(${tickets.resolvedAt}, 'YYYY-MM-DD')`,
+          count: count(),
+        })
+        .from(tickets)
+        .where(
+          and(
+            isNull(tickets.deletedAt),
+            eq(tickets.assignedTo, currentUser.sub),
+            sql`${tickets.resolvedAt} >= ${sevenDaysAgo.toISOString()}`,
+          ),
+        )
+        .groupBy(sql`TO_CHAR(${tickets.resolvedAt}, 'YYYY-MM-DD')`)
+        .orderBy(sql`TO_CHAR(${tickets.resolvedAt}, 'YYYY-MM-DD')`),
     ]);
     const reopenedCount = reopenedRows.length > 0 ? Number(reopenedRows[0].reopenedCount || 0) : 0;
     const firstResponseCount = Number(stats?.firstResponseCount || 0);
@@ -625,6 +641,7 @@ export class DashboardService {
         avgResolutionMinutes: Math.round(Number(stats?.avgResolutionMinutes || 0)),
         medianResolutionMinutes: Math.round(Number(stats?.medianResolutionMinutes || 0)),
         reopenedCount,
+        resolvedLast7Days: trendRows.map((row) => ({ day: row.day, count: Number(row.count || 0) })),
         lastActivityAt: stats?.lastActivityAt ? new Date(stats.lastActivityAt).toISOString() : null,
       },
     };
