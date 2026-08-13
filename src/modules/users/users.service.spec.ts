@@ -15,6 +15,7 @@ import { UsersService } from './users.service';
 import { DrizzleProvider } from '../../database/drizzle.provider';
 import { NotFoundException } from '@nestjs/common';
 import { mockDeep } from 'jest-mock-extended';
+import { KeycloakAdminService } from '../auth/services/keycloak-admin.service';
 
 /**
  * Tests unitaires du UsersService.
@@ -46,12 +47,19 @@ describe('UsersService', () => {
       email: { add: jest.fn().mockResolvedValue(undefined) },
       notification: { add: jest.fn().mockResolvedValue(undefined) },
     };
+    const mockKeycloakAdmin = {
+      createUser: jest.fn().mockResolvedValue('kc-user-1'),
+      resetPassword: jest.fn().mockResolvedValue(undefined),
+      syncRealmRoles: jest.fn().mockResolvedValue(undefined),
+      setEnabled: jest.fn().mockResolvedValue(undefined),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         UsersService,
         { provide: DrizzleProvider, useValue: mockDb },
         { provide: 'BullMQ_Queues', useValue: mockQueues },
+        { provide: KeycloakAdminService, useValue: mockKeycloakAdmin },
       ],
     }).compile();
 
@@ -97,6 +105,7 @@ describe('UsersService', () => {
     };
     (mockDb.db as any).where.mockReturnValueOnce({ limit: jest.fn().mockResolvedValueOnce([mockUser]) });
     (mockDb.db as any).where.mockReturnValueOnce({});
+    (mockDb.db as any).where.mockReturnValueOnce({ limit: jest.fn().mockResolvedValueOnce([]) });
 
     const result = await service.deactivate('1');
     expect(result.message).toContain('désactivé');
@@ -117,6 +126,7 @@ describe('UsersService', () => {
     };
     (mockDb.db as any).where.mockReturnValueOnce({ limit: jest.fn().mockResolvedValueOnce([mockUser]) });
     (mockDb.db as any).where.mockReturnValueOnce({});
+    (mockDb.db as any).where.mockReturnValueOnce({ limit: jest.fn().mockResolvedValueOnce([]) });
 
     const result = await service.activate('1');
     expect(result.message).toContain('réactivé');

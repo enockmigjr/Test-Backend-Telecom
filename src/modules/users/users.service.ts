@@ -4,7 +4,9 @@
  * RÔLE : Service de gestion de l'annuaire des comptes utilisateurs et agents.
  * EXPLICATION :
  * Ce service regroupe toutes les opérations sur les comptes utilisateurs et techniciens :
- * 1. Création de compte avec mot de passe temporaire aléatoire (12 octets hex), haché en Argon2id et envoi d'email via BullMQ (`sendWelcomeEmail`).
+ * 1. Création de compte : profil métier en base + provisionnement du compte SSO
+ *    Keycloak (mot de passe temporaire `temporary=true` → changement forcé à la
+ *    première connexion, rôle realm synchronisé) + email de bienvenue (BullMQ).
  * 2. Consultation des profils simples (`findOne`) et détaillés (`findOneDetailed` avec métriques de tickets créés, assignés, résolus et SLA franchis).
  * 3. Mise à jour sous contraintes RBAC/ABAC : Les superviseurs sont cantonnés à leur département et ne peuvent pas nommer d'autres superviseurs ou administrateurs.
  * 4. Activation, désactivation et suppression logique (`deletedAt`).
@@ -32,6 +34,7 @@ import { PaginationHelper } from '../../common/helpers/pagination.helper';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { BullMqQueues } from '../../queues/queues.types';
 import { CreateUserInput, UpdateUserInput } from './interfaces/user-service.interfaces';
+import { KeycloakAdminService } from '../auth/services/keycloak-admin.service';
 
 /**
  * Service gérant le cycle de vie, les autorisations et les statistiques des utilisateurs.
@@ -43,6 +46,7 @@ export class UsersService {
   constructor(
     private readonly drizzle: DrizzleProvider,
     @Inject('BullMQ_Queues') private readonly queues: BullMqQueues,
+    private readonly keycloakAdmin: KeycloakAdminService,
   ) {}
 
   /**
@@ -232,6 +236,29 @@ export class UsersService {
       mustChangePassword: true,
     });
 
+    // Provisionne le compte SSO Keycloak : création + mot de passe temporaire
+    // (temporary=true force le changement à la première connexion) + rôle realm.
+    try {
+      const keycloakUserId = await this.keycloakAdmin.createUser({
+        username: dto.email.toLowerCase().trim(),
+        email: dto.email.toLowerCase().trim(),
+        firstName: dto.firstName,
+        lastName: dto.lastName,
+      });
+      await this.keycloakAdmin.resetPassword(keycloakUserId, tempPassword);
+      await this.keycloakAdmin.syncRealmRoles(keycloakUserId, [dto.role]);
+      await this.drizzle.db.update(users).set({ keycloakSubjectId: keycloakUserId }).where(eq(users.id, id));
+    } catch (error) {
+      this.logger.error(
+        `Échec du provisionnement Keycloak pour ${dto.email}`,
+        error instanceof Error ? error.stack : String(error),
+      );
+      await this.drizzle.db.update(users).set({ deletedAt: new Date() }).where(eq(users.id, id));
+      throw new ConflictException(
+        'Création du compte SSO impossible (Keycloak indisponible ou config manquante). Réessayez plus tard.',
+      );
+    }
+
     this.logger.log(`Utilisateur créé: ${dto.email} (${id}), département: ${dept.name}`);
 
     // Envoyer l'email de bienvenue avec le mot de passe temporaire (asynchrone, non-bloquant)
@@ -298,6 +325,14 @@ export class UsersService {
 
     await this.drizzle.db.update(users).set(updateData).where(eq(users.id, id));
 
+    // Synchronise le rôle du compte SSO (mapping realm Keycloak = rôle métier).
+    if (dto.role !== undefined) {
+      const subject = await this.findSubject(id);
+      if (subject) {
+        await this.keycloakAdmin.syncRealmRoles(subject, [dto.role]);
+      }
+    }
+
     const updated = await this.findOne(id);
     this.logger.log(`Utilisateur mis à jour: ${id}`);
 
@@ -319,6 +354,11 @@ export class UsersService {
 
     await this.drizzle.db.update(users).set({ isActive: false }).where(eq(users.id, id));
 
+    const subject = await this.findSubject(id);
+    if (subject) {
+      await this.keycloakAdmin.setEnabled(subject, false);
+    }
+
     this.logger.log(`Utilisateur désactivé: ${id}`);
     return { message: 'Utilisateur désactivé avec succès.' };
   }
@@ -338,8 +378,23 @@ export class UsersService {
 
     await this.drizzle.db.update(users).set({ isActive: true }).where(eq(users.id, id));
 
+    const subject = await this.findSubject(id);
+    if (subject) {
+      await this.keycloakAdmin.setEnabled(subject, true);
+    }
+
     this.logger.log(`Utilisateur réactivé: ${id}`);
     return { message: 'Utilisateur réactivé avec succès.' };
+  }
+
+  /** Récupère le sujet Keycloak lié au profil (null si jamais provisionné). */
+  private async findSubject(id: string): Promise<string | null> {
+    const [row] = await this.drizzle.db
+      .select({ keycloakSubjectId: users.keycloakSubjectId })
+      .from(users)
+      .where(and(eq(users.id, id), isNull(users.deletedAt)))
+      .limit(1);
+    return row?.keycloakSubjectId ?? null;
   }
 
   /**
@@ -398,7 +453,8 @@ export class UsersService {
     role: string,
     departmentName: string,
   ): Promise<void> {
-    const loginUrl = process.env['LOGIN_URL'] || 'http://localhost:3000/login';
+    // Avec Keycloak unique, la connexion passe par le frontend interne (SSO).
+    const loginUrl = process.env['LOGIN_URL'] || 'http://localhost:3007/login';
     try {
       await this.queues.email.add('send-email', {
         to,

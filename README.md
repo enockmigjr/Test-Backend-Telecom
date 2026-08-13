@@ -519,6 +519,7 @@ pnpm run start:dev
 | [docs/ticket-lifecycle.md](docs/ticket-lifecycle.md)                             | Machine à états des tickets (9 statuts)           |
 | [docs/domain-events.md](docs/domain-events.md)                                   | Événements domaine EventEmitter2                  |
 | [docs/security.md](docs/security.md)                                             | Guide de sécurité (auth, RBAC, rate limiting)     |
+| [docs/auth-guide.md](docs/auth-guide.md)                                         | Guide complet de l'auth SSO Keycloak (niveau junior) |
 | [docs/test-accounts.md](docs/test-accounts.md)                                   | Comptes de test et identifiants                   |
 | [docs/testing.md](docs/testing.md)                                               | Guide des tests (92 spec + 24 E2E/intégration)    |
 | [docs/environment-variables.md](docs/environment-variables.md)                   | Référence variables d'env                         |
