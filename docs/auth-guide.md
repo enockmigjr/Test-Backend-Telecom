@@ -216,6 +216,9 @@ Quand un administrateur crée un utilisateur
      **temporaire** → Keycloak ajoute l'action requise **`UPDATE_PASSWORD`** ;
    - `syncRealmRoles(userId, [rôle])` : attribue le rôle realm correspondant
      (ex. `ADMINISTRATOR`) ;
+   - `ensureAccountRoles(userId)` : attribue `view-profile` + `manage-account`
+     sur le client `account` — **indispensable** pour que l'utilisateur puisse
+     ouvrir la console de compte (sinon Keycloak répond 403) ;
    - mise à jour de `users.keycloakSubjectId` ;
 3. **Email de bienvenue** (BullMQ) avec le mot de passe temporaire ;
 4. À la **première connexion**, Keycloak **force le changement de mot de passe**
@@ -226,6 +229,11 @@ Quand un administrateur crée un utilisateur
 Si le provisionnement Keycloak échoue (service indisponible, configuration
 manquante), la création est annulée (profil supprimé logiquement) et une erreur
 claire est renvoyée — jamais de « demi-compte ».
+
+> **Note** : le changement du mot de passe temporaire est imposé **par Keycloak**
+> (`UPDATE_PASSWORD`) ; l'application n'a plus de garde-fou `mustChangePassword`
+> (l'ancien `PasswordChangeRequiredGuard` a été supprimé — il bloquait l'accès
+> même après le changement fait chez Keycloak).
 
 ### Activation / désactivation
 

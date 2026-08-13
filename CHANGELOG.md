@@ -24,6 +24,14 @@ Tous les changements notables sont documentés ici. Format basé sur [Keep a Cha
   dans le menu et les paramètres (`/realms/telecom/account/`).
 - **Thème de la console de compte** : décliné aux couleurs de l'app (Keycloakify
   Multi-Page, même charte que le login — bleu nuit `#172033` / accent `#1d4ed8`).
+- **Console de compte réparée (403)** : les utilisateurs importés n'avaient pas
+  les rôles du client `account` (`view-profile`, `manage-account`) → Keycloak
+  répondait 403. Réparation en place + provisionnement systématique (backend,
+  seed, import du realm).
+- **Fin du blocage `PASSWORD_CHANGE_REQUIRED` après changement de mot de passe** :
+  le changement est imposé par Keycloak (`UPDATE_PASSWORD`) ; l'ancien
+  `PasswordChangeRequiredGuard` applicatif (qui bloquait même après le
+  changement) a été supprimé.
 - **SPA « Test frontend Telecom » supprimée** (dépôt + références dans les docs).
 - Contrat OpenAPI régénéré : **115 chemins / 139 opérations**.
 

@@ -21,6 +21,9 @@ const roles = [
   "FIELD_TECHNICIAN",
 ];
 
+// Rôles du client `account` requis par la console de compte Keycloak.
+const ACCOUNT_CLIENT_ROLES = ["view-profile", "manage-account"];
+
 async function adminToken() {
   const res = await fetch(`${baseUrl}/realms/master/protocol/openid-connect/token`, {
     method: "POST",
@@ -66,7 +69,26 @@ async function createUser(token, index, role) {
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify([{ id: roleBody.id, name: roleBody.name }]),
   });
+  await assignAccountRoles(token, userId);
   return username;
+}
+
+async function assignAccountRoles(token, userId) {
+  const clients = await (await fetch(`${baseUrl}/admin/realms/${realm}/clients`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })).json();
+  const account = clients.find((client) => client.clientId === "account");
+  if (!account) return;
+  const accountRoles = await (await fetch(`${baseUrl}/admin/realms/${realm}/clients/${account.id}/roles`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })).json();
+  const toAssign = accountRoles.filter((r) => ACCOUNT_CLIENT_ROLES.includes(r.name));
+  if (toAssign.length === 0) return;
+  await fetch(`${baseUrl}/admin/realms/${realm}/users/${userId}/role-mappings/clients/${account.id}`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify(toAssign.map(({ id, name }) => ({ id, name }))),
+  });
 }
 
 const token = await adminToken();

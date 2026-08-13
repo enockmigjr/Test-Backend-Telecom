@@ -7,7 +7,8 @@
  * 1. Extrait le jeton d'accès JWT depuis l'en-tête de cookie HTTP `Cookie: __Host-access-token=...`.
  * 2. Vérifie la signature cryptographique et l'expiration du jeton via `JwtService.verifyAsync`.
  * 3. Invoque `JwtStrategy.validate` pour contrôler les listes de révocation Redis et le statut de l'utilisateur dans PostgreSQL.
- * 4. Applique la politique de changement de mot de passe (`assertPasswordChangeComplete`) interdisant l'accès WebSocket aux utilisateurs devant changer leur mot de passe temporaire.
+ * 4. Retourne le payload validé — le changement de mot de passe temporaire est
+ *    imposé par Keycloak (UPDATE_PASSWORD), pas par l'application.
  * ============================================================================
  */
 
@@ -16,7 +17,6 @@ import { JwtService } from '@nestjs/jwt';
 
 import { JwtPayload } from '../modules/auth/interfaces/jwt-payload.interface';
 import { JwtStrategy } from '../modules/auth/strategies/jwt.strategy';
-import { assertPasswordChangeComplete } from '../modules/auth/password-change-policy';
 
 /**
  * Service assurant le contrôle d'accès et la validation des jetons JWT pour les connexions WebSocket.
@@ -45,9 +45,6 @@ export class WebSocketAuthService {
 
     // 3. Valider la non-révocation dans Redis et l'état actif dans PostgreSQL
     const user = await this.jwtStrategy.validate(payload);
-
-    // 4. Bloquer la connexion WebSocket si l'utilisateur doit changer son mot de passe initial
-    assertPasswordChangeComplete(user);
 
     return user;
   }

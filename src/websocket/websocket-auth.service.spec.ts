@@ -9,7 +9,7 @@
  * ============================================================================
  */
 
-import { ForbiddenException, UnauthorizedException } from '@nestjs/common';
+import { UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { mock, MockProxy } from 'jest-mock-extended';
 
@@ -72,13 +72,16 @@ describe('WebSocketAuthService', () => {
     );
   });
 
-  /** Test : rejette le temps reel tant que le mot de passe temporaire doit etre change */
+  /** Test : Keycloak impose le changement de mot de passe, le temps réel ne bloque plus */
 
-  it('rejette le temps reel tant que le mot de passe temporaire doit etre change', async () => {
+  it('accepte le temps reel meme si le flag metier mustChangePassword est pose', async () => {
     jwtService.verifyAsync.mockResolvedValue(validatedPayload);
     jwtStrategy.validate.mockResolvedValue({ ...validatedPayload, mustChangePassword: true });
 
-    await expect(service.authenticate('access_token=signed.jwt')).rejects.toBeInstanceOf(ForbiddenException);
+    await expect(service.authenticate('access_token=signed.jwt')).resolves.toMatchObject({
+      ...validatedPayload,
+      mustChangePassword: true,
+    });
   });
 
   /** Test : utilise par defaut le meme cookie __Host que le BFF en production */

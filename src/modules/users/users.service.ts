@@ -233,7 +233,9 @@ export class UsersService {
       lastName: dto.lastName,
       role: dto.role as typeof users.$inferSelect.role,
       departmentId: dto.departmentId,
-      mustChangePassword: true,
+      // Keycloak impose le changement du mot de passe temporaire (UPDATE_PASSWORD) ;
+      // le flag métier ne bloque plus l'accès applicatif.
+      mustChangePassword: false,
     });
 
     // Provisionne le compte SSO Keycloak : création + mot de passe temporaire
@@ -247,6 +249,7 @@ export class UsersService {
       });
       await this.keycloakAdmin.resetPassword(keycloakUserId, tempPassword);
       await this.keycloakAdmin.syncRealmRoles(keycloakUserId, [dto.role]);
+      await this.keycloakAdmin.ensureAccountRoles(keycloakUserId);
       await this.drizzle.db.update(users).set({ keycloakSubjectId: keycloakUserId }).where(eq(users.id, id));
     } catch (error) {
       this.logger.error(
@@ -276,7 +279,7 @@ export class UsersService {
         role: dto.role,
         departmentId: dto.departmentId,
         departmentName: dept.name,
-        mustChangePassword: true,
+        mustChangePassword: false,
         tempPassword,
       },
     };

@@ -19,7 +19,6 @@ import { KeycloakJwksService } from './services/keycloak-jwks.service';
 import { KeycloakAdminService } from './services/keycloak-admin.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
-import { PasswordChangeRequiredGuard } from './guards/password-change-required.guard';
 import { RequestAuthGuard } from './guards/request-auth.guard';
 import { JwtConfigService } from '../../config/jwt.config';
 import { ExternalIdentityModule } from '../external-identity/external-identity.module';
@@ -37,22 +36,13 @@ import { ExternalIdentityModule } from '../external-identity/external-identity.m
     }),
   ],
   controllers: [AuthController],
-  providers: [
-    JwtStrategy,
-    KeycloakJwksService,
-    KeycloakAdminService,
-    JwtAuthGuard,
-    RequestAuthGuard,
-    PasswordChangeRequiredGuard,
-    RolesGuard,
-  ],
+  providers: [JwtStrategy, KeycloakJwksService, KeycloakAdminService, JwtAuthGuard, RequestAuthGuard, RolesGuard],
   exports: [
     JwtStrategy,
     KeycloakJwksService,
     KeycloakAdminService,
     JwtAuthGuard,
     RequestAuthGuard,
-    PasswordChangeRequiredGuard,
     RolesGuard,
     PassportModule,
     JwtModule,

@@ -47,6 +47,7 @@
       "enabled": true,
       "emailVerified": true,
       "realmRoles": ["ADMINISTRATOR"],
+      "clientRoles": { "account": ["view-profile", "manage-account"] },
       "credentials": [{ "type": "password", "value": "Admin@1234", "temporary": false }]
     },
     {
@@ -57,6 +58,7 @@
       "enabled": true,
       "emailVerified": true,
       "realmRoles": ["SUPERVISOR"],
+      "clientRoles": { "account": ["view-profile", "manage-account"] },
       "credentials": [{ "type": "password", "value": "Super@1234", "temporary": false }]
     }
   ],

@@ -29,7 +29,6 @@ import { DatabaseModule } from './database/database.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { SupportSatisfactionModule } from './modules/support-satisfaction/support-satisfaction.module';
 import { RequestAuthGuard } from './modules/auth/guards/request-auth.guard';
-import { PasswordChangeRequiredGuard } from './modules/auth/guards/password-change-required.guard';
 import { DepartmentsModule } from './modules/departments/departments.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { UsersModule } from './modules/users/users.module';
@@ -173,11 +172,6 @@ import { isAuthRateLimited } from './common/decorators/auth-rate-limited.decorat
     {
       provide: APP_GUARD,
       useClass: RequestAuthGuard,
-    },
-    // Vérification globale forçant le changement du mot de passe temporaire
-    {
-      provide: APP_GUARD,
-      useClass: PasswordChangeRequiredGuard,
     },
     // Prévention des requêtes envoyées plusieurs fois par erreur (Idempotence)
     {

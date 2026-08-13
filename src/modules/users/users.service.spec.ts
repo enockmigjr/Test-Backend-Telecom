@@ -51,6 +51,7 @@ describe('UsersService', () => {
       createUser: jest.fn().mockResolvedValue('kc-user-1'),
       resetPassword: jest.fn().mockResolvedValue(undefined),
       syncRealmRoles: jest.fn().mockResolvedValue(undefined),
+      ensureAccountRoles: jest.fn().mockResolvedValue(undefined),
       setEnabled: jest.fn().mockResolvedValue(undefined),
     };
 

@@ -128,4 +128,29 @@ export class KeycloakAdminService {
       body: JSON.stringify({ enabled }),
     });
   }
+
+  /**
+   * Assigne les rôles du client `account` (view-profile, manage-account) :
+   * sans eux, la console de compte Keycloak répond 403 Forbidden.
+   */
+  async ensureAccountRoles(userId: string): Promise<void> {
+    const subject = encodeURIComponent(userId);
+    const clients = (await (await this.adminFetch('/clients')).json()) as Array<{ id: string; clientId: string }>;
+    const account = clients.find((client) => client.clientId === 'account');
+    if (!account) return;
+    const accountRoles = (await (await this.adminFetch(`/clients/${account.id}/roles`)).json()) as KeycloakRole[];
+    const wanted = accountRoles.filter((role) => ['view-profile', 'manage-account'].includes(role.name));
+    if (wanted.length === 0) return;
+    const current = (await (
+      await this.adminFetch(`/users/${subject}/role-mappings/clients/${account.id}`)
+    ).json()) as KeycloakRole[];
+    const existing = new Set(current.map((role) => role.name));
+    const missing = wanted.filter((role) => !existing.has(role.name));
+    if (missing.length > 0) {
+      await this.adminFetch(`/users/${subject}/role-mappings/clients/${account.id}`, {
+        method: 'POST',
+        body: JSON.stringify(missing.map(({ id, name }) => ({ id, name }))),
+      });
+    }
+  }
 }
