@@ -7,7 +7,8 @@
  * et l'attribut `mustChangePassword` est positionné à `true` :
  * 1. Cette fonction inspecte le jeton JWT de l'utilisateur lors de chaque requête sur des ressources protégées.
  * 2. Si `mustChangePassword === true`, l'accès est immédiatement refusé avec l'erreur `PASSWORD_CHANGE_REQUIRED` (403).
- * 3. L'utilisateur est contraint de passer par la route `POST /auth/change-password` pour débloquer son compte.
+ * 3. L'utilisateur est contraint de changer son mot de passe dans la console
+ *    Keycloak (la route locale `POST /auth/change-password` a été supprimée).
  * ============================================================================
  */
 
