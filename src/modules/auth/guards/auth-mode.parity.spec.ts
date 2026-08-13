@@ -4,12 +4,9 @@ import { MetricsController } from '../../../common/metrics/metrics.controller';
 import { AppController } from '../../app/app.controller';
 import { ExternalIdentityController } from '../../external-identity/external-identity.controller';
 import { PublicReportsController } from '../../reports/public-reports.controller';
-import { AuthController } from '../auth.controller';
 
 describe('parité des routes anonymes et publiques', () => {
   const legacyAnonymousHandlers = [
-    AuthController.prototype.login,
-    AuthController.prototype.refresh,
     HealthController.prototype.liveness,
     HealthController.prototype.readiness,
     MetricsController.prototype.metrics,
@@ -19,11 +16,6 @@ describe('parité des routes anonymes et publiques', () => {
 
   it.each(legacyAnonymousHandlers)('conserve le mode ANONYMOUS pour %p', (handler) => {
     expect(Reflect.getMetadata(AUTH_MODE_KEY, handler)).toBe(AuthMode.ANONYMOUS);
-  });
-
-  it('laisse les autres routes auth en mode INTERNAL par défaut', () => {
-    expect(Reflect.getMetadata(AUTH_MODE_KEY, AuthController.prototype.logout)).toBeUndefined();
-    expect(Reflect.getMetadata(AUTH_MODE_KEY, AuthController.prototype.changePassword)).toBeUndefined();
   });
 
   it.each([

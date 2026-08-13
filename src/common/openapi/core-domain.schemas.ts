@@ -6,7 +6,7 @@
  * Ce module contient les schémas JSON Schema pour Swagger UI décrivant les entités fondamentales :
  * 1. `Department` & `Category` : Départements télécom et catégories d'incidents.
  * 2. `User`, `CreatedUser`, `CurrentUser` : Modèles utilisateur avec rôles RBAC (7 rôles), départements et métriques.
- * 3. `TokenPair` & `LoginData` : Paires de jetons JWT (access_token, refresh_token) et payload de connexion.
+ * 3. `CurrentUser` : Profil métier de la session courante (jeton Keycloak).
  * 4. `SlaPolicy` : Règles d'échéance temporelle (première réponse et résolution en minutes).
  * 5. `Setting` : Paramètres système dynamiques enregistrés en base.
  * ============================================================================
@@ -124,21 +124,6 @@ export const CORE_DOMAIN_SCHEMAS: Record<string, SchemaObject> = {
       mustChangePassword: { type: 'boolean' },
       jti: uuid,
     },
-  },
-  TokenPair: {
-    type: 'object',
-    required: ['accessToken', 'refreshToken', 'expiresIn'],
-    properties: {
-      accessToken: { type: 'string' },
-      refreshToken: { type: 'string' },
-      expiresIn: { type: 'integer', minimum: 1 },
-    },
-  },
-  LoginData: {
-    allOf: [
-      { $ref: '#/components/schemas/TokenPair' },
-      { type: 'object', required: ['user'], properties: { user: { $ref: '#/components/schemas/User' } } },
-    ],
   },
   SlaPolicy: {
     type: 'object',

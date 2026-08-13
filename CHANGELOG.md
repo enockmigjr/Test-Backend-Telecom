@@ -84,7 +84,7 @@ Tous les changements notables sont documentés ici. Format basé sur [Keep a Cha
 
 - **Documentation complète** : Réécriture du README avec table des matières, tous les comptes de test (14 utilisateurs), instructions pas à pas, troubleshooting, et liens vers toutes les docs.
 - **Makefile amélioré** : Ajout de `test-all`, correction de `clean` pour Windows, descriptions complètes sur chaque commande.
-- **Frontend documenté** : README complet pour le frontend externe (`Test frontend Telecom`) avec architecture, comptes de test, troubleshooting.
+- **Frontend interne documenté** : architecture, comptes de test et troubleshooting du BFF Next.js (`frontend/`).
 - **CONTRIBUTING.md** : Guide de contribution pour les nouveaux développeurs.
 
 ### Fixed

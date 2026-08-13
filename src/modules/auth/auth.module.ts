@@ -14,7 +14,6 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 
 import { AuthController } from './auth.controller';
-import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { KeycloakJwksService } from './services/keycloak-jwks.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -22,7 +21,6 @@ import { RolesGuard } from './guards/roles.guard';
 import { PasswordChangeRequiredGuard } from './guards/password-change-required.guard';
 import { RequestAuthGuard } from './guards/request-auth.guard';
 import { JwtConfigService } from '../../config/jwt.config';
-import { RefreshSessionService } from './refresh-session.service';
 import { ExternalIdentityModule } from '../external-identity/external-identity.module';
 
 @Module({
@@ -39,8 +37,6 @@ import { ExternalIdentityModule } from '../external-identity/external-identity.m
   ],
   controllers: [AuthController],
   providers: [
-    AuthService,
-    RefreshSessionService,
     JwtStrategy,
     KeycloakJwksService,
     JwtAuthGuard,
@@ -49,7 +45,6 @@ import { ExternalIdentityModule } from '../external-identity/external-identity.m
     RolesGuard,
   ],
   exports: [
-    AuthService,
     JwtStrategy,
     KeycloakJwksService,
     JwtAuthGuard,

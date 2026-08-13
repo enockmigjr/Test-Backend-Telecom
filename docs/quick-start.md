@@ -93,16 +93,6 @@ curl -X POST http://localhost:3000/api/v1/auth/login \
 
 ## Avec le frontend (optionnel)
 
-### Frontend externe (SPA)
-
-```bash
-cd "../Test frontend Telecom"
-pnpm install
-cp .env.example .env.local
-pnpm dev -p 3007
-# → http://localhost:3007
-```
-
 ### Frontend embarqué (BFF)
 
 ```bash

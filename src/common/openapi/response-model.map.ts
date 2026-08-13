@@ -30,10 +30,7 @@ const action: ResponseModel = { kind: 'action' };
  * Table de correspondance exhaustive associant les 60+ routes des contrôleurs REST à leur schéma Swagger.
  */
 export const RELEASE_RESPONSE_MODELS: Readonly<Record<string, ResponseModel>> = {
-  AuthController_login: item('LoginData'),
-  AuthController_refresh: item('TokenPair'),
   AuthController_me: item('CurrentUser'),
-  AuthController_changePassword: action,
   TicketsController_search: page('TicketListItem'),
   TicketsController_create: item('Ticket'),
   TicketsController_findOne: item('Ticket'),
