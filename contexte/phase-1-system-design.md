@@ -13,6 +13,12 @@ id: bafyreigbwipt63shhljzox2v4cuqmkcrqapajzev5apuqdesuiwgw4ojpi
 
 # Phase 1 – System Design
 
+> **Mise à jour (13/08/2026)** : l'authentification est désormais **Keycloak SSO
+> unique** (OIDC PKCE côté BFF, jetons RS256 validés via JWKS). Les flux locaux
+> décrits ci-dessous (login mot de passe, rotation refresh, blacklist Redis JTI,
+> changement de mot de passe) ont été supprimés — voir le README et
+> `docs/architecture-flows.md` pour l'état actuel.
+
 ## 1. Introduction
 
 ### Objectif

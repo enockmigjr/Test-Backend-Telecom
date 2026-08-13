@@ -79,26 +79,15 @@
 ## Connexion rapide via cURL
 
 ```bash
-# Admin
-curl -X POST http://localhost:3000/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"admin@telecom.local","password":"Admin@1234"}'
-
-# Supervisor
-curl -X POST http://localhost:3000/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"supervisor@telecom.local","password":"Super@1234"}'
-
-# Agent
-curl -X POST http://localhost:3000/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"agent-cc1@telecom.local","password":"Agent@1234"}'
+# Les routes locales /api/v1/auth/login ont été supprimées : l'authentification
+# passe par Keycloak SSO. Se connecter sur http://localhost:3007 avec un compte
+# du realm telecom, puis réutiliser le jeton Keycloak (RS256) pour l'API.
 ```
 
 ## Utiliser le token
 
 ```bash
-# Récupérer le token depuis la réponse login
+# Récupérer le jeton depuis la session SSO (jeton d'accès Keycloak)
 TOKEN="eyJhbGciOiJI..."
 
 # Lister les tickets
@@ -126,7 +115,7 @@ curl -X POST http://localhost:3000/api/v1/tickets \
 
 | URL                                  | Service        | Identifiants        |
 | ------------------------------------ | -------------- | ------------------- |
-| `http://localhost:3000/api/v1`       | API REST       | Bearer token JWT    |
+| `http://localhost:3000/api/v1`       | API REST       | Bearer token Keycloak |
 | `http://localhost:3000/api/docs`     | Swagger UI     | Aucun               |
 | `http://localhost:3000/admin/queues` | BullBoard      | `admin`/`bullboard` |
 | `http://localhost:8025`              | Mailpit (mail) | Aucun               |
@@ -135,7 +124,7 @@ curl -X POST http://localhost:3000/api/v1/tickets \
 
 ---
 
-## SSO Keycloak (AUTH_PROVIDER=keycloak)
+## SSO Keycloak (fournisseur unique)
 
 Keycloak tourne sur **http://localhost:8081** (8080 est utilisé par PhotoVault). Le realm `telecom` est importé au premier démarrage ; `make keycloak-seed` crée les 105 comptes métier.
 

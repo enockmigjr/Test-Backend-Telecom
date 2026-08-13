@@ -4,6 +4,29 @@ Tous les changements notables sont documentés ici. Format basé sur [Keep a Cha
 
 ---
 
+## [2026-08-13] — Keycloak unique, ancien auth supprimé
+
+### Changed
+
+- **Keycloak = unique fournisseur d'authentification** : suppression des routes
+  locales `POST /api/v1/auth/login`, `/refresh`, `/logout`, `/logout-all` et
+  `PUT /change-password` (backend) et des formulaires/routes BFF correspondants
+  (frontend interne). `GET /auth/me` conservé (profil de session).
+- **Logout SSO réel** : la déconnexion passe par l'endpoint OIDC `end-session`
+  de Keycloak (l'`id_token` est conservé pendant toute la session) et revient
+  sur `/login` — fin de la reconnexion automatique.
+- **Déconnexion de toutes les sessions** : révocation via l'API admin Keycloak
+  (`POST /admin/realms/{realm}/users/{id}/logout`) + fin de session navigateur.
+- **Issuer Keycloak stable** : `KC_HOSTNAME=localhost` + `KC_HOSTNAME_PORT=8081`
+  (dev) — les refresh tokens émis côté navigateur restent valides lors des
+  refresh internes (plus de `Invalid token issuer` / 502).
+- **Console de compte Keycloak** : lien « Compte et mot de passe (Keycloak) »
+  dans le menu et les paramètres (`/realms/telecom/account/`).
+- **SPA « Test frontend Telecom » supprimée** (dépôt + références dans les docs).
+- Contrat OpenAPI régénéré : **115 chemins / 139 opérations**.
+
+---
+
 ## [Unreleased] — 2026-08-12
 
 ### Added

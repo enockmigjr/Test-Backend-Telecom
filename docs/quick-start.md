@@ -72,10 +72,9 @@ pnpm run start:dev
 curl http://localhost:3000/api/v1/health/ready
 # → { "status": "ok", ... }
 
-# Se connecter en tant qu'admin
-curl -X POST http://localhost:3000/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"admin@telecom.local","password":"Admin@1234"}'
+# L'authentification passe par Keycloak SSO (frontend interne) :
+# ouvrir http://localhost:3007 puis se connecter avec un compte du realm telecom
+# (ex. admin@telecom.local / Admin@1234). L'API accepte les jetons Keycloak (RS256).
 ```
 
 ---
@@ -84,7 +83,7 @@ curl -X POST http://localhost:3000/api/v1/auth/login \
 
 | Service   | URL                                  | Identifiants        |
 | --------- | ------------------------------------ | ------------------- |
-| API REST  | `http://localhost:3000/api/v1`       | Bearer JWT          |
+| API REST  | `http://localhost:3000/api/v1`       | Bearer Keycloak (RS256) |
 | Swagger   | `http://localhost:3000/api/docs`     | Aucun               |
 | BullBoard | `http://localhost:3000/admin/queues` | `admin`/`bullboard` |
 | Mailpit   | `http://localhost:8025`              | Aucun               |

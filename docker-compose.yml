@@ -75,6 +75,14 @@ services:
       KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin}
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-Admin@1234}
       KC_HTTP_RELATIVE_PATH: /
+      # Issuer stable = URL publique http://localhost:8081 : les tokens émis côté
+      # navigateur restent valides lors des refresh internes (keycloak:8080).
+      # Sans KC_HOSTNAME, Keycloak déduit l'issuer de l'hôte de chaque requête et
+      # rejette les refresh tokens émis côté navigateur (invalid issuer).
+      KC_HOSTNAME: ${KEYCLOAK_HOSTNAME:-localhost}
+      KC_HOSTNAME_PORT: '8081'
+      KC_HOSTNAME_STRICT: 'false'
+      KC_HOSTNAME_STRICT_HTTPS: 'false'
       # Parité dev/prod : Keycloak utilise PostgreSQL (base `keycloak`).
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
@@ -218,6 +226,9 @@ services:
       PUBLIC_APP_ORIGIN: ${PUBLIC_APP_ORIGIN:-http://localhost:3007}
       AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-false}
       AUTH_CSRF_SECRET: ${AUTH_CSRF_SECRET:-local-compose-csrf-secret-change-before-production}
+      # Compte admin Keycloak pour révoquer toutes les sessions (API admin REST).
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-Admin@1234}
     expose:
       - '3000'
     volumes:

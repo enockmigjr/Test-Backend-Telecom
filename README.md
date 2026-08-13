@@ -155,23 +155,28 @@ pnpm run test:all
 | `field1@telecom.local` | Emma Moreau | FIELD_TECHNICIAN | Field Operations | `Agent@1234` |
 | `field2@telecom.local` | Kevin Blanc | FIELD_TECHNICIAN | Field Operations | `Agent@1234` |
 
-### Exemple de connexion via cURL
+### Authentification — Keycloak SSO (unique)
+
+Keycloak est l'**unique fournisseur d'authentification** (frontend et API). Les anciennes
+routes locales `POST /api/v1/auth/login`, `refresh`, `logout`, `logout-all` et
+`PUT /change-password` ont été supprimées. La connexion se fait via le SSO du
+frontend interne (`http://localhost:3007`) ; l'API accepte les jetons Keycloak
+(RS256, vérifiés via JWKS) :
 
 ```bash
-# Se connecter en tant qu'admin
-curl -X POST http://localhost:3000/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"admin@telecom.local","password":"Admin@1234"}'
-
-# Réponse :
-# { "success": true, "data": { "accessToken": "...", "refreshToken": "...", "user": {...} } }
-
-# Utiliser le token pour les requêtes authentifiées
+# Le jeton s'obtient via le flux OIDC (connexion SSO sur http://localhost:3007).
+# Exemple d'appel API authentifié avec le jeton Keycloak :
 curl http://localhost:3000/api/v1/users \
-  -H "Authorization: Bearer <accessToken>"
+  -H "Authorization: Bearer <accessToken Keycloak>"
 ```
 
-### Comptes SSO Keycloak (après bascule `AUTH_PROVIDER=keycloak`)
+La déconnexion termine la session SSO Keycloak ; « Déconnecter toutes les
+sessions » révoque en plus toutes les sessions de l'utilisateur via l'API admin
+Keycloak. Le mot de passe et les sessions se gèrent dans la console de compte :
+`http://localhost:8081/realms/telecom/account/` (lien « Compte et mot de passe »
+dans le menu).
+
+### Comptes SSO Keycloak
 
 > Keycloak tourne sur **http://localhost:8081**
 > Lancer `node keycloak/seed-users.mjs` (ou `make keycloak-seed`) pour créer les 105 comptes.
@@ -189,7 +194,7 @@ Le formulaire de login est thématisé (Keycloakify v11) : `http://localhost:808
 
 | URL                                  | Service        | Identifiants         |
 | ------------------------------------ | -------------- | -------------------- |
-| `http://localhost:3000/api/v1`       | API REST       | Bearer token JWT     |
+| `http://localhost:3000/api/v1`       | API REST       | Bearer token Keycloak (RS256) |
 | `http://localhost:3000/api/docs`     | Swagger        | Aucun                |
 | `http://localhost:3000/admin/queues` | BullBoard      | `admin`/`bullboard`  |
 | `http://localhost:8025`              | Mailpit (mail) | Aucun                |
@@ -203,7 +208,7 @@ Le formulaire de login est thématisé (Keycloakify v11) : `http://localhost:808
 ## 🏗️ Architecture
 
 ```
-25 modules NestJS · 31 tables PostgreSQL · 144 opérations OpenAPI · 8 workers BullMQ · 8 queues
+25 modules NestJS · 31 tables PostgreSQL · 139 opérations OpenAPI · 8 workers BullMQ · 8 queues
 ```
 
 ### Schéma Entité-Relation (ERD Simplifié)
@@ -233,8 +238,8 @@ flowchart LR
 
 | Module           | Responsabilité                                                                               |
 | ---------------- | -------------------------------------------------------------------------------------------- |
-| `auth`           | JWT (access 15min + refresh 7j rotation), Argon2id, Redis JTI blacklist                      |
-| `users`          | CRUD 7 rôles, activation/désactivation, mot de passe temporaire                              |
+| `auth`           | Keycloak SSO (RS256/JWKS), profil de session `GET /auth/me`                                 |
+| `users`          | CRUD 7 rôles, activation/désactivation, disponibilité/absence (profil métier lié au SSO)    |
 | `departments`    | 6 départements, soft delete                                                                  |
 | `categories`     | Catégories de tickets avec `targetRole` dynamique pour auto-assignation                      |
 | `tickets`        | State machine 9 statuts + 2 pending, ownership-based RBAC, INC-AAAA-NNNNNN, auto-clôture 48h |
@@ -295,7 +300,7 @@ SlaEngineService (@Cron */5 min)
 
 ## 🛡️ Sécurité
 
-- **Auth**: JWT access + refresh rotation SHA-256, Argon2id (memory 64MB, time 3, parallelism 4)
+- **Auth**: Keycloak SSO unique (OIDC PKCE, jetons RS256 validés via JWKS), cookies HttpOnly côté BFF
 - **RBAC**: 7 rôles, `JwtAuthGuard` + `RolesGuard` + `@Roles()`
 - **ABAC**: Cloisonnement départemental (agents/superviseurs voient uniquement leur département)
 - **Rate Limiting**: Redis distribué (défauts 1000 req/15min, 20 login/heure/IP)
@@ -380,7 +385,7 @@ pnpm dev
 ```
 
 - **Tech**: Next.js 16, React 19, TanStack Query, shadcn/ui, Socket.IO
-- **Auth**: Cookies HttpOnly (pas de localStorage)
+- **Auth**: SSO Keycloak (OIDC PKCE), cookies HttpOnly (pas de localStorage), CSRF synchronizer
 - **Port**: `http://localhost:3007` (par défaut — 3001 est réservé à Grafana)
 
 ### 2. Portail public + widget (`public-frontend/`)
@@ -506,7 +511,7 @@ pnpm run start:dev
 | [CHANGELOG.md](CHANGELOG.md)                                                     | Historique complet des versions (v1.0.0 → 2026-08-12) |
 | [CONTRIBUTING.md](CONTRIBUTING.md)                                               | Guide de contribution                             |
 | [docs/quick-start.md](docs/quick-start.md)                                       | Guide de démarrage rapide (5 min)                 |
-| [docs/routes.md](docs/routes.md)                                                 | Catalogue complet des 144 opérations API (généré depuis OpenAPI) |
+| [docs/routes.md](docs/routes.md)                                                 | Catalogue complet des 139 opérations API (généré depuis OpenAPI) |
 | [docs/architecture-flows.md](docs/architecture-flows.md)                         | 10 diagrammes Mermaid                             |
 | [docs/database-schema.md](docs/database-schema.md)                               | Schéma de base de données (31 tables)             |
 | [docs/ticket-lifecycle.md](docs/ticket-lifecycle.md)                             | Machine à états des tickets (9 statuts)           |

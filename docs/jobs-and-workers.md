@@ -42,7 +42,7 @@ Tous les workers sont enregistrés dans `src/queues/queues.module.ts` (module gl
 | Chaque seconde | Publication de l'outbox vers les files (attachment-scan / external-delivery) | `src/modules/outbox/services/outbox-publisher.service.ts` |
 | Chaque minute | Rejeu des livraisons externes échouées (fenêtre 7 jours) | `src/modules/external-delivery/services/external-delivery.service.ts` |
 | Lundi 06:00 | Rapport hebdomadaire PDF + email au premier administrateur actif | `src/modules/reports/report-scheduler.service.ts` |
-| Tous les jours 03:00 | Purge des refresh tokens expirés / révoqués > 30 j | `src/common/services/token-cleanup.service.ts` |
+| Tous les jours 03:00 | Purge des refresh tokens locaux expirés (hérité — inactif avec Keycloak SSO) | `src/common/services/token-cleanup.service.ts` |
 | Tous les jours 04:00 | Rétention : anonymisation des demandeurs inactifs, purge challenges OTP et idempotences | `src/modules/external-requesters/services/retention-cleanup.service.ts` |
 
 ## Flux de traitement

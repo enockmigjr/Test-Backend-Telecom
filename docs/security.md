@@ -10,35 +10,26 @@ Ce document décrit les mesures de sécurité implémentées dans le backend.
 
 ### JWT (JSON Web Tokens)
 
-| Token         | Durée de vie | Stockage serveur          | Rotation         |
-| ------------- | ------------ | ------------------------- | ---------------- |
-| Access Token  | 15 minutes   | N/A (stateless)           | À chaque refresh |
-| Refresh Token | 7 jours      | PostgreSQL (hash SHA-256) | À chaque refresh |
+### Keycloak SSO (unique depuis le 13/08/2026)
 
-**Argon2id** pour le hachage des mots de passe :
+Keycloak est l'**unique fournisseur d'authentification** (OIDC avec PKCE côté BFF).
+Les anciennes routes locales (`/auth/login`, `/auth/refresh`, `/auth/logout`,
+`/auth/logout-all`, `/auth/change-password`) ont été supprimées.
 
-- memory: 64 MB
-- time: 3 itérations
-- parallelism: 4 threads
+| Jeton | Durée (realm telecom) | Validation |
+| --- | --- | --- |
+| Access Token | 15 min | Signature RS256 via JWKS Keycloak |
+| Refresh Token | 7 j (session SSO) | Keycloak (grant `refresh_token`) |
+| ID Token | 5 min | Conservé (HttpOnly) pour le logout OIDC (`id_token_hint`) |
 
-### Rotation des Refresh Tokens
-
-Chaque `POST /auth/refresh` :
-
-1. Vérifie le refresh token en base (hash SHA-256)
-2. Vérifie la correspondance IP + User-Agent
-3. Révoque l'ancien refresh token
-4. Émet un nouveau couple (access + refresh)
-5. Blacklist le JTI de l'ancien access token dans Redis
-
-### Révocation individuelle
-
-- `POST /auth/logout` : révoque le refresh token courant
-- `POST /auth/logout-all` : révoque tous les refresh tokens de l'utilisateur
-
-### Nettoyage automatique
-
-- Cron quotidien à 3h : supprime les refresh tokens expirés et révoqués depuis plus de 30 jours
+- **Logout** : endpoint OIDC `end-session` → retour sur `/login`, plus de session
+  SSO résiduelle (l'`id_token` est conservé pendant toute la session).
+- **Logout de toutes les sessions** : révoque les sessions de l'utilisateur via
+  l'API admin Keycloak (`POST /admin/realms/{realm}/users/{id}/logout`).
+- **Mot de passe** : géré dans la console de compte Keycloak
+  (`http://localhost:8081/realms/telecom/account/`), pas dans l'application.
+- Le profil métier (rôle, département, disponibilité) est lié au sujet Keycloak
+  (`users.keycloakSubjectId`) et sert le RBAC/ABAC applicatif.
 
 ---
 
@@ -48,7 +39,7 @@ Le guard global `RequestAuthGuard` aiguille chaque route vers un mode explicite 
 
 | Mode | Mécanisme | Routes |
 | --- | --- | --- |
-| `INTERNAL` | JWT Bearer (access token, blacklist Redis, rotation refresh) | ticketing interne, users, dashboard, reports… |
+| `INTERNAL` | Jeton Keycloak Bearer (RS256/JWKS), profil métier lié par `keycloakSubjectId` | ticketing interne, users, dashboard, reports… |
 | `PUBLIC_SESSION` | JWT de session publique (issuer/audience distincts, appareil de confiance actif) | portail public, widget, bot, knowledge |
 | `INTEGRATION_ASSERTION` | Assertion signée serveur→serveur (WordPress), usage unique (nonce Redis), origine exacte | échange d'assertion |
 | `ANONYMOUS` | Aucun | login, health, metrics, config publique, soumission de satisfaction |
@@ -92,7 +83,7 @@ Distribué via Redis (ThrottlerStorageRedisService) :
 | Route                | Limite        | Fenêtre    |
 | -------------------- | ------------- | ---------- |
 | Général (défaut)     | 1000 requêtes | 15 minutes |
-| Routes sensibles (défaut, ex. `POST /auth/login`) | 20 tentatives | 1 heure/IP |
+| Routes sensibles (défaut, ex. login SSO, OTP, assertions) | 20 tentatives | 1 heure/IP |
 
 Les valeurs sont configurables via `THROTTLE_TTL` / `THROTTLE_LIMIT` / `THROTTLE_AUTH_TTL` / `THROTTLE_AUTH_LIMIT`. Le stockage Redis est distribué avec repli mémoire en cas de panne Redis.
 
@@ -202,8 +193,9 @@ Obligatoirement changer :
 
 | Variable                 | Exigence                   |
 | ------------------------ | -------------------------- |
-| `JWT_ACCESS_SECRET`      | ≥ 32 caractères aléatoires |
-| `JWT_REFRESH_SECRET`     | ≥ 32 caractères aléatoires |
+| `KEYCLOAK_ADMIN_PASSWORD`| Mot de passe admin Keycloak fort |
+| `KEYCLOAK_HOSTNAME`      | Domaine public de Keycloak (ex. `auth.example.com`) |
+| `AUTH_CSRF_SECRET`       | ≥ 32 caractères aléatoires |
 | `DATABASE_PASSWORD`      | Mot de passe fort          |
 | `REDIS_PASSWORD`         | Mot de passe fort          |
 | `SMTP_USER/PASSWORD`     | Credentials SMTP réels     |

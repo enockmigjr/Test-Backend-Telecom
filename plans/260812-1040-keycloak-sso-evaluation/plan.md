@@ -4,6 +4,10 @@
 
 - État : cadrage validé (11 points + 5 arbitrages utilisateur : couleur Keycloakify #172033/#1d4ed8, option B réponse au demandeur, pause agents 3 niveaux avec absence prolongée admin/superviseur, satisfaction, score 40/30/20/10).
 - **Livrées et poussées** : correctifs bloquants (commentaires 500, modals, responsivité), stats support public, performance agents (endpoint + page + score), Mon activité (dashboard agent), onglets Interne/Support public, pause/reprise/absence agents (backend + UI), réponse explicite au demandeur (option B), seuil absence prolongée configurable, fix processeur SLA (relances email vérifiées live), Makefile de base, pondérations de charge admin.
+- **Phase 7 (Keycloak) livrée le 13/08/2026** : SSO unique actif (OIDC PKCE,
+  RS256/JWKS), ancien auth local supprimé (backend + frontend), logout SSO réel,
+  logout toutes-sessions via API admin, console de compte Keycloak, issuer
+  stable (`KC_HOSTNAME`), SPA « Test frontend Telecom » supprimée, docs .md à jour.
 - **En cours** : phase 5b (satisfaction). **Restantes** : 6 (déploiement prod), 7 (Keycloak SSO + Keycloakify), 8 (config admin étendue).
 - Décisions utilisateur actées : SSO frontend interne uniquement ; suppression du login local (pas de fallback) ; Keycloak unique source d'identité, le système ne garde que le profil métier ; Keycloak en conteneur docker-compose ; thème Keycloakify aux couleurs réelles de l'app ; comptes existants supprimés et repartis de zéro avec un seed complet.
 - Design source : `contexte/phase-1-system-design.md`, `contexte/phase-3-api-design-and-implementation-strategy.md`, `plans/260730-1350-trouble-ticket-public-multicanal/plan.md`, `docs/architecture/public-support-contracts.md`.

@@ -4,7 +4,7 @@
 
 | Type             | Nombre (fichiers)                          | Emplacement          | Commande             |
 | ---------------- | ------------------------------------------- | -------------------- | -------------------- |
-| Unitaires        | 92 `*.spec.ts` (628 tests / 92 suites vérifiés le 12/08/2026) | `src/**/*.spec.ts`   | `pnpm run test:unit` |
+| Unitaires        | 90 `*.spec.ts` (585 tests / 90 suites vérifiés le 13/08/2026) | `src/**/*.spec.ts`   | `pnpm run test:unit` |
 | End-to-End (E2E) | 24 fichiers (E2E + intégration)            | `test/*.e2e-spec.ts`, `test/integration/*` | `pnpm run test:e2e` / `pnpm run test:integration` |
 | **Total**        | 116 fichiers de tests (92 spec + 24 E2E/intégration) | — | `pnpm run test:all` |
 
@@ -121,16 +121,9 @@ describe('AuthController (e2e)', () => {
     await app.close();
   });
 
-  describe('POST /auth/login', () => {
-    it('should return tokens on valid credentials', () => {
-      return request(app.getHttpServer())
-        .post('/api/v1/auth/login')
-        .send({ email: 'admin@telecom.local', password: 'Admin@1234' })
-        .expect(201)
-        .expect((res) => {
-          expect(res.body.success).toBe(true);
-          expect(res.body.data.accessToken).toBeDefined();
-        });
+  describe('GET /auth/me', () => {
+    it('should reject anonymous requests', () => {
+      return request(app.getHttpServer()).get('/api/v1/auth/me').expect(401);
     });
   });
 });

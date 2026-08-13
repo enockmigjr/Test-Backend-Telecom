@@ -24,43 +24,41 @@ stateDiagram-v2
     CANCELLED --> [*]
 ```
 
-## 2. Flux d'Authentification JWT avec Rotation
+## 2. Flux d'Authentification Keycloak (SSO unique)
 
 ```mermaid
 sequenceDiagram
     participant Client
+    participant BFF as Frontend BFF (Next.js)
+    participant Keycloak
     participant API
-    participant PostgreSQL
-    participant Redis
 
-    Client->>API: POST /auth/login {email, password}
-    API->>PostgreSQL: SELECT user WHERE email
-    PostgreSQL-->>API: user (+ password_hash)
-    API->>API: Argon2.verify(password, hash)
-    alt Identifiants valides
-        API->>API: Générer accessToken (JWT, 15min)
-        API->>API: Générer refreshToken (random 48 bytes)
-        API->>PostgreSQL: INSERT refresh_tokens (hashé SHA-256)
-        API-->>Client: {accessToken, refreshToken, user}
-    else Identifiants invalides
-        API-->>Client: 401 Unauthorized
-    end
+    Client->>BFF: GET /api/auth/keycloak/login
+    BFF-->>Client: 302 vers authorize (PKCE, state)
+    Client->>Keycloak: Page de login (thème Keycloakify)
+    Client->>Keycloak: Credentials SSO
+    Keycloak-->>Client: 302 callback?code=...
+    Client->>BFF: GET /api/auth/keycloak/callback?code=
+    BFF->>Keycloak: Échange code + PKCE verifier
+    Keycloak-->>BFF: access_token + refresh_token + id_token
+    BFF-->>Client: Cookies HttpOnly (session) + 302 /dashboard
+    Client->>API: Requêtes /api/v1/* (Bearer access token Keycloak)
+    API->>API: Validation RS256 via JWKS + profil métier (keycloakSubjectId)
 
-    Note over Client,Redis: Rafraîchissement (Sans Rotation du Refresh Token)
+    Note over Client,Keycloak: Refresh (automatique, BFF)
+    BFF->>Keycloak: grant_type=refresh_token
+    Keycloak-->>BFF: Nouveau couple de jetons
 
-    Client->>API: POST /auth/refresh {refreshToken}
-    API->>PostgreSQL: SELECT refresh_token WHERE hash AND valid
-    PostgreSQL-->>API: token_valid_status
-    API->>API: Générer nouveau accessToken (JWT, 15min)
-    API->>Redis: SADD jwt_blacklist (jti de l'ancien access token)
-    API-->>Client: {accessToken, refreshToken (ancien)}
+    Note over Client,Keycloak: Déconnexion (SSO)
+    Client->>BFF: GET /api/auth/keycloak/logout
+    BFF->>Keycloak: end-session (id_token_hint)
+    Keycloak-->>Client: 302 vers /login
 
-    Note over Client,Redis: Déconnexion
-
-    Client->>API: POST /auth/logout {refreshToken}
-    API->>PostgreSQL: UPDATE revoked_at (Invalider le refresh token)
-    API->>Redis: SADD jwt_blacklist (jti access token courant)
-    API-->>Client: 204 No Content
+    Note over Client,Keycloak: Déconnexion toutes les sessions
+    Client->>BFF: GET /api/auth/keycloak/logout-all
+    BFF->>Keycloak: API admin — POST /admin/realms/{realm}/users/{id}/logout
+    BFF->>Keycloak: end-session (session navigateur courante)
+    Keycloak-->>Client: 302 vers /login
 ```
 
 ## 3. Pipeline Requête HTTP (Request Lifecycle)
@@ -288,7 +286,7 @@ flowchart TB
 flowchart TD
     Request[Requête HTTP] --> JWTGuard{JwtAuthGuard}
     JWTGuard -->|Token absent/invalide| Reject1[401 Unauthorized]
-    JWTGuard -->|Token valide| RedisCheck{JTI dans<br/>blacklist Redis?}
+    JWTGuard -->|Token Keycloak valide<br/>RS256/JWKS| RedisCheck{JTI dans<br/>blacklist Redis?*}
     RedisCheck -->|Oui| Reject2[401 Token révoqué]
     RedisCheck -->|Non| UserCheck{Utilisateur<br/>existe + actif?}
     UserCheck -->|Non| Reject3[401 Désactivé]
@@ -301,6 +299,9 @@ flowchart TD
 
     Pass --> Controller[Controller]
 ```
+*La blacklist Redis JTI concerne les jetons applicatifs hérités ; les jetons
+Keycloak sont validés par signature RS256 (JWKS) et profil métier
+(`keycloakSubjectId`) — le rôle provient du realm Keycloak (`realm_access`).
 
 ## 9. Cache Redis — Stratégie Cache-Aside
 

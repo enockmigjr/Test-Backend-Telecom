@@ -10,6 +10,12 @@ id: bafyreie3fnspg2n26xozggzfnfubxyr3cf24hf4tckxyjwq6hrow23tjiq
 
 # Phase 2 – Database Design
 
+> **Mise à jour (13/08/2026)** : avec Keycloak comme unique fournisseur
+> d'authentification, les tables de refresh tokens locaux ne sont plus alimentées
+> (les sessions Keycloak vivent dans la base Keycloak). La table `users` et le
+> champ `keycloakSubjectId` restent la source du profil métier (département, rôle,
+> disponibilité).
+
 # 1. Introduction
 
 ## Objectif

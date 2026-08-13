@@ -10,6 +10,11 @@ id: bafyreidpm32w63ipwnutufcxtsiekyebtfuzkv4bjvrtqp3kaqgjbmmxtm
 
 # Phase 3 – API Design & Implementation Strategy
 
+> **Mise à jour (13/08/2026)** : les routes d'authentification locale
+> (`login`, `refresh`, `logout`, `logout-all`, `change-password`) ont été
+> **supprimées** — Keycloak gère l'authentification de bout en bout. Le catalogue
+> ci-dessous a été actualisé ; l'OpenAPI exporté (139 opérations) fait foi.
+
 # 1. Introduction
 
 Cette phase décrit la stratégie d'implémentation du backend de la plateforme de gestion d'incidents télécoms.  
@@ -39,8 +44,6 @@ Toutes les routes sont versionnées.
 Exemples :
 
 ```
-/api/v1/auth/login
-
 /api/v1/users
 
 /api/v1/tickets
@@ -201,36 +204,23 @@ Nouveau couple de tokens
 ### Login
 
 ```
-POST /api/v1/auth/login — Public. Body : { email, password }. Vérifie les identifiants et crée une session. Réponse : { accessToken, refreshToken, user: { id, email, role, department } }. Erreurs : 401 (identifiants invalides), 403 (compte désactivé), 429 (trop de tentatives).
-
-
-```
-
-Request :
-
-```
-{
-  "email": "agent@telecom.com",
-  "password": "********"
-}
-
-
+SUPPRIMÉ (13/08/2026) — Keycloak est l'unique fournisseur d'authentification :
+la connexion passe par le SSO OIDC (frontend interne), plus de login local.
 ```
 
 ### Refresh
 
 ```
-POST /api/v1/auth/refresh — Public. Body : { refreshToken }. Effectue une rotation du refresh token. Réponse : { accessToken, refreshToken }. Erreurs : 401 (token expiré, invalide ou révoqué).
-
-
+SUPPRIMÉ (13/08/2026) — Le refresh est géré par Keycloak (grant_type=refresh_token)
+depuis le BFF ; l'endpoint local n'existe plus.
 ```
 
 ### Logout
 
 ```
-POST /api/v1/auth/logout — Authentifié. Body : { refreshToken }. Révoque le refresh token fourni en DB et place le JTI de l'access token courant dans la blacklist individuelle Redis (clé `jwt_bl:{jti}`) avec un TTL calculé sur sa date d'expiration. Réponse : 204 No Content. Erreurs : 401 si non authentifié.
-
-POST /api/v1/auth/logout-all — Authentifié. Révoque toutes les sessions actives (refresh tokens) de l'utilisateur. Réponse : 204 No Content.
+SUPPRIMÉ (13/08/2026) — La déconnexion termine la session SSO Keycloak
+(endpoint OIDC end-session) ; « toutes les sessions » révoque les sessions
+utilisateur via l'API admin Keycloak.
 ```
 
 ### Me
@@ -243,9 +233,8 @@ GET /api/v1/users/me (profil de l'utilisateur connecté). Réponse : 200 OK. Err
 ### Change Password
 
 ```
-PUT /api/v1/auth/change-password — Authentifié. Body : { currentPassword, newPassword }. Modifie le mot de passe de l'utilisateur connecté. Réponse : 200 OK. Erreurs : 400 (mot de passe invalide), 401 (mot de passe actuel incorrect).
-
-
+SUPPRIMÉ (13/08/2026) — Le mot de passe se change dans la console de compte
+Keycloak : http://localhost:8081/realms/telecom/account/
 ```
 
 ---

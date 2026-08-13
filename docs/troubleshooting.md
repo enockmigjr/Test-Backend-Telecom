@@ -56,9 +56,19 @@ docker compose exec redis redis-cli PING
 
 ### Erreur 401 Unauthorized
 
-- Vérifier que le token est valide et non expiré (durée de vie : 15 min)
-- Utiliser `POST /auth/refresh` pour obtenir un nouveau token
+- Vérifier que le jeton Keycloak est valide et non expiré (15 min) ; le BFF
+  le rafraîchit automatiquement (grant `refresh_token` vers Keycloak)
 - Vérifier le header : `Authorization: Bearer <token>` (avec espace après Bearer)
+- Si la session reste cassée, se reconnecter via le SSO
+  (http://localhost:3007) — l'ancienne route locale `POST /auth/refresh` n'existe plus
+
+### Session SSO expirée / « Session momentanément indisponible » (502)
+
+1. Se reconnecter via le SSO sur http://localhost:3007 (ou navigation privée)
+2. Vérifier que `KC_HOSTNAME` de Keycloak correspond à l'URL publique
+   (`localhost:8081` en dev) : un issuer incohérent fait rejeter les refresh
+   tokens (« Invalid token issuer » dans les logs Keycloak)
+3. Vérifier la console Keycloak : http://localhost:8081/admin (realm → Sessions)
 
 ### Erreur 429 Too Many Requests (Rate Limiting)
 
@@ -71,7 +81,8 @@ docker compose exec redis redis-cli FLUSHALL
 
 1. Vérifier que le seed a été exécuté : `pnpm run db:seed`
 2. Vérifier l'email exact (sensible à la casse du domaine)
-3. Vérifier le mot de passe (voir README pour la liste complète)
+3. Vérifier le mot de passe (voir README pour la liste complète) ; le mot de
+   passe se réinitialise dans Keycloak (console de compte ou admin)
 4. Vérifier que l'utilisateur n'est pas désactivé (`is_active = true`)
 
 ---

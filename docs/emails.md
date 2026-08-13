@@ -62,15 +62,15 @@ Avec BullMQ, la requête HTTP retourne immédiatement et l'email est envoyé en 
 - `ticket-deassigned.hbs` — Notification désassignation d'urgence (rouge)
 - `sla-breach.hbs` — Alerte critique (rouge)
 - `sla-warning.hbs` — Avertissement (orange)
-- `account-created.hbs` — Bienvenue + mot de passe temporaire
-- `password-changed.hbs` — Confirmation changement
+- `account-created.hbs` — Bienvenue (profil métier créé ; le mot de passe est géré par Keycloak)
+- `password-changed.hbs` — Confirmation changement (envoyé par Keycloak pour le SSO)
 - `ticket-report.hbs` — E-mail de notification de rapport de ticket avec lien de téléchargement sécurisé
 - `sla-report.hbs` — E-mail de notification de rapport SLA global avec lien de téléchargement sécurisé
 - `admin-weekly-report.hbs` — Rapport hebdomadaire avec stats et lien de téléchargement sécurisé
 - `report-failed.hbs` — Échec de génération de rapport
 - `otp.hbs` — Code de vérification du support public
 - `public-support-event.hbs` — Événements support public (email sortant par canal)
-- `reset-password.hbs` — Réinitialisation de mot de passe (réservé)
+- `reset-password.hbs` — Réinitialisation de mot de passe (réservé ; le SSO utilise le flux Keycloak)
 
 Tous les templates s'abonnent dynamiquement au layout parent `base.hbs` pour un design unifié et cohérent.
 

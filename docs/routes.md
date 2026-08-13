@@ -1,6 +1,6 @@
 ﻿# Catalogue Complet des Routes API
 
-**Source** : `openapi.json` (généré par `pnpm run openapi:export`) — contrat réel vérifié : **120 chemins / 144 opérations** (dont 33 opérations publiques dans `openapi.public.json`).
+**Source** : `openapi.json` (généré par `pnpm run openapi:export`) — contrat réel vérifié : **115 chemins / 139 opérations** (dont 33 opérations publiques dans `openapi.public.json`).
 **Base URL** : `http://localhost:${API_PORT:-3000}/${API_PREFIX:-api/v1}`
 **Documentation interactive** : `http://localhost:${API_PORT:-3000}/api/docs`
 
@@ -42,7 +42,7 @@
 | Support public - satisfaction | 1 |
 | Tickets - satisfaction | 1 |
 
-**Total : 144 opérations sur 120 chemins.**
+**Total : 139 opérations sur 115 chemins.**
 
 ## attachments
 
@@ -65,12 +65,7 @@
 
 | Méthode | Route | Description | Auth |
 | --- | --- | --- | --- |
-| `PUT` | `/auth/change-password` | Changer le mot de passe | Bearer JWT |
-| `POST` | `/auth/login` | Connexion utilisateur | Public |
-| `POST` | `/auth/logout` | Déconnexion (révoque le refresh token + blackliste l'access token) | Bearer JWT |
-| `POST` | `/auth/logout-all` | Déconnexion de toutes les sessions actives | Bearer JWT |
 | `GET` | `/auth/me` | Profil de l'utilisateur connecté | Bearer JWT |
-| `POST` | `/auth/refresh` | Rafraîchir la paire de tokens (rotation) | Public |
 
 ## categories
 
