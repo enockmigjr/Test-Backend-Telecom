@@ -458,11 +458,41 @@ export class DashboardService {
             .groupBy(tickets.assignedTo)
         : [];
     const reopenedByAgent = new Map(reopenedRows.map((row) => [row.agentId, Number(row.reopenedCount)]));
+    // Un agent peut apparaître sur plusieurs lignes si ses tickets sont répartis
+    // sur plusieurs équipes (groupBy departments.name) : on fusionne par agent.
+    const mergedRows: typeof rows = [];
+    const byAgent = new Map<string, (typeof rows)[number]>();
+    const countFields = [
+      'openTicketsCount',
+      'criticalTicketsCount',
+      'overdueTicketsCount',
+      'atRiskTicketsCount',
+      'resolvedInPeriod',
+      'closedInPeriod',
+      'slaBreachedCount',
+      'firstResponseCompliant',
+      'firstResponseCount',
+    ] as const;
+    for (const row of rows) {
+      const key = row.agentId ?? '';
+      const existing = key ? byAgent.get(key) : undefined;
+      if (!existing) {
+        byAgent.set(key, { ...row });
+        mergedRows.push(row);
+        continue;
+      }
+      for (const field of countFields) {
+        existing[field] = Number(existing[field] || 0) + Number(row[field] || 0);
+      }
+      if (row.lastActivityAt && (!existing.lastActivityAt || row.lastActivityAt > existing.lastActivityAt)) {
+        existing.lastActivityAt = row.lastActivityAt;
+      }
+    }
 
     return {
       generatedAt: now.toISOString(),
       period: { from: fromDate.toISOString(), to: toDate.toISOString() },
-      data: rows.map((row) => {
+      data: mergedRows.map((row) => {
         const agentId = row.agentId;
         const resolved = Number(row.resolvedInPeriod || 0);
         const firstResponseCount = Number(row.firstResponseCount || 0);
@@ -515,16 +545,21 @@ export class DashboardService {
     const where = and(isNull(tickets.deletedAt), eq(tickets.assignedTo, currentUser.sub));
     const durationMinutes = sql<number>`EXTRACT(EPOCH FROM (${tickets.resolvedAt} - ${tickets.createdAt})) / 60`;
 
-    const [[stats], [profile]] = await Promise.all([
+    const [[stats], [profile], reopenedRows] = await Promise.all([
       this.drizzle.db
         .select({
+          totalAssigned: sql<number>`COUNT(*)`,
           openTicketsCount: sql<number>`COUNT(*) FILTER (WHERE ${openStatus})`,
           criticalTicketsCount: sql<number>`COUNT(*) FILTER (WHERE ${openStatus} AND ${tickets.priority} = 'CRITICAL')`,
           overdueTicketsCount: sql<number>`COUNT(*) FILTER (WHERE ${openStatus} AND ${tickets.resolutionDueAt} < ${now.toISOString()})`,
           atRiskTicketsCount: sql<number>`COUNT(*) FILTER (WHERE ${openStatus} AND ${tickets.resolutionDueAt} <= ${new Date(now.getTime() + 30 * 60 * 1000).toISOString()})`,
           resolvedThisMonth: sql<number>`COUNT(*) FILTER (WHERE ${tickets.resolvedAt} >= ${monthStart.toISOString()})`,
+          closedThisMonth: sql<number>`COUNT(*) FILTER (WHERE ${tickets.closedAt} >= ${monthStart.toISOString()})`,
           slaBreachedCount: sql<number>`COUNT(*) FILTER (WHERE ${tickets.slaBreached} = true)`,
+          firstResponseCount: sql<number>`COUNT(*) FILTER (WHERE ${tickets.firstResponseAt} IS NOT NULL)`,
+          firstResponseCompliant: sql<number>`COUNT(*) FILTER (WHERE ${tickets.firstResponseAt} IS NOT NULL AND ${tickets.firstResponseAt} <= ${tickets.firstResponseDueAt})`,
           avgResolutionMinutes: sql<number>`COALESCE(AVG(${durationMinutes}) FILTER (WHERE ${tickets.resolvedAt} >= ${monthStart.toISOString()}), 0)`,
+          medianResolutionMinutes: sql<number>`COALESCE(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY ${durationMinutes}) FILTER (WHERE ${tickets.resolvedAt} >= ${monthStart.toISOString()}), 0)`,
           lastActivityAt: sql<Date>`MAX(${tickets.updatedAt})`,
         })
         .from(tickets)
@@ -543,7 +578,25 @@ export class DashboardService {
         .leftJoin(departments, eq(users.departmentId, departments.id))
         .where(eq(users.id, currentUser.sub))
         .limit(1),
+      this.drizzle.db
+        .select({ reopenedCount: count() })
+        .from(ticketHistory)
+        .innerJoin(tickets, eq(ticketHistory.ticketId, tickets.id))
+        .where(
+          and(
+            eq(ticketHistory.action, 'STATUS_CHANGED'),
+            sql`${ticketHistory.newValue}->>'status' = 'REOPENED'`,
+            eq(tickets.assignedTo, currentUser.sub),
+          ),
+        )
+        .groupBy(tickets.assignedTo),
     ]);
+    const reopenedCount = reopenedRows.length > 0 ? Number(reopenedRows[0].reopenedCount || 0) : 0;
+    const firstResponseCount = Number(stats?.firstResponseCount || 0);
+    const firstResponseComplianceRate =
+      firstResponseCount > 0
+        ? Math.round((Number(stats?.firstResponseCompliant || 0) / firstResponseCount) * 100)
+        : 100;
 
     return {
       generatedAt: now.toISOString(),
@@ -559,13 +612,19 @@ export class DashboardService {
           }
         : null,
       summary: {
+        totalAssigned: Number(stats?.totalAssigned || 0),
         openTicketsCount: Number(stats?.openTicketsCount || 0),
         criticalTicketsCount: Number(stats?.criticalTicketsCount || 0),
         overdueTicketsCount: Number(stats?.overdueTicketsCount || 0),
         atRiskTicketsCount: Number(stats?.atRiskTicketsCount || 0),
         resolvedThisMonth: Number(stats?.resolvedThisMonth || 0),
+        closedThisMonth: Number(stats?.closedThisMonth || 0),
         slaBreachedCount: Number(stats?.slaBreachedCount || 0),
+        firstResponseCount,
+        firstResponseComplianceRate,
         avgResolutionMinutes: Math.round(Number(stats?.avgResolutionMinutes || 0)),
+        medianResolutionMinutes: Math.round(Number(stats?.medianResolutionMinutes || 0)),
+        reopenedCount,
         lastActivityAt: stats?.lastActivityAt ? new Date(stats.lastActivityAt).toISOString() : null,
       },
     };

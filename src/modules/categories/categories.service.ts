@@ -29,7 +29,8 @@ export class CategoriesService {
    * Retourne l'ensemble des catégories triées par ordre alphabétique.
    */
   async findAll() {
-    return this.drizzle.db.select().from(categories).orderBy(categories.name);
+    const rows = await this.drizzle.db.select().from(categories).orderBy(categories.name);
+    return rows.map((row) => ({ ...row, targetRoles: row.targetRoles ?? [] }));
   }
 
   /**
@@ -45,7 +46,7 @@ export class CategoriesService {
       throw new NotFoundException('Catégorie non trouvée.');
     }
 
-    return category;
+    return { ...category, targetRoles: category.targetRoles ?? [] };
   }
 
   /**
@@ -77,7 +78,7 @@ export class CategoriesService {
     this.logger.log(`Catégorie créée: ${dto.name} (${id})`);
 
     const [created] = await this.drizzle.db.select().from(categories).where(eq(categories.id, id)).limit(1);
-    return { message: 'Catégorie créée avec succès.', data: created };
+    return { message: 'Catégorie créée avec succès.', data: { ...created, targetRoles: created.targetRoles ?? [] } };
   }
 
   /**
@@ -107,14 +108,14 @@ export class CategoriesService {
     if (dto.description !== undefined) updateData['description'] = dto.description;
     if (dto.targetRole !== undefined) updateData['targetRole'] = dto.targetRole;
     if (dto.targetRoles !== undefined) {
-      updateData['targetRoles'] = dto.targetRoles.length > 0 ? dto.targetRoles : null;
+      updateData['targetRoles'] = dto.targetRoles.length > 0 ? dto.targetRoles : [];
       if (dto.targetRole === undefined) updateData['targetRole'] = dto.targetRoles[0] ?? null;
     }
 
     await this.drizzle.db.update(categories).set(updateData).where(eq(categories.id, id));
 
     const [updated] = await this.drizzle.db.select().from(categories).where(eq(categories.id, id)).limit(1);
-    return { message: 'Catégorie mise à jour avec succès.', data: updated };
+    return { message: 'Catégorie mise à jour avec succès.', data: { ...updated, targetRoles: updated.targetRoles ?? [] } };
   }
 
   /**
@@ -156,6 +157,6 @@ export class CategoriesService {
    */
   private resolveTargetRoles(dto: CreateCategoryDto | UpdateCategoryDto): string[] | null {
     if (dto.targetRoles && dto.targetRoles.length > 0) return [...dto.targetRoles];
-    return dto.targetRole ? [dto.targetRole] : null;
+    return dto.targetRole ? [dto.targetRole] : [];
   }
 }
