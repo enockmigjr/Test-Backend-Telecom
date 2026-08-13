@@ -22,6 +22,8 @@ Tous les changements notables sont documentés ici. Format basé sur [Keep a Cha
   refresh internes (plus de `Invalid token issuer` / 502).
 - **Console de compte Keycloak** : lien « Compte et mot de passe (Keycloak) »
   dans le menu et les paramètres (`/realms/telecom/account/`).
+- **Thème de la console de compte** : décliné aux couleurs de l'app (Keycloakify
+  Multi-Page, même charte que le login — bleu nuit `#172033` / accent `#1d4ed8`).
 - **SPA « Test frontend Telecom » supprimée** (dépôt + références dans les docs).
 - Contrat OpenAPI régénéré : **115 chemins / 139 opérations**.
 

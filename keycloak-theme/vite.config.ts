@@ -6,7 +6,8 @@ export default defineConfig({
   plugins: [
     react(),
     keycloakify({
-      accountThemeImplementation: "none",
+      // Console de compte personnalisée aux couleurs de l'app (comme le login).
+      accountThemeImplementation: "Multi-Page",
     }),
   ],
 });

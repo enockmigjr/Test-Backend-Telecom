@@ -12,6 +12,10 @@ Remplacer la gestion d'identité locale par Keycloak (source de vérité : compt
 - Keycloak en **conteneur docker-compose** ; realm versionné ; seed complet (utilisateurs + profils métier) pour repartir de zéro sans tout refaire.
 - Thème Keycloakify aux couleurs de l'app (proposition validée : bleu nuit `#172033` + bleu `#1d4ed8`).
 
+> **Statut (13/08/2026)** : livré. Login SSO + console de compte (`account`) aux
+> couleurs de l'app, logout SSO réel, logout toutes-sessions via l'API admin,
+> ancien auth local supprimé (backend + frontend), issuer stable (`KC_HOSTNAME`).
+
 ## Architecture cible
 
 ```

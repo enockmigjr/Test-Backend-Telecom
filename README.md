@@ -188,7 +188,9 @@ dans le menu).
 | Login SSO — 105 agents seed       | `agent.<ROLE>.<1..15>@telecom.local` (7 rôles × 15)  | `Telecom@2026!` |
 | Console admin Keycloak            | `admin` (définissable via `KEYCLOAK_ADMIN`)          | `Admin@1234`    |
 
-Le formulaire de login est thématisé (Keycloakify v11) : `http://localhost:8081/realms/telecom/protocol/openid-connect/auth`.
+Les écrans Keycloak sont thématisés aux couleurs de l'app (Keycloakify v11) :
+le login (`/realms/telecom/protocol/openid-connect/auth`) et la console de compte
+(`/realms/telecom/account/`, thème `account` décliné avec la même charte).
 
 ### Outils de monitoring
 

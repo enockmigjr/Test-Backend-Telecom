@@ -3,6 +3,7 @@
   "enabled": true,
   "displayName": "Telecom Ticket Management",
   "loginTheme": "telecom-keycloak-theme",
+  "accountTheme": "telecom-keycloak-theme",
   "accessTokenLifespan": 900,
   "ssoSessionIdleTimeout": 28800,
   "ssoSessionMaxLifespan": 604800,
