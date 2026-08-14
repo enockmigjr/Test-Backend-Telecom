@@ -1,5 +1,13 @@
 # Report — Auth Keycloak, rôles superviseur et configuration compose
 
+## Mise à jour (14/08/2026, 13 h 40)
+
+- [VÉRIFIÉ] Keycloak **26.7.1 déployé** (conteneur recréé, health 200, version confirmée). La montée a été rendue possible par la reprise du réseau (image téléchargée).
+- [VÉRIFIÉ] Le correctif amont attendu n'existe PAS : la page `applications.ftl` de la console Account v1 reste cassée en 26.7.1 (issue amont fermée « not planned » — `ApplicationsBean` référence une classe retirée). La mitigation (entrée « Applications » masquée) est **conservée** et vérifiée dans le jar déployé (`applicationsUrl` absent du bundle KcPage account).
+- [VÉRIFIÉ] Doublon de thème corrigé : le Dockerfile copie désormais uniquement `keycloak-theme-for-kc-26.2-and-above.jar` (avant : glob `26*.jar` → 2 jars, doublons de thème dans `/opt/keycloak/providers`).
+- [VÉRIFIÉ] Page « changement de mot de passe » uniformisée incluse dans le jar (`LoginUpdatePassword-*.js`, champ `password-new` présent).
+- [NON EXÉCUTÉ] Vérification navigateur des parcours (console, changement de mot de passe, superviseur) — laissée à l'utilisateur.
+
 ## Périmètre
 
 Rapport evidence-led sur trois volets, produit le 14/08/2026 (13 h 00–13 h 10, heure locale) :

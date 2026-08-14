@@ -12,7 +12,8 @@ COPY . .
 RUN pnpm run build-keycloak-theme
 
 FROM quay.io/keycloak/keycloak:26.7.1
-# JAR ciblé Keycloak 26.2+ (login + console de compte) : évite les conflits
-# de thèmes multi-versions produits par keycloakify.
-COPY --from=builder /app/dist_keycloak/keycloak-theme-for-kc-26*.jar /opt/keycloak/providers/
+# JAR ciblé Keycloak 26.2+ (login + console de compte) : on copie uniquement le
+# jar de la version cible, pas tous les jars produits par keycloakify
+# (multiples jars = doublons de thème dans /opt/keycloak/providers).
+COPY --from=builder /app/dist_keycloak/keycloak-theme-for-kc-26.2-and-above.jar /opt/keycloak/providers/
 ENTRYPOINT ["/opt/keycloak/bin/kc.sh"]

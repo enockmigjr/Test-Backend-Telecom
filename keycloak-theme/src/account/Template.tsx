@@ -96,9 +96,13 @@ export default function Template(props: TemplateProps<KcContext, I18n>) {
             <li className={clsx(active === "sessions" && "active")}>
               <a href={url.sessionsUrl}>{msg("sessions")}</a>
             </li>
-            {/* « Applications » masqué temporairement : applications.ftl de
-                Keycloak 26.7.0 renvoie 500 (AdminPermissions manquante,
-                corrigée en 26.7.1 — voir keycloak-theme/Dockerfile). */}
+            {/*
+              « Applications » masqué : la page applications.ftl de la console
+              Account v1 renvoie 500 sur Keycloak 26.x (ApplicationsBean référence
+              AdminPermissions, classe retirée ; issue amont fermée « not planned »,
+              non corrigée même en 26.7.1). La console v2 par défaut est la seule
+              à servir cette page ; on préfère garder le thème uniforme.
+            */}
             {features.log && (
               <li className={clsx(active === "log" && "active")}>
                 <a href={url.logUrl}>{msg("log")}</a>
