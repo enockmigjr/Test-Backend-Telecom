@@ -25,7 +25,7 @@ import { AppConfigService } from './config/app.config';
 import { CommonModule } from './common/common.module';
 import { DatabaseModule } from './database/database.module';
 
-// Importation des 16 modules métier du backend
+// Importation des 25 modules métier du backend
 import { AuthModule } from './modules/auth/auth.module';
 import { SupportSatisfactionModule } from './modules/support-satisfaction/support-satisfaction.module';
 import { RequestAuthGuard } from './modules/auth/guards/request-auth.guard';

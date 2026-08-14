@@ -13,10 +13,14 @@ uploads
 storage
 coverage
 .claude
+.agents
+.claude
+.codex
 plans
 contexte
 README.md
 CLAUDE.md
+AGENTS.md
 docker-compose.yml
 Dockerfile
 .dockerignore
