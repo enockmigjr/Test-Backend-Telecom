@@ -217,6 +217,39 @@ body.admin-console.user {
 
 .kc-button:hover { background: #1e40af; }
 
+.kc-field-error {
+  display: block;
+  margin-top: 6px;
+  color: var(--kc-danger);
+  font-size: 13px;
+}
+
+.kc-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0;
+  color: var(--kc-text-muted);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.kc-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.kc-button-ghost {
+  background: transparent;
+  color: var(--kc-blue);
+  border: 1px solid var(--kc-border);
+}
+
+.kc-button-ghost:hover {
+  background: var(--kc-blue-soft);
+}
+
 .kc-alert {
   margin-bottom: 16px;
   padding: 12px 14px;

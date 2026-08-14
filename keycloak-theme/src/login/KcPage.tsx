@@ -5,6 +5,7 @@ import { useI18n } from "./i18n";
 import DefaultPage from "keycloakify/login/DefaultPage";
 import Template from "keycloakify/login/Template";
 import { Login } from "../pages/Login";
+import { LoginUpdatePassword } from "../pages/LoginUpdatePassword";
 import { ErrorPage } from "../pages/Error";
 import { Info } from "../pages/Info";
 
@@ -23,6 +24,8 @@ export default function KcPage(props: { kcContext: KcContext }) {
         switch (kcContext.pageId) {
           case "login.ftl":
             return <Login kcContext={kcContext} />;
+          case "login-update-password.ftl":
+            return <LoginUpdatePassword kcContext={kcContext} i18n={i18n} />;
           case "error.ftl":
             return <ErrorPage kcContext={kcContext} />;
           case "info.ftl":

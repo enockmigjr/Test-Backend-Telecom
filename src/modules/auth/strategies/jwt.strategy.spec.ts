@@ -129,4 +129,25 @@ describe('JwtStrategy — jeton Keycloak', () => {
       else process.env['KEYCLOAK_ISSUER'] = previousIssuer;
     }
   });
+
+  it('ignore les rôles techniques (default-roles, offline_access) et garde le rôle métier', async () => {
+    const previousIssuer = process.env['KEYCLOAK_ISSUER'];
+    process.env['KEYCLOAK_ISSUER'] = 'http://keycloak.test/realms/telecom';
+    const strategy = createStrategy(null);
+    try {
+      const result = await strategy.validate({
+        sub: 'keycloak-subject-supervisor',
+        email: 'supervisor@telecom.local',
+        jti: 'k-jti-3',
+        realm_access: {
+          roles: ['default-roles-telecom', 'SUPERVISOR', 'offline_access', 'uma_authorization'],
+        },
+        iss: 'http://keycloak.test/realms/telecom',
+      } as unknown as JwtPayload);
+      expect(result).toMatchObject({ id: 'user-001', role: 'SUPERVISOR' });
+    } finally {
+      if (previousIssuer === undefined) delete process.env['KEYCLOAK_ISSUER'];
+      else process.env['KEYCLOAK_ISSUER'] = previousIssuer;
+    }
+  });
 });

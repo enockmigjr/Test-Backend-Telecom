@@ -29,6 +29,15 @@ import { eq, and, isNull } from 'drizzle-orm';
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   private readonly logger = new Logger(JwtStrategy.name);
+  private static readonly BUSINESS_ROLES = [
+    'ADMINISTRATOR',
+    'SUPERVISOR',
+    'CUSTOMER_SERVICE_AGENT',
+    'NOC_ENGINEER',
+    'BILLING_AGENT',
+    'TECHNICAL_SUPPORT_ENGINEER',
+    'FIELD_TECHNICIAN',
+  ] as const;
 
   constructor(
     private readonly jwtConfig: JwtConfigService,
@@ -128,8 +137,14 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     if (!user || !user.isActive) {
       throw new UnauthorizedException('Profil métier introuvable pour ce compte SSO.');
     }
+    // Les jetons contiennent aussi `default-roles-telecom`, `offline_access` et
+    // `uma_authorization` : on ne garde que le rôle métier réel (les 7 rôles du
+    // système), sinon `roles[0]` peut valoir `default-roles-telecom` → 403 partout.
     const roles = this.extractRealmRoles(payload);
-    const role = roles.length > 0 ? roles[0] : user.role;
+    const businessRole = roles.find((role) =>
+      (JwtStrategy.BUSINESS_ROLES as readonly string[]).includes(role),
+    );
+    const role = businessRole ?? user.role;
     return {
       sub: user.id,
       id: user.id,
