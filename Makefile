@@ -72,11 +72,7 @@ keycloak-seed: ## Crée 105 comptes dans Keycloak (realm telecom, http://localho
 
 accounts: ## Affiche les comptes de démonstration principaux
 	@echo "Comptes de démonstration"
-	@echo "  Login local (AUTH_PROVIDER=local) :"
-	@echo "    admin@telecom.local / Admin@1234  (ADMINISTRATOR)"
-	@echo "    supervisor@telecom.local / Super@1234  (SUPERVISOR)"
-	@echo "    agent-cc1@telecom.local / Agent@1234  (CUSTOMER_SERVICE_AGENT)"
-	@echo "  SSO Keycloak (AUTH_PROVIDER=keycloak) - http://localhost:8081 :"
+	@echo "  SSO Keycloak (Fournisseur unique RS256/JWKS) - http://localhost:8081 :"
 	@echo "    admin@telecom.local / Admin@1234  (ADMINISTRATOR)"
 	@echo "    supervisor@telecom.local / Super@1234  (SUPERVISOR)"
 	@echo "    105 comptes seed : agent.<ROLE>.<1..15>@telecom.local / Telecom@2026!"

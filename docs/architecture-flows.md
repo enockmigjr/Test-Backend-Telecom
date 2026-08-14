@@ -1,67 +1,111 @@
-# Flux Architecturaux — Diagrammes Mermaid
+# Flux Architecturaux & Séquences Techniques — Diagrammes Mermaid Enrichis
 
-## 1. Cycle de Vie d'un Ticket
+> Ce document regroupe les 14 diagrammes Mermaid officiels décrivant l'intégralité des flux du système : authentification SSO Keycloak, portail public multicanal, assertions WordPress, pipeline HTTP, outbox durable, quarantaine antivirus ClamAV, bot conversationnel avec coupe-circuit, architecture des 8 workers BullMQ et observabilité.
+
+---
+
+## 1. Cycle de Vie d'un Ticket (Machine à 9 Statuts + 2 Attentes)
 
 ```mermaid
 stateDiagram-v2
-    [*] --> NEW : Création
-    NEW --> ASSIGNED : Assignation
-    NEW --> CANCELLED : Annulation
-    ASSIGNED --> IN_PROGRESS : Prise en charge
+    [*] --> NEW : Création (interne ou portail public)
+    NEW --> ASSIGNED : Auto-assignation (Round-Robin / Least-Loaded) ou manuelle
+    NEW --> CANCELLED : Annulation par superviseur/admin
+    ASSIGNED --> IN_PROGRESS : Prise en charge par l'agent
     ASSIGNED --> CANCELLED : Annulation
-    IN_PROGRESS --> PENDING_CUSTOMER : En attente client
-    IN_PROGRESS --> PENDING_THIRD_PARTY : En attente tiers
-    IN_PROGRESS --> RESOLVED : Résolution
-    PENDING_CUSTOMER --> IN_PROGRESS : Retour
-    PENDING_CUSTOMER --> RESOLVED : Résolution
-    PENDING_THIRD_PARTY --> IN_PROGRESS : Retour
-    PENDING_THIRD_PARTY --> RESOLVED : Résolution
-    RESOLVED --> CLOSED : Clôture
-    RESOLVED --> REOPENED : Réouverture
-    CLOSED --> REOPENED : Réouverture
-    REOPENED --> IN_PROGRESS : Reprise
+    IN_PROGRESS --> PENDING_CUSTOMER : Attente information / confirmation client
+    IN_PROGRESS --> PENDING_THIRD_PARTY : Attente opérateur / fournisseur externe
+    IN_PROGRESS --> RESOLVED : Résolution avec note technique
+    PENDING_CUSTOMER --> IN_PROGRESS : Réponse client ou reprise agent
+    PENDING_CUSTOMER --> RESOLVED : Résolution directe
+    PENDING_THIRD_PARTY --> IN_PROGRESS : Réponse tiers
+    PENDING_THIRD_PARTY --> RESOLVED : Résolution directe
+    RESOLVED --> CLOSED : Clôture manuelle ou auto-clôture 48h (SlaAutoCloseService)
+    RESOLVED --> REOPENED : Réouverture par client/agent (ex. problème persistant)
+    CLOSED --> REOPENED : Réouverture exceptionnelle par superviseur/admin
+    REOPENED --> IN_PROGRESS : Reprise de l'investigation
     REOPENED --> CANCELLED : Annulation
     CANCELLED --> [*]
+    CLOSED --> [*]
 ```
 
-## 2. Flux d'Authentification Keycloak (SSO unique)
+---
+
+## 2. Flux d'Authentification Keycloak SSO Unique (OIDC PKCE + JWKS)
 
 ```mermaid
 sequenceDiagram
     participant Client
     participant BFF as Frontend BFF (Next.js)
     participant Keycloak
-    participant API
+    participant API as NestJS API Backend
 
-    Client->>BFF: GET /api/auth/keycloak/login
-    BFF-->>Client: 302 vers authorize (PKCE, state)
-    Client->>Keycloak: Page de login (thème Keycloakify)
-    Client->>Keycloak: Credentials SSO
+    Client->>BFF: GET /login (ou route protégée)
+    BFF-->>Client: 302 vers authorize (PKCE code_challenge, state)
+    Client->>Keycloak: Page de login (thème Keycloakify v11)
+    Client->>Keycloak: Saisie identifiants SSO
     Keycloak-->>Client: 302 callback?code=...
     Client->>BFF: GET /api/auth/keycloak/callback?code=
-    BFF->>Keycloak: Échange code + PKCE verifier
-    Keycloak-->>BFF: access_token + refresh_token + id_token
-    BFF-->>Client: Cookies HttpOnly (session) + 302 /dashboard
+    BFF->>Keycloak: Échange code + PKCE code_verifier
+    Keycloak-->>BFF: access_token (15m) + refresh_token (7j) + id_token (5m)
+    BFF-->>Client: Cookies HttpOnly (access_token, itsm-refresh-token, kc_id_token) + 302 /dashboard
     Client->>API: Requêtes /api/v1/* (Bearer access token Keycloak)
-    API->>API: Validation RS256 via JWKS + profil métier (keycloakSubjectId)
+    API->>API: Validation RS256 via JWKS Keycloak + liaison profil métier (users.keycloakSubjectId)
 
-    Note over Client,Keycloak: Refresh (automatique, BFF)
+    Note over Client,Keycloak: Renouvellement automatique (Refresh)
     BFF->>Keycloak: grant_type=refresh_token
-    Keycloak-->>BFF: Nouveau couple de jetons
+    Keycloak-->>BFF: Nouveaux jetons + mise à jour des cookies
 
-    Note over Client,Keycloak: Déconnexion (SSO)
+    Note over Client,Keycloak: Déconnexion SSO globale
     Client->>BFF: GET /api/auth/keycloak/logout
     BFF->>Keycloak: end-session (id_token_hint)
     Keycloak-->>Client: 302 vers /login
 
-    Note over Client,Keycloak: Déconnexion toutes les sessions
+    Note over Client,Keycloak: Révocation toutes sessions (Admin)
     Client->>BFF: GET /api/auth/keycloak/logout-all
-    BFF->>Keycloak: API admin — POST /admin/realms/{realm}/users/{id}/logout
-    BFF->>Keycloak: end-session (session navigateur courante)
+    BFF->>Keycloak: API Admin Keycloak — POST /admin/realms/telecom/users/{sub}/logout
+    BFF->>Keycloak: end-session (session locale)
     Keycloak-->>Client: 302 vers /login
 ```
 
-## 3. Pipeline Requête HTTP (Request Lifecycle)
+---
+
+## 3. Portail Support Public & Widget (Admission, OTP & Session Appareil)
+
+```mermaid
+sequenceDiagram
+    participant Visitor as Client / Widget WordPress
+    participant Widget as Public Frontend / Widget Iframe
+    participant API as NestJS Public API
+    participant DB as PostgreSQL
+    participant Redis as Redis Cache
+    participant Mail as Mailpit / SMTP
+
+    alt Option A — Assertion WordPress
+        Visitor->>Widget: Visite site WordPress partenaire
+        Widget->>API: POST /api/v1/public-support/identity/assertion/exchange (JWT signé WP, nonce)
+        API->>Redis: Verification nonce anti-rejeu + origine autorisée
+        API->>DB: Résolution / Création demandeur public
+        API-->>Widget: Jeton de session publique (PublicSessionToken)
+    else Option B — Challenge OTP Email
+        Visitor->>Widget: Saisie email demandeur
+        Widget->>API: POST /api/v1/public-support/identity/email/request
+        API->>DB: Enregistrement challenge OTP (code 6 chiffres haché HMAC, TTL 10 min)
+        API->>Mail: Envoi code OTP par email (BullMQ EMAIL_QUEUE)
+        Visitor->>Widget: Saisie code OTP à 6 chiffres
+        Widget->>API: POST /api/v1/public-support/identity/email/consume
+        API->>DB: Validation OTP + enregistrement de l'appareil de confiance (90 jours)
+        API-->>Widget: Jeton de session publique (PublicSessionToken)
+    end
+
+    Note over Visitor,API: Utilisation de la session publique
+    Widget->>API: POST /api/v1/public-support/conversations (Brouillon -> Confirmation)
+    API->>DB: Écriture conversation / ticket + outbox_events
+```
+
+---
+
+## 4. Pipeline Requête HTTP (Guards, Validation & Intercepteurs)
 
 ```mermaid
 sequenceDiagram
@@ -72,280 +116,365 @@ sequenceDiagram
     participant Pipe
     participant Controller
     participant Service
-    participant PostgreSQL
+    participant DB as PostgreSQL
     participant Redis
     participant BullMQ
 
     Client->>Nginx: POST /api/v1/tickets
-    Nginx->>Nginx: TLS termination, rate limiting
-    Nginx->>Middleware: Proxy
+    Nginx->>Nginx: TLS Termination, Rate Limiting Nginx
+    Nginx->>Middleware: Proxy Pass
 
-    Middleware->>Middleware: CorrelationId (génère/propage)
-    Middleware->>Middleware: RequestLogger (Pino)
+    Middleware->>Middleware: CorrelationIdMiddleware (génère/propage x-correlation-id)
+    Middleware->>Middleware: RequestLoggerMiddleware (Pino JSON)
 
     Middleware->>Guard: Suivant
 
-    Guard->>Guard: JwtAuthGuard (vérifie JWT + Redis blacklist)
-    Guard->>Redis: SISMEMBER jwt_blacklist {jti}
-    Guard->>PostgreSQL: SELECT user (vérifie existe + actif)
-    Guard->>Guard: RolesGuard (vérifie @Roles)
+    Guard->>Guard: RequestAuthGuard (Aiguillage mode : INTERNAL / PUBLIC_SESSION / ASSERTION / ANONYMOUS)
+    Guard->>Guard: JwtAuthGuard (Signature RS256 via JWKS Keycloak)
+    Guard->>DB: SELECT user WHERE keycloak_subject_id = sub (Actif et non supprimé)
+    Guard->>Guard: RolesGuard (Vérification @Roles)
 
     Guard->>Pipe: Suivant
-    Pipe->>Pipe: ValidationPipe (class-validator)
-    Pipe-->>Client: 400 si validation échoue
+    Pipe->>Pipe: ValidationPipe (class-validator, transform: true, whitelist: true)
+    Pipe-->>Client: 400 Bad Request (si DTO invalide)
 
-    Pipe->>Controller: DTO validé
+    Pipe->>Controller: Exécution Handler Controller
+    Controller->>Guard: IdempotencyInterceptor (@Idempotent, header Idempotency-Key)
+    Guard->>DB: Vérification table idempotency_records (TTL 24h)
     Controller->>Service: ticketsService.create(dto, user)
 
-    Service->>Service: TicketNumberService.generate()
-    Service->>PostgreSQL: SELECT nextval('ticket_number_seq')
-    Service->>Service: State machine validation
-    Service->>PostgreSQL: INSERT ticket + history
-    Service->>Service: EventEmitter.emit('ticket.created')
+    Service->>DB: Transaction SQL (INSERT ticket + history + outbox_events)
+    Service->>Service: EventEmitter2.emit('ticket.created')
     Service-->>Controller: {ticket}
 
-    Controller-->>Client: 201 Created (via TransformInterceptor)
+    Controller-->>Client: 201 Created (TransformInterceptor : { success: true, data: ... })
 
-    Note over BullMQ: Traitement asynchrone (après réponse)
-    Service->>BullMQ: Job notification + email + SLA
-    BullMQ->>BullMQ: Workers process jobs
+    Note over BullMQ: Traitement Asynchrone Découplé
+    Service->>BullMQ: Job EMAIL_QUEUE + NOTIFICATION_QUEUE + SLA_QUEUE
 ```
 
-## 4. Traitement Asynchrone — Domain Events → BullMQ
+---
+
+## 5. Moteur Outbox & Livraisons Sortantes Fiables
 
 ```mermaid
-flowchart LR
-    subgraph "Requête HTTP (synchrone)"
-        Controller --> Service
-        Service --> PostgreSQL[(PostgreSQL)]
-        Service --> EventEmitter
-    end
+sequenceDiagram
+    participant Domain as Service Métier (ex. Tickets/Comments)
+    participant DB as PostgreSQL
+    participant OutboxPub as OutboxPublisherService (@Interval 1s)
+    participant Queue as BullMQ (EXTERNAL_DELIVERY_QUEUE)
+    participant Worker as ExternalDeliveryWorker
+    participant Adapter as EmailChannelAdapter / Webhook
 
-    subgraph "Traitement Asynchrone"
-        EventEmitter -->|ticket.created| HistoryListener
-        EventEmitter -->|ticket.assigned| NotificationListener
-        EventEmitter -->|ticket.deassigned| NotificationListener
-        EventEmitter -->|ticket.status_changed| AuditListener
-        EventEmitter -->|ticket.resolved| SlaListener
-        EventEmitter -->|ticket.unassigned| AssignmentListener
+    Domain->>DB: BEGIN Transaction
+    Domain->>DB: INSERT INTO tickets / support_messages ...
+    Domain->>DB: INSERT INTO outbox_events (event_type, payload, status='PENDING')
+    Domain->>DB: COMMIT Transaction
 
-        HistoryListener --> PostgreSQL
-        NotificationListener --> BullMQ[BullMQ Queue]
-        AuditListener --> PostgreSQL
-        SlaListener --> BullMQ
-        AssignmentListener --> BullMQ
+    Note over OutboxPub: Boucle de balayage (chaque seconde)
+    OutboxPub->>DB: SELECT * FROM outbox_events WHERE status='PENDING' ORDER BY created_at LIMIT 100 FOR UPDATE SKIP LOCKED
+    OutboxPub->>Queue: Push Job ExternalDelivery (outboxId, payload)
+    OutboxPub->>DB: UPDATE outbox_events SET status='PROCESSING'
 
-        BullMQ --> EmailWorker[Email Worker]
-        BullMQ --> NotificationWorker[Notification Worker]
-        BullMQ --> SlaWorker[SLA Worker]
-        BullMQ --> AssignmentWorker[Assignment Worker]
-
-        EmailWorker --> SMTP[SMTP/Mailpit]
-        NotificationWorker --> PostgreSQL
-        NotificationWorker --> WebSocket
-        SlaWorker --> PostgreSQL
-        AssignmentWorker --> PostgreSQL
+    Queue->>Worker: Consume Job
+    Worker->>Adapter: Deliver (Send Email / Webhook)
+    alt Livraison Réussie
+        Adapter-->>Worker: OK (200 / SMTP Accepted)
+        Worker->>DB: INSERT INTO external_deliveries (status='DELIVERED')
+        Worker->>DB: UPDATE outbox_events SET status='PUBLISHED', published_at=NOW()
+    else Échec Temporaire (ex. SMTP Down)
+        Adapter-->>Worker: Error / Timeout
+        Worker->>DB: INSERT INTO external_deliveries (status='FAILED', error_details)
+        Worker->>Queue: Retry Job (Backoff exponentiel)
     end
 ```
 
-## 5. Architecture des Files BullMQ
+---
+
+## 6. Pipeline Pièces Jointes & Quarantaine Antivirus ClamAV
+
+```mermaid
+flowchart TD
+    A[Client Upload Fichier Public / Interne] --> B{Inspection MIME réel file-type}
+    B -->|Extension != ContentType réel| C[Rejet 400 Bad Request]
+    B -->|MIME Autorisé & Taille OK| D[Stockage temporaire dans quarantine/ UUID]
+    D --> E[INSERT INTO attachments status='QUARANTINED']
+    E --> F[Push Job ATTACHMENT_SCAN_QUEUE]
+    F --> G[AttachmentScanWorker]
+    G --> H{Scan Antivirus ClamAV daemon TCP 3310}
+    H -->|Statut CLEAN| I[Déplacement fichier vers storage/clean/]
+    I --> J[UPDATE attachments status='CLEAN']
+    H -->|Statut INFECTED| K[Suppression fichier de quarantine/]
+    K --> L[UPDATE attachments status='INFECTED']
+    H -->|ClamAV Indisponible| M[Retentative avec Backoff / Quarantaine conservée]
+```
+
+---
+
+## 7. Assistant Conversationnel Support Bot (Budget, Circuit Breaker & Fallback)
+
+```mermaid
+flowchart TD
+    MessageIn[Message Demandeur Public] --> PolicyCheck{ToolPolicyService: Prompt Injection / Content Ban?}
+    PolicyCheck -->|Violé| FallbackHuman[Transfert Automatique à un Agent Humain]
+    PolicyCheck -->|Valide| BudgetCheck{AiBudgetService: Quota jetons / Coût max atteint?}
+    BudgetCheck -->|Dépassé| CircuitBreaker[Activer Coupe-Circuit Bot -> Repli Formulaire]
+    BudgetCheck -->|Dans le budget| ProviderCall[Appel AiProvider OpenAI/DeepSeek Adapter]
+    ProviderCall --> ToolCall{LLM demande un outil?}
+    ToolCall -->|Oui| AllowlistCheck{Outil dans l Allowlist Fermée?}
+    AllowlistCheck -->|Oui: search_knowledge / get_ticket_status| ExecTool[Exécution Sécurisée Outil]
+    AllowlistCheck -->|Non: Action non autorisée| BlockTool[Rejet Outil + Warning Audit]
+    ExecTool --> ProviderCall
+    ToolCall -->|Non: Réponse finale| SaveMsg[Enregistrer message bot + incrémenter jetons/coût]
+    SaveMsg --> Out[Envoyer réponse au Widget]
+```
+
+---
+
+## 8. Architecture des 8 Files & Workers BullMQ
 
 ```mermaid
 flowchart TB
-    subgraph "Producers (Services NestJS)"
+    subgraph Producteurs
         TicketService[TicketService]
         AuthService[AuthService]
         SlaEngine[SlaEngineService]
-        AssignmentListener[TicketAssignmentListener]
+        AttachmentService[AttachmentUploadService]
+        OutboxPub[OutboxPublisherService]
+        ReportService[ReportQueryService]
     end
 
-    subgraph "Redis (Message Broker)"
-        Redis[(Redis)]
+    subgraph Redis
+        Redis[(Redis 7)]
     end
 
-    subgraph "Queues"
-        Q1[email-queue<br/>Emails transactionnels]
-        Q2[notification-queue<br/>Notifications in-app]
-        Q3[sla-queue<br/>Vérifications SLA]
-        Q4[audit-queue<br/>Logs d'audit asynchrones]
-        Q5[assignment-queue<br/>Auto-assignation et aiguillage]
+    subgraph Files
+        Q1[email-queue]
+        Q2[notification-queue]
+        Q3[sla-queue]
+        Q4[audit-queue]
+        Q5[assignment-queue]
+        Q6[external-delivery-queue]
+        Q7[attachment-scan-queue]
+        Q8[report-queue]
     end
 
-    subgraph "Workers (Processus séparés)"
-        W1[EmailWorker<br/>Nodemailer + Handlebars]
-        W2[NotificationWorker<br/>Insert DB + WebSocket emit]
-        W3[SlaWorker<br/>Breach detection + escalation]
-        W4[AuditWorker<br/>Écriture audit_logs]
-        W5[AssignmentWorker<br/>Moteur d'auto-assignation]
+    subgraph Workers
+        W1[EmailWorker]
+        W2[NotificationWorker]
+        W3[SlaWorker]
+        W4[AuditWorker]
+        W5[AssignmentWorker]
+        W6[ExternalDeliveryWorker]
+        W7[AttachmentScanWorker]
+        W8[ReportWorker]
     end
 
-    TicketService -->|job| Q1
-    TicketService -->|job| Q2
-    SlaEngine -->|job| Q3
-    TicketService -->|job| Q4
-    AssignmentListener -->|job| Q5
+    TicketService --> Q1 & Q2 & Q4
+    AuthService --> Q1
+    SlaEngine --> Q3
+    AttachmentService --> Q7
+    OutboxPub --> Q6
+    ReportService --> Q8
 
-    Q1 --> Redis
-    Q2 --> Redis
-    Q3 --> Redis
-    Q4 --> Redis
-    Q5 --> Redis
+    Q1 & Q2 & Q3 & Q4 & Q5 & Q6 & Q7 & Q8 --> Redis
 
-    Redis --> W1
-    Redis --> W2
-    Redis --> W3
-    Redis --> W4
-    Redis --> W5
+    Redis --> W1 & W2 & W3 & W4 & W5 & W6 & W7 & W8
 
-    W1 --> SMTP[SMTP Server]
-    W2 --> PostgreSQL[(PostgreSQL)]
-    W3 --> PostgreSQL
-    W4 --> PostgreSQL
-    W5 --> PostgreSQL
+    W1 --> SMTP[SMTP Mailpit]
+    W2 --> DB[(PostgreSQL)] & WS[WebSocket /ws]
+    W3 --> DB & WS
+    W4 --> DB
+    W5 --> DB
+    W6 --> SMTP
+    W7 --> ClamAV[ClamAV TCP 3310]
+    W8 --> PDFKit[Génération PDFKit]
 ```
 
-## 6. Stack d'Observabilité
+---
+
+## 9. Stack d'Observabilité Globale (Logs, Traces & Métriques)
 
 ```mermaid
 flowchart LR
-    subgraph "Application NestJS"
+    subgraph App
         API[NestJS API]
-        Pino[Logger Pino]
-        OTel[OpenTelemetry SDK]
-        PromClient[prom-client]
+        Pino[Pino Logger JSON]
+        OTel[OpenTelemetry Tracing]
+        PromClient[prom-client /metrics]
     end
 
-    subgraph "Collecte & Stockage"
+    subgraph Ingestion
+        Promtail[Promtail Agent]
         Loki[(Loki)]
         Tempo[(Tempo)]
         Prometheus[(Prometheus)]
     end
 
-    subgraph "Visualisation & Alertes"
-        Grafana[Grafana Dashboards]
-        Alerts[Alertes Grafana/Uptime Kuma]
+    subgraph Dashboards
+        Grafana[Grafana Port 3001]
+        Kuma[Uptime Kuma Port 3002]
     end
 
-    API --> Pino
+    API -->|Stdout JSON| Promtail
+    Promtail --> Loki
     API --> OTel
     API --> PromClient
 
-    Pino -->|Logs JSON| Loki
-    OTel -->|Traces distribuées| Tempo
-    PromClient -->|Métriques /metrics| Prometheus
+    OTel --> Tempo
+    PromClient --> Prometheus
 
     Loki --> Grafana
     Tempo --> Grafana
     Prometheus --> Grafana
-    Prometheus --> Alerts
+    Prometheus --> Kuma
 ```
 
-## 7. Déploiement Docker Compose (Vue C4 — Niveau Conteneurs)
+---
+
+## 10. Déploiement Docker Compose (15 Services en Conteneurs)
 
 ```mermaid
 flowchart TB
-    subgraph "Internet"
-        User[Employé Télécom]
+
+    subgraph Ingress
+        User[Navigateur / Client API]
+        Nginx["Nginx Proxy (80, 443)"]
     end
 
-    subgraph "Docker Host"
-        Nginx["Nginx Reverse Proxy<br/>${NGINX_PORT:-80}, :443"]
-        API["NestJS API<br/>${API_PORT:-3000}"]
-        Worker[BullMQ Workers<br/>Processus séparé]
-        PG[("PostgreSQL 16<br/>${DATABASE_PORT:-5432}")]
-        RD[("Redis 7<br/>${REDIS_PORT:-6379}")]
-        Mailpit["Mailpit<br/>SMTP ${SMTP_PORT:-1025}, Web ${MAILPIT_WEB_PORT:-8025}"]
-
-        subgraph "Observabilité (optionnel)"
-            Prom["Prometheus ${PROMETHEUS_PORT:-9090}"]
-            LokiS["Loki ${LOKI_PORT:-3100}"]
-            TempoS["Tempo ${TEMPO_PORT:-3200}"]
-            Graf["Grafana ${GRAFANA_PORT:-3001}"]
-        end
+    subgraph Apps
+        BFF["Frontend Interne (Next.js 3007)"]
+        PublicFE["Portail Public (Next.js 3005)"]
+        KC["Keycloak SSO (Port 8081)"]
     end
 
-    User -->|HTTPS| Nginx
-    Nginx -->|Proxy| API
-    API --> PG
-    API --> RD
-    Worker --> RD
-    Worker --> PG
-    API --> Mailpit
-    Worker --> Mailpit
-    API --> Prom
-    API --> LokiS
-    API --> TempoS
-    Prom --> Graf
-    LokiS --> Graf
-    TempoS --> Graf
+    subgraph Core
+        API["NestJS API (Port 3000)"]
+        Workers["8 Workers BullMQ"]
+    end
+
+    subgraph Data
+        PG[("PostgreSQL 16 (5432)")]
+        RD[("Redis 7 (6379)")]
+        Mailpit["Mailpit SMTP (1025)"]
+        ClamAV["ClamAV Antivirus (3310)"]
+    end
+
+    subgraph Monitoring
+        Prom["Prometheus (9090)"]
+        LokiS["Loki (3100)"]
+        TempoS["Tempo (3200)"]
+        PromtailS["Promtail (9080)"]
+        Graf["Grafana (3001)"]
+        Kuma["Uptime Kuma (3002)"]
+    end
+
+    User --> Nginx
+    Nginx --> BFF & PublicFE & API & KC
+    BFF & PublicFE --> API
+    BFF & API --> KC
+    API & Workers --> PG & RD & Mailpit & ClamAV
+    API --> PromtailS & Prom & TempoS
+    PromtailS --> LokiS
+    Prom & LokiS & TempoS --> Graf
+    Kuma --> API
 ```
 
-## 8. RBAC — Flux de Décision d'Autorisation
+---
+
+## 11. RBAC & ABAC — Arbre de Décision des Permissions
 
 ```mermaid
 flowchart TD
     Request[Requête HTTP] --> JWTGuard{JwtAuthGuard}
     JWTGuard -->|Token absent/invalide| Reject1[401 Unauthorized]
-    JWTGuard -->|Token Keycloak valide<br/>RS256/JWKS| RedisCheck{JTI dans<br/>blacklist Redis?*}
-    RedisCheck -->|Oui| Reject2[401 Token révoqué]
-    RedisCheck -->|Non| UserCheck{Utilisateur<br/>existe + actif?}
-    UserCheck -->|Non| Reject3[401 Désactivé]
+    JWTGuard -->|Token Keycloak RS256 valide| UserCheck{Utilisateur existe + isActive=true + deletedAt=null?}
+    UserCheck -->|Non| Reject3[401 Account Disabled / Deleted]
     UserCheck -->|Oui| RolesGuard{RolesGuard}
 
-    RolesGuard -->|"Pas de @Roles"| Pass[Accès autorisé]
-    RolesGuard -->|"@Roles requis"| RoleCheck{Rôle dans<br/>la liste?}
-    RoleCheck -->|Oui| Pass
+    RolesGuard -->|"Sans @Roles"| ABACCheck{Vérification ABAC départemental}
+    RolesGuard -->|"Avec @Roles"| RoleCheck{Rôle dans la liste @Roles?}
+    RoleCheck -->|Oui| ABACCheck
     RoleCheck -->|Non| Reject4[403 Forbidden]
 
+    ABACCheck -->|Admin ou Superviseur/Agent du même Département| Pass[Exécution de la méthode]
+    ABACCheck -->|Agent d un autre Département| Reject5[403 Out of Department Scope]
     Pass --> Controller[Controller]
 ```
-*La blacklist Redis JTI concerne les jetons applicatifs hérités ; les jetons
-Keycloak sont validés par signature RS256 (JWKS) et profil métier
-(`keycloakSubjectId`) — le rôle provient du realm Keycloak (`realm_access`).
 
-## 9. Cache Redis — Stratégie Cache-Aside
+---
+
+## 12. Cache Redis — Stratégie Cache-Aside avec Invalidation
 
 ```mermaid
 sequenceDiagram
-    participant Service
+    participant Service as DashboardService
     participant Redis
     participant PostgreSQL
 
-    Service->>Redis: GET dashboard:overview:2026-06
-    alt Cache HIT
+    Service->>Redis: GET dashboard:overview:dept-123
+    alt Cache HIT (< 5ms)
         Redis-->>Service: Données (JSON)
-        Service-->>Client: Réponse (< 5ms)
-    else Cache MISS
+        Service-->>Client: Réponse instantanée
+    else Cache MISS (~50ms)
         Redis-->>Service: null
-        Service->>PostgreSQL: SELECT agrégations
+        Service->>PostgreSQL: SELECT COUNT(*), SUM(workload) FROM tickets ...
         PostgreSQL-->>Service: Données brutes
-        Service->>Redis: SETEX dashboard:overview:2026-06 60 {json}
-        Service-->>Client: Réponse (~50ms)
+        Service->>Redis: SETEX dashboard:overview:dept-123 60 {json}
+        Service-->>Client: Réponse calculée
     end
 
-    Note over Service,Redis: Invalidation au changement
+    Note over Service,Redis: Invalidation Ciblée sur Événement
+    PostgreSQL->>Service: Modification de statut d'un ticket
     Service->>Redis: DEL dashboard:overview:*
     Service->>Redis: DEL dashboard:departments:*
 ```
 
-## 10. Moteur d'Auto-Assignation — Logique de Décision
+---
+
+## 13. Moteur d'Auto-Assignation avec Vue Matérialisée Workload
 
 ```mermaid
 flowchart TD
-    Start[Ticket créé / non assigné] --> Classification[Classification du Ticket]
-    Classification --> Params{Récupérer Catégorie & targetRole}
-    Params --> ActiveAgents[Récupérer Agents disponibles dans le Département]
-    ActiveAgents --> FilterRole{Agent possède targetRole?}
+    Start[Ticket Créé / Non Assigné] --> CatLookup[Lecture Catégorie -> targetRole]
+    CatLookup --> ActiveAgents[Agents actifs du département]
+    ActiveAgents --> FilterRole{Possède targetRole & IsAvailable=true & NotOnLeave?}
     FilterRole -->|Oui| FilterCapacity{ticketsActifs < maxConcurrentTickets?}
-    FilterRole -->|Non| ExcludeAgent[Exclure Agent]
-    FilterCapacity -->|Oui| ComputeScore[Calculer Workload Score Pondéré]
+    FilterRole -->|Non| ExcludeAgent[Exclure l Agent]
+    FilterCapacity -->|Oui| QueryMV[Consulter materialized_workload_view]
     FilterCapacity -->|Non| ExcludeAgent
-    ComputeScore --> Sort[Trier Agents par Score ascendant / Round-Robin]
-    Sort --> Assign{Sélectionner et Assigner Atomiquement}
-    Assign --> Audit[Créer Log d'Audit & Notification]
-    Assign --> SLA[Planifier job d'échéance SLA]
+    QueryMV --> Strategy{Stratégie du Département}
+    Strategy -->|LEAST_LOADED (NOC)| SortScore[Agent avec le plus faible workload_score]
+    Strategy -->|ROUND_ROBIN| SortRR[Prochain Agent selon l index séquentiel]
+    SortScore & SortRR --> Assign[UPDATE tickets SET assigned_to = agentId]
+    Assign --> Event[Emit ticket.assigned -> Event & Notification Worker]
 ```
 
-```
+---
 
+## 14. Flux Détection & Escroquerie SLA (Breach / Warning Cron)
+
+```mermaid
+sequenceDiagram
+    participant Cron as SlaEngineService (@Cron */5 min)
+    participant DB as PostgreSQL
+    participant Redis as Redis Queue
+    participant Worker as SlaWorker
+    participant WS as WebSocket /ws
+
+    Cron->>DB: SELECT tickets WHERE status NOT IN ('RESOLVED', 'CLOSED', 'CANCELLED') AND deleted_at IS NULL
+    loop Pour chaque ticket actif
+        Cron->>Cron: Calcul échéance première réponse & résolution selon heures ouvrées (settings)
+        alt Temps restant < 30 min (SLA Warning)
+            Cron->>Redis: Push Job SLA_QUEUE (type='WARNING')
+        else Échéance dépassée (SLA Breached)
+            Cron->>DB: UPDATE tickets SET sla_breached = true
+            Cron->>Redis: Push Job SLA_QUEUE (type='BREACH')
+        end
+    end
+
+    Redis->>Worker: Process SLA Job
+    Worker->>DB: INSERT INTO notifications (userId=assigné & supervisor)
+    Worker->>WS: Emit 'sla:breach' / 'sla:warning' room 'dept:{id}'
+    Worker->>Redis: Push Job EMAIL_QUEUE (Alerte Email SLA)
 ```

@@ -141,9 +141,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     // `uma_authorization` : on ne garde que le rôle métier réel (les 7 rôles du
     // système), sinon `roles[0]` peut valoir `default-roles-telecom` → 403 partout.
     const roles = this.extractRealmRoles(payload);
-    const businessRole = roles.find((role) =>
-      (JwtStrategy.BUSINESS_ROLES as readonly string[]).includes(role),
-    );
+    const businessRole = roles.find((role) => (JwtStrategy.BUSINESS_ROLES as readonly string[]).includes(role));
     const role = businessRole ?? user.role;
     return {
       sub: user.id,

@@ -1,138 +1,144 @@
-# Comptes de Test
+# Comptes de Test & Démo (PostgreSQL & Keycloak SSO)
 
-## Vue d'ensemble
-
-14 utilisateurs sont créés automatiquement par `pnpm run db:seed`.
-7 rôles répartis dans 6 départements.
-
----
-
-## Administrateur (accès total)
-
-| Email                 | Mot de passe | Rôle          | Département    |
-| --------------------- | ------------ | ------------- | -------------- |
-| `admin@telecom.local` | `Admin@1234` | ADMINISTRATOR | Administration |
-
-**Capacités** : gestion complète de tous les utilisateurs, tickets, départements, SLA, paramètres système, audit logs. Vue globale (pas de cloisonnement départemental).
+> Ce document liste l'ensemble des comptes de démonstration et de test provisionnés dans le système.
+> L'authentification passe **exclusivement** par Keycloak SSO (RS256 / JWKS) sur port **8081**.
+> Les profils métier (département, droits applicatifs) sont stockés dans la base PostgreSQL `telecom_tickets`.
 
 ---
 
-## Superviseurs
+## 1. Vue d'ensemble des jeux de données
 
-| Email                          | Mot de passe | Rôle       | Département   |
-| ------------------------------ | ------------ | ---------- | ------------- |
-| `supervisor@telecom.local`     | `Super@1234` | SUPERVISOR | Customer Care |
-| `supervisor-noc@telecom.local` | `Super@1234` | SUPERVISOR | NOC           |
-
-**Capacités** : assignation/réassignation de tickets, clôture/réouverture, gestion des utilisateurs de leur département, audit logs. Vue cloisonnée par département.
-
----
-
-## Agents Customer Care
-
-| Email                     | Mot de passe | Rôle                   | Département   |
-| ------------------------- | ------------ | ---------------------- | ------------- |
-| `agent-cc1@telecom.local` | `Agent@1234` | CUSTOMER_SERVICE_AGENT | Customer Care |
-| `agent-cc2@telecom.local` | `Agent@1234` | CUSTOMER_SERVICE_AGENT | Customer Care |
+| Composant | Nombre de comptes | Source de données | Script de peuplement |
+| --- | --- | --- | --- |
+| **Comptes Métier PostgreSQL** | 14 utilisateurs | Base `telecom_tickets` (table `users`) | `pnpm run db:seed` |
+| **Comptes SSO Keycloak** | 105 utilisateurs (7 rôles × 15) | Realm Keycloak `telecom` | `node keycloak/seed-users.mjs` |
+| **Console Admin Keycloak** | 1 administrateur master | Realm `master` Keycloak | `KEYCLOAK_ADMIN` env var |
 
 ---
 
-## Ingénieurs NOC
+## 2. Comptes Métier PostgreSQL (14 Utilisateurs de Démo)
 
-| Email                | Mot de passe | Rôle         | Département |
-| -------------------- | ------------ | ------------ | ----------- |
-| `noc1@telecom.local` | `Agent@1234` | NOC_ENGINEER | NOC         |
-| `noc2@telecom.local` | `Agent@1234` | NOC_ENGINEER | NOC         |
+Tous ces comptes sont pré-créés par `pnpm run db:seed`.
+
+### 2.1. Administrateur Système (1 compte)
+
+| Email | Mot de passe | Rôle Métier | Département | Droits & Portée |
+| --- | --- | --- | --- | --- |
+| `admin@telecom.local` | `Admin@1234` | `ADMINISTRATOR` | Administration | Accès global non cloisonné, gestion des utilisateurs, SLA, paramètres système, audit, rapports PDF |
+
+### 2.2. Superviseurs (2 comptes)
+
+| Email | Mot de passe | Rôle Métier | Département | Droits & Portée |
+| --- | --- | --- | --- | --- |
+| `supervisor@telecom.local` | `Super@1234` | `SUPERVISOR` | Customer Care | Assignation, clôture/réouverture, notes internes, audit logs. Portée : Customer Care |
+| `supervisor-noc@telecom.local` | `Super@1234` | `SUPERVISOR` | NOC | Assignation, escalade réseau, surveillance SLA 24/7. Portée : NOC |
+
+### 2.3. Agents Customer Care (2 comptes)
+
+| Email | Mot de passe | Rôle Métier | Département | Droits & Portée |
+| --- | --- | --- | --- | --- |
+| `agent-cc1@telecom.local` | `Agent@1234` | `CUSTOMER_SERVICE_AGENT` | Customer Care | Création, réponse client, qualification initiale. Portée : Customer Care |
+| `agent-cc2@telecom.local` | `Agent@1234` | `CUSTOMER_SERVICE_AGENT` | Customer Care | Création, réponse client, suivi demandes. Portée : Customer Care |
+
+### 2.4. Ingénieurs NOC (2 comptes)
+
+| Email | Mot de passe | Rôle Métier | Département | Droits & Portée |
+| --- | --- | --- | --- | --- |
+| `noc1@telecom.local` | `Agent@1234` | `NOC_ENGINEER` | NOC | Incidents réseau S1/S2, supervision infrastructure. Portée : NOC |
+| `noc2@telecom.local` | `Agent@1234` | `NOC_ENGINEER` | NOC | Diagnostic fibre/radio, gestion pannes majeures. Portée : NOC |
+
+### 2.5. Agents Facturation (2 comptes)
+
+| Email | Mot de passe | Rôle Métier | Département | Droits & Portée |
+| --- | --- | --- | --- | --- |
+| `billing1@telecom.local` | `Agent@1234` | `BILLING_AGENT` | Billing | Litiges financiers, ajustements de factures. Portée : Billing |
+| `billing2@telecom.local` | `Agent@1234` | `BILLING_AGENT` | Billing | Demandes de résiliation, remboursements. Portée : Billing |
+
+### 2.6. Support Technique Approfondi (3 comptes)
+
+| Email | Mot de passe | Rôle Métier | Département | Droits & Portée |
+| --- | --- | --- | --- | --- |
+| `tech1@telecom.local` | `Agent@1234` | `TECHNICAL_SUPPORT_ENGINEER` | Technical Support | Support niveau 2/3, diagnostics ADSL/VoIP. Portée : Technical Support |
+| `tech2@telecom.local` | `Agent@1234` | `TECHNICAL_SUPPORT_ENGINEER` | Technical Support | Résolution dysfonctionnements logiciels/firmware. Portée : Technical Support |
+| `agent@telecom.local` | `Agent@1234` | `TECHNICAL_SUPPORT_ENGINEER` | Technical Support | Compte générique de test d'intégration |
+
+### 2.7. Techniciens Terrain (2 comptes)
+
+| Email | Mot de passe | Rôle Métier | Département | Restrictions applicatives |
+| --- | --- | --- | --- | --- |
+| `field1@telecom.local` | `Agent@1234` | `FIELD_TECHNICIAN` | Field Operations | Remplacement matériel, interventions physiques. **Pas d'accès aux notes internes ni aux logs d'audit** |
+| `field2@telecom.local` | `Agent@1234` | `FIELD_TECHNICIAN` | Field Operations | Reparations d'infrastructures physiques. **Pas d'accès aux notes internes ni aux logs d'audit** |
 
 ---
 
-## Agents Facturation
+## 3. Comptes SSO Keycloak (105 Comptes Seed par Rôle)
 
-| Email                    | Mot de passe | Rôle          | Département |
-| ------------------------ | ------------ | ------------- | ----------- |
-| `billing1@telecom.local` | `Agent@1234` | BILLING_AGENT | Billing     |
-| `billing2@telecom.local` | `Agent@1234` | BILLING_AGENT | Billing     |
+Le script `node keycloak/seed-users.mjs` (ou `make keycloak-seed`) génère **105 comptes SSO** dans le realm Keycloak `telecom` :
 
----
-
-## Support Technique
-
-| Email                 | Mot de passe | Rôle                       | Département       |
-| --------------------- | ------------ | -------------------------- | ----------------- |
-| `tech1@telecom.local` | `Agent@1234` | TECHNICAL_SUPPORT_ENGINEER | Technical Support |
-| `tech2@telecom.local` | `Agent@1234` | TECHNICAL_SUPPORT_ENGINEER | Technical Support |
-| `agent@telecom.local` | `Agent@1234` | TECHNICAL_SUPPORT_ENGINEER | Technical Support |
+- **Pattern des identifiants** : `agent.<role_lowercase>.<index>@telecom.local`
+- **Exemple** : `agent.noc_engineer.1@telecom.local` jusqu'à `agent.noc_engineer.15@telecom.local`
+- **Mot de passe par défaut** : `Telecom@2026!`
+- **Rôles Realm attribués** : Le rôle exact dans Keycloak (`ADMINISTRATOR`, `SUPERVISOR`, etc.)
+- **Rôles Client Account** : `view-profile` et `manage-account` attribués automatiquement pour autoriser l'accès à la console de compte.
 
 ---
 
-## Techniciens Terrain
+## 4. Utilisation de l'API avec Jeton Keycloak (Exemples cURL)
 
-| Email                  | Mot de passe | Rôle             | Département      |
-| ---------------------- | ------------ | ---------------- | ---------------- |
-| `field1@telecom.local` | `Agent@1234` | FIELD_TECHNICIAN | Field Operations |
-| `field2@telecom.local` | `Agent@1234` | FIELD_TECHNICIAN | Field Operations |
+Toutes les requêtes API nécessitent un jeton d'accès Bearer signé en RS256 par Keycloak.
 
-> **Note** : Les `FIELD_TECHNICIAN` n'ont pas accès aux notes internes ni aux audit logs.
-
----
-
-## Connexion rapide via cURL
+### 4.1. Récupération d'un jeton d'accès (Direct Access Grant pour scripts dev)
 
 ```bash
-# Les routes locales /api/v1/auth/login ont été supprimées : l'authentification
-# passe par Keycloak SSO. Se connecter sur http://localhost:3007 avec un compte
-# du realm telecom, puis réutiliser le jeton Keycloak (RS256) pour l'API.
+curl -X POST http://localhost:8081/realms/telecom/protocol/openid-connect/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "grant_type=password" \
+  -d "client_id=telecom-frontend" \
+  -d "username=admin@telecom.local" \
+  -d "password=Admin@1234"
 ```
 
-## Utiliser le token
+### 4.2. Appel API authentifié (Profil /me)
 
 ```bash
-# Récupérer le jeton depuis la session SSO (jeton d'accès Keycloak)
-TOKEN="eyJhbGciOiJI..."
+TOKEN="<access_token_keycloak>"
 
-# Lister les tickets
-curl http://localhost:3000/api/v1/tickets \
+curl http://localhost:3000/api/v1/auth/me \
   -H "Authorization: Bearer $TOKEN"
+```
 
-# Créer un ticket
+### 4.3. Création d'un ticket via l'API
+
+```bash
 curl -X POST http://localhost:3000/api/v1/tickets \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $TOKEN" \
+  -H "Idempotency-Key: $(uuidgen)" \
   -d '{
-    "title": "Panne réseau secteur Nord",
-    "description": "Coupure complète du réseau fibre dans le secteur Nord depuis 14h.",
-    "categoryId": "<id-categorie>",
-    "priority": "HIGH",
-    "severity": "S2",
-    "customerName": "Jean Dupont",
-    "customerAccountNumber": "ACC-123456"
+    "title": "Panne fibre optique — Client Entreprise ZI",
+    "description": "Perte totale du lien principal 1 Gbps.",
+    "categoryId": "<category-id-uuid>",
+    "priority": "CRITICAL",
+    "severity": "S1",
+    "customerName": "ZI Est Industries",
+    "customerAccountNumber": "ACC-001-ZIE"
   }'
 ```
 
 ---
 
-## Outils de monitoring
+## 5. Matrice des Services et Identifiants de Monitoring
 
-| URL                                  | Service        | Identifiants        |
-| ------------------------------------ | -------------- | ------------------- |
-| `http://localhost:3000/api/v1`       | API REST       | Bearer token Keycloak |
-| `http://localhost:3000/api/docs`     | Swagger UI     | Aucun               |
-| `http://localhost:3000/admin/queues` | BullBoard      | `admin`/`bullboard` |
-| `http://localhost:8025`              | Mailpit (mail) | Aucun               |
-| `http://localhost:3001`              | Grafana        | `admin`/`admin`     |
-| `http://localhost:9090`              | Prometheus     | Aucun               |
-
----
-
-## SSO Keycloak (fournisseur unique)
-
-Keycloak tourne sur **http://localhost:8081** (8080 est utilisé par PhotoVault). Le realm `telecom` est importé au premier démarrage ; `make keycloak-seed` crée les 105 comptes métier.
-
-| Usage                     | Identifiant                                         | Mot de passe    |
-| ------------------------- | --------------------------------------------------- | --------------- |
-| Login SSO — Administrateur | `admin@telecom.local`                               | `Admin@1234`    |
-| Login SSO — Superviseur    | `supervisor@telecom.local`                          | `Super@1234`    |
-| 105 agents seed            | `agent.<ROLE>.<1..15>@telecom.local` (7 rôles × 15) | `Telecom@2026!` |
-| Console admin Keycloak     | `admin`                                             | `Admin@1234`    |
-
-Les comptes SSO sont liés aux profils métier (département, rôle) par email vérifié (`users.keycloakSubjectId`). La page de login est thématisée (Keycloakify v11) : `http://localhost:8081/realms/telecom/protocol/openid-connect/auth`.
+| Service | URL | Authentification / Identifiants |
+| --- | --- | --- |
+| **API REST Backend** | `http://localhost:3000/api/v1` | Bearer Jeton RS256 Keycloak |
+| **Documentation Swagger** | `http://localhost:3000/api/docs` | Accès libre |
+| **Interface Frontend Interne** | `http://localhost:3007` | Connexion SSO Keycloak |
+| **Portail Support Public** | `http://localhost:3005` | Session Publique / OTP / Assertion WP |
+| **Console Admin Keycloak** | `http://localhost:8081/admin` | Nom: `admin` / Mdp: `Admin@1234` |
+| **Console Compte Keycloak** | `http://localhost:8081/realms/telecom/account/` | Compte utilisateur SSO connecté |
+| **Interface BullBoard** | `http://localhost:3000/admin/queues` | Login: `admin` / Mdp: `bullboard` |
+| **Interface Mailpit (SMTP)** | `http://localhost:8025` | Accès libre |
+| **Tableaux de bord Grafana** | `http://localhost:3001` | Login: `admin` / Mdp: `admin` |
+| **Collecteur Prometheus** | `http://localhost:9090` | Accès libre |
+| **Monitoring Uptime Kuma** | `http://localhost:3002` | Premier démarrage : création compte admin |

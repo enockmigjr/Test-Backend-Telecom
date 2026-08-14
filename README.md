@@ -5,7 +5,7 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql)
 ![Redis](https://img.shields.io/badge/Redis-7-DC382D?logo=redis)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker)
-![Tests](https://img.shields.io/badge/Tests-92%20spec%20files-success)
+![Tests](https://img.shields.io/badge/Tests-89%20spec%20%7C%20582%20passed-success)
 ![License](https://img.shields.io/badge/License-UNLICENSED-lightgrey)
 
 Backend **NestJS** pour la plateforme de gestion des tickets d'incidents télécoms.
@@ -23,11 +23,11 @@ Utilisé par le Service Client, NOC, Facturation, Support Technique et Opératio
 - [Flux Asynchrone](#-flux-asynchrone-bullmq)
 - [Sécurité](#️-sécurité)
 - [Observabilité](#-observabilité)
-- [Docker Compose](#-docker-compose-13-services)
+- [Docker Compose](#-docker-compose-15-services)
 - [Frontend (2 dépôts)](#-frontend-2-dépôts)
 - [Scripts & Makefile](#-scripts--makefile)
 - [Troubleshooting](#-troubleshooting)
-- [Documentation](#-documentation)
+- [Documentation Index](#-documentation)
 
 ---
 
@@ -59,23 +59,22 @@ pnpm install
 ```bash
 # Copier le fichier d'exemple
 cp .env.example .env
-
-# Les valeurs par défaut fonctionnent immédiatement en local
-# Aucune modification requise pour le développement
 ```
 
-### Étape 3 — Démarrer les services Docker
+### Étape 3 — Démarrer les services Docker (PostgreSQL, Redis, Mailpit, Keycloak)
 
 ```bash
-# Services essentiels uniquement (PostgreSQL + Redis + Mailpit)
-docker compose up -d postgres redis mailpit
+docker compose up -d postgres redis mailpit keycloak
 ```
 
-### Étape 4 — Initialiser la base de données
+### Étape 4 — Initialiser la base de données et Keycloak
 
 ```bash
-# Pousser le schéma Drizzle + insérer les données de test
+# Pousser le schéma Drizzle + insérer les données de test PostgreSQL
 pnpm run db:push && pnpm run db:seed
+
+# Peupler 105 comptes dans le realm Keycloak
+node keycloak/seed-users.mjs
 ```
 
 ### Étape 5 — Lancer l'API
@@ -84,19 +83,19 @@ pnpm run db:push && pnpm run db:seed
 pnpm run start:dev
 ```
 
-✅ L'API est accessible sur `http://localhost:3000/api/v1`
+✅ API accessible sur `http://localhost:3000/api/v1`
 ✅ Swagger sur `http://localhost:3000/api/docs`
 
 ### Tests
 
 ```bash
-# Tests unitaires (92 fichiers spec)
+# Tests unitaires (89 fichiers spec / 582 tests réussis)
 pnpm run test:unit
 
-# Tests end-to-end (24 fichiers E2E/intégration)
+# Tests end-to-end et intégration (20 fichiers)
 pnpm run test:e2e
 
-# Tous les tests (116 fichiers — 92 spec + 24 E2E/intégration)
+# Tous les tests (109 fichiers)
 pnpm run test:all
 ```
 
@@ -104,113 +103,47 @@ pnpm run test:all
 
 ## 📊 Comptes de Test (complet)
 
-> Tous les comptes sont créés par `pnpm run db:seed`. Mot de passe = colonne "Mot de passe".
-
-### Administrateur
-
-| Email                 | Nom           | Rôle          | Département    | Mot de passe |
-| --------------------- | ------------- | ------------- | -------------- | ------------ |
-| `admin@telecom.local` | Admin Système | ADMINISTRATOR | Administration | `Admin@1234` |
-
-### Superviseurs
-
-| Email                          | Nom            | Rôle       | Département   | Mot de passe |
-| ------------------------------ | -------------- | ---------- | ------------- | ------------ |
-| `supervisor@telecom.local`     | Sophie Laurent | SUPERVISOR | Customer Care | `Super@1234` |
-| `supervisor-noc@telecom.local` | Marc Bernard   | SUPERVISOR | NOC           | `Super@1234` |
-
-### Agents Customer Care
-
-| Email                     | Nom           | Rôle                   | Département   | Mot de passe |
-| ------------------------- | ------------- | ---------------------- | ------------- | ------------ |
-| `agent-cc1@telecom.local` | Alice Dupont  | CUSTOMER_SERVICE_AGENT | Customer Care | `Agent@1234` |
-| `agent-cc2@telecom.local` | Thomas Lebrun | CUSTOMER_SERVICE_AGENT | Customer Care | `Agent@1234` |
-
-### Ingénieurs NOC
-
-| Email                | Nom         | Rôle         | Département | Mot de passe |
-| -------------------- | ----------- | ------------ | ----------- | ------------ |
-| `noc1@telecom.local` | Bob Martin  | NOC_ENGINEER | NOC         | `Agent@1234` |
-| `noc2@telecom.local` | Julie Simon | NOC_ENGINEER | NOC         | `Agent@1234` |
-
-### Agents Facturation
-
-| Email                    | Nom          | Rôle          | Département | Mot de passe |
-| ------------------------ | ------------ | ------------- | ----------- | ------------ |
-| `billing1@telecom.local` | Claire Petit | BILLING_AGENT | Billing     | `Agent@1234` |
-| `billing2@telecom.local` | Luc Garnier  | BILLING_AGENT | Billing     | `Agent@1234` |
-
-### Support Technique
-
-| Email                 | Nom        | Rôle                       | Département       | Mot de passe |
-| --------------------- | ---------- | -------------------------- | ----------------- | ------------ |
-| `tech1@telecom.local` | David Roux | TECHNICAL_SUPPORT_ENGINEER | Technical Support | `Agent@1234` |
-| `tech2@telecom.local` | Nina Morel | TECHNICAL_SUPPORT_ENGINEER | Technical Support | `Agent@1234` |
-| `agent@telecom.local` | Test Agent | TECHNICAL_SUPPORT_ENGINEER | Technical Support | `Agent@1234` |
-
-### Techniciens Terrain
-
-| Email                  | Nom         | Rôle             | Département      | Mot de passe |
-| ---------------------- | ----------- | ---------------- | ---------------- | ------------ |
-| `field1@telecom.local` | Emma Moreau | FIELD_TECHNICIAN | Field Operations | `Agent@1234` |
-| `field2@telecom.local` | Kevin Blanc | FIELD_TECHNICIAN | Field Operations | `Agent@1234` |
+> Tous les comptes PostgreSQL sont créés par `pnpm run db:seed`. Les comptes SSO Keycloak sont créés par `node keycloak/seed-users.mjs`.
 
 ### Authentification — Keycloak SSO (unique)
 
-Keycloak est l'**unique fournisseur d'authentification** (frontend et API). Les anciennes
-routes locales `POST /api/v1/auth/login`, `refresh`, `logout`, `logout-all` et
-`PUT /change-password` ont été supprimées. La connexion se fait via le SSO du
-frontend interne (`http://localhost:3007`) ; l'API accepte les jetons Keycloak
-(RS256, vérifiés via JWKS) :
+Keycloak est l'**unique fournisseur d'authentification** (frontend et API). La connexion se fait via le SSO du frontend interne (`http://localhost:3007`) ou via OAuth2 PKCE. L'API vérifie les jetons Keycloak (RS256) via JWKS.
 
 ```bash
-# Le jeton s'obtient via le flux OIDC (connexion SSO sur http://localhost:3007).
-# Exemple d'appel API authentifié avec le jeton Keycloak :
 curl http://localhost:3000/api/v1/users \
   -H "Authorization: Bearer <accessToken Keycloak>"
 ```
 
-La déconnexion termine la session SSO Keycloak ; « Déconnecter toutes les
-sessions » révoque en plus toutes les sessions de l'utilisateur via l'API admin
-Keycloak. Le mot de passe et les sessions se gèrent dans la console de compte :
-`http://localhost:8081/realms/telecom/account/` (lien « Compte et mot de passe »
-dans le menu).
+### Comptes SSO Keycloak (105 comptes)
 
-### Comptes SSO Keycloak
+> Keycloak tourne sur **http://localhost:8081** (realm `telecom`).
 
-> Keycloak tourne sur **http://localhost:8081**
-> Lancer `node keycloak/seed-users.mjs` (ou `make keycloak-seed`) pour créer les 105 comptes.
-
-| Usage                             | Identifiant                                          | Mot de passe    |
-| --------------------------------- | ---------------------------------------------------- | --------------- |
-| Login SSO — Administrateur        | `admin@telecom.local`                                | `Admin@1234`    |
-| Login SSO — Superviseur           | `supervisor@telecom.local`                           | `Super@1234`    |
-| Login SSO — 105 agents seed       | `agent.<ROLE>.<1..15>@telecom.local` (7 rôles × 15)  | `Telecom@2026!` |
-| Console admin Keycloak            | `admin` (définissable via `KEYCLOAK_ADMIN`)          | `Admin@1234`    |
-
-Les écrans Keycloak sont thématisés aux couleurs de l'app (Keycloakify v11) :
-le login (`/realms/telecom/protocol/openid-connect/auth`) et la console de compte
-(`/realms/telecom/account/`, thème `account` décliné avec la même charte).
+| Usage | Identifiant | Mot de passe |
+| --- | --- | --- |
+| Login SSO — Administrateur | `admin@telecom.local` | `Admin@1234` |
+| Login SSO — Superviseur | `supervisor@telecom.local` | `Super@1234` |
+| Login SSO — 105 agents seed | `agent.<ROLE>.<1..15>@telecom.local` (7 rôles × 15) | `Telecom@2026!` |
+| Console admin Keycloak | `admin` | `Admin@1234` |
 
 ### Outils de monitoring
 
-| URL                                  | Service        | Identifiants         |
-| ------------------------------------ | -------------- | -------------------- |
-| `http://localhost:3000/api/v1`       | API REST       | Bearer token Keycloak (RS256) |
-| `http://localhost:3000/api/docs`     | Swagger        | Aucun                |
-| `http://localhost:3000/admin/queues` | BullBoard      | `admin`/`bullboard`  |
-| `http://localhost:8025`              | Mailpit (mail) | Aucun                |
-| `http://localhost:3001`              | Grafana        | `admin`/`admin`      |
-| `http://localhost:8081/admin`        | Keycloak Admin | `admin`/`Admin@1234` |
-| `http://localhost:9090`              | Prometheus     | Aucun                |
-| `http://localhost:3002`              | Uptime Kuma    | Aucun (à configurer) |
+| URL | Service | Identifiants |
+| --- | --- | --- |
+| `http://localhost:3000/api/v1` | API REST | Bearer token Keycloak (RS256) |
+| `http://localhost:3000/api/docs` | Swagger UI | Aucun |
+| `http://localhost:3000/admin/queues` | BullBoard | `admin`/`bullboard` |
+| `http://localhost:8025` | Mailpit (SMTP) | Aucun |
+| `http://localhost:3001` | Grafana | `admin`/`admin` |
+| `http://localhost:8081/admin` | Keycloak Admin | `admin`/`Admin@1234` |
+| `http://localhost:9090` | Prometheus | Aucun |
+| `http://localhost:3002` | Uptime Kuma | Premier démarrage (création compte) |
 
 ---
 
 ## 🏗️ Architecture
 
 ```
-25 modules NestJS · 31 tables PostgreSQL · 139 opérations OpenAPI · 8 workers BullMQ · 8 queues
+25 modules NestJS · 31 tables PostgreSQL · 139 opérations OpenAPI (115 chemins) · 8 workers BullMQ · 8 queues · 15 templates email
 ```
 
 ### Schéma Entité-Relation (ERD Simplifié)
@@ -225,7 +158,8 @@ flowchart LR
     T --> TN[Notes Internes]
     T --> TH[Historique]
     T --> AT[Pièces Jointes]
-    U --> RT[Refresh Tokens]
+    T --> OE[Outbox Events]
+    OE --> ED[Livraisons Sortantes]
     U --> NT[Notifications]
     U --> AL[Audit Logs]
     U --> RP[Rapports]
@@ -238,90 +172,65 @@ flowchart LR
 
 ## 📦 Modules (25)
 
-| Module           | Responsabilité                                                                               |
-| ---------------- | -------------------------------------------------------------------------------------------- |
-| `auth`           | Keycloak SSO (RS256/JWKS), profil de session `GET /auth/me`                                 |
-| `users`          | CRUD 7 rôles, activation/désactivation, disponibilité/absence (profil métier lié au SSO)    |
-| `departments`    | 6 départements, soft delete                                                                  |
-| `categories`     | Catégories de tickets avec `targetRole` dynamique pour auto-assignation                      |
-| `tickets`        | State machine 9 statuts + 2 pending, ownership-based RBAC, INC-AAAA-NNNNNN, auto-clôture 48h |
-| `comments`       | Commentaires publics (auteur/supervisor/admin)                                               |
-| `internal-notes` | Notes internes (restriction FIELD_TECHNICIAN)                                                |
-| `attachments`    | Upload/download streaming, interface abstraite IStorageService                               |
-| `notifications`  | Inbox pattern, WebSocket temps réel                                                          |
-| `sla`            | Politiques SLA, cron engine \*/5 min, breach/warning detection                               |
-| `dashboard`      | 7 endpoints: overview, status, priority, departments, SLA, workload, resolution              |
-| `audit-logs`     | Immutable write-only, recherche multi-filtres                                                |
-| `email`          | Nodemailer dev/prod, 15 templates Handlebars + layout global unifié base.hbs                 |
-| `reports`        | Génération PDF premium (PDFKit), rapports asynchrones, lien signé HMAC expirable             |
-| `settings`       | Paramètres système globaux dynamiques (heures et jours ouvrables, limite de tickets actifs)  |
-| `support-satisfaction` | Note 1-5, lien signé unique (TTL 14 j), email automatique à la clôture                 |
-| `public-support` | Portail public : catalogue, conversations (draft → confirm), timeline, préférences           |
-| `external-identity` | Identité publique : OTP email, appareils de confiance, assertions WordPress               |
-| `support-integrations` | Tenants multi-sites : origines, routage, quotas, secrets chiffrés                        |
-| `external-requesters` | Demandeurs publics : fusion de profils, anonymisation, rétention                          |
-| `support-knowledge` | Base documentaire publique versionnée, cloisonnée par intégration                         |
-| `support-bot`    | Assistant optionnel (budget, circuit breaker, outils fermés, repli formulaire)              |
-| `outbox`         | Événements durables écrits dans la transaction métier, publication bornée                   |
-| `external-delivery` | Livraisons sortantes : adaptateur email, statuts observables, rejeu                        |
-| `app`            | Module racine, health checks, métriques Prometheus                                           |
+| Module | Responsabilité |
+| --- | --- |
+| `auth` | Keycloak SSO (RS256/JWKS), profil de session `GET /auth/me` |
+| `users` | CRUD 7 rôles, activation/désactivation, provisionnement Keycloak, pause/reprise/absence |
+| `departments` | 6 départements télécom, soft delete, auto-assignation, pondérations |
+| `categories` | Catégories d'incidents avec `targetRole` dynamique |
+| `tickets` | State machine 9 statuts + 2 attente, ownership-based RBAC/ABAC, `INC-AAAA-NNNNNN`, auto-clôture 48h |
+| `comments` | Commentaires publics, réponse au demandeur, corrections liées |
+| `internal-notes` | Notes internes (interdites aux `FIELD_TECHNICIAN`) |
+| `attachments` | Upload/download streaming, quarantaine, inspection MIME, scan ClamAV |
+| `notifications` | Inbox pattern, WebSocket temps réel |
+| `sla` | Politiques SLA, cron `*/5 min`, détection warning/breach, pause SLA |
+| `dashboard` | 10 endpoints : overview, statuts, priorités, départements, SLA, workload, temps de résolution, performance agents, mon activité, support public |
+| `audit-logs` | Immutable write-only, recherche multi-filtres |
+| `email` | Nodemailer dev/prod, 15 templates Handlebars + `base.hbs` layout |
+| `reports` | Génération PDF (PDFKit), asynchrone, lien signé HMAC expirable (7j) |
+| `settings` | Paramètres système globaux dynamiques (heures/jours ouvrables, limite de tickets) |
+| `support-satisfaction` | Note 1-5, lien signé unique (TTL 14 j), email automatique à la clôture |
+| `public-support` | Portail public : catalogue, conversations (brouillon → confirmation), timeline, préférences |
+| `external-identity` | Identité publique : OTP email, appareils de confiance (90j), assertions WordPress |
+| `support-integrations` | Tenants multi-sites : origines, routage, quotas, secrets chiffrés AES-GCM |
+| `external-requesters` | Demandeurs publics : fusion de profils, anonymisation RGPD, rétention |
+| `support-knowledge` | Base documentaire publique versionnée, cloisonnée par intégration |
+| `support-bot` | Assistant conversationnel optionnel (budget, circuit breaker, outils fermés, repli formulaire) |
+| `outbox` | Boîte d'envoi fiable : événements transactionnels dépilés chaque seconde |
+| `external-delivery` | Livraisons sortantes : adaptateur email, statuts, rejeu 7 jours |
+| `app` | Module racine, health checks, métriques Prometheus |
 
 ---
 
-## 🔄 Flux Asynchrone (BullMQ)
+## 🔄 Flux Asynchrone & Outbox (BullMQ)
 
 ```
 Ticket créé → TicketNotificationListener (@OnEvent)
-  ├── EMAIL_QUEUE        → EmailWorker       → SMTP (confirmation, assignation, alerte)
+  ├── EMAIL_QUEUE        → EmailWorker       → SMTP Mailpit (confirmation, assignation, alerte)
   ├── NOTIFICATION_QUEUE → NotificationWorker → DB + WebSocket emit
   ├── AUDIT_QUEUE        → AuditWorker       → INSERT audit_logs
-  └── SLA_QUEUE          → SlaWorker         → Vérification breach (delayed job)
+  └── SLA_QUEUE          → SlaWorker         → Vérification breach SLA
 
-Compte créé → UsersService
-  └── EMAIL_QUEUE        → EmailWorker       → Email bienvenue + tempPassword
-
-Mot de passe changé → AuthService
-  └── EMAIL_QUEUE        → EmailWorker       → Email confirmation
-
-ReportsController → REPORT_QUEUE → ReportWorker
-  ├── NOTIFICATION_QUEUE → NotificationWorker → Notification in-app
-  └── EMAIL_QUEUE        → EmailWorker       → Email avec résumé
+Événement outbox (support public) → OutboxPublisherService (@Interval 1 s)
+  ├── external-delivery-queue → ExternalDeliveryWorker → EmailChannelAdapter
+  └── attachment-scan-queue → AttachmentScanWorker → ClamAV (3310) → storage/clean/
 
 SlaEngineService (@Cron */5 min)
   ├── DB update (slaBreached = true)
   ├── WebSocket emit (supervisor + assigné)
-  ├── NOTIFICATION_QUEUE → NotificationWorker → DB + WebSocket
-  └── EMAIL_QUEUE        → EmailWorker       → Alerte SLA
-
-Événement outbox (support public) → OutboxPublisherService (@Interval 1 s)
-  ├── external-delivery-queue → ExternalDeliveryWorker → EmailChannelAdapter (email demandeur)
-  └── attachment-scan-queue → AttachmentScanWorker → ClamAV → promotion clean/
+  └── EMAIL_QUEUE → EmailWorker → Alerte SLA
 ```
 
 ---
 
 ## 🛡️ Sécurité
 
-- **Auth**: Keycloak SSO unique (OIDC PKCE, jetons RS256 validés via JWKS), cookies HttpOnly côté BFF
-- **RBAC**: 7 rôles, `JwtAuthGuard` + `RolesGuard` + `@Roles()`
-- **ABAC**: Cloisonnement départemental (agents/superviseurs voient uniquement leur département)
-- **Rate Limiting**: Redis distribué (défauts 1000 req/15min, 20 login/heure/IP)
-- **Idempotence**: `@Idempotent()` + header `Idempotency-Key` (table PostgreSQL, TTL 24h)
-- **Soft Delete**: users, tickets, departments — aucune suppression physique
-
-### Rôles et permissions (matrice RBAC)
-
-| Action                    | Agent | NOC | Billing | Support | Field | Supervisor | Admin |
-| ------------------------- | ----- | --- | ------- | ------- | ----- | ---------- | ----- |
-| Créer ticket              | ✅    | ✅  | ✅      | ✅      | ✅    | ✅         | ✅    |
-| Modifier ticket (assigné) | ✅    | ✅  | ✅      | ✅      | ✅    | ✅         | ✅    |
-| Assigner/Réassigner       | ❌    | ❌  | ❌      | ❌      | ❌    | ✅         | ✅    |
-| Résoudre ticket           | ✅    | ✅  | ✅      | ✅      | ✅    | ✅         | ✅    |
-| Clôturer/Réouvrir         | ❌    | ❌  | ❌      | ❌      | ❌    | ✅         | ✅    |
-| Notes internes            | ✅    | ✅  | ✅      | ✅      | ❌    | ✅         | ✅    |
-| Audit logs                | ❌    | ❌  | ❌      | ❌      | ❌    | ✅         | ✅    |
-| Gestion utilisateurs      | ❌    | ❌  | ❌      | ❌      | ❌    | Partiel    | ✅    |
-| Gestion SLA               | ❌    | ❌  | ❌      | ❌      | ❌    | ✅         | ✅    |
+- **Auth** : Keycloak SSO unique (OIDC PKCE, RS256/JWKS), cookies HttpOnly côté BFF
+- **RBAC** : 7 rôles, `JwtAuthGuard` + `RolesGuard` + `@Roles()`
+- **ABAC** : Cloisonnement départemental (agents/superviseurs voient uniquement leur département)
+- **Rate Limiting** : Redis distribué (1000 req/15min, 20 tentatives/heure sur OTP et assertions)
+- **Idempotence** : `@Idempotent()` + header `Idempotency-Key` (table PostgreSQL `idempotency_records`, TTL 24h)
+- **Soft Delete** : `users`, `tickets`, `departments` — aucune suppression physique
 
 ---
 
@@ -329,14 +238,10 @@ SlaEngineService (@Cron */5 min)
 
 ```
 NestJS (Pino JSON)
-  ├── Logs  → Promtail → Loki → Grafana
-  ├── /metrics → Prometheus → Grafana → Alerting (Slack/Email)
-  └── Traces → OpenTelemetry → Tempo → Grafana
+  ├── Logs  → Promtail → Loki → Grafana (:3001)
+  ├── /metrics → Prometheus (:9090) → Grafana → Uptime Kuma (:3002)
+  └── Traces → OpenTelemetry → Tempo (:3200) → Grafana
 ```
-
-**Métriques exposées**: HTTP requests, duration P95, tickets created, active, SLA breaches, DB pool, WebSocket connections, heap memory.
-
-**6 règles d'alerte**: API down, erreurs 5xx, latence P95 > 2s, SLA breaches, DB connections > 15, heap > 90%.
 
 ---
 
@@ -344,192 +249,97 @@ NestJS (Pino JSON)
 
 ```bash
 # Services essentiels seulement
-docker compose up -d postgres redis mailpit
+docker compose up -d postgres redis mailpit keycloak
 
 # Tout démarrer (monitoring inclus)
 make up-full
-
-# Tout arrêter
-make down
 ```
 
-| Service       | Port       | Description               |
-| ------------- | ---------- | ------------------------- |
-| API NestJS    | 3000       | Backend REST API          |
-| Frontend (BFF) | 3007      | Console opérationnelle (3001 = Grafana) |
-| PostgreSQL 16 | 5432       | Base de données           |
-| Redis 7       | 6379       | Cache + sessions + queues |
-| Nginx         | 80, 443    | Reverse proxy             |
-| Mailpit       | 1025, 8025 | SMTP de test (dev)        |
-| Prometheus    | 9090       | Métriques                 |
-| Grafana       | 3001       | Visualisation             |
-| Loki          | 3100       | Agrégation logs           |
-| Tempo         | 3200       | Tracing distribué         |
-| Promtail      | 9080       | Collecteur logs           |
-| Uptime Kuma   | 3002       | Monitoring uptime         |
-| ClamAV        | 3310       | Antivirus des pièces jointes publiques |
-| Keycloak      | 8081       | SSO Keycloak (8080 utilisé par PhotoVault) |
+| Service | Port | Description |
+| --- | --- | --- |
+| API NestJS | 3000 | Backend REST API |
+| Frontend (BFF) | 3007 | Console opérationnelle interne |
+| Portail Public | 3005 | Portail & Widget support client |
+| PostgreSQL 16 | 5432 | Base de données |
+| Redis 7 | 6379 | Cache + sessions + queues |
+| Nginx | 80, 443 | Reverse proxy |
+| Mailpit | 1025, 8025 | SMTP de test (dev) |
+| Prometheus | 9090 | Métriques |
+| Grafana | 3001 | Visualisation & Dashboards |
+| Loki | 3100 | Agrégation logs |
+| Tempo | 3200 | Tracing distribué |
+| Promtail | 9080 | Collecteur logs |
+| Uptime Kuma | 3002 | Monitoring uptime |
+| ClamAV | 3310 | Antivirus pièces jointes |
+| Keycloak | 8081 | SSO Keycloak (8080 réservé) |
 
 ---
 
 ## 🖥️ Frontends (2 dépôts)
 
-Ce projet dispose de **deux frontends** :
-
 ### 1. Frontend Embarqué (`./frontend/`)
 
-Dépôt Git autonome à l'intérieur du backend. Architecture BFF (Backend-For-Frontend) avec cookies HttpOnly.
-
-```bash
-cd frontend
-pnpm install
-pnpm dev
-```
-
-- **Tech**: Next.js 16, React 19, TanStack Query, shadcn/ui, Socket.IO
-- **Auth**: SSO Keycloak (OIDC PKCE), cookies HttpOnly (pas de localStorage), CSRF synchronizer
-- **Port**: `http://localhost:3007` (par défaut — 3001 est réservé à Grafana)
+Console opérationnelle interne. BFF (Next.js 16, React 19) avec cookies HttpOnly et SSO Keycloak. Port : `http://localhost:3007`.
 
 ### 2. Portail public + widget (`public-frontend/`)
 
-Dépôt Git autonome (ignoré par le backend). Portail pleine page et widget iframe pour le support public.
-
-```bash
-cd public-frontend
-pnpm install
-pnpm dev
-```
-
-- **Auth**: BFF même origine, cookies HttpOnly publics + CSRF
-- **Port**: `http://localhost:3005` (par défaut)
+Portail pleine page et widget iframe pour les clients externes. BFF même origine, session publique JWT, OTP et assertions WP. Port : `http://localhost:3005`.
 
 ---
 
 ## 📋 Scripts & Makefile
 
-### Scripts pnpm
+### Commandes Makefile Principales
 
-| Commande                  | Description                       |
-| ------------------------- | --------------------------------- |
-| `pnpm run start:dev`      | Développement hot-reload          |
-| `pnpm run build`          | Compilation TypeScript            |
-| `pnpm run test`           | Tests unitaires (92 fichiers spec)|
-| `pnpm run test:unit`      | Tests unitaires (chemin src/)     |
-| `pnpm run test:e2e`       | Tests end-to-end (24 fichiers)    |
-| `pnpm run test:all`       | Tous les tests (116 fichiers — 92 spec + 24 E2E/intégration) |
-| `pnpm run test:cov`       | Tests avec couverture             |
-| `pnpm run db:push`        | Pousser schéma Drizzle            |
-| `pnpm run db:seed`        | Données de test (14 utilisateurs) |
-| `pnpm run db:reset`       | db:push + db:seed                 |
-| `pnpm run db:studio`      | Drizzle Studio (UI visuelle)      |
-| `pnpm run openapi:export` | Exporter le schéma OpenAPI        |
-| `pnpm run lint`           | ESLint                            |
-| `pnpm run format`         | Prettier                          |
-
-### Commandes Makefile
-
-| Commande         | Description                              |
-| ---------------- | ---------------------------------------- |
-| `make help`      | Affiche toutes les commandes disponibles |
-| `make up`        | Démarrer tous les services Docker        |
-| `make down`      | Arrêter tous les services                |
-| `make restart`   | Redémarrer                               |
-| `make logs`      | Suivre les logs de l'API                 |
-| `make ps`        | État des conteneurs                      |
-| `make db-push`   | Pousser le schéma Drizzle                |
-| `make db-seed`   | Insérer les données de test              |
-| `make db-reset`  | Réinitialiser complètement la DB         |
-| `make db-studio` | Drizzle Studio                           |
-| `make dev`       | Lancer l'API en mode watch               |
-| `make build`     | Compiler le projet                       |
-| `make test`      | Lancer tous les tests                    |
-| `make test-e2e`  | Tests end-to-end                         |
-| `make lint`      | ESLint                                   |
-| `make format`    | Prettier                                 |
-| `make up-full`   | Tout démarrer avec monitoring            |
-| `make clean`     | Nettoyer dist/ et coverage/              |
+| Commande | Description |
+| --- | --- |
+| `make up` | Démarrer tous les services Docker |
+| `make down` | Arrêter la stack |
+| `make db-push` | Pousser le schéma Drizzle |
+| `make db-seed` | Charger les données de démo PostgreSQL |
+| `make keycloak-seed` | Crée 105 comptes dans Keycloak (realm telecom) |
+| `make accounts` | Affiche les comptes de démonstration |
+| `make test` | Lancer tous les tests backend (`pnpm test:all`) |
+| `make openapi` | Exporter les contrats OpenAPI (interne + public) |
+| `make lint` | ESLint avec correction automatique |
+| `make typecheck` | Vérification TypeScript stricte |
 
 ---
 
 ## 🔧 Troubleshooting
 
-### L'API ne démarre pas
-
 ```bash
-# 1. Vérifier que PostgreSQL et Redis sont démarrés
-docker compose ps
-
-# 2. Vérifier les ports occupés
-# PostgreSQL doit être sur 5432, Redis sur 6379
-netstat -an | findstr "5432 6379"
-
-# 3. Réinitialiser complètement
+# Réinitialiser complètement la base et re-seeder
 make db-reset
-```
-
-### Erreur "Connection refused" à PostgreSQL
-
-```bash
-# PostgreSQL n'est pas démarré ou pas prêt
-docker compose up -d postgres
-# Attendre 5 secondes que le service soit prêt
-timeout 5
-pnpm run db:push
-```
-
-### Erreur 429 Too Many Requests (Rate Limiting)
-
-```bash
-# Flusher le cache Redis (dev uniquement)
-docker compose exec redis redis-cli FLUSHALL
-```
-
-### Les emails n'arrivent pas
-
-Vérifier que Mailpit est démarré et accessible :
-
-```bash
-docker compose up -d mailpit
-# Ouvrir http://localhost:8025 dans le navigateur
-```
-
-### Réinitialiser tout depuis zéro
-
-```bash
-docker compose down -v     # Supprimer volumes
-docker compose up -d postgres redis mailpit
-timeout 5
-pnpm run db:push
-pnpm run db:seed
-pnpm run start:dev
+make keycloak-seed
 ```
 
 ---
 
 ## 📚 Documentation
 
-| Fichier                                                                          | Contenu                                           |
-| -------------------------------------------------------------------------------- | ------------------------------------------------- |
-| [CHANGELOG.md](CHANGELOG.md)                                                     | Historique complet des versions (v1.0.0 → 2026-08-12) |
-| [CONTRIBUTING.md](CONTRIBUTING.md)                                               | Guide de contribution                             |
-| [docs/quick-start.md](docs/quick-start.md)                                       | Guide de démarrage rapide (5 min)                 |
-| [docs/routes.md](docs/routes.md)                                                 | Catalogue complet des 139 opérations API (généré depuis OpenAPI) |
-| [docs/architecture-flows.md](docs/architecture-flows.md)                         | 10 diagrammes Mermaid                             |
-| [docs/database-schema.md](docs/database-schema.md)                               | Schéma de base de données (31 tables)             |
-| [docs/ticket-lifecycle.md](docs/ticket-lifecycle.md)                             | Machine à états des tickets (9 statuts)           |
-| [docs/domain-events.md](docs/domain-events.md)                                   | Événements domaine EventEmitter2                  |
-| [docs/security.md](docs/security.md)                                             | Guide de sécurité (auth, RBAC, rate limiting)     |
-| [docs/auth-guide.md](docs/auth-guide.md)                                         | Guide complet de l'auth SSO Keycloak (niveau junior) |
-| [docs/test-accounts.md](docs/test-accounts.md)                                   | Comptes de test et identifiants                   |
-| [docs/testing.md](docs/testing.md)                                               | Guide des tests (92 spec + 24 E2E/intégration)    |
-| [docs/environment-variables.md](docs/environment-variables.md)                   | Référence variables d'env                         |
-| [docs/deployment.md](docs/deployment.md)                                         | Guide de déploiement production                   |
-| [docs/emails.md](docs/emails.md)                                                 | Architecture email, templates, flux               |
-| [docs/observability.md](docs/observability.md)                                   | Prometheus, Loki, Tempo, Grafana, alertes         |
-| [docs/websockets.md](docs/websockets.md)                                         | WebSocket temps réel, rooms, scaling              |
-| [docs/jobs-and-workers.md](docs/jobs-and-workers.md)                             | Architecture BullMQ et 8 workers                  |
-| [docs/workers.md](docs/workers.md)                                               | Détail des 8 workers BullMQ                       |
-| [docs/troubleshooting.md](docs/troubleshooting.md)                               | Résolution des erreurs courantes                  |
-| [docs/implementation-status.md](docs/implementation-status.md)                   | État production-readiness                         |
-| [docs/detailed-design-assignment-sla.md](docs/detailed-design-assignment-sla.md) | Choix d'archi SLA & Auto-Assignation              |
-| [.env.example](.env.example)                                                     | 143 variables d'environnement documentées         |
+| Fichier | Contenu |
+| --- | --- |
+| [CHANGELOG.md](CHANGELOG.md) | Historique complet des versions et corrections (v1.0.0 → 2026-08-14) |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Guide de contribution et normes Git |
+| [docs/quick-start.md](docs/quick-start.md) | Guide de démarrage rapide en 5 minutes |
+| [docs/routes.md](docs/routes.md) | Catalogue des 139 opérations OpenAPI (115 chemins) |
+| [docs/architecture-flows.md](docs/architecture-flows.md) | 14 diagrammes Mermaid (SSO Keycloak, Outbox, ClamAV, Bot, Pipeline HTTP, Observabilité) |
+| [docs/database-schema.md](docs/database-schema.md) | Schéma de base de données PostgreSQL (31 tables, index, contraintes SQL) |
+| [docs/ticket-lifecycle.md](docs/ticket-lifecycle.md) | Machine à états des tickets (9 statuts + 2 attentes, règles de transition) |
+| [docs/domain-events.md](docs/domain-events.md) | Moteur d'événements EventEmitter2 + Outbox transactionnelle durable (`outbox_events`) |
+| [docs/security.md](docs/security.md) | Architecture de sécurité (SSO Keycloak RS256/JWKS, RBAC/ABAC, Rate limiting, Quarantaine ClamAV) |
+| [docs/auth-guide.md](docs/auth-guide.md) | Guide complet de l'authentification SSO Keycloak (PKCE, JWKS, profil métier, déconnexion) |
+| [docs/test-accounts.md](docs/test-accounts.md) | Inventaire des comptes de test (14 utilisateurs PostgreSQL + 105 comptes SSO Keycloak) |
+| [docs/testing.md](docs/testing.md) | Guide des tests (89 fichiers spec unitaires / 582 tests réussis + 20 fichiers e2e) |
+| [docs/environment-variables.md](docs/environment-variables.md) | Référence des 147 variables d'environnement documentées dans `.env.example` |
+| [docs/deployment.md](docs/deployment.md) | Guide de déploiement production, SSL, scaling horizontal et checklist |
+| [docs/emails.md](docs/emails.md) | Architecture email, Nodemailer, SMTP/Mailpit, 15 templates Handlebars (`base.hbs`) |
+| [docs/observability.md](docs/observability.md) | Stack d'observabilité (Prometheus, Loki, Tempo, Grafana, Alertmanager, Uptime Kuma) |
+| [docs/websockets.md](docs/websockets.md) | WebSockets temps réel (namespaces `/ws` et `/public-support`, rooms, scaling Redis) |
+| [docs/jobs-and-workers.md](docs/jobs-and-workers.md) | Architecture des 8 files BullMQ et planification des crons système |
+| [docs/workers.md](docs/workers.md) | Spécification détaillée des 8 workers BullMQ |
+| [docs/troubleshooting.md](docs/troubleshooting.md) | Guide de résolution des erreurs courantes (démarrage, DB, auth, queues, emails) |
+| [docs/implementation-status.md](docs/implementation-status.md) | Bilan de production-readiness et couverture des 25 modules |
+| [docs/detailed-design-assignment-sla.md](docs/detailed-design-assignment-sla.md) | Design détaillé du moteur d'auto-assignation et calcul SLA dynamique |
+| [.env.example](.env.example) | Fichier de référence contenant les 147 variables d'environnement |

@@ -1,81 +1,94 @@
-# Événements Domaine
+# Événements Domaine & Pattern Outbox Durable
 
-Dernière mise à jour : 2026-08-12
+> Ce document spécifie l'architecture évènementielle du système.
+> Le backend utilise deux moteurs d'événements complémentaires : **EventEmitter2 (in-process asynchrone)** pour la logique applicative interne et l'**Outbox Transactionnelle (durable dans PostgreSQL)** pour la fiabilité absolue des livraisons sortantes et publiques.
 
-## Vue d'ensemble
+---
 
-Le système utilise deux mécanismes d'événements complémentaires :
-
-1. **EventEmitter2 (in-process)** : les listeners déclenchent des effets de bord (notifications, audit, SLA, assignation) sans bloquer la réponse HTTP.
-2. **Outbox (durable)** : les événements publics/support sont écrits dans `outbox_events` **dans la même transaction** que la mutation métier, puis publiés vers les files BullMQ par `OutboxPublisherService`. C'est le seul chemin fiable pour les livraisons externes (gate absolue : aucune notification externe ne dépend uniquement d'EventEmitter ou Redis).
-
-## Événements EventEmitter2 émis
-
-| Événement | Émetteur | Payload |
-| --- | --- | --- |
-| `ticket.created` | `TicketsService.createFromCommand` | `{ ticket, actor }` |
-| `ticket.status_changed` | `TicketsService.changeStatus`, `SlaAutoCloseService` | `{ ticketId, oldStatus, newStatus, actor, supportIntegrationId }` |
-| `ticket.assigned` | `TicketsService.assign`, `AssignmentEngineService.routeTicket` | `{ ticketId, assignedTo, actor, supportIntegrationId }` |
-| `ticket.escalated` | `TicketsService.escalate` | `{ ticketId, escalatedTo, actor, supportIntegrationId }` |
-| `ticket.resolved` / `ticket.closed` / `ticket.reopened` / `ticket.cancelled` | `TicketsService.changeStatus`, `SlaAutoCloseService` (closed) | `{ ticketId, actor, supportIntegrationId }` |
-| `ticket.deassigned` | `AutoAssignmentCron` | `{ ticketId, deassignedAgentId, reason, departmentId }` |
-| `ticket.unassigned` | `AutoAssignmentCron` | `{ ticketId, ticketNumber }` |
-| `auth.session.revoked` | `AuthService.logout` | `{ userId, jti }` |
-| `auth.user-sessions.revoked` | `AuthService.logoutAll` | `{ userId }` |
-
-## Listeners EventEmitter2
-
-| Listener | Événements écoutés | Effets |
-| --- | --- | --- |
-| `TicketNotificationListener` | created, assigned, escalated, resolved, closed, reopened, status_changed, deassigned | WebSocket + notifications in-app + emails (via files) |
-| `TicketAuditListener` | created, assigned, status_changed, closed, reopened, deassigned | file `audit-queue` → `audit_logs` |
-| `TicketSlaListener` | created, resolved, closed | planifie/annule le job SLA différé (`sla-breach-{ticketId}`) |
-| `TicketAssignmentListener` | created, unassigned | file `assignment-queue` → routage automatique |
-| `TicketSatisfactionListener` | closed | génère un lien de satisfaction et écrit un événement outbox |
-| `TelecomWebSocketGateway` | auth.session.revoked, auth.user-sessions.revoked | déconnecte immédiatement les sockets concernés |
-
-## Événements outbox (`outbox_events`)
-
-Types d'événements écrits transactionnellement (défini dans `src/modules/tickets/domain/ticket-creation-command.ts` et les services publics) :
-
-`TICKET_CREATED`, `PUBLIC_TICKET_CREATED`, `PUBLIC_REPLY_CREATED`, `PUBLIC_REPLY_CORRECTED`, `PUBLIC_REQUESTER_COMMENT_CREATED`, `PUBLIC_CONVERSATION_STARTED`, `PUBLIC_DRAFT_SAVED`, `PUBLIC_PREFERENCES_UPDATED`, `PUBLIC_ATTACHMENT_QUARANTINED`, `PUBLIC_INFORMATION_REQUESTED`, `PUBLIC_STATUS_CHANGED`, `PUBLIC_TICKET_RESOLVED`, `PUBLIC_TICKET_CLOSED`, `PUBLIC_TICKET_REOPENED`, `PUBLIC_HUMAN_HANDOFF_REQUESTED`, `SATISFACTION_REQUEST`.
-
-Cycle de vie d'un événement outbox :
+## 1. Principes & Dualité Moteur
 
 ```
-Transaction métier (insert outbox_events PENDING)
-        │
-        ▼
-OutboxPublisherService (@Interval 1 s) — claim transactionnel, lease 60 s
-        │
-        ├─ PUBLIC_ATTACHMENT_QUARANTINED → attachment-scan-queue
-        └─ autres → external-delivery-queue
-        │
-        ▼
-ExternalDeliveryService.dispatch — external_deliveries (PENDING → PROCESSING → DELIVERED/FAILED)
-        │
-        └─ EmailChannelAdapter (template public-support-event)
+┌──────────────────────────────────────────────────────────────────────────┐
+│                            MUTATION MÉTIER                               │
+│                      (ex. Création de Ticket / Message)                   │
+└─────────────────────────────────────┬────────────────────────────────────┘
+                                      │
+                 ┌────────────────────┴────────────────────┐
+                 │   Transaction SQL Unique (ACID)         │
+                 │  ├── INSERT INTO tickets                │
+                 │  ├── INSERT INTO ticket_history         │
+                 │  └── INSERT INTO outbox_events (PENDING)│
+                 └────────────────────┬────────────────────┘
+                                      │ (Commit réussi)
+                 ┌────────────────────┴────────────────────┐
+                 │                                         │
+      1. EventEmitter2 (In-Process)             2. Outbox Publisher (@Interval 1s)
+      ├── TicketNotificationListener            ├── Verification lock SKIP LOCKED
+      ├── TicketAuditListener                   ├── Push EXTERNAL_DELIVERY_QUEUE
+      ├── TicketSlaListener                     └── Push ATTACHMENT_SCAN_QUEUE
+      └── TicketAssignmentListener
 ```
 
-Chaque événement porte `mutationId`, `schemaVersion`, `deduplicationKey`, `aggregateType`/`aggregateId`, l'acteur et le payload. Les reprises sont exponentielles, bornées par `maxAttempts` ; un échec final est visible (`FAILED` + `lastError`).
+---
 
-## Architecture
+## 2. Événements EventEmitter2 (In-Process)
 
-```
-Service métier
-   │
-   ├─ emitAfterCommit → EventEmitter2 → listeners → BullMQ (email, notification, audit, sla, assignment)
-   │
-   └─ transaction → outbox_events → publisher → external-delivery / attachment-scan
-```
+Les événements in-process servent à déclencher des effets de bord asynchrones sans ralentir la réponse HTTP à l'utilisateur.
 
-Avantage : la réponse HTTP n'attend ni email, ni notification, ni PDF ; et les événements destinés au public ne peuvent pas être perdus entre PostgreSQL et Redis.
+### 2.1. Catalogue des Événements Émis
 
-## Qui écrit quoi (double traçabilité)
-
-| Registre | Écrit par | Sert à | Lecture |
+| Nom de l'événement | Service Émetteur | Payload | Listeners Récepteurs |
 | --- | --- | --- | --- |
-| `ticket_history` | En direct dans la transaction métier (`TicketHistoryService.recordByActor`) | Timeline du ticket, réouvertures, frise | `GET /tickets/:id/history` |
-| `audit_logs` | Via `audit-queue` (`TicketAuditListener` → `AuditWorker`) | Conformité, actions critiques | `GET /audit-logs` (ADMIN/SUPERVISOR) |
+| \`ticket.created\` | \`TicketsService.createFromCommand\` | \`{ ticket, actor }\` | \`NotificationListener\`, \`AuditListener\`, \`SlaListener\`, \`AssignmentListener\` |
+| \`ticket.status_changed\` | \`TicketsService.changeStatus\`, \`SlaAutoCloseService\` | \`{ ticketId, oldStatus, newStatus, actor, supportIntegrationId }\` | \`NotificationListener\`, \`AuditListener\`, \`SlaListener\` |
+| \`ticket.assigned\` | \`TicketsService.assign\`, \`AssignmentEngineService\` | \`{ ticketId, assignedTo, actor, supportIntegrationId }\` | \`NotificationListener\`, \`AuditListener\` |
+| \`ticket.escalated\` | \`TicketsService.escalate\` | \`{ ticketId, escalatedTo, actor, supportIntegrationId }\` | \`NotificationListener\`, \`AuditListener\` |
+| \`ticket.resolved\` | \`TicketsService.changeStatus\` | \`{ ticketId, actor, supportIntegrationId }\` | \`NotificationListener\`, \`SlaListener\` |
+| \`ticket.closed\` | \`TicketsService.changeStatus\`, \`SlaAutoCloseService\` | \`{ ticketId, actor, supportIntegrationId }\` | \`NotificationListener\`, \`AuditListener\`, \`SatisfactionListener\` |
+| \`ticket.reopened\` | \`TicketsService.changeStatus\` | \`{ ticketId, actor, supportIntegrationId }\` | \`NotificationListener\`, \`AuditListener\` |
+| \`ticket.cancelled\` | \`TicketsService.changeStatus\` | \`{ ticketId, actor }\` | \`NotificationListener\`, \`AuditListener\` |
+| \`ticket.deassigned\` | \`AutoAssignmentCron\` | \`{ ticketId, deassignedAgentId, reason, departmentId }\` | \`NotificationListener\`, \`AuditListener\` |
+| \`ticket.unassigned\` | \`AutoAssignmentCron\` | \`{ ticketId, ticketNumber }\` | \`AssignmentListener\` |
+| \`auth.session.revoked\` | \`AuthService.logout\` | \`{ userId, jti }\` | \`TelecomWebSocketGateway\` (Déconnexion immédiate du socket) |
+| \`auth.user-sessions.revoked\` | \`AuthService.logoutAll\` | \`{ userId }\` | \`TelecomWebSocketGateway\` (Déconnexion de toutes les sessions) |
 
-Les deux registres doivent être alimentés pour chaque mutation majeure. La désassignation d'urgence (`ticket.deassigned`) écrit les deux depuis 2026-08-12 ; toute nouvelle mutation doit vérifier cette règle.
+---
+
+## 3. Pattern Outbox Durable (\`outbox_events\`)
+
+Pour garantir qu'aucun événement externe ou public ne soit perdu en cas de crash du serveur ou d'indisponibilité temporaire de Redis/SMTP, le système utilise la table \`outbox_events\`.
+
+### 3.1. Structure de l'Enveloppe Événementielle
+
+Chaque enregistrement dans \`outbox_events\` comporte :
+- \`id\` : UUIDv7
+- \`eventType\` : Chaîne identifiant le type d'événement
+- \`aggregateType\` & \`aggregateId\` : Entité source (ex. \`ticket\` / \`TT-2026-000001\`)
+- \`payload\` : Données JSON sérialisées
+- \`status\` : Statut du cycle de vie (\`PENDING\` → \`PROCESSING\` → \`PUBLISHED\` / \`FAILED\`)
+- \`deduplicationKey\` : Clé unique anti-doublon
+- \`mutationId\` & \`schemaVersion\` : Versionning et traçabilité des mutations
+
+### 3.2. Catalogue des Événements Outbox
+
+\`TICKET_CREATED\`, \`PUBLIC_TICKET_CREATED\`, \`PUBLIC_REPLY_CREATED\`, \`PUBLIC_REPLY_CORRECTED\`, \`PUBLIC_REQUESTER_COMMENT_CREATED\`, \`PUBLIC_CONVERSATION_STARTED\`, \`PUBLIC_DRAFT_SAVED\`, \`PUBLIC_PREFERENCES_UPDATED\`, \`PUBLIC_ATTACHMENT_QUARANTINED\`, \`PUBLIC_INFORMATION_REQUESTED\`, \`PUBLIC_STATUS_CHANGED\`, \`PUBLIC_TICKET_RESOLVED\`, \`PUBLIC_TICKET_CLOSED\`, \`PUBLIC_TICKET_REOPENED\`, \`PUBLIC_HUMAN_HANDOFF_REQUESTED\`, \`SATISFACTION_REQUEST\`.
+
+### 3.3. Dépilation et Livraison Sortante (\`OutboxPublisherService\`)
+
+1. Un cron/interval exécuté chaque seconde (\`@Interval(1000)\`) scrute les événements \`PENDING\`.
+2. Verrouillage atomique avec \`FOR UPDATE SKIP LOCKED\` sur les 100 plus anciens événements.
+3. Marque les événements comme \`PROCESSING\` et pousse un job dans \`EXTERNAL_DELIVERY_QUEUE\` ou \`ATTACHMENT_SCAN_QUEUE\`.
+4. Le worker consomme le job et appelle l'adaptateur de canal (\`EmailChannelAdapter\` ou webhook).
+5. En cas de succès, l'événement passe à \`PUBLISHED\` avec \`publishedAt = NOW()\`. En cas d'échec, un retry avec backoff exponentiel est déclenché.
+6. En cas de dépassement des tentatives (\`maxAttempts\`), l'événement passe à \`FAILED\` et alerte le système de monitoring.
+
+---
+
+## 4. Double Traçabilité (Audit Logs vs Ticket History)
+
+Le système sépare strictly deux types de historiques pour répondre aux contraintes métier et réglementaires :
+
+| Registre | Emplacement SQL | Mécanisme d'écriture | Rôle & Usage | Mode de lecture |
+| --- | --- | --- | --- | --- |
+| **Ticket History** | Table \`ticket_history\` | **Synchrone** dans la transaction métier (\`TicketHistoryService.recordByActor\`) | Historique fonctionnel du ticket (frise chronologique, transitions de statut, assignations visibles par l'agent) | \`GET /api/v1/tickets/:id/history\` |
+| **Audit Trail** | Table \`audit_logs\` | **Asynchrone** via BullMQ \`AUDIT_QUEUE\` (\`TicketAuditListener\` → \`AuditWorker\`) | Registre légal immutable (write-only) des actions d'administration, accès sensibles, modifications de sécurité, adresses IP et user-agents | \`GET /api/v1/audit-logs\` (Réservé Admin / Superviseur) |

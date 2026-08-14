@@ -1,67 +1,94 @@
-# WebSockets — Temps Réel
+# WebSockets & Temps Réel (Namespaces /ws & /public-support)
 
-Dernière mise à jour : 2026-08-12
+> Ce document détaille l'architecture temps réel Socket.IO du projet télécom.
+> Le backend orchestre **deux namespaces distincts** avec isolation stricte, authentification forte et scaling Redis.
 
-Le backend expose **deux namespaces Socket.IO distincts** :
+---
 
-1. `/ws` — espace interne (agents, superviseurs, administrateurs)
-2. `/public-support` — espace public (demandeurs, portail, widget)
+## 1. Vue d'ensemble des Namespaces
 
-## Namespace interne `/ws`
+| Namespace | Vocation | Transport | Authentification | Target Frontends |
+| --- | --- | --- | --- | --- |
+| \`/ws\` | Console opérationnelle interne | Socket.IO (WebSocket + Polling fallback) | Cookie \`access_token\` Keycloak RS256 / Bearer | Console Interne (\`frontend\` :3007) |
+| \`/public-support\` | Portail support public & Widget | Socket.IO (WebSocket + Polling fallback) | Cookie session publique \`itsm-public-session\` | Portail & Widget (\`public-frontend\` :3005) |
 
-### Authentification
+---
 
-Le token d'accès JWT est lu dans le **cookie HttpOnly** posé par le BFF (`__Host-access-token` en production, `access_token` en dev) — pas dans un token de query. `WebSocketAuthService` vérifie la signature, la non-révocation Redis et le statut du compte ; les utilisateurs devant changer leur mot de passe sont refusés.
+## 2. Namespace Interne \`/ws\`
 
-### Rooms automatiques
+### 2.1. Authentification & Sécurité (RS256 via JWKS)
 
-| Room | Membres | Usage |
+La connexion au namespace \`/ws\` est validée par \`WebSocketAuthService\` (\`src/websocket/websocket-auth.service.ts\`) :
+
+1. **Extraction du jeton** : Le jeton JWT Keycloak est extrait en priorité depuis le cookie HttpOnly \`access_token\` (\`__Host-access-token\` en prod) ou du header \`Authorization: Bearer\`.
+2. **Signature & Clé Publique** : La signature RS256 est vérifiée via les clés JWKS distribuées par Keycloak (\`KeycloakJwksService\`).
+3. **Liaison & Profil Métier** : Le sujet Keycloak (\`sub\`) est lié au compte utilisateur en base (\`users.keycloakSubjectId = sub\`). Le compte doit être actif (\`isActive=true\`) et non supprimé (\`deletedAt IS NULL\`).
+4. **Politique Mot de Passe** : Les utilisateurs devant changer leur mot de passe sont refusés au niveau du handshake Socket.IO.
+
+### 2.2. Cloisonnement des Rooms
+
+Une fois le handshake accepté, l'utilisateur rejoint automatiquement 3 types de rooms :
+
+| Pattern de Room | Membres | Cas d'usage |
 | --- | --- | --- |
-| `user:{userId}` | l'utilisateur (tous ses onglets) | notifications personnelles, assignations |
-| `department:{departmentId}` | le département | nouveaux tickets, changements de statut |
-| `session:{jti}` | la session JWT | déconnexion immédiate sur révocation |
+| \`user:{userId}\` | Tous les onglets d'un utilisateur donné | Notifications personnelles, assignations directes |
+| \`department:{departmentId}\` | Tous les agents et superviseurs du département | Nouveaux tickets du département, changements de statut |
+| \`session:{jti}\` | Socket spécifique à la session JWT | Déconnexion forcée immédiate sur révocation de jeton |
 
-### Événements émis
+### 2.3. Événements Émis par le Backend (Interne)
 
-`notification.created`, `ticket.created`, `ticket.assigned`, `ticket.escalated`, `ticket.resolved`, `ticket.closed`, `ticket.reopened`, `ticket.deassigned`, `ticket.status_changed`, `ticket.sla_warning`, `ticket.sla_breached`.
+- \`notification.created\` : Nouvelle notification in-app pour l'utilisateur
+- \`ticket.created\` : Nouveau ticket créé dans le département
+- \`ticket.assigned\` / \`ticket.deassigned\` : Notification d'assignation / désassignation
+- \`ticket.escalated\` : Escalade d'incident vers un niveau supérieur
+- \`ticket.status_changed\` / \`ticket.resolved\` / \`ticket.closed\` / \`ticket.reopened\` : Transitions d'état
+- \`ticket.sla_warning\` / \`ticket.sla_breached\` : Alertes SLA (dépassé ou imminence < 30 min)
 
-Émetteurs : `TicketNotificationListener` (direct) et `NotificationWorker` (après persistance) — voir la note sur la double émission dans les analyses techniques.
+### 2.4. Révocation de Session en Temps Réel
 
-### Révocation de session
+\`TelecomWebSocketGateway\` écoute les événements \`auth.session.revoked\` et \`auth.user-sessions.revoked\` via EventEmitter2. Dès qu'un logout est déclenché côté API ou Keycloak, la gateway déconnecte immédiatement les sockets associés aux rooms \`session:{jti}\` ou \`user:{userId}\`.
 
-`TelecomWebSocketGateway` écoute `auth.session.revoked` et `auth.user-sessions.revoked` et déconnecte immédiatement les sockets concernés (rooms `session:{jti}` / `user:{userId}`).
+---
 
-## Namespace public `/public-support`
+## 3. Namespace Public \`/public-support\`
 
-### Authentification
+### 3.1. Authentification & Validation d'Origine
 
-Cookie de session publique (portail et widget) validé par `PublicWebSocketAuthService` + `PublicSessionService` ; l'origine du handshake doit figurer dans `PUBLIC_SUPPORT_ORIGINS` (préfixe `__Host-` imposé en production).
+Le namespace \`/public-support\` sert le portail public et le widget iframe :
 
-### Rooms
+- **Auth** : Le cookie \`itsm-public-session\` est validé par \`PublicWebSocketAuthService\` et \`PublicSessionService\`.
+- **CORS & Origines** : L'origine du handshake doit figurer dans la liste blanche \`PUBLIC_SUPPORT_ORIGINS\` (validation stricte en production via \`public-websocket-cors.ts\`).
 
-- `public:requester:{integrationId}:{requesterId}` — room principale du demandeur
-- `public:conversation:{id}` et `public:ticket:{id}` — rejointes pour les conversations/tickets récents (100 max)
+### 3.2. Rooms du Support Public
 
-### Événements émis
+- \`public:requester:{integrationId}:{requesterId}\` : Room du demandeur public pour recevoir le suivi global.
+- \`public:conversation:{id}\` / \`public:ticket:{id}\` : Rooms de suivi d'une conversation ou d'un ticket spécifique (limitées à 100 rooms simultanées par socket).
 
-`public.refresh` avec `{ resource: 'ticket' | 'conversation' | 'attachment', id }`, déclenché par `PublicRealtimeNotifierService` après publication d'un événement outbox.
+### 3.3. Événements Émis (Public)
 
-## Scaling Horizontal
+- \`public.refresh\` : Transmet un payload \`{ resource: 'ticket' | 'conversation' | 'attachment', id }\`. Déclenché par \`PublicRealtimeNotifierService\` lors de la publication d'un événement dans l'outbox.
 
-`RedisIoAdapter` (`src/websocket/redis-io.adapter.ts`) synchronise les deux namespaces entre instances via Redis pub/sub ; il est installé dans `main.ts` avec `app.useWebSocketAdapter`.
+---
 
-## CORS
+## 4. Scaling Horizontal (Adaptateur Redis Pub/Sub)
 
-- Interne : `websocket-cors.ts` (liste `CORS_ORIGIN`, joker interdit en production)
-- Public : `public-websocket-cors.ts` (liste `PUBLIC_SUPPORT_ORIGINS`, joker interdit en production)
+Pour permettre le déploiement sur plusieurs instances backend (cluster Docker / Kubernetes), Socket.IO utilise \`RedisIoAdapter\` (\`src/websocket/redis-io.adapter.ts\`) :
 
-## Fichiers clés
+- Les événements émis sur une instance sont publiés sur les canaux Pub/Sub Redis.
+- Les autres instances reçoivent le message et transmettent l'événement aux clients connectés sur leurs propres sockets.
+- Configurables via \`REDIS_URL\` (\`redis://localhost:6379\`).
 
-| Fichier | Rôle |
-| --- | --- |
-| `src/websocket/websocket.gateway.ts` | Gateway interne `/ws` |
-| `src/websocket/public-support.gateway.ts` | Gateway publique `/public-support` |
-| `src/websocket/websocket-auth.service.ts` | Auth JWT interne (cookie) |
-| `src/websocket/public-websocket-auth.service.ts` | Auth session publique (cookie portail/widget) |
-| `src/websocket/public-realtime-notifier.service.ts` | Notification `public.refresh` depuis l'outbox |
-| `src/websocket/redis-io.adapter.ts` | Adapter Redis pour le scaling |
+---
+
+## 5. Matrice des Fichiers Source WebSockets
+
+| Fichier | Service / Classe | Rôle |
+| --- | --- | --- |
+| \`src/websocket/websocket.gateway.ts\` | \`TelecomWebSocketGateway\` | Gateway principale pour le namespace \`/ws\` |
+| \`src/websocket/public-support.gateway.ts\` | \`PublicSupportGateway\` | Gateway publique pour le namespace \`/public-support\` |
+| \`src/websocket/websocket-auth.service.ts\` | \`WebSocketAuthService\` | Auth JWT Keycloak RS256 / JWKS (cookies/headers) |
+| \`src/websocket/public-websocket-auth.service.ts\` | \`PublicWebSocketAuthService\` | Auth session publique pour le portail & widget |
+| \`src/websocket/public-realtime-notifier.service.ts\` | \`PublicRealtimeNotifierService\` | Notification temps réel du public via l'Outbox |
+| \`src/websocket/redis-io.adapter.ts\` | \`RedisIoAdapter\` | Adaptateur Redis Pub/Sub pour le scaling multi-instances |
+| \`src/websocket/websocket-cors.ts\` | \`websocketCorsOptions\` | Validation des origines CORS interne |
+| \`src/websocket/public-websocket-cors.ts\` | \`publicWebsocketCorsOptions\` | Validation des origines CORS publiques |
