@@ -2,7 +2,7 @@
 
 ## Statut
 - État : audit complet réalisé (14/08/2026) — 2 rapports fusionnés : `plans/reports/review-260814-1314-backend-full-audit.md` (audit principal, 12 P1 vérifiés manuellement) et `plans/reports/review-260814-1600-backend-code-review.md` (second agent, recoupé finding par finding).
-- Design source : AGENTS.md, `contexte/phase-1-system-design.md`, `contexte/phase-2-database-design.md`, `contexte/phase-3-api-design-and-implementation-strategy.md`
+- Design source : AGENTS.md
 - Mode : **normal** — correctifs ciblés sans refonte ; chaque phase a ses tests et sa preuve de clôture
 - Dépôts : backend uniquement (`src/`)
 
