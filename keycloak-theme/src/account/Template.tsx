@@ -96,9 +96,9 @@ export default function Template(props: TemplateProps<KcContext, I18n>) {
             <li className={clsx(active === "sessions" && "active")}>
               <a href={url.sessionsUrl}>{msg("sessions")}</a>
             </li>
-            <li className={clsx(active === "applications" && "active")}>
-              <a href={url.applicationsUrl}>{msg("applications")}</a>
-            </li>
+            {/* « Applications » masqué temporairement : applications.ftl de
+                Keycloak 26.7.0 renvoie 500 (AdminPermissions manquante,
+                corrigée en 26.7.1 — voir keycloak-theme/Dockerfile). */}
             {features.log && (
               <li className={clsx(active === "log" && "active")}>
                 <a href={url.logUrl}>{msg("log")}</a>

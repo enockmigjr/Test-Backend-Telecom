@@ -86,7 +86,11 @@ services:
       CLAMAV_PORT: 3310
       AUTH_PROVIDER: ${AUTH_PROVIDER:-keycloak}
       KEYCLOAK_ISSUER: ${KEYCLOAK_ISSUER:-https://auth.example.com/realms/telecom}
+      KEYCLOAK_INTERNAL_ISSUER: ${KEYCLOAK_INTERNAL_ISSUER:-http://keycloak:8080/realms/telecom}
       KEYCLOAK_JWKS_URL: ${KEYCLOAK_JWKS_URL:-https://auth.example.com/realms/telecom/protocol/openid-connect/certs}
+      # Provisionnement des comptes SSO (création, mot de passe temporaire, rôles).
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?KEYCLOAK_ADMIN_PASSWORD est requis en production}
       PUBLIC_SUPPORT_ORIGINS: ${PUBLIC_SUPPORT_ORIGINS:-https://portail.ticketing.example.com}
       PUBLIC_SUPPORT_CONTACT_HASH_SECRET: ${PUBLIC_SUPPORT_CONTACT_HASH_SECRET:?secret requis en production}
       PUBLIC_SUPPORT_MASTER_KEYS: ${PUBLIC_SUPPORT_MASTER_KEYS:?secret requis en production}
@@ -148,6 +152,9 @@ services:
       PUBLIC_APP_ORIGIN: ${PUBLIC_APP_ORIGIN:-https://ticketing.example.com}
       AUTH_COOKIE_SECURE: 'true'
       AUTH_CSRF_SECRET: ${AUTH_CSRF_SECRET:?AUTH_CSRF_SECRET est requis en production}
+      # Révocation de toutes les sessions (API admin Keycloak).
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?KEYCLOAK_ADMIN_PASSWORD est requis en production}
     expose:
       - '3000'
     depends_on:
