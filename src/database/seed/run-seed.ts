@@ -53,7 +53,6 @@ async function seed() {
   await db.delete(schema.ticketHistory);
   await db.delete(schema.ticketAssignments);
   await db.delete(schema.tickets);
-  await db.delete(schema.refreshTokens);
   await db.delete(schema.users);
   await db.delete(schema.departments);
   await db.delete(schema.slaPolicies);

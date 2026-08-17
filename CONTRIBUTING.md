@@ -108,7 +108,8 @@ Voir `.env.example` pour la liste complète (70+ variables).
 
 Les valeurs par défaut fonctionnent en local. En production, au minimum changer :
 
-- `JWT_ACCESS_SECRET` et `JWT_REFRESH_SECRET`
+- `KEYCLOAK_ADMIN_PASSWORD` (provisionnement/révocation SSO)
+- `PUBLIC_SESSION_SECRET` (≥ 32 caractères)
 - `DATABASE_PASSWORD`
 - `REDIS_PASSWORD`
 - `SMTP_*` (configuration SMTP réelle)

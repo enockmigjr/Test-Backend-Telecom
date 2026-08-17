@@ -28,13 +28,13 @@ cryptographiquement) que l'application vérifie à chaque appel.
 
 ## 2. Les pièces du puzzle
 
-| Élément | Rôle | Où ça vit |
-| --- | --- | --- |
-| **Keycloak** | Source de vérité des comptes, mots de passe, rôles, sessions | Conteneur Docker, port **8081** (realm `telecom`) |
-| **BFF (frontend interne)** | `frontend/` (Next.js) — c'est lui qui parle à Keycloak et pose les cookies | Port **3007** |
-| **Backend API** | NestJS — vérifie les jetons et applique les droits (RBAC/ABAC) | Port **3000** |
-| **Table `users` (PostgreSQL)** | Profil **métier** : rôle, département, disponibilité, absence | Base `telecom_tickets` |
-| **JWKS** | Les clés publiques de Keycloak pour vérifier la signature des jetons | URL interne `http://keycloak:8080/realms/telecom/protocol/openid-connect/certs` |
+| Élément                        | Rôle                                                                       | Où ça vit                                                                       |
+| ------------------------------ | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| **Keycloak**                   | Source de vérité des comptes, mots de passe, rôles, sessions               | Conteneur Docker, port **8081** (realm `telecom`)                               |
+| **BFF (frontend interne)**     | `frontend/` (Next.js) — c'est lui qui parle à Keycloak et pose les cookies | Port **3007**                                                                   |
+| **Backend API**                | NestJS — vérifie les jetons et applique les droits (RBAC/ABAC)             | Port **3000**                                                                   |
+| **Table `users` (PostgreSQL)** | Profil **métier** : rôle, département, disponibilité, absence              | Base `telecom_tickets`                                                          |
+| **JWKS**                       | Les clés publiques de Keycloak pour vérifier la signature des jetons       | URL interne `http://keycloak:8080/realms/telecom/protocol/openid-connect/certs` |
 
 **Le principe clé :** Keycloak sait **qui** vous êtes ; la base `users` sait quel
 rôle/département **métier** vous avez. Les deux sont reliés par
@@ -48,7 +48,7 @@ rôle/département **métier** vous avez. Les deux sont reliés par
 
 1. L'utilisateur ouvre `http://localhost:3007`.
 2. Sans session valide, Next.js redirige vers `/login`
-   ([page.tsx](../../frontend/src/app/(auth)/login/page.tsx)) qui redirige à son
+   ([page.tsx](<../../frontend/src/app/(auth)/login/page.tsx>)) qui redirige à son
    tour vers `/api/auth/keycloak/login`.
 3. Cette route BFF construit l'URL d'autorisation Keycloak
    (`buildAuthorizeUrl`) avec :
@@ -70,6 +70,7 @@ désactivé ? mot de passe à changer ?) puis redirige le navigateur vers le
 ### 3.3. Échange du code (côté serveur BFF)
 
 La route `/api/auth/keycloak/callback` :
+
 1. Récupère le `code` ;
 2. L'échange contre des jetons auprès de Keycloak
    (`exchangeCode` → `grant_type=authorization_code` + `code_verifier` PKCE) ;
@@ -84,12 +85,12 @@ La route `/api/auth/keycloak/callback` :
 
 ### 3.4. Les cookies de session
 
-| Cookie | Contenu | Durée | But |
-| --- | --- | --- | --- |
-| `access_token` | Jeton d'accès Keycloak | 15 min | Envoyé en `Authorization: Bearer` à l'API |
-| `itsm-refresh-token` | Refresh token Keycloak | 7 j | Renouveler l'access token |
-| `kc_id_token` | ID token | 7 j (conservé) | Déconnexion OIDC (`id_token_hint`) |
-| `itsm-csrf-token` | Jeton anti-CSRF | session | Protéger les mutations BFF |
+| Cookie               | Contenu                | Durée          | But                                       |
+| -------------------- | ---------------------- | -------------- | ----------------------------------------- |
+| `access_token`       | Jeton d'accès Keycloak | 15 min         | Envoyé en `Authorization: Bearer` à l'API |
+| `itsm-refresh-token` | Refresh token Keycloak | 7 j            | Renouveler l'access token                 |
+| `kc_id_token`        | ID token               | 7 j (conservé) | Déconnexion OIDC (`id_token_hint`)        |
+| `itsm-csrf-token`    | Jeton anti-CSRF        | session        | Protéger les mutations BFF                |
 
 En production ces cookies doivent être `__Host-*`, `Secure`, `HttpOnly`,
 `SameSite=Lax`, `Path=/` (voir `frontend/src/lib/auth/env.ts`).
@@ -144,12 +145,12 @@ Le résultat est stocké dans `request.user` (objet `JwtPayload`) :
 
 ### Les guards (portiers)
 
-| Guard | Rôle |
-| --- | --- |
-| `RequestAuthGuard` (global) | Aiguille chaque route vers un mode d'auth : `INTERNAL` (jeton Keycloak), `ANONYMOUS` (publique), `PUBLIC_SESSION` (portail public), `INTEGRATION_ASSERTION` (WordPress) |
-| `JwtAuthGuard` | Vérifie qu'un jeton valide est présent |
-| `RolesGuard` | Vérifie `@Roles('ADMINISTRATOR', ...)` sur les routes sensibles |
-| `PasswordChangeRequiredGuard` | Refuse l'accès si `mustChangePassword=true` (sauf routes autorisées) |
+| Guard                         | Rôle                                                                                                                                                                    |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `RequestAuthGuard` (global)   | Aiguille chaque route vers un mode d'auth : `INTERNAL` (jeton Keycloak), `ANONYMOUS` (publique), `PUBLIC_SESSION` (portail public), `INTEGRATION_ASSERTION` (WordPress) |
+| `JwtAuthGuard`                | Vérifie qu'un jeton valide est présent                                                                                                                                  |
+| `RolesGuard`                  | Vérifie `@Roles('ADMINISTRATOR', ...)` sur les routes sensibles                                                                                                         |
+| `PasswordChangeRequiredGuard` | Refuse l'accès si `mustChangePassword=true` (sauf routes autorisées)                                                                                                    |
 
 La route `GET /api/v1/auth/me` renvoie le profil du jeton courant (utilisée par
 le frontend pour savoir qui est connecté).
@@ -173,6 +174,7 @@ jamais Keycloak : la session SSO survivait et l'utilisateur était
 ### 6.2. « Déconnecter toutes les sessions »
 
 La route `/api/auth/keycloak/logout-all` :
+
 1. Décode `sub` depuis l'access token (l'utilisateur Keycloak) ;
 2. Obtient un **jeton admin** Keycloak (compte bootstrap du realm `master`) ;
 3. Appelle l'API admin :
@@ -254,29 +256,28 @@ Keycloak + profil métier).
 
 ## 10. Variables d'environnement (auth)
 
-| Variable | Valeur dev | Rôle |
-| --- | --- | --- |
-| `AUTH_PROVIDER` | `keycloak` | Fournisseur unique d'auth |
-| `KEYCLOAK_ISSUER` | `http://localhost:8081/realms/telecom` | URL publique (navigateur + comparaison `iss`) |
-| `KEYCLOAK_INTERNAL_ISSUER` | `http://keycloak:8080/realms/telecom` | URL interne (échanges BFF/backend → Keycloak) |
-| `KEYCLOAK_JWKS_URL` | `http://keycloak:8080/realms/telecom/protocol/openid-connect/certs` | Clés publiques de vérification |
-| `KEYCLOAK_CLIENT_ID` | `telecom-frontend` | Client OIDC de l'application |
-| `KEYCLOAK_REDIRECT_URI` | `http://localhost:3007/api/auth/keycloak/callback` | Callback autorisé |
-| `KEYCLOAK_ADMIN` / `KEYCLOAK_ADMIN_PASSWORD` | `admin` / dev | Compte admin (realm `master`) pour provisionner et révoquer |
-| `KEYCLOAK_HOSTNAME` / `KC_HOSTNAME_PORT` | `localhost` / `8081` | Issuer stable (anti « Invalid token issuer ») |
-| `AUTH_CSRF_SECRET` | ≥ 32 caractères | Signature des jetons CSRF BFF |
+| Variable                                     | Valeur dev                                                          | Rôle                                                        |
+| -------------------------------------------- | ------------------------------------------------------------------- | ----------------------------------------------------------- |
+| `KEYCLOAK_ISSUER`                            | `http://localhost:8081/realms/telecom`                              | URL publique (navigateur + comparaison `iss`)               |
+| `KEYCLOAK_INTERNAL_ISSUER`                   | `http://keycloak:8080/realms/telecom`                               | URL interne (échanges BFF/backend → Keycloak)               |
+| `KEYCLOAK_JWKS_URL`                          | `http://keycloak:8080/realms/telecom/protocol/openid-connect/certs` | Clés publiques de vérification                              |
+| `KEYCLOAK_CLIENT_ID`                         | `telecom-frontend`                                                  | Client OIDC de l'application                                |
+| `KEYCLOAK_REDIRECT_URI`                      | `http://localhost:3007/api/auth/keycloak/callback`                  | Callback autorisé                                           |
+| `KEYCLOAK_ADMIN` / `KEYCLOAK_ADMIN_PASSWORD` | `admin` / dev                                                       | Compte admin (realm `master`) pour provisionner et révoquer |
+| `KEYCLOAK_HOSTNAME` / `KC_HOSTNAME_PORT`     | `localhost` / `8081`                                                | Issuer stable (anti « Invalid token issuer »)               |
+| `AUTH_CSRF_SECRET`                           | ≥ 32 caractères                                                     | Signature des jetons CSRF BFF                               |
 
 ---
 
 ## 11. Dépannage rapide
 
-| Symptôme | Cause probable | Correctif |
-| --- | --- | --- |
-| `401` sur l'API | Jeton expiré / invalide | Se reconnecter (le BFF renouvelle normalement) |
-| `502` + « Session momentanément indisponible » | Ancienne session avec issuer incohérent | Reconnecter une fois ; vérifier `KC_HOSTNAME` |
-| « Nom d'utilisateur ou mot de passe invalide » | Le compte n'existe **pas dans Keycloak** | Créer l'utilisateur via l'admin (provisionne Keycloak) |
-| `403` / `401` sur la console de compte | Session Keycloak absente ou ancienne | Se déconnecter puis se reconnecter |
-| Log Keycloak « Invalid token issuer » | `KC_HOSTNAME` non aligné avec `KEYCLOAK_ISSUER` | Fixer `KC_HOSTNAME` (voir section 4) |
+| Symptôme                                       | Cause probable                                  | Correctif                                              |
+| ---------------------------------------------- | ----------------------------------------------- | ------------------------------------------------------ |
+| `401` sur l'API                                | Jeton expiré / invalide                         | Se reconnecter (le BFF renouvelle normalement)         |
+| `502` + « Session momentanément indisponible » | Ancienne session avec issuer incohérent         | Reconnecter une fois ; vérifier `KC_HOSTNAME`          |
+| « Nom d'utilisateur ou mot de passe invalide » | Le compte n'existe **pas dans Keycloak**        | Créer l'utilisateur via l'admin (provisionne Keycloak) |
+| `403` / `401` sur la console de compte         | Session Keycloak absente ou ancienne            | Se déconnecter puis se reconnecter                     |
+| Log Keycloak « Invalid token issuer »          | `KC_HOSTNAME` non aligné avec `KEYCLOAK_ISSUER` | Fixer `KC_HOSTNAME` (voir section 4)                   |
 
 ---
 

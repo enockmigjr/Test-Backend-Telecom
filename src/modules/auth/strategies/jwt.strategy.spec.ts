@@ -12,10 +12,9 @@
 import { UnauthorizedException } from '@nestjs/common';
 
 import { RedisProvider } from '../../../common/providers/redis.provider';
-import { JwtConfigService } from '../../../config/jwt.config';
 import { DrizzleProvider } from '../../../database/drizzle.provider';
 import { JwtPayload } from '../interfaces/jwt-payload.interface';
-import { KeycloakJwksService } from '../services/keycloak-jwks.service';
+import { KeycloakTokenVerifierService } from '../services/keycloak-token-verifier.service';
 import { JwtStrategy } from './jwt.strategy';
 
 const activeUser = {
@@ -38,11 +37,10 @@ function createStrategy(userRevokedAfter: string | null) {
     get: jest.fn().mockResolvedValue(userRevokedAfter),
   };
   const redisProvider = { getClient: jest.fn(() => redis) } as unknown as RedisProvider;
-  const jwtConfig = { accessSecret: 'test-access-secret-minimum-32-characters' } as JwtConfigService;
-  const keycloakJwks = {
-    publicKey: jest.fn().mockResolvedValue('-----BEGIN CERTIFICATE-----test-----END CERTIFICATE-----'),
-  } as unknown as KeycloakJwksService;
-  return new JwtStrategy(jwtConfig, drizzle, redisProvider, keycloakJwks);
+  const tokenVerifier = {
+    publicKeyForToken: jest.fn().mockResolvedValue('-----BEGIN CERTIFICATE-----test-----END CERTIFICATE-----'),
+  } as unknown as KeycloakTokenVerifierService;
+  return new JwtStrategy(drizzle, redisProvider, tokenVerifier);
 }
 
 function payload(sessionIssuedAt: number): JwtPayload {
@@ -71,12 +69,31 @@ describe('JwtStrategy — révocation globale', () => {
     const strategy = createStrategy('2000');
 
     await expect(strategy.validate(payload(2001))).resolves.toEqual(
-      expect.objectContaining({ sub: activeUser.id, sessionIssuedAt: 2001 }),
+      expect.objectContaining({ sub: activeUser.id, role: 'CUSTOMER_SERVICE_AGENT' }),
     );
   });
 });
 
 describe('JwtStrategy — jeton Keycloak', () => {
+  it('refuse un jeton Keycloak révoqué via jwt_user_bl (logout-all)', async () => {
+    const previousIssuer = process.env['KEYCLOAK_ISSUER'];
+    process.env['KEYCLOAK_ISSUER'] = 'http://keycloak.test/realms/telecom';
+    const strategy = createStrategy(String(Date.now()));
+    try {
+      await expect(
+        strategy.validate({
+          sub: 'keycloak-subject-revoked',
+          email: 'agent@telecom.local',
+          jti: 'k-jti-revoked',
+          iss: 'http://keycloak.test/realms/telecom',
+        } as unknown as JwtPayload),
+      ).rejects.toBeInstanceOf(UnauthorizedException);
+    } finally {
+      if (previousIssuer === undefined) delete process.env['KEYCLOAK_ISSUER'];
+      else process.env['KEYCLOAK_ISSUER'] = previousIssuer;
+    }
+  });
+
   it('résout le profil métier via keycloakSubjectId et le rôle du realm', async () => {
     const previousIssuer = process.env['KEYCLOAK_ISSUER'];
     process.env['KEYCLOAK_ISSUER'] = 'http://keycloak.test/realms/telecom';
@@ -110,9 +127,8 @@ describe('JwtStrategy — jeton Keycloak', () => {
     const redis = {
       getClient: jest.fn(() => ({ exists: jest.fn().mockResolvedValue(0) })),
     } as unknown as RedisProvider;
-    const jwtConfig = { accessSecret: 'test-access-secret-minimum-32-characters' } as JwtConfigService;
-    const keycloakJwks = { publicKey: jest.fn() } as unknown as KeycloakJwksService;
-    const strategy = new JwtStrategy(jwtConfig, drizzle, redis, keycloakJwks);
+    const tokenVerifier = { publicKeyForToken: jest.fn() } as unknown as KeycloakTokenVerifierService;
+    const strategy = new JwtStrategy(drizzle, redis, tokenVerifier);
     try {
       const result = await strategy.validate({
         sub: 'keycloak-subject-new',

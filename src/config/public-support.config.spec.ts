@@ -22,10 +22,9 @@ describe('PublicSupportConfigService', () => {
     expect(() => new PublicSupportConfigService().masterKeys).toThrow('courante');
   });
 
-  it('refuse de réutiliser le secret JWT interne', () => {
-    process.env['JWT_ACCESS_SECRET'] = 'a'.repeat(32);
-    process.env['PUBLIC_SESSION_SECRET'] = 'a'.repeat(32);
-    expect(() => new PublicSupportConfigService().publicSessionSecret).toThrow('distinct');
+  it('refuse un secret de session publique trop court', () => {
+    process.env['PUBLIC_SESSION_SECRET'] = 'too-short';
+    expect(() => new PublicSupportConfigService().publicSessionSecret).toThrow('32 caractères');
   });
 
   it('est inactif par défaut et s active avec deepseek + clé', () => {

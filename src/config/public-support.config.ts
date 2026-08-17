@@ -56,10 +56,7 @@ export class PublicSupportConfigService {
   }
 
   get publicSessionSecret(): string {
-    const secret = requiredSecret('PUBLIC_SESSION_SECRET');
-    if (secret === process.env['JWT_ACCESS_SECRET'])
-      throw new Error('Le secret public doit être distinct du JWT interne.');
-    return secret;
+    return requiredSecret('PUBLIC_SESSION_SECRET');
   }
 
   get publicSessionIssuer(): string {

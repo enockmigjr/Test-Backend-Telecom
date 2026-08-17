@@ -50,7 +50,7 @@ services:
       dockerfile: Dockerfile
     image: ${REGISTRY:-registry.example.com}/telecom-keycloak:${TAG:-latest}
     restart: unless-stopped
-    command: ["start", "--import-realm", "--http-port=8080", "--hostname=${KEYCLOAK_HOSTNAME:-auth.example.com}"]
+    command: ['start', '--import-realm', '--http-port=8080', '--hostname=${KEYCLOAK_HOSTNAME:-auth.example.com}']
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin}
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?KEYCLOAK_ADMIN_PASSWORD est requis en production}
@@ -84,7 +84,6 @@ services:
       SMTP_PORT: ${SMTP_PORT:-587}
       CLAMAV_HOST: clamav
       CLAMAV_PORT: 3310
-      AUTH_PROVIDER: ${AUTH_PROVIDER:-keycloak}
       KEYCLOAK_ISSUER: ${KEYCLOAK_ISSUER:-https://auth.example.com/realms/telecom}
       KEYCLOAK_INTERNAL_ISSUER: ${KEYCLOAK_INTERNAL_ISSUER:-http://keycloak:8080/realms/telecom}
       KEYCLOAK_JWKS_URL: ${KEYCLOAK_JWKS_URL:-https://auth.example.com/realms/telecom/protocol/openid-connect/certs}
@@ -132,6 +131,15 @@ services:
       PUBLIC_SUPPORT_INTEGRATION_KEY: ${PUBLIC_SUPPORT_INTEGRATION_KEY:?secret requis en production}
       PUBLIC_BFF_CSRF_SECRET: ${PUBLIC_BFF_CSRF_SECRET:?secret requis en production}
       PUBLIC_COOKIE_SECURE: 'true'
+    expose:
+      - '3100'
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://127.0.0.1:3100/api/health || exit 1']
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    depends_on:
+      - api
     networks: [telecom-network]
 
   frontend:
@@ -144,7 +152,6 @@ services:
       NODE_ENV: production
       BACKEND_INTERNAL_URL: http://api:3000
       REDIS_URL: redis://redis:6379
-      AUTH_PROVIDER: ${AUTH_PROVIDER:-keycloak}
       KEYCLOAK_ISSUER: ${KEYCLOAK_ISSUER:-https://auth.example.com/realms/telecom}
       KEYCLOAK_INTERNAL_ISSUER: ${KEYCLOAK_INTERNAL_ISSUER:-https://auth.example.com/realms/telecom}
       KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-telecom-frontend}

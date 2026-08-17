@@ -34,8 +34,6 @@ export * from './attachments';
 /** Réexportation des symboles pour l'importation centralisée. */
 export * from './ticket-history';
 /** Réexportation des symboles pour l'importation centralisée. */
-export * from './refresh-tokens';
-/** Réexportation des symboles pour l'importation centralisée. */
 export * from './notifications';
 /** Réexportation des symboles pour l'importation centralisée. */
 export * from './audit-logs';

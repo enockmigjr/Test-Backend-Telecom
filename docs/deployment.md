@@ -16,8 +16,8 @@ Copier et adapter `.env.example` → `.env`:
 ```bash
 # Production
 NODE_ENV=production
-JWT_ACCESS_SECRET=<générer 64 caractères aléatoires>
-JWT_REFRESH_SECRET=<générer 64 caractères aléatoires>
+KEYCLOAK_ADMIN_PASSWORD=<mot de passe admin Keycloak>
+PUBLIC_SESSION_SECRET=<générer 64 caractères aléatoires>
 SMTP_HOST=smtp.example.com
 SMTP_PORT=587
 SMTP_USER=noreply@example.com
@@ -132,15 +132,13 @@ scrape_configs:
 | `telecom_db_pool_connections`           | Gauge     | —                          | Connexions DB            |
 | `telecom_nodejs_*`                      | Default   | —                          | CPU, mémoire, event loop |
 
-### Token Cleanup
+### Table legacy `refresh_tokens` (supprimée)
 
-Un cron quotidien (3h du matin) nettoie les tokens de rafraîchissement expirés ou révoqués depuis plus de 30 jours. Il logge le nombre de tokens supprimés :
-
-```bash
-# Vérifier que le cleanup s'exécute
-docker compose logs api | grep "TokenCleanup"
-# Exemple: {"msg":"TokenCleanup: 42 refresh_tokens supprimés","level":30}
-```
+La table locale des refresh tokens est **supprimée** (Keycloak-only) : la
+migration `0020` refuse le DROP si des lignes existent, et le pré-vol
+`scripts/check-refresh-tokens-drop.mjs` vérifie la fenêtre
+`REFRESH_TOKENS_DROP_GRACE_DAYS` avant suppression. Sur une base neuve,
+`make install` (env → stack → migrations → seed) applique tout le catalogue.
 
 ## 7. Logs
 
@@ -199,7 +197,7 @@ docker compose exec -T postgres psql -U telecom telecom_tickets < backup.sql
 | ------------------------- | ---------------------------------------------------------------------- |
 | `ECONNREFUSED` PostgreSQL | Vérifier `DATABASE_URL` et que PostgreSQL est accessible               |
 | `ECONNREFUSED` Redis      | Vérifier `REDIS_HOST`/`REDIS_PORT` et que Redis tourne                 |
-| Erreur JWT                | Vérifier que `JWT_ACCESS_SECRET` et `JWT_REFRESH_SECRET` sont définis  |
+| Erreur SSO / Jeton        | Vérifier `KEYCLOAK_ISSUER`, `KEYCLOAK_JWKS_URL` et la console Keycloak |
 | 502 Bad Gateway           | Vérifier les logs Nginx et API                                         |
 | Emails non envoyés        | Vérifier la config SMTP et les logs du worker BullMQ                   |
 | SLA non vérifiés          | Le cron tourne toutes les 5 min — vérifier les logs `SlaEngineService` |

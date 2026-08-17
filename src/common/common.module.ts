@@ -6,22 +6,20 @@
  * Ce module regroupe des outils transversaux utilisés un peu partout :
  * - PaginationHelper : utilitaire de pagination des résultats de listes.
  * - RedisProvider : fournisseur de connexion à la base mémoire Redis.
- * - TokenCleanupService : service de nettoyage automatique des jetons d'accès expirés.
  * ============================================================================
  */
 
 import { Global, Module } from '@nestjs/common';
 import { PaginationHelper } from './helpers/pagination.helper';
 import { RedisProvider } from './providers/redis.provider';
-import { TokenCleanupService } from './services/token-cleanup.service';
 
 /**
  * Module utilitaire global (accessible partout sans avoir besoin d'être réimporté).
  */
 @Global()
 @Module({
-  providers: [PaginationHelper, RedisProvider, TokenCleanupService],
-  exports: [PaginationHelper, RedisProvider, TokenCleanupService],
+  providers: [PaginationHelper, RedisProvider],
+  exports: [PaginationHelper, RedisProvider],
 })
 /**
  * Module NestJS `CommonModule` configurant les dépendances, contrôleurs et services associés.

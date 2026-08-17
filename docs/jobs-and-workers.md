@@ -8,16 +8,16 @@ Le système utilise **BullMQ** (basé sur Redis) pour découpler les opérations
 
 ### Files (Queues) et Workers
 
-| Queue | Consommateur | Producteurs | Description |
-| --- | --- | --- | --- |
-| `email-queue` | EmailWorker (concurrency 5) | TicketNotificationListener, UsersService, AuthService, SlaAlertNotifierService, ReportWorker | Emails transactionnels (15 templates Handlebars) |
-| `notification-queue` | NotificationWorker (concurrency 10) | TicketNotificationListener, SlaAlertNotifierService, ReportWorker | Notifications in-app + émission WebSocket |
-| `sla-queue` | SlaWorker (concurrency 5) | TicketSlaListener | Vérification différée de breach SLA par ticket |
-| `audit-queue` | AuditWorker (concurrency 10) | TicketAuditListener | Écriture asynchrone des logs d'audit |
-| `report-queue` | ReportWorker (concurrency 3) | ReportsController, ReportSchedulerService | Génération PDF + email avec lien signé |
-| `assignment-queue` | AssignmentWorker (concurrency 10, limiter 100/s) | TicketAssignmentListener | Routage automatique des tickets |
-| `external-delivery-queue` | ExternalDeliveryWorker (concurrency 5) | OutboxPublisherService | Livraisons sortantes (adaptateur email) |
-| `attachment-scan-queue` | AttachmentScanWorker (concurrency 2) | OutboxPublisherService, pièces jointes publiques | Scan antivirus en quarantaine |
+| Queue                     | Consommateur                                     | Producteurs                                                                                  | Description                                      |
+| ------------------------- | ------------------------------------------------ | -------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| `email-queue`             | EmailWorker (concurrency 5)                      | TicketNotificationListener, UsersService, AuthService, SlaAlertNotifierService, ReportWorker | Emails transactionnels (15 templates Handlebars) |
+| `notification-queue`      | NotificationWorker (concurrency 10)              | TicketNotificationListener, SlaAlertNotifierService, ReportWorker                            | Notifications in-app + émission WebSocket        |
+| `sla-queue`               | SlaWorker (concurrency 5)                        | TicketSlaListener                                                                            | Vérification différée de breach SLA par ticket   |
+| `audit-queue`             | AuditWorker (concurrency 10)                     | TicketAuditListener                                                                          | Écriture asynchrone des logs d'audit             |
+| `report-queue`            | ReportWorker (concurrency 3)                     | ReportsController, ReportSchedulerService                                                    | Génération PDF + email avec lien signé           |
+| `assignment-queue`        | AssignmentWorker (concurrency 10, limiter 100/s) | TicketAssignmentListener                                                                     | Routage automatique des tickets                  |
+| `external-delivery-queue` | ExternalDeliveryWorker (concurrency 5)           | OutboxPublisherService                                                                       | Livraisons sortantes (adaptateur email)          |
+| `attachment-scan-queue`   | AttachmentScanWorker (concurrency 2)             | OutboxPublisherService, pièces jointes publiques                                             | Scan antivirus en quarantaine                    |
 
 Tous les workers sont enregistrés dans `src/queues/queues.module.ts` (module global), y compris `ExternalDeliveryWorker`.
 
@@ -33,17 +33,16 @@ Tous les workers sont enregistrés dans `src/queues/queues.module.ts` (module gl
 
 ## Cron Jobs
 
-| Fréquence | Tâche | Fichier |
-| --- | --- | --- |
-| Toutes les 2 min | Auto-assignation, consolidation de charge, désassignation d'urgence, escalade des tickets ASSIGNED en retard (rattrapage idempotent ; passages sans travail comptabilisés par `telecom_assignment_cron_noop_total`) | `src/modules/tickets/services/auto-assignment.cron.ts` |
-| Toutes les 5 min | Contrôle SLA (warning < 30 min, breach), auto-clôture 48 h | `src/modules/sla/sla-engine.service.ts`, `sla-alert-processor.service.ts`, `sla-auto-close.service.ts` |
-| Toutes les 5 min | Récupération des scans de pièces jointes bloqués (SCANNING stale) | `src/modules/attachments/security/attachment-quarantine-cleanup.service.ts` |
-| Toutes les heures | Purge des quarantaines expirées, fichiers temporaires, quarantaines promues | idem |
-| Chaque seconde | Publication de l'outbox vers les files (attachment-scan / external-delivery) | `src/modules/outbox/services/outbox-publisher.service.ts` |
-| Chaque minute | Rejeu des livraisons externes échouées (fenêtre 7 jours) | `src/modules/external-delivery/services/external-delivery.service.ts` |
-| Lundi 06:00 | Rapport hebdomadaire PDF + email au premier administrateur actif | `src/modules/reports/report-scheduler.service.ts` |
-| Tous les jours 03:00 | Purge des refresh tokens locaux expirés (hérité — inactif avec Keycloak SSO) | `src/common/services/token-cleanup.service.ts` |
-| Tous les jours 04:00 | Rétention : anonymisation des demandeurs inactifs, purge challenges OTP et idempotences | `src/modules/external-requesters/services/retention-cleanup.service.ts` |
+| Fréquence            | Tâche                                                                                                                                                                                                               | Fichier                                                                                                |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Toutes les 2 min     | Auto-assignation, consolidation de charge, désassignation d'urgence, escalade des tickets ASSIGNED en retard (rattrapage idempotent ; passages sans travail comptabilisés par `telecom_assignment_cron_noop_total`) | `src/modules/tickets/services/auto-assignment.cron.ts`                                                 |
+| Toutes les 5 min     | Contrôle SLA (warning < 30 min, breach), auto-clôture 48 h                                                                                                                                                          | `src/modules/sla/sla-engine.service.ts`, `sla-alert-processor.service.ts`, `sla-auto-close.service.ts` |
+| Toutes les 5 min     | Récupération des scans de pièces jointes bloqués (SCANNING stale)                                                                                                                                                   | `src/modules/attachments/security/attachment-quarantine-cleanup.service.ts`                            |
+| Toutes les heures    | Purge des quarantaines expirées, fichiers temporaires, quarantaines promues                                                                                                                                         | idem                                                                                                   |
+| Chaque seconde       | Publication de l'outbox vers les files (attachment-scan / external-delivery)                                                                                                                                        | `src/modules/outbox/services/outbox-publisher.service.ts`                                              |
+| Chaque minute        | Rejeu des livraisons externes échouées (fenêtre 7 jours)                                                                                                                                                            | `src/modules/external-delivery/services/external-delivery.service.ts`                                  |
+| Lundi 06:00          | Rapport hebdomadaire PDF + email au premier administrateur actif                                                                                                                                                    | `src/modules/reports/report-scheduler.service.ts`                                                      |
+| Tous les jours 04:00 | Rétention : anonymisation des demandeurs inactifs, purge challenges OTP et idempotences                                                                                                                             | `src/modules/external-requesters/services/retention-cleanup.service.ts`                                |
 
 ## Flux de traitement
 

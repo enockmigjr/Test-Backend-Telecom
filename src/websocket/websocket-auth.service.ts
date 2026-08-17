@@ -5,17 +5,17 @@
  * EXPLICATION :
  * Ce service valide l'identité des clients lors de la poignée de main (Handshake) WebSocket :
  * 1. Extrait le jeton d'accès JWT depuis l'en-tête de cookie HTTP `Cookie: __Host-access-token=...`.
- * 2. Vérifie la signature cryptographique et l'expiration du jeton via `JwtService.verifyAsync`.
- * 3. Invoque `JwtStrategy.validate` pour contrôler les listes de révocation Redis et le statut de l'utilisateur dans PostgreSQL.
+ * 2. Vérifie la signature RS256 du jeton via `KeycloakTokenVerifierService` (JWKS).
+ * 3. Invoque `JwtStrategy.validate` pour contrôler la révocation Redis et le statut de l'utilisateur dans PostgreSQL.
  * 4. Retourne le payload validé — le changement de mot de passe temporaire est
  *    imposé par Keycloak (UPDATE_PASSWORD), pas par l'application.
  * ============================================================================
  */
 
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
 
 import { JwtPayload } from '../modules/auth/interfaces/jwt-payload.interface';
+import { KeycloakTokenVerifierService } from '../modules/auth/services/keycloak-token-verifier.service';
 import { JwtStrategy } from '../modules/auth/strategies/jwt.strategy';
 
 /**
@@ -24,7 +24,7 @@ import { JwtStrategy } from '../modules/auth/strategies/jwt.strategy';
 @Injectable()
 export class WebSocketAuthService {
   constructor(
-    private readonly jwtService: JwtService,
+    private readonly tokenVerifier: KeycloakTokenVerifierService,
     private readonly jwtStrategy: JwtStrategy,
   ) {}
 
@@ -40,8 +40,8 @@ export class WebSocketAuthService {
     const token = this.extractAccessToken(cookieHeader);
     if (!token) throw new UnauthorizedException('Cookie de session absent.');
 
-    // 2. Vérifier la signature du jeton et sa date d'expiration
-    const payload = await this.jwtService.verifyAsync<JwtPayload>(token);
+    // 2. Vérifier la signature RS256 du jeton (clé publique JWKS du realm)
+    const payload = await this.tokenVerifier.verify<JwtPayload>(token);
 
     // 3. Valider la non-révocation dans Redis et l'état actif dans PostgreSQL
     const user = await this.jwtStrategy.validate(payload);
