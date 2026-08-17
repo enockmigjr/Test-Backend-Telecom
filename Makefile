@@ -6,14 +6,15 @@
 
 SHELL := /bin/sh
 COMPOSE ?= docker compose
+COMPOSE_PROD ?= docker compose -f docker-compose.prod.yml
 API ?= api
 KEYCLOAK_ADMIN ?= admin
 KEYCLOAK_ADMIN_PASSWORD ?= Admin@1234
 
-.PHONY: help env up down build restart logs ps health migrate seed db-reset keycloak-seed publish \
+.PHONY: help env install up down build restart logs ps health migrate seed db-reset keycloak-seed publish \
 	test unit e2e lint typecheck openapi \
 	api-logs db-shell redis-shell mailpit backup restore clean accounts \
-	keycloak-db keycloak-up prod-up prod-down prod-build
+	keycloak-db keycloak-up prod-up prod-down prod-build prod-migrate prod-seed
 
 help: ## Affiche les cibles disponibles
 	@echo "Cibles principales :"
@@ -22,6 +23,13 @@ help: ## Affiche les cibles disponibles
 env: ## Prépare .env depuis .env.example (ne remplace pas un .env existant)
 	@test -f .env || cp .env.example .env
 	@test -f .env && echo "Fichier .env prêt."
+
+install: ## Installation complète sur une base neuve (env → stack → migrations → seed)
+	$(MAKE) env
+	$(MAKE) up
+	$(MAKE) migrate
+	$(MAKE) seed
+	@echo "✔ Installation terminée. Comptes : make accounts (optionnel : make keycloak-seed)."
 
 up: ## Démarre toute la stack en arrière-plan (base keycloak créée si besoin)
 	$(COMPOSE) up -d postgres
@@ -98,6 +106,12 @@ prod-down: ## Arrête la stack production
 
 prod-build: ## Construit les images production (api, frontend, portail, keycloak)
 	$(COMPOSE) -f docker-compose.prod.yml build
+
+prod-migrate: ## Applique les migrations sur la stack production
+	$(COMPOSE_PROD) exec $(API) pnpm db:migrate
+
+prod-seed: ## Charge les données de démonstration sur la stack production
+	$(COMPOSE_PROD) exec $(API) pnpm db:seed
 
 db-reset: ## Réinitialise le schéma et recharge le seed
 	$(COMPOSE) exec $(API) pnpm db:reset

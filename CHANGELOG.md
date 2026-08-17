@@ -4,6 +4,38 @@ Tous les changements notables sont documentés ici. Format basé sur [Keep a Cha
 
 ---
 
+## [2026-08-14] — Keycloak-only, observabilité Keycloak et refonte UI
+
+### Changed
+
+- **Keycloak-only** : suppression de la branche HS256 de `JwtStrategy` (RS256/JWKS exclusif), du service `TokenCleanupService`, de la table `refresh_tokens` (code + migration gardée `0020` avec pré-vol `REFRESH_TOKENS_DROP_GRACE_DAYS`), des variables `JWT_*` locales, du fallback `AUTH_PROVIDER` (BFF, compose, env) et de la dépendance `@nestjs/jwt`.
+- **WebSocket `/ws` migré en RS256** : vérificateur partagé `KeycloakTokenVerifierService` (HTTP + WS), révocation `jwt_user_bl:{sub}` écrite par le BFF après logout-all.
+- **Observabilité Keycloak** : événements (login, échecs, révocations, admin) synchronisés vers `audit_logs` (cron 5 min, déduplication `source_event_id`), protection brute force realm activée (5 échecs/15 min), collecte des logs Keycloak dans Promtail/Loki.
+- **Préparation UI** : thème Keycloakify, console interne et portail public en cours de refonte (marque « KAMGOKO ITSM », zéro mention visible de Keycloak, dark mode).
+
+### Fixed
+
+- `test/auth.e2e-spec.ts` testait d'anciennes routes locales supprimées → réécrit pour le flux Keycloak RS256.
+- Docs alignées (comptages tests réels : 88 suites / 580 tests unitaires ; 15 E2E + 4 intégration).
+
+### Added
+
+- `scripts/check-refresh-tokens-drop.mjs` (pré-vol DROP), `docs/runbooks/keycloak-release-rollback.md`.
+
+## [2026-08-17] — DA « noir sur blanc », déconnexion unifiée, nettoyage thème et portail élargi
+
+### Changed
+
+- **Thème Keycloak** : primaire « noir façon » (`#172033`) sur fond blanc au lieu du bleu (login, mot de passe, compte) ; déconnexion sur la même carte (`pages/LogoutConfirm.tsx` + gabarit par défaut) ; mode sombre optionnel conservé.
+- **`keycloak-theme` dédupliqué** : coquille commune `components/auth-layout.tsx` (les 5 pages custom ne répètent plus le shell/carte/footer) ; titre d'onglet `KAMGOKO ITSM — …`.
+- **Portail public + widget** : boutons/liens/chips sur les tokens (`bg-primary`, `bg-card`, `bg-muted`) au lieu des bleus/blancs codés en dur ; formulaire élargi `max-w-5xl` ; descriptions `text-base` ; `docker-compose.prod.yml` : `public-frontend` complété (expose, healthcheck, depends_on).
+
+### Fixed
+
+- Titre d'onglet du login corrigé ; composition du compose prod validée.
+
+---
+
 ## [2026-08-13] — Keycloak unique, ancien auth supprimé
 
 ### Changed
