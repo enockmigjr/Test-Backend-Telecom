@@ -37,20 +37,20 @@ Les événements in-process servent à déclencher des effets de bord asynchrone
 
 ### 2.1. Catalogue des Événements Émis
 
-| Nom de l'événement | Service Émetteur | Payload | Listeners Récepteurs |
-| --- | --- | --- | --- |
-| \`ticket.created\` | \`TicketsService.createFromCommand\` | \`{ ticket, actor }\` | \`NotificationListener\`, \`AuditListener\`, \`SlaListener\`, \`AssignmentListener\` |
-| \`ticket.status_changed\` | \`TicketsService.changeStatus\`, \`SlaAutoCloseService\` | \`{ ticketId, oldStatus, newStatus, actor, supportIntegrationId }\` | \`NotificationListener\`, \`AuditListener\`, \`SlaListener\` |
-| \`ticket.assigned\` | \`TicketsService.assign\`, \`AssignmentEngineService\` | \`{ ticketId, assignedTo, actor, supportIntegrationId }\` | \`NotificationListener\`, \`AuditListener\` |
-| \`ticket.escalated\` | \`TicketsService.escalate\` | \`{ ticketId, escalatedTo, actor, supportIntegrationId }\` | \`NotificationListener\`, \`AuditListener\` |
-| \`ticket.resolved\` | \`TicketsService.changeStatus\` | \`{ ticketId, actor, supportIntegrationId }\` | \`NotificationListener\`, \`SlaListener\` |
-| \`ticket.closed\` | \`TicketsService.changeStatus\`, \`SlaAutoCloseService\` | \`{ ticketId, actor, supportIntegrationId }\` | \`NotificationListener\`, \`AuditListener\`, \`SatisfactionListener\` |
-| \`ticket.reopened\` | \`TicketsService.changeStatus\` | \`{ ticketId, actor, supportIntegrationId }\` | \`NotificationListener\`, \`AuditListener\` |
-| \`ticket.cancelled\` | \`TicketsService.changeStatus\` | \`{ ticketId, actor }\` | \`NotificationListener\`, \`AuditListener\` |
-| \`ticket.deassigned\` | \`AutoAssignmentCron\` | \`{ ticketId, deassignedAgentId, reason, departmentId }\` | \`NotificationListener\`, \`AuditListener\` |
-| \`ticket.unassigned\` | \`AutoAssignmentCron\` | \`{ ticketId, ticketNumber }\` | \`AssignmentListener\` |
-| \`auth.session.revoked\` | \`AuthService.logout\` | \`{ userId, jti }\` | \`TelecomWebSocketGateway\` (Déconnexion immédiate du socket) |
-| \`auth.user-sessions.revoked\` | \`AuthService.logoutAll\` | \`{ userId }\` | \`TelecomWebSocketGateway\` (Déconnexion de toutes les sessions) |
+| Nom de l'événement             | Service Émetteur                                         | Payload                                                             | Listeners Récepteurs                                                                 |
+| ------------------------------ | -------------------------------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| \`ticket.created\`             | \`TicketsService.createFromCommand\`                     | \`{ ticket, actor }\`                                               | \`NotificationListener\`, \`AuditListener\`, \`SlaListener\`, \`AssignmentListener\` |
+| \`ticket.status_changed\`      | \`TicketsService.changeStatus\`, \`SlaAutoCloseService\` | \`{ ticketId, oldStatus, newStatus, actor, supportIntegrationId }\` | \`NotificationListener\`, \`AuditListener\`, \`SlaListener\`                         |
+| \`ticket.assigned\`            | \`TicketsService.assign\`, \`AssignmentEngineService\`   | \`{ ticketId, assignedTo, actor, supportIntegrationId }\`           | \`NotificationListener\`, \`AuditListener\`                                          |
+| \`ticket.escalated\`           | \`TicketsService.escalate\`                              | \`{ ticketId, escalatedTo, actor, supportIntegrationId }\`          | \`NotificationListener\`, \`AuditListener\`                                          |
+| \`ticket.resolved\`            | \`TicketsService.changeStatus\`                          | \`{ ticketId, actor, supportIntegrationId }\`                       | \`NotificationListener\`, \`SlaListener\`                                            |
+| \`ticket.closed\`              | \`TicketsService.changeStatus\`, \`SlaAutoCloseService\` | \`{ ticketId, actor, supportIntegrationId }\`                       | \`NotificationListener\`, \`AuditListener\`, \`SatisfactionListener\`                |
+| \`ticket.reopened\`            | \`TicketsService.changeStatus\`                          | \`{ ticketId, actor, supportIntegrationId }\`                       | \`NotificationListener\`, \`AuditListener\`                                          |
+| \`ticket.cancelled\`           | \`TicketsService.changeStatus\`                          | \`{ ticketId, actor }\`                                             | \`NotificationListener\`, \`AuditListener\`                                          |
+| \`ticket.deassigned\`          | \`AutoAssignmentCron\`                                   | \`{ ticketId, deassignedAgentId, reason, departmentId }\`           | \`NotificationListener\`, \`AuditListener\`                                          |
+| \`ticket.unassigned\`          | \`AutoAssignmentCron\`                                   | \`{ ticketId, ticketNumber }\`                                      | \`AssignmentListener\`                                                               |
+| \`auth.session.revoked\`       | \`AuthService.logout\`                                   | \`{ userId, jti }\`                                                 | \`TelecomWebSocketGateway\` (Déconnexion immédiate du socket)                        |
+| \`auth.user-sessions.revoked\` | \`AuthService.logoutAll\`                                | \`{ userId }\`                                                      | \`TelecomWebSocketGateway\` (Déconnexion de toutes les sessions)                     |
 
 ---
 
@@ -61,6 +61,7 @@ Pour garantir qu'aucun événement externe ou public ne soit perdu en cas de cra
 ### 3.1. Structure de l'Enveloppe Événementielle
 
 Chaque enregistrement dans \`outbox_events\` comporte :
+
 - \`id\` : UUIDv7
 - \`eventType\` : Chaîne identifiant le type d'événement
 - \`aggregateType\` & \`aggregateId\` : Entité source (ex. \`ticket\` / \`TT-2026-000001\`)
@@ -88,7 +89,7 @@ Chaque enregistrement dans \`outbox_events\` comporte :
 
 Le système sépare strictly deux types de historiques pour répondre aux contraintes métier et réglementaires :
 
-| Registre | Emplacement SQL | Mécanisme d'écriture | Rôle & Usage | Mode de lecture |
-| --- | --- | --- | --- | --- |
-| **Ticket History** | Table \`ticket_history\` | **Synchrone** dans la transaction métier (\`TicketHistoryService.recordByActor\`) | Historique fonctionnel du ticket (frise chronologique, transitions de statut, assignations visibles par l'agent) | \`GET /api/v1/tickets/:id/history\` |
-| **Audit Trail** | Table \`audit_logs\` | **Asynchrone** via BullMQ \`AUDIT_QUEUE\` (\`TicketAuditListener\` → \`AuditWorker\`) | Registre légal immutable (write-only) des actions d'administration, accès sensibles, modifications de sécurité, adresses IP et user-agents | \`GET /api/v1/audit-logs\` (Réservé Admin / Superviseur) |
+| Registre           | Emplacement SQL          | Mécanisme d'écriture                                                                  | Rôle & Usage                                                                                                                               | Mode de lecture                                          |
+| ------------------ | ------------------------ | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------- |
+| **Ticket History** | Table \`ticket_history\` | **Synchrone** dans la transaction métier (\`TicketHistoryService.recordByActor\`)     | Historique fonctionnel du ticket (frise chronologique, transitions de statut, assignations visibles par l'agent)                           | \`GET /api/v1/tickets/:id/history\`                      |
+| **Audit Trail**    | Table \`audit_logs\`     | **Asynchrone** via BullMQ \`AUDIT_QUEUE\` (\`TicketAuditListener\` → \`AuditWorker\`) | Registre légal immutable (write-only) des actions d'administration, accès sensibles, modifications de sécurité, adresses IP et user-agents | \`GET /api/v1/audit-logs\` (Réservé Admin / Superviseur) |

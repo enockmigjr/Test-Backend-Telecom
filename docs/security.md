@@ -16,11 +16,11 @@ Keycloak est l'**unique fournisseur d'authentification** (OIDC avec PKCE côté 
 Les anciennes routes locales (`/auth/login`, `/auth/refresh`, `/auth/logout`,
 `/auth/logout-all`, `/auth/change-password`) ont été supprimées.
 
-| Jeton | Durée (realm telecom) | Validation |
-| --- | --- | --- |
-| Access Token | 15 min | Signature RS256 via JWKS Keycloak |
-| Refresh Token | 7 j (session SSO) | Keycloak (grant `refresh_token`) |
-| ID Token | 5 min | Conservé (HttpOnly) pour le logout OIDC (`id_token_hint`) |
+| Jeton         | Durée (realm telecom) | Validation                                                |
+| ------------- | --------------------- | --------------------------------------------------------- |
+| Access Token  | 15 min                | Signature RS256 via JWKS Keycloak                         |
+| Refresh Token | 7 j (session SSO)     | Keycloak (grant `refresh_token`)                          |
+| ID Token      | 5 min                 | Conservé (HttpOnly) pour le logout OIDC (`id_token_hint`) |
 
 - **Logout** : endpoint OIDC `end-session` → retour sur `/login`, plus de session
   SSO résiduelle (l'`id_token` est conservé pendant toute la session).
@@ -37,12 +37,12 @@ Les anciennes routes locales (`/auth/login`, `/auth/refresh`, `/auth/logout`,
 
 Le guard global `RequestAuthGuard` aiguille chaque route vers un mode explicite (`@Auth(...)`) :
 
-| Mode | Mécanisme | Routes |
-| --- | --- | --- |
-| `INTERNAL` | Jeton Keycloak Bearer (RS256/JWKS), profil métier lié par `keycloakSubjectId` | ticketing interne, users, dashboard, reports… |
-| `PUBLIC_SESSION` | JWT de session publique (issuer/audience distincts, appareil de confiance actif) | portail public, widget, bot, knowledge |
-| `INTEGRATION_ASSERTION` | Assertion signée serveur→serveur (WordPress), usage unique (nonce Redis), origine exacte | échange d'assertion |
-| `ANONYMOUS` | Aucun | login, health, metrics, config publique, soumission de satisfaction |
+| Mode                    | Mécanisme                                                                                | Routes                                                              |
+| ----------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `INTERNAL`              | Jeton Keycloak Bearer (RS256/JWKS), profil métier lié par `keycloakSubjectId`            | ticketing interne, users, dashboard, reports…                       |
+| `PUBLIC_SESSION`        | JWT de session publique (issuer/audience distincts, appareil de confiance actif)         | portail public, widget, bot, knowledge                              |
+| `INTEGRATION_ASSERTION` | Assertion signée serveur→serveur (WordPress), usage unique (nonce Redis), origine exacte | échange d'assertion                                                 |
+| `ANONYMOUS`             | Aucun                                                                                    | login, health, metrics, config publique, soumission de satisfaction |
 
 ## Autorisation (RBAC + ABAC)
 
@@ -80,9 +80,9 @@ Request → JwtAuthGuard → RolesGuard → DepartmentGuard → Controller
 
 Distribué via Redis (ThrottlerStorageRedisService) :
 
-| Route                | Limite        | Fenêtre    |
-| -------------------- | ------------- | ---------- |
-| Général (défaut)     | 1000 requêtes | 15 minutes |
+| Route                                                     | Limite        | Fenêtre    |
+| --------------------------------------------------------- | ------------- | ---------- |
+| Général (défaut)                                          | 1000 requêtes | 15 minutes |
 | Routes sensibles (défaut, ex. login SSO, OTP, assertions) | 20 tentatives | 1 heure/IP |
 
 Les valeurs sont configurables via `THROTTLE_TTL` / `THROTTLE_LIMIT` / `THROTTLE_AUTH_TTL` / `THROTTLE_AUTH_LIMIT`. Le stockage Redis est distribué avec repli mémoire en cas de panne Redis.
@@ -191,12 +191,12 @@ Les valeurs par défaut dans `.env.example` sont suffisantes. **Ne jamais commit
 
 Obligatoirement changer :
 
-| Variable                 | Exigence                   |
-| ------------------------ | -------------------------- |
-| `KEYCLOAK_ADMIN_PASSWORD`| Mot de passe admin Keycloak fort |
-| `KEYCLOAK_HOSTNAME`      | Domaine public de Keycloak (ex. `auth.example.com`) |
-| `AUTH_CSRF_SECRET`       | ≥ 32 caractères aléatoires |
-| `DATABASE_PASSWORD`      | Mot de passe fort          |
-| `REDIS_PASSWORD`         | Mot de passe fort          |
-| `SMTP_USER/PASSWORD`     | Credentials SMTP réels     |
-| `REPORT_DOWNLOAD_SECRET` | ≥ 32 caractères aléatoires |
+| Variable                  | Exigence                                            |
+| ------------------------- | --------------------------------------------------- |
+| `KEYCLOAK_ADMIN_PASSWORD` | Mot de passe admin Keycloak fort                    |
+| `KEYCLOAK_HOSTNAME`       | Domaine public de Keycloak (ex. `auth.example.com`) |
+| `AUTH_CSRF_SECRET`        | ≥ 32 caractères aléatoires                          |
+| `DATABASE_PASSWORD`       | Mot de passe fort                                   |
+| `REDIS_PASSWORD`          | Mot de passe fort                                   |
+| `SMTP_USER/PASSWORD`      | Credentials SMTP réels                              |
+| `REPORT_DOWNLOAD_SECRET`  | ≥ 32 caractères aléatoires                          |

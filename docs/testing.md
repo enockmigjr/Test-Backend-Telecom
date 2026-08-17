@@ -2,11 +2,11 @@
 
 ## Vue d'ensemble
 
-| Type             | Nombre (fichiers)                          | Emplacement          | Commande             |
-| ---------------- | ------------------------------------------- | -------------------- | -------------------- |
-| Unitaires        | 90 `*.spec.ts` (585 tests / 90 suites vérifiés le 13/08/2026) | `src/**/*.spec.ts`   | `pnpm run test:unit` |
-| End-to-End (E2E) | 24 fichiers (E2E + intégration)            | `test/*.e2e-spec.ts`, `test/integration/*` | `pnpm run test:e2e` / `pnpm run test:integration` |
-| **Total**        | 116 fichiers de tests (92 spec + 24 E2E/intégration) | — | `pnpm run test:all` |
+| Type             | Nombre (fichiers)                                             | Emplacement                                | Commande                                          |
+| ---------------- | ------------------------------------------------------------- | ------------------------------------------ | ------------------------------------------------- |
+| Unitaires        | 90 `*.spec.ts` (585 tests / 90 suites vérifiés le 13/08/2026) | `src/**/*.spec.ts`                         | `pnpm run test:unit`                              |
+| End-to-End (E2E) | 24 fichiers (E2E + intégration)                               | `test/*.e2e-spec.ts`, `test/integration/*` | `pnpm run test:e2e` / `pnpm run test:integration` |
+| **Total**        | 116 fichiers de tests (92 spec + 24 E2E/intégration)          | —                                          | `pnpm run test:all`                               |
 
 ## Commandes
 

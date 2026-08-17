@@ -8,11 +8,11 @@
 
 ## 1. Vue d'ensemble des jeux de données
 
-| Composant | Nombre de comptes | Source de données | Script de peuplement |
-| --- | --- | --- | --- |
-| **Comptes Métier PostgreSQL** | 14 utilisateurs | Base `telecom_tickets` (table `users`) | `pnpm run db:seed` |
-| **Comptes SSO Keycloak** | 105 utilisateurs (7 rôles × 15) | Realm Keycloak `telecom` | `node keycloak/seed-users.mjs` |
-| **Console Admin Keycloak** | 1 administrateur master | Realm `master` Keycloak | `KEYCLOAK_ADMIN` env var |
+| Composant                     | Nombre de comptes               | Source de données                      | Script de peuplement           |
+| ----------------------------- | ------------------------------- | -------------------------------------- | ------------------------------ |
+| **Comptes Métier PostgreSQL** | 14 utilisateurs                 | Base `telecom_tickets` (table `users`) | `pnpm run db:seed`             |
+| **Comptes SSO Keycloak**      | 105 utilisateurs (7 rôles × 15) | Realm Keycloak `telecom`               | `node keycloak/seed-users.mjs` |
+| **Console Admin Keycloak**    | 1 administrateur master         | Realm `master` Keycloak                | `KEYCLOAK_ADMIN` env var       |
 
 ---
 
@@ -22,52 +22,52 @@ Tous ces comptes sont pré-créés par `pnpm run db:seed`.
 
 ### 2.1. Administrateur Système (1 compte)
 
-| Email | Mot de passe | Rôle Métier | Département | Droits & Portée |
-| --- | --- | --- | --- | --- |
+| Email                 | Mot de passe | Rôle Métier     | Département    | Droits & Portée                                                                                    |
+| --------------------- | ------------ | --------------- | -------------- | -------------------------------------------------------------------------------------------------- |
 | `admin@telecom.local` | `Admin@1234` | `ADMINISTRATOR` | Administration | Accès global non cloisonné, gestion des utilisateurs, SLA, paramètres système, audit, rapports PDF |
 
 ### 2.2. Superviseurs (2 comptes)
 
-| Email | Mot de passe | Rôle Métier | Département | Droits & Portée |
-| --- | --- | --- | --- | --- |
-| `supervisor@telecom.local` | `Super@1234` | `SUPERVISOR` | Customer Care | Assignation, clôture/réouverture, notes internes, audit logs. Portée : Customer Care |
-| `supervisor-noc@telecom.local` | `Super@1234` | `SUPERVISOR` | NOC | Assignation, escalade réseau, surveillance SLA 24/7. Portée : NOC |
+| Email                          | Mot de passe | Rôle Métier  | Département   | Droits & Portée                                                                      |
+| ------------------------------ | ------------ | ------------ | ------------- | ------------------------------------------------------------------------------------ |
+| `supervisor@telecom.local`     | `Super@1234` | `SUPERVISOR` | Customer Care | Assignation, clôture/réouverture, notes internes, audit logs. Portée : Customer Care |
+| `supervisor-noc@telecom.local` | `Super@1234` | `SUPERVISOR` | NOC           | Assignation, escalade réseau, surveillance SLA 24/7. Portée : NOC                    |
 
 ### 2.3. Agents Customer Care (2 comptes)
 
-| Email | Mot de passe | Rôle Métier | Département | Droits & Portée |
-| --- | --- | --- | --- | --- |
+| Email                     | Mot de passe | Rôle Métier              | Département   | Droits & Portée                                                          |
+| ------------------------- | ------------ | ------------------------ | ------------- | ------------------------------------------------------------------------ |
 | `agent-cc1@telecom.local` | `Agent@1234` | `CUSTOMER_SERVICE_AGENT` | Customer Care | Création, réponse client, qualification initiale. Portée : Customer Care |
-| `agent-cc2@telecom.local` | `Agent@1234` | `CUSTOMER_SERVICE_AGENT` | Customer Care | Création, réponse client, suivi demandes. Portée : Customer Care |
+| `agent-cc2@telecom.local` | `Agent@1234` | `CUSTOMER_SERVICE_AGENT` | Customer Care | Création, réponse client, suivi demandes. Portée : Customer Care         |
 
 ### 2.4. Ingénieurs NOC (2 comptes)
 
-| Email | Mot de passe | Rôle Métier | Département | Droits & Portée |
-| --- | --- | --- | --- | --- |
-| `noc1@telecom.local` | `Agent@1234` | `NOC_ENGINEER` | NOC | Incidents réseau S1/S2, supervision infrastructure. Portée : NOC |
-| `noc2@telecom.local` | `Agent@1234` | `NOC_ENGINEER` | NOC | Diagnostic fibre/radio, gestion pannes majeures. Portée : NOC |
+| Email                | Mot de passe | Rôle Métier    | Département | Droits & Portée                                                  |
+| -------------------- | ------------ | -------------- | ----------- | ---------------------------------------------------------------- |
+| `noc1@telecom.local` | `Agent@1234` | `NOC_ENGINEER` | NOC         | Incidents réseau S1/S2, supervision infrastructure. Portée : NOC |
+| `noc2@telecom.local` | `Agent@1234` | `NOC_ENGINEER` | NOC         | Diagnostic fibre/radio, gestion pannes majeures. Portée : NOC    |
 
 ### 2.5. Agents Facturation (2 comptes)
 
-| Email | Mot de passe | Rôle Métier | Département | Droits & Portée |
-| --- | --- | --- | --- | --- |
-| `billing1@telecom.local` | `Agent@1234` | `BILLING_AGENT` | Billing | Litiges financiers, ajustements de factures. Portée : Billing |
-| `billing2@telecom.local` | `Agent@1234` | `BILLING_AGENT` | Billing | Demandes de résiliation, remboursements. Portée : Billing |
+| Email                    | Mot de passe | Rôle Métier     | Département | Droits & Portée                                               |
+| ------------------------ | ------------ | --------------- | ----------- | ------------------------------------------------------------- |
+| `billing1@telecom.local` | `Agent@1234` | `BILLING_AGENT` | Billing     | Litiges financiers, ajustements de factures. Portée : Billing |
+| `billing2@telecom.local` | `Agent@1234` | `BILLING_AGENT` | Billing     | Demandes de résiliation, remboursements. Portée : Billing     |
 
 ### 2.6. Support Technique Approfondi (3 comptes)
 
-| Email | Mot de passe | Rôle Métier | Département | Droits & Portée |
-| --- | --- | --- | --- | --- |
-| `tech1@telecom.local` | `Agent@1234` | `TECHNICAL_SUPPORT_ENGINEER` | Technical Support | Support niveau 2/3, diagnostics ADSL/VoIP. Portée : Technical Support |
+| Email                 | Mot de passe | Rôle Métier                  | Département       | Droits & Portée                                                              |
+| --------------------- | ------------ | ---------------------------- | ----------------- | ---------------------------------------------------------------------------- |
+| `tech1@telecom.local` | `Agent@1234` | `TECHNICAL_SUPPORT_ENGINEER` | Technical Support | Support niveau 2/3, diagnostics ADSL/VoIP. Portée : Technical Support        |
 | `tech2@telecom.local` | `Agent@1234` | `TECHNICAL_SUPPORT_ENGINEER` | Technical Support | Résolution dysfonctionnements logiciels/firmware. Portée : Technical Support |
-| `agent@telecom.local` | `Agent@1234` | `TECHNICAL_SUPPORT_ENGINEER` | Technical Support | Compte générique de test d'intégration |
+| `agent@telecom.local` | `Agent@1234` | `TECHNICAL_SUPPORT_ENGINEER` | Technical Support | Compte générique de test d'intégration                                       |
 
 ### 2.7. Techniciens Terrain (2 comptes)
 
-| Email | Mot de passe | Rôle Métier | Département | Restrictions applicatives |
-| --- | --- | --- | --- | --- |
+| Email                  | Mot de passe | Rôle Métier        | Département      | Restrictions applicatives                                                                              |
+| ---------------------- | ------------ | ------------------ | ---------------- | ------------------------------------------------------------------------------------------------------ |
 | `field1@telecom.local` | `Agent@1234` | `FIELD_TECHNICIAN` | Field Operations | Remplacement matériel, interventions physiques. **Pas d'accès aux notes internes ni aux logs d'audit** |
-| `field2@telecom.local` | `Agent@1234` | `FIELD_TECHNICIAN` | Field Operations | Reparations d'infrastructures physiques. **Pas d'accès aux notes internes ni aux logs d'audit** |
+| `field2@telecom.local` | `Agent@1234` | `FIELD_TECHNICIAN` | Field Operations | Reparations d'infrastructures physiques. **Pas d'accès aux notes internes ni aux logs d'audit**        |
 
 ---
 
@@ -129,16 +129,16 @@ curl -X POST http://localhost:3000/api/v1/tickets \
 
 ## 5. Matrice des Services et Identifiants de Monitoring
 
-| Service | URL | Authentification / Identifiants |
-| --- | --- | --- |
-| **API REST Backend** | `http://localhost:3000/api/v1` | Bearer Jeton RS256 Keycloak |
-| **Documentation Swagger** | `http://localhost:3000/api/docs` | Accès libre |
-| **Interface Frontend Interne** | `http://localhost:3007` | Connexion SSO Keycloak |
-| **Portail Support Public** | `http://localhost:3005` | Session Publique / OTP / Assertion WP |
-| **Console Admin Keycloak** | `http://localhost:8081/admin` | Nom: `admin` / Mdp: `Admin@1234` |
-| **Console Compte Keycloak** | `http://localhost:8081/realms/telecom/account/` | Compte utilisateur SSO connecté |
-| **Interface BullBoard** | `http://localhost:3000/admin/queues` | Login: `admin` / Mdp: `bullboard` |
-| **Interface Mailpit (SMTP)** | `http://localhost:8025` | Accès libre |
-| **Tableaux de bord Grafana** | `http://localhost:3001` | Login: `admin` / Mdp: `admin` |
-| **Collecteur Prometheus** | `http://localhost:9090` | Accès libre |
-| **Monitoring Uptime Kuma** | `http://localhost:3002` | Premier démarrage : création compte admin |
+| Service                        | URL                                             | Authentification / Identifiants           |
+| ------------------------------ | ----------------------------------------------- | ----------------------------------------- |
+| **API REST Backend**           | `http://localhost:3000/api/v1`                  | Bearer Jeton RS256 Keycloak               |
+| **Documentation Swagger**      | `http://localhost:3000/api/docs`                | Accès libre                               |
+| **Interface Frontend Interne** | `http://localhost:3007`                         | Connexion SSO Keycloak                    |
+| **Portail Support Public**     | `http://localhost:3005`                         | Session Publique / OTP / Assertion WP     |
+| **Console Admin Keycloak**     | `http://localhost:8081/admin`                   | Nom: `admin` / Mdp: `Admin@1234`          |
+| **Console Compte Keycloak**    | `http://localhost:8081/realms/telecom/account/` | Compte utilisateur SSO connecté           |
+| **Interface BullBoard**        | `http://localhost:3000/admin/queues`            | Login: `admin` / Mdp: `bullboard`         |
+| **Interface Mailpit (SMTP)**   | `http://localhost:8025`                         | Accès libre                               |
+| **Tableaux de bord Grafana**   | `http://localhost:3001`                         | Login: `admin` / Mdp: `admin`             |
+| **Collecteur Prometheus**      | `http://localhost:9090`                         | Accès libre                               |
+| **Monitoring Uptime Kuma**     | `http://localhost:3002`                         | Premier démarrage : création compte admin |

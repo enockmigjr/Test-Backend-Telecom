@@ -81,12 +81,12 @@ curl http://localhost:3000/api/v1/health/ready
 
 ## URLs importantes
 
-| Service   | URL                                  | Identifiants        |
-| --------- | ------------------------------------ | ------------------- |
+| Service   | URL                                  | Identifiants            |
+| --------- | ------------------------------------ | ----------------------- |
 | API REST  | `http://localhost:3000/api/v1`       | Bearer Keycloak (RS256) |
-| Swagger   | `http://localhost:3000/api/docs`     | Aucun               |
-| BullBoard | `http://localhost:3000/admin/queues` | `admin`/`bullboard` |
-| Mailpit   | `http://localhost:8025`              | Aucun               |
+| Swagger   | `http://localhost:3000/api/docs`     | Aucun                   |
+| BullBoard | `http://localhost:3000/admin/queues` | `admin`/`bullboard`     |
+| Mailpit   | `http://localhost:8025`              | Aucun                   |
 
 ---
 

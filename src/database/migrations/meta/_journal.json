@@ -155,6 +155,13 @@
       "when": 1786726252775,
       "tag": "0021_yellow_greymalkin",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1786969000000,
+      "tag": "0022_public-integration-catalog",
+      "breakpoints": true
     }
   ]
 }

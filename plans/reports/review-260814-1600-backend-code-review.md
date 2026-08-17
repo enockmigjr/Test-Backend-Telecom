@@ -63,7 +63,7 @@ if (!email || !emailVerified) return undefined;
 ### [CRITICAL] [src/modules/support-bot/services/support-bot.service.ts:107-116] — Boucle d'exécution des outils de l'Assistant IA incomplète (Tool Loop Incomplète)
 
 - **Problème** : Lorsque l'assistant IA (`SupportBotService.reply`) retourne des `toolCalls` (ex. `knowledge_search`, `save_draft`, `request_human`), le service exécute les outils via `this.tools.execute()` et enregistre les résultats dans `toolTrace`, mais ne réinjecte **jamais** les résultats de l'outil dans le fournisseur IA (`provider.complete`) pour une seconde passe de synthèse.
-- **Risque** : La réponse finale renvoyée à l'utilisateur est le contenu initial `result.content` (généré *avant* l'exécution des outils). Par exemple, après une recherche documentaire (`knowledge_search`), le bot n'utilise pas les articles trouvés pour répondre à l'utilisateur. La fonction de bot conversationnel est partiellement dysfonctionnelle.
+- **Risque** : La réponse finale renvoyée à l'utilisateur est le contenu initial `result.content` (généré _avant_ l'exécution des outils). Par exemple, après une recherche documentaire (`knowledge_search`), le bot n'utilise pas les articles trouvés pour répondre à l'utilisateur. La fonction de bot conversationnel est partiellement dysfonctionnelle.
 - **Correction recommandée** : Implémenter une vraie boucle récursive/itérative multi-tours (jusqu'à `MAX_TOOL_ROUNDS`) réinjectant la fonction/outil exécuté et son résultat (`role: 'tool'`) dans l'historique des messages transmis au modèle IA.
 
 ---

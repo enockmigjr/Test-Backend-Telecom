@@ -7,9 +7,9 @@
 
 ## 1. Vue d'ensemble des Namespaces
 
-| Namespace | Vocation | Transport | Authentification | Target Frontends |
-| --- | --- | --- | --- | --- |
-| \`/ws\` | Console opérationnelle interne | Socket.IO (WebSocket + Polling fallback) | Cookie \`access_token\` Keycloak RS256 / Bearer | Console Interne (\`frontend\` :3007) |
+| Namespace           | Vocation                        | Transport                                | Authentification                                | Target Frontends                             |
+| ------------------- | ------------------------------- | ---------------------------------------- | ----------------------------------------------- | -------------------------------------------- |
+| \`/ws\`             | Console opérationnelle interne  | Socket.IO (WebSocket + Polling fallback) | Cookie \`access_token\` Keycloak RS256 / Bearer | Console Interne (\`frontend\` :3007)         |
 | \`/public-support\` | Portail support public & Widget | Socket.IO (WebSocket + Polling fallback) | Cookie session publique \`itsm-public-session\` | Portail & Widget (\`public-frontend\` :3005) |
 
 ---
@@ -20,7 +20,7 @@
 
 La connexion au namespace \`/ws\` est validée par \`WebSocketAuthService\` (\`src/websocket/websocket-auth.service.ts\`) :
 
-1. **Extraction du jeton** : Le jeton JWT Keycloak est extrait en priorité depuis le cookie HttpOnly \`access_token\` (\`__Host-access-token\` en prod) ou du header \`Authorization: Bearer\`.
+1. **Extraction du jeton** : Le jeton JWT Keycloak est extrait en priorité depuis le cookie HttpOnly \`access_token\` (\`\_\_Host-access-token\` en prod) ou du header \`Authorization: Bearer\`.
 2. **Signature & Clé Publique** : La signature RS256 est vérifiée via les clés JWKS distribuées par Keycloak (\`KeycloakJwksService\`).
 3. **Liaison & Profil Métier** : Le sujet Keycloak (\`sub\`) est lié au compte utilisateur en base (\`users.keycloakSubjectId = sub\`). Le compte doit être actif (\`isActive=true\`) et non supprimé (\`deletedAt IS NULL\`).
 4. **Politique Mot de Passe** : Les utilisateurs devant changer leur mot de passe sont refusés au niveau du handshake Socket.IO.
@@ -29,11 +29,11 @@ La connexion au namespace \`/ws\` est validée par \`WebSocketAuthService\` (\`s
 
 Une fois le handshake accepté, l'utilisateur rejoint automatiquement 3 types de rooms :
 
-| Pattern de Room | Membres | Cas d'usage |
-| --- | --- | --- |
-| \`user:{userId}\` | Tous les onglets d'un utilisateur donné | Notifications personnelles, assignations directes |
+| Pattern de Room               | Membres                                        | Cas d'usage                                            |
+| ----------------------------- | ---------------------------------------------- | ------------------------------------------------------ |
+| \`user:{userId}\`             | Tous les onglets d'un utilisateur donné        | Notifications personnelles, assignations directes      |
 | \`department:{departmentId}\` | Tous les agents et superviseurs du département | Nouveaux tickets du département, changements de statut |
-| \`session:{jti}\` | Socket spécifique à la session JWT | Déconnexion forcée immédiate sur révocation de jeton |
+| \`session:{jti}\`             | Socket spécifique à la session JWT             | Déconnexion forcée immédiate sur révocation de jeton   |
 
 ### 2.3. Événements Émis par le Backend (Interne)
 
@@ -82,13 +82,13 @@ Pour permettre le déploiement sur plusieurs instances backend (cluster Docker /
 
 ## 5. Matrice des Fichiers Source WebSockets
 
-| Fichier | Service / Classe | Rôle |
-| --- | --- | --- |
-| \`src/websocket/websocket.gateway.ts\` | \`TelecomWebSocketGateway\` | Gateway principale pour le namespace \`/ws\` |
-| \`src/websocket/public-support.gateway.ts\` | \`PublicSupportGateway\` | Gateway publique pour le namespace \`/public-support\` |
-| \`src/websocket/websocket-auth.service.ts\` | \`WebSocketAuthService\` | Auth JWT Keycloak RS256 / JWKS (cookies/headers) |
-| \`src/websocket/public-websocket-auth.service.ts\` | \`PublicWebSocketAuthService\` | Auth session publique pour le portail & widget |
-| \`src/websocket/public-realtime-notifier.service.ts\` | \`PublicRealtimeNotifierService\` | Notification temps réel du public via l'Outbox |
-| \`src/websocket/redis-io.adapter.ts\` | \`RedisIoAdapter\` | Adaptateur Redis Pub/Sub pour le scaling multi-instances |
-| \`src/websocket/websocket-cors.ts\` | \`websocketCorsOptions\` | Validation des origines CORS interne |
-| \`src/websocket/public-websocket-cors.ts\` | \`publicWebsocketCorsOptions\` | Validation des origines CORS publiques |
+| Fichier                                               | Service / Classe                  | Rôle                                                     |
+| ----------------------------------------------------- | --------------------------------- | -------------------------------------------------------- |
+| \`src/websocket/websocket.gateway.ts\`                | \`TelecomWebSocketGateway\`       | Gateway principale pour le namespace \`/ws\`             |
+| \`src/websocket/public-support.gateway.ts\`           | \`PublicSupportGateway\`          | Gateway publique pour le namespace \`/public-support\`   |
+| \`src/websocket/websocket-auth.service.ts\`           | \`WebSocketAuthService\`          | Auth JWT Keycloak RS256 / JWKS (cookies/headers)         |
+| \`src/websocket/public-websocket-auth.service.ts\`    | \`PublicWebSocketAuthService\`    | Auth session publique pour le portail & widget           |
+| \`src/websocket/public-realtime-notifier.service.ts\` | \`PublicRealtimeNotifierService\` | Notification temps réel du public via l'Outbox           |
+| \`src/websocket/redis-io.adapter.ts\`                 | \`RedisIoAdapter\`                | Adaptateur Redis Pub/Sub pour le scaling multi-instances |
+| \`src/websocket/websocket-cors.ts\`                   | \`websocketCorsOptions\`          | Validation des origines CORS interne                     |
+| \`src/websocket/public-websocket-cors.ts\`            | \`publicWebsocketCorsOptions\`    | Validation des origines CORS publiques                   |
