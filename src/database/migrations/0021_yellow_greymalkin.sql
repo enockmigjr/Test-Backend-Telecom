@@ -1,0 +1,2 @@
+ALTER TABLE "audit_logs" ADD COLUMN "source_event_id" varchar(64);--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "uq_audit_logs_source_event" ON "audit_logs" USING btree ("source_event_id") WHERE "audit_logs"."source_event_id" IS NOT NULL;

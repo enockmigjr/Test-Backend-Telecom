@@ -153,4 +153,11 @@ export class KeycloakAdminService {
       });
     }
   }
+
+  /** Liste les événements récents du realm (max 100), pour l'observabilité → audit_logs. */
+  async listEvents(max = 100): Promise<Array<Record<string, unknown>>> {
+    const bounded = Math.min(Math.max(max, 1), 100);
+    const response = await this.adminFetch(`/events?max=${bounded}`);
+    return (await response.json()) as Array<Record<string, unknown>>;
+  }
 }

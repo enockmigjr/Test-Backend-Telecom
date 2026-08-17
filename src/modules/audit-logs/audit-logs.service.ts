@@ -74,6 +74,7 @@ export class AuditLogsService {
     ipAddress?: string,
     userAgent?: string,
     contextIntegrationId?: string,
+    sourceEventId?: string,
   ) {
     await this.drizzle.db.insert(auditLogs).values({
       id: generateUuid(),
@@ -83,6 +84,7 @@ export class AuditLogsService {
       entityId,
       oldValue: oldValue ? JSON.parse(JSON.stringify(oldValue)) : null,
       newValue: newValue ? JSON.parse(JSON.stringify(newValue)) : null,
+      sourceEventId: sourceEventId ?? null,
       ipAddress: ipAddress || null,
       userAgent: userAgent || null,
     });

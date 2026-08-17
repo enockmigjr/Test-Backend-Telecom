@@ -211,9 +211,27 @@ scrape_configs:
                 service_name: mailpit
                 log_type: infrastructure
 
+      # ── Keycloak ──
+      - match:
+          selector: '{service="keycloak"}'
+          stages:
+            - regex:
+                expression: '^(?P<kc_ts>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}) (?P<kc_level>[A-Z]+) +(?P<kc_msg>.*)$'
+            - timestamp:
+                source: kc_ts
+                format: '2006-01-02 15:04:05.000'
+            - template:
+                source: kc_level
+                template: '{{ ToLower .Value }}'
+            - labels:
+                level: kc_level
+            - static_labels:
+                service_name: keycloak
+                log_type: identity
+
       # ── Fallback : conteneurs non identifiés ──
       - match:
-          selector: '{service!~"api|postgres|redis|nginx|prometheus|loki|tempo|grafana|promtail|alertmanager|uptime-kuma|mailpit"}'
+          selector: '{service!~"api|postgres|redis|nginx|prometheus|loki|tempo|grafana|promtail|alertmanager|uptime-kuma|mailpit|keycloak"}'
           stages:
             - static_labels:
                 service_name: unknown

@@ -10,7 +10,18 @@
  */
 
 import { relations, sql } from 'drizzle-orm';
-import { check, foreignKey, index, jsonb, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
+import {
+  check,
+  foreignKey,
+  index,
+  jsonb,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+  varchar,
+} from 'drizzle-orm/pg-core';
 import { actorTypeEnum } from './enums';
 import { externalRequesters } from './external-requesters';
 import { supportIntegrations } from './support-integrations';
@@ -37,6 +48,8 @@ export const auditLogs = pgTable(
     entityId: uuid('entity_id').notNull(),
     oldValue: jsonb('old_value'),
     newValue: jsonb('new_value'),
+    /** Identifiant d'événement externe (ex. Keycloak) pour la déduplication. */
+    sourceEventId: varchar('source_event_id', { length: 64 }),
     ipAddress: varchar('ip_address', { length: 45 }),
     userAgent: text('user_agent'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -46,6 +59,9 @@ export const auditLogs = pgTable(
     idxAuditLogsAction: index('idx_audit_logs_action').on(table.action),
     idxAuditLogsEntity: index('idx_audit_logs_entity').on(table.entityType, table.entityId),
     idxAuditLogsCreatedAt: index('idx_audit_logs_created_at').on(table.createdAt),
+    uqAuditLogsSourceEvent: uniqueIndex('uq_audit_logs_source_event')
+      .on(table.sourceEventId)
+      .where(sql`${table.sourceEventId} IS NOT NULL`),
     idxAuditLogsRequester: index('idx_audit_logs_requester').on(table.supportIntegrationId, table.externalRequesterId),
     requesterIntegrationForeignKey: foreignKey({
       columns: [table.externalRequesterId, table.supportIntegrationId],
