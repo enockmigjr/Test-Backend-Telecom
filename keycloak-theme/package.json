@@ -6,8 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "build-keycloak-theme": "pnpm build && keycloakify build",
-    "storybook": "storybook dev -p 6006"
+    "build-keycloak-theme": "pnpm build && keycloakify build"
   },
   "dependencies": {
     "keycloakify": "^11.15.14",

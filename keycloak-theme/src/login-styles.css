@@ -1,0 +1,226 @@
+/* Pages login : connexion, information, erreur, changement de mot de passe. */
+
+.kc-shell {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.kc-card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--kc-surface);
+  border: 1px solid var(--kc-border);
+  border-radius: var(--kc-radius-lg);
+  padding: 32px;
+  box-shadow: var(--kc-shadow-card);
+}
+
+.kc-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.kc-brand-logo {
+  width: 44px;
+  height: 44px;
+  padding: 5px;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid var(--kc-border);
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.kc-brand-wordmark {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--kc-navy);
+}
+
+.kc-brand-accent {
+  color: var(--kc-blue);
+}
+
+.kc-brand--inverted .kc-brand-wordmark {
+  color: #ffffff;
+}
+
+.kc-brand--inverted .kc-brand-accent {
+  color: #93c5fd;
+}
+
+.kc-title {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0 0 6px;
+  color: var(--kc-navy);
+}
+
+.kc-subtitle {
+  margin: 0 0 24px;
+  color: var(--kc-text-muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.kc-field {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.kc-field label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--kc-navy);
+}
+
+.kc-input {
+  height: 44px;
+  border: 1px solid var(--kc-border);
+  border-radius: var(--kc-radius-md);
+  padding: 0 14px;
+  font-size: 14px;
+  outline: none;
+  background: var(--kc-surface);
+  color: var(--kc-text);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.kc-input:focus {
+  border-color: var(--kc-blue);
+  box-shadow: 0 0 0 4px var(--kc-focus);
+}
+
+.kc-button {
+  width: 100%;
+  height: 44px;
+  border: 0;
+  border-radius: var(--kc-radius-md);
+  background: var(--kc-blue);
+  color: #fff;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.kc-button:hover {
+  background: var(--kc-blue-strong);
+}
+
+.kc-field-error {
+  display: block;
+  margin-top: 6px;
+  color: var(--kc-danger);
+  font-size: 13px;
+}
+
+.kc-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0;
+  color: var(--kc-text-muted);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.kc-check input {
+  accent-color: var(--kc-blue);
+}
+
+.kc-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.kc-button-ghost {
+  background: transparent;
+  color: var(--kc-blue);
+  border: 1px solid var(--kc-border);
+}
+
+.kc-button-ghost:hover {
+  background: var(--kc-blue-soft);
+}
+
+.kc-alert {
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border-radius: var(--kc-radius-md);
+  font-size: 13px;
+  background: var(--kc-danger-soft);
+  color: var(--kc-danger);
+  border: 1px solid var(--kc-danger-border);
+}
+
+.kc-footer {
+  margin-top: 24px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--kc-text-muted);
+}
+
+.kc-footer a {
+  color: var(--kc-blue);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.kc-footer a:hover {
+  text-decoration: underline;
+}
+
+/* Pages par défaut (logout-confirm, webauthn, etc.) : même carte centrée,
+   DA noir sur blanc. */
+.kc-login {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--kc-bg);
+}
+
+.kc-login #kc-header {
+  margin-bottom: 12px;
+}
+
+.kc-login .kcFormCardClass {
+  width: 100%;
+  max-width: 420px;
+  background: var(--kc-surface);
+  border: 1px solid var(--kc-border);
+  border-radius: var(--kc-radius-lg);
+  padding: 20px 24px;
+  box-shadow: var(--kc-shadow-card);
+}
+
+.kc-login .kcFormCardClass h1,
+.kc-login .kcFormCardClass h2 {
+  color: var(--kc-text);
+}
+
+.kc-login .kcFormCardClass .btn-primary {
+  background: var(--kc-primary);
+  border-color: var(--kc-primary);
+  color: var(--kc-primary-foreground);
+}
+
+.kc-login .kcFormCardClass .btn-primary:hover,
+.kc-login .kcFormCardClass .btn-primary:focus {
+  background: var(--kc-primary-strong);
+  border-color: var(--kc-primary-strong);
+}

@@ -1,11 +1,12 @@
-import { clsx } from "keycloakify/tools/clsx";
-import { kcSanitize } from "keycloakify/lib/kcSanitize";
-import { getKcClsx } from "keycloakify/account/lib/kcClsx";
-import { useSetClassName } from "keycloakify/tools/useSetClassName";
-import { useInitialize } from "keycloakify/account/Template.useInitialize";
-import type { KcContext } from "./KcContext";
-import type { I18n } from "./i18n";
-import type { TemplateProps } from "keycloakify/account/TemplateProps";
+import { clsx } from 'keycloakify/tools/clsx';
+import { kcSanitize } from 'keycloakify/lib/kcSanitize';
+import { getKcClsx } from 'keycloakify/account/lib/kcClsx';
+import { useSetClassName } from 'keycloakify/tools/useSetClassName';
+import { useInitialize } from 'keycloakify/account/Template.useInitialize';
+import { Brand } from '../components/brand';
+import type { KcContext } from './KcContext';
+import type { I18n } from './i18n';
+import type { TemplateProps } from 'keycloakify/account/TemplateProps';
 
 /**
  * Gabarit de la console de compte, décliné aux couleurs de l'app
@@ -17,14 +18,16 @@ export default function Template(props: TemplateProps<KcContext, I18n>) {
   const { msg, currentLanguage, enabledLanguages } = i18n;
   const { url, features, realm, message, referrer } = kcContext;
 
-  useSetClassName({ qualifiedName: "html", className: kcClsx("kcHtmlClass") });
+  useSetClassName({ qualifiedName: 'html', className: kcClsx('kcHtmlClass') });
   useSetClassName({
-    qualifiedName: "body",
-    className: clsx("admin-console", "user", "kc-account-body", kcClsx("kcBodyClass")),
+    qualifiedName: 'body',
+    className: clsx('admin-console', 'user', 'kc-account-body', kcClsx('kcBodyClass')),
   });
 
   const { isReadyToRender } = useInitialize({ kcContext, doUseDefaultCss });
   if (!isReadyToRender) return null;
+
+  document.title = 'KAMGOKO ITSM — Compte et sécurité';
 
   return (
     <>
@@ -33,10 +36,7 @@ export default function Template(props: TemplateProps<KcContext, I18n>) {
           <div className="navbar-header">
             <div className="container">
               <h1 className="navbar-title">
-                <span className="kc-account-brand">
-                  <span className="kc-account-brand-dot" aria-hidden />
-                  Helpdesk Telecom
-                </span>
+                <Brand inverted />
               </h1>
             </div>
           </div>
@@ -62,12 +62,12 @@ export default function Template(props: TemplateProps<KcContext, I18n>) {
                 {referrer?.url && (
                   <li>
                     <a href={referrer.url} id="referrer">
-                      {msg("backTo", referrer.name)}
+                      {msg('backTo', referrer.name)}
                     </a>
                   </li>
                 )}
                 <li>
-                  <a href={url.getLogoutUrl()}>{msg("doSignOut")}</a>
+                  <a href={url.getLogoutUrl()}>{msg('doSignOut')}</a>
                 </li>
               </ul>
             </div>
@@ -76,25 +76,26 @@ export default function Template(props: TemplateProps<KcContext, I18n>) {
       </header>
       <div className="container kc-account-shell">
         <div className="bs-sidebar col-sm-3 kc-account-sidebar">
+          <p className="kc-account-section-title">Compte et sécurité</p>
           <ul className="kc-account-nav">
-            <li className={clsx(active === "account" && "active")}>
-              <a href={url.accountUrl}>{msg("account")}</a>
+            <li className={clsx(active === 'account' && 'active')}>
+              <a href={url.accountUrl}>{msg('account')}</a>
             </li>
             {features.passwordUpdateSupported && (
-              <li className={clsx(active === "password" && "active")}>
-                <a href={url.passwordUrl}>{msg("password")}</a>
+              <li className={clsx(active === 'password' && 'active')}>
+                <a href={url.passwordUrl}>{msg('password')}</a>
               </li>
             )}
-            <li className={clsx(active === "totp" && "active")}>
-              <a href={url.totpUrl}>{msg("authenticator")}</a>
+            <li className={clsx(active === 'totp' && 'active')}>
+              <a href={url.totpUrl}>{msg('authenticator')}</a>
             </li>
             {features.identityFederation && (
-              <li className={clsx(active === "social" && "active")}>
-                <a href={url.socialUrl}>{msg("federatedIdentity")}</a>
+              <li className={clsx(active === 'social' && 'active')}>
+                <a href={url.socialUrl}>{msg('federatedIdentity')}</a>
               </li>
             )}
-            <li className={clsx(active === "sessions" && "active")}>
-              <a href={url.sessionsUrl}>{msg("sessions")}</a>
+            <li className={clsx(active === 'sessions' && 'active')}>
+              <a href={url.sessionsUrl}>{msg('sessions')}</a>
             </li>
             {/*
               « Applications » masqué : la page applications.ftl de la console
@@ -104,26 +105,23 @@ export default function Template(props: TemplateProps<KcContext, I18n>) {
               à servir cette page ; on préfère garder le thème uniforme.
             */}
             {features.log && (
-              <li className={clsx(active === "log" && "active")}>
-                <a href={url.logUrl}>{msg("log")}</a>
+              <li className={clsx(active === 'log' && 'active')}>
+                <a href={url.logUrl}>{msg('log')}</a>
               </li>
             )}
             {realm.userManagedAccessAllowed && features.authorization && (
-              <li className={clsx(active === "authorization" && "active")}>
-                <a href={url.resourceUrl}>{msg("myResources")}</a>
+              <li className={clsx(active === 'authorization' && 'active')}>
+                <a href={url.resourceUrl}>{msg('myResources')}</a>
               </li>
             )}
           </ul>
         </div>
         <div className="col-sm-9 content-area kc-account-content">
           {message !== undefined && (
-            <div className={clsx("alert", `alert-${message.type}`)}>
-              {message.type === "success" && <span className="pficon pficon-ok" />}
-              {message.type === "error" && <span className="pficon pficon-error-circle-o" />}
-              <span
-                className="kc-feedback-text"
-                dangerouslySetInnerHTML={{ __html: kcSanitize(message.summary) }}
-              />
+            <div className={clsx('alert', `alert-${message.type}`)}>
+              {message.type === 'success' && <span className="pficon pficon-ok" />}
+              {message.type === 'error' && <span className="pficon pficon-error-circle-o" />}
+              <span className="kc-feedback-text" dangerouslySetInnerHTML={{ __html: kcSanitize(message.summary) }} />
             </div>
           )}
           {children}
