@@ -1,6 +1,7 @@
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { createTestApp } from '../setup';
+import { tokenFor } from '../auth.helper';
 import { DrizzleProvider } from '../../src/database/drizzle.provider';
 import { tickets, users } from '../../src/database/schemas';
 import { eq } from 'drizzle-orm';
@@ -27,6 +28,9 @@ describe('Internal Notes — E2E', () => {
     if (!supervisor?.departmentId) {
       throw new Error('Superviseur avec departement requis dans le seed.');
     }
+    if (!tech) {
+      throw new Error('Technicien terrain requis dans le seed.');
+    }
 
     const [t] = await drizzle.db
       .select()
@@ -38,19 +42,9 @@ describe('Internal Notes — E2E', () => {
     }
     ticketId = t.id;
 
-    // Login Supervisor (autorise sur son propre departement)
-    const supervisorLogin = await request(app.getHttpServer())
-      .post('/api/v1/auth/login')
-      .send({ email: supervisor.email, password: 'Super@1234' });
-    supervisorToken = supervisorLogin.body.data.accessToken;
-
-    // Trouver un field tech dans le seed
-    const techEmail = tech?.email || 'field1@telecom.local';
-
-    const techLogin = await request(app.getHttpServer())
-      .post('/api/v1/auth/login')
-      .send({ email: techEmail, password: 'Agent@1234' });
-    fieldTechToken = techLogin.body.data?.accessToken;
+    // Jetons Keycloak RS256 signés avec la clé de test (rôles du seed)
+    supervisorToken = tokenFor('supervisor');
+    fieldTechToken = tokenFor('fieldTechnician');
   });
 
   afterAll(async () => {

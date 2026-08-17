@@ -1,9 +1,7 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { AppModule } from '../../src/app.module';
-import { GlobalExceptionFilter } from '../../src/common/filters/global-exception.filter';
-import { TransformInterceptor } from '../../src/common/interceptors/transform.interceptor';
+import { createTestApp } from '../setup';
+import { tokenFor } from '../auth.helper';
 import { DrizzleProvider } from '../../src/database/drizzle.provider';
 import { departments, users } from '../../src/database/schemas';
 import { generateUuid } from '../../src/common/helpers/uuidv7.helper';
@@ -26,19 +24,11 @@ describe('Tickets — Workflow Intégration (DB réelle)', () => {
   let categoryId: string;
 
   beforeAll(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-
-    app = moduleFixture.createNestApplication();
-    app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
-    app.useGlobalFilters(new GlobalExceptionFilter());
-    app.useGlobalInterceptors(new TransformInterceptor());
-    app.setGlobalPrefix('api/v1');
-    await app.init();
+    const { app: testApp } = await createTestApp();
+    app = testApp;
 
     // Seed minimal ou chargement existant
-    const drizzle = moduleFixture.get(DrizzleProvider);
+    const drizzle = app.get(DrizzleProvider);
     const { categories } = await import('../../src/database/schemas/categories');
 
     // Récupérer un département existant
@@ -76,11 +66,8 @@ describe('Tickets — Workflow Intégration (DB réelle)', () => {
       /* Déjà seedé ou utilisateur existant */
     }
 
-    // Login
-    const res = await request(app.getHttpServer())
-      .post('/api/v1/auth/login')
-      .send({ email: 'admin@telecom.local', password: 'Admin@1234' });
-    if (res.body.success) adminToken = res.body.data.accessToken;
+    // Jeton Keycloak RS256 signé avec la clé de test (rôle du seed)
+    adminToken = tokenFor('admin');
   });
 
   afterAll(async () => {

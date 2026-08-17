@@ -1,6 +1,7 @@
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { createTestApp } from '../setup';
+import { tokenFor } from '../auth.helper';
 import { DrizzleProvider } from '../../src/database/drizzle.provider';
 import { users } from '../../src/database/schemas';
 
@@ -24,11 +25,8 @@ describe('Notifications — E2E', () => {
       throw new Error('CS Agent requis non trouve dans le seed.');
     }
 
-    // Login Agent
-    const agentLogin = await request(app.getHttpServer())
-      .post('/api/v1/auth/login')
-      .send({ email: csAgent.email, password: 'Agent@1234' });
-    agentToken = agentLogin.body.data.accessToken;
+    // Jeton Keycloak RS256 signé avec la clé de test (rôle du seed)
+    agentToken = tokenFor('csAgent');
   });
 
   afterAll(async () => {

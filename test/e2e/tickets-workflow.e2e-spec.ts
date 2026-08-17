@@ -1,6 +1,7 @@
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { createTestApp } from '../setup';
+import { tokenFor } from '../auth.helper';
 import { DrizzleProvider } from '../../src/database/drizzle.provider';
 import { departments, users } from '../../src/database/schemas';
 import { eq } from 'drizzle-orm';
@@ -51,11 +52,8 @@ describe('Tickets — Workflow E2E complet', () => {
     agentUserId = agent.id;
     assignedTeamId = agent.departmentId;
 
-    const loginRes = await request(app.getHttpServer())
-      .post('/api/v1/auth/login')
-      .send({ email: admin.email, password: 'Admin@1234' });
-
-    adminToken = loginRes.body?.data?.accessToken || '';
+    // Jeton Keycloak RS256 signé avec la clé de test (rôle du seed)
+    adminToken = tokenFor('admin');
   });
 
   afterAll(async () => {

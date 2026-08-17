@@ -41,7 +41,6 @@ describe('Migrations PostgreSQL', () => {
       {
         tables: number;
         slaColumns: number;
-        familyColumns: number;
         tenantGuards: number;
         bootstrapConstraints: number;
       }[]
@@ -53,8 +52,6 @@ describe('Migrations PostgreSQL', () => {
             'first_response_warning_sent_at', 'first_response_breached_at',
             'resolution_warning_sent_at', 'resolution_breached_at'
           )) AS "slaColumns",
-        (SELECT COUNT(*)::int FROM information_schema.columns
-          WHERE table_name = 'refresh_tokens' AND column_name = 'family_id') AS "familyColumns",
         (SELECT COUNT(*)::int FROM pg_trigger
           WHERE NOT tgisinternal AND tgname LIKE '%parent_integration_guard') AS "tenantGuards",
         (SELECT COUNT(*)::int FROM pg_constraint
@@ -67,22 +64,23 @@ describe('Migrations PostgreSQL', () => {
             )) AS "bootstrapConstraints"
     `;
     expect(schema).toEqual({
-      tables: 27,
+      tables: 30,
       slaColumns: 4,
-      familyColumns: 1,
       tenantGuards: 3,
       bootstrapConstraints: 4,
     });
 
     await client`DROP SCHEMA drizzle CASCADE`;
-    await client.end();
-    await runMigrations(url, true);
-    const baselinedClient = postgres(url, { max: 1 });
-    const [migrationState] = await baselinedClient<{ count: number }[]>`
+    // La migration 0020 (Keycloak-only) supprime refresh_tokens ; le re-baseline
+    // cible l'état 0009 qui l'attend encore. On recrée cette table legacy vide
+    // (schéma exact du snapshot 0009) pour valider le chemin baseline.
+    await recreateLegacyRefreshTokens(client);
+    await baselineExistingSchema(client);
+    const [migrationState] = await client<{ count: number }[]>`
       SELECT COUNT(*)::int AS count FROM drizzle.__drizzle_migrations
     `;
-    await baselinedClient.end();
     expect(migrationState?.count).toBe(10);
+    await client.end();
   });
 
   it('reprend une base peuplée et accepte encore les écritures du binaire N-1', async () => {
@@ -160,6 +158,28 @@ async function applyMigrations(client: postgres.Sql, migrations: readonly Migrat
       for (const statement of migration.sql) await transaction.unsafe(statement);
     });
   }
+}
+
+/** Recrée la table legacy refresh_tokens dans son état 0009 (vide, contraintes + index). */
+async function recreateLegacyRefreshTokens(client: postgres.Sql): Promise<void> {
+  await client.unsafe(`
+    CREATE TABLE refresh_tokens (
+      id uuid PRIMARY KEY,
+      family_id uuid NOT NULL,
+      user_id uuid NOT NULL,
+      token_hash text NOT NULL,
+      user_agent text,
+      ip_address varchar(45),
+      expires_at timestamptz NOT NULL,
+      revoked_at timestamptz,
+      created_at timestamptz NOT NULL DEFAULT now()
+    );
+    ALTER TABLE refresh_tokens ADD CONSTRAINT refresh_tokens_user_id_users_id_fk
+      FOREIGN KEY (user_id) REFERENCES users(id);
+    CREATE INDEX idx_refresh_tokens_user ON refresh_tokens (user_id);
+    CREATE INDEX idx_refresh_tokens_hash ON refresh_tokens (token_hash);
+    CREATE INDEX idx_refresh_tokens_family ON refresh_tokens (family_id);
+  `);
 }
 
 async function seedLegacyRows(client: postgres.Sql, ticketId: string, ticketNumber: string): Promise<void> {

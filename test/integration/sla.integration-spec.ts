@@ -1,9 +1,7 @@
-import { Test } from '@nestjs/testing';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { AppModule } from '../../src/app.module';
-import { GlobalExceptionFilter } from '../../src/common/filters/global-exception.filter';
-import { TransformInterceptor } from '../../src/common/interceptors/transform.interceptor';
+import { createTestApp } from '../setup';
+import { tokenFor } from '../auth.helper';
 
 describe('SLA — Intégration (DB réelle)', () => {
   jest.setTimeout(60000);
@@ -11,18 +9,11 @@ describe('SLA — Intégration (DB réelle)', () => {
   let adminToken: string;
 
   beforeAll(async () => {
-    const m = await Test.createTestingModule({ imports: [AppModule] }).compile();
-    app = m.createNestApplication();
-    app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
-    app.useGlobalFilters(new GlobalExceptionFilter());
-    app.useGlobalInterceptors(new TransformInterceptor());
-    app.setGlobalPrefix('api/v1');
-    await app.init();
+    const { app: testApp } = await createTestApp();
+    app = testApp;
 
-    const login = await request(app.getHttpServer())
-      .post('/api/v1/auth/login')
-      .send({ email: 'admin@telecom.local', password: 'Admin@1234' });
-    if (login.body.success) adminToken = login.body.data.accessToken;
+    // Jeton Keycloak RS256 signé avec la clé de test (rôle du seed)
+    adminToken = tokenFor('admin');
   });
 
   afterAll(async () => {

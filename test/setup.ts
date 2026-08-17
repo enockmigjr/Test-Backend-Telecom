@@ -6,6 +6,9 @@ import { TransformInterceptor } from '../src/common/interceptors/transform.inter
 import { Redis } from 'ioredis';
 import { redisConfig } from '../src/common/providers/redis.config';
 import { ANTIVIRUS_SCANNER } from '../src/modules/attachments/security/antivirus-scanner.interface';
+import { KeycloakJwksService } from '../src/modules/auth/services/keycloak-jwks.service';
+import { KeycloakAdminService } from '../src/modules/auth/services/keycloak-admin.service';
+import { configureKeycloakTestEnv, keycloakAdminOverride, keycloakJwksOverride } from './auth.helper';
 
 /**
  * Setup helper pour les tests E2E.
@@ -21,6 +24,8 @@ import { ANTIVIRUS_SCANNER } from '../src/modules/attachments/security/antivirus
  * le bruit dans les rapports de test.
  */
 export async function createTestApp(): Promise<{ app: INestApplication; flushRedis: () => Promise<void> }> {
+  // Environnement Keycloak déterministe : le JWKS est stubé avec la clé de test.
+  configureKeycloakTestEnv();
   // Réduire le niveau de log pour les tests
   process.env.LOG_LEVEL = 'error';
   // Augmenter les limites du throttler pour éviter les erreurs 429 en E2E
@@ -40,6 +45,10 @@ export async function createTestApp(): Promise<{ app: INestApplication; flushRed
       scan: async () => ({ clean: true }),
       health: async () => true,
     })
+    .overrideProvider(KeycloakJwksService)
+    .useValue(keycloakJwksOverride)
+    .overrideProvider(KeycloakAdminService)
+    .useValue(keycloakAdminOverride)
     .compile();
 
   const app = moduleFixture.createNestApplication();

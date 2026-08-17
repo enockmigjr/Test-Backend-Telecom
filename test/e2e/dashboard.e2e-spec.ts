@@ -1,11 +1,7 @@
-import { Test } from '@nestjs/testing';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { AppModule } from '../../src/app.module';
-import { GlobalExceptionFilter } from '../../src/common/filters/global-exception.filter';
-import { TransformInterceptor } from '../../src/common/interceptors/transform.interceptor';
-import { DrizzleProvider } from '../../src/database/drizzle.provider';
-import { users } from '../../src/database/schemas';
+import { createTestApp } from '../setup';
+import { tokenFor } from '../auth.helper';
 
 describe('Dashboard — E2E', () => {
   let app: INestApplication;
@@ -15,36 +11,13 @@ describe('Dashboard — E2E', () => {
   jest.setTimeout(60000);
 
   beforeAll(async () => {
-    const moduleRef = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
+    const { app: testApp, flushRedis } = await createTestApp();
+    await flushRedis();
+    app = testApp;
 
-    app = moduleRef.createNestApplication();
-    app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
-    app.useGlobalFilters(new GlobalExceptionFilter());
-    app.useGlobalInterceptors(new TransformInterceptor());
-    app.setGlobalPrefix('api/v1');
-    await app.init();
-
-    // Récupérer des jetons
-    const drizzle = app.get(DrizzleProvider);
-    const allUsers = await drizzle.db.select().from(users);
-    const admin = allUsers.find((u) => u.email === 'admin@telecom.local');
-    const csAgent = allUsers.find((u) => u.email === 'agent-cc1@telecom.local');
-
-    if (!admin || !csAgent) {
-      throw new Error('Utilisateurs requis du seed non trouvés.');
-    }
-
-    const adminLogin = await request(app.getHttpServer())
-      .post('/api/v1/auth/login')
-      .send({ email: admin.email, password: 'Admin@1234' });
-    adminToken = adminLogin.body.data.accessToken;
-
-    const agentLogin = await request(app.getHttpServer())
-      .post('/api/v1/auth/login')
-      .send({ email: csAgent.email, password: 'Agent@1234' });
-    agentToken = agentLogin.body.data.accessToken;
+    // Jetons Keycloak RS256 signés avec la clé de test (rôles du seed)
+    adminToken = tokenFor('admin');
+    agentToken = tokenFor('csAgent');
   });
 
   afterAll(async () => {

@@ -1,6 +1,7 @@
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { createTestApp } from '../setup';
+import { tokenFor } from '../auth.helper';
 import { DrizzleProvider } from '../../src/database/drizzle.provider';
 import { departments, users } from '../../src/database/schemas';
 import { eq } from 'drizzle-orm';
@@ -99,29 +100,30 @@ describe("RBAC — Controle d'acces par roles", () => {
 
     await drizzle.db
       .update(tickets)
-      .set({ status: 'CLOSED', createdBy: admin.id, assignedTo: admin.id, closedAt: new Date() })
+      .set({
+        status: 'CLOSED',
+        createdBy: admin.id,
+        openedByUserId: admin.id,
+        assignedTo: admin.id,
+        closedAt: new Date(),
+      })
       .where(eq(tickets.id, ticketReopenOkId));
 
     await drizzle.db
       .update(tickets)
-      .set({ status: 'CLOSED', createdBy: admin.id, assignedTo: admin.id, closedAt: new Date() })
+      .set({
+        status: 'CLOSED',
+        createdBy: admin.id,
+        openedByUserId: admin.id,
+        assignedTo: admin.id,
+        closedAt: new Date(),
+      })
       .where(eq(tickets.id, ticketReopenFailId));
 
-    // Authentification des differents roles
-    const adminLogin = await request(app.getHttpServer())
-      .post('/api/v1/auth/login')
-      .send({ email: admin.email, password: 'Admin@1234' });
-    adminToken = adminLogin.body.data?.accessToken || '';
-
-    const agentLogin = await request(app.getHttpServer())
-      .post('/api/v1/auth/login')
-      .send({ email: agent.email, password: 'Agent@1234' });
-    agentToken = agentLogin.body.data?.accessToken || '';
-
-    const supervisorLogin = await request(app.getHttpServer())
-      .post('/api/v1/auth/login')
-      .send({ email: supervisor.email, password: 'Super@1234' });
-    supervisorToken = supervisorLogin.body?.data?.accessToken || '';
+    // Jetons Keycloak RS256 signés avec la clé de test (rôles du seed)
+    adminToken = tokenFor('admin');
+    agentToken = tokenFor('technicalSupportAgent');
+    supervisorToken = tokenFor('supervisor');
   });
 
   afterAll(async () => {

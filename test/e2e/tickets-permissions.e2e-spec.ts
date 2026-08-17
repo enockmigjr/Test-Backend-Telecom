@@ -2,6 +2,7 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { eq } from 'drizzle-orm';
 import { createTestApp } from '../setup';
+import { tokenFor } from '../auth.helper';
 import { DrizzleProvider } from '../../src/database/drizzle.provider';
 import { users } from '../../src/database/schemas';
 
@@ -78,31 +79,11 @@ describe('Tickets Permissions — E2E fine checks', () => {
     csAgentUserId = csAgent.id;
     nocAgentUserId = nocAgent.id;
 
-    // Logins
-
-    const adminLogin = await request(app.getHttpServer())
-      .post('/api/v1/auth/login')
-      .send({ email: admin.email, password: 'Admin@1234' });
-    adminToken = adminLogin.body.data.accessToken;
-
-    const supervisorLogin = await request(app.getHttpServer())
-      .post('/api/v1/auth/login')
-      .send({ email: supervisor.email, password: 'Super@1234' });
-    supervisorToken = supervisorLogin.body.data.accessToken;
-
-    const csLogin = await request(app.getHttpServer())
-      .post('/api/v1/auth/login')
-      .send({ email: csAgent.email, password: 'Agent@1234' });
-    csAgentToken = csLogin.body.data.accessToken;
-
-    const nocLogin = await request(app.getHttpServer())
-      .post('/api/v1/auth/login')
-      .send({ email: nocAgent.email, password: 'Agent@1234' });
-
-    if (!nocLogin.body || !nocLogin.body.data || !nocLogin.body.data.accessToken) {
-      console.error('NOC Login failed:', nocLogin.status, JSON.stringify(nocLogin.body, null, 2));
-    }
-    nocAgentToken = nocLogin.body.data.accessToken;
+    // Jetons Keycloak RS256 signés avec la clé de test (rôles du seed)
+    adminToken = tokenFor('admin');
+    supervisorToken = tokenFor('supervisor');
+    csAgentToken = tokenFor('csAgent');
+    nocAgentToken = tokenFor('nocAgent');
   });
 
   afterAll(async () => {

@@ -1,6 +1,7 @@
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { createTestApp } from '../setup';
+import { tokenFor } from '../auth.helper';
 
 describe('Audit Logs — E2E', () => {
   let app: INestApplication;
@@ -26,17 +27,9 @@ describe('Audit Logs — E2E', () => {
       throw new Error('Utilisateurs requis non trouves.');
     }
 
-    // Login Admin
-    const adminLogin = await request(app.getHttpServer())
-      .post('/api/v1/auth/login')
-      .send({ email: admin.email, password: 'Admin@1234' });
-    adminToken = adminLogin.body.data.accessToken;
-
-    // Login Agent
-    const agentLogin = await request(app.getHttpServer())
-      .post('/api/v1/auth/login')
-      .send({ email: csAgent.email, password: 'Agent@1234' });
-    agentToken = agentLogin.body.data.accessToken;
+    // Jetons Keycloak RS256 signés avec la clé de test (rôles du seed)
+    adminToken = tokenFor('admin');
+    agentToken = tokenFor('csAgent');
   });
 
   afterAll(async () => {

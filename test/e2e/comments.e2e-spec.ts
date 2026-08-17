@@ -1,6 +1,7 @@
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { createTestApp } from '../setup';
+import { tokenFor } from '../auth.helper';
 import { DrizzleProvider } from '../../src/database/drizzle.provider';
 import { tickets } from '../../src/database/schemas';
 
@@ -40,16 +41,9 @@ describe('Comments — E2E', () => {
     if (!visibleTicket) throw new Error("Aucun ticket visible par l'agent Customer Care.");
     ticketId = visibleTicket.id;
 
-    // Logins
-    const agentLogin = await request(app.getHttpServer())
-      .post('/api/v1/auth/login')
-      .send({ email: csAgent.email, password: 'Agent@1234' });
-    agentToken = agentLogin.body.data.accessToken;
-
-    const otherAgentLogin = await request(app.getHttpServer())
-      .post('/api/v1/auth/login')
-      .send({ email: otherAgent.email, password: 'Agent@1234' });
-    otherAgentToken = otherAgentLogin.body.data.accessToken;
+    // Jetons Keycloak RS256 signés avec la clé de test (rôles du seed)
+    agentToken = tokenFor('csAgent');
+    otherAgentToken = tokenFor('nocAgent');
   });
 
   afterAll(async () => {

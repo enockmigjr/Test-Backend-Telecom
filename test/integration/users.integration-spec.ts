@@ -1,9 +1,7 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { AppModule } from '../../src/app.module';
-import { GlobalExceptionFilter } from '../../src/common/filters/global-exception.filter';
-import { TransformInterceptor } from '../../src/common/interceptors/transform.interceptor';
+import { createTestApp } from '../setup';
+import { tokenFor } from '../auth.helper';
 
 /**
  * Tests d'intégration CRUD utilisateurs avec DB réelle.
@@ -15,21 +13,11 @@ describe('Users — CRUD Intégration (DB réelle)', () => {
   let adminToken: string;
 
   beforeAll(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
+    const { app: testApp } = await createTestApp();
+    app = testApp;
 
-    app = moduleFixture.createNestApplication();
-    app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
-    app.useGlobalFilters(new GlobalExceptionFilter());
-    app.useGlobalInterceptors(new TransformInterceptor());
-    app.setGlobalPrefix('api/v1');
-    await app.init();
-
-    const res = await request(app.getHttpServer())
-      .post('/api/v1/auth/login')
-      .send({ email: 'admin@telecom.local', password: 'Admin@1234' });
-    if (res.body.success) adminToken = res.body.data.accessToken;
+    // Jeton Keycloak RS256 signé avec la clé de test (rôle du seed)
+    adminToken = tokenFor('admin');
   });
 
   afterAll(async () => {

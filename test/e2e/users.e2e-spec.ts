@@ -1,6 +1,7 @@
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { createTestApp } from '../setup';
+import { tokenFor } from '../auth.helper';
 import { DrizzleProvider } from '../../src/database/drizzle.provider';
 import { departments } from '../../src/database/schemas';
 
@@ -23,32 +24,10 @@ describe('Users — E2E', () => {
     const [dept] = await drizzle.db.select().from(departments).limit(1);
     departmentId = dept.id;
 
-    // Charger les utilisateurs
-    const { users } = await import('../../src/database/schemas');
-    const allUsers = await drizzle.db.select().from(users);
-    const admin = allUsers.find((u) => u.email === 'admin@telecom.local');
-    const csAgent = allUsers.find((u) => u.email === 'agent-cc1@telecom.local');
-    const supervisor = allUsers.find((u) => u.email === 'supervisor@telecom.local');
-
-    if (!admin || !csAgent || !supervisor) {
-      throw new Error('Utilisateurs requis non trouves.');
-    }
-
-    // Logins
-    const adminLogin = await request(app.getHttpServer())
-      .post('/api/v1/auth/login')
-      .send({ email: admin.email, password: 'Admin@1234' });
-    adminToken = adminLogin.body.data.accessToken;
-
-    const supervisorLogin = await request(app.getHttpServer())
-      .post('/api/v1/auth/login')
-      .send({ email: supervisor.email, password: 'Super@1234' });
-    supervisorToken = supervisorLogin.body.data.accessToken;
-
-    const agentLogin = await request(app.getHttpServer())
-      .post('/api/v1/auth/login')
-      .send({ email: csAgent.email, password: 'Agent@1234' });
-    agentToken = agentLogin.body.data.accessToken;
+    // Jetons Keycloak RS256 signés avec la clé de test (rôles du seed)
+    adminToken = tokenFor('admin');
+    supervisorToken = tokenFor('supervisor');
+    agentToken = tokenFor('csAgent');
   });
 
   afterAll(async () => {

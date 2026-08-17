@@ -2,6 +2,7 @@
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { createTestApp } from '../setup';
+import { tokenFor } from '../auth.helper';
 import { DrizzleProvider } from '../../src/database/drizzle.provider';
 import {
   attachments,
@@ -55,17 +56,9 @@ describe('Supervisor & Agent Isolation — E2E', () => {
       throw new Error('Utilisateurs ou departements requis non trouves.');
     }
 
-    // Login Supervisor NOC
-    const supLogin = await request(app.getHttpServer())
-      .post('/api/v1/auth/login')
-      .send({ email: supervisorNocUser.email, password: 'Super@1234' });
-    supervisorNocToken = supLogin.body.data.accessToken;
-
-    // Login Agent NOC
-    const agentLogin = await request(app.getHttpServer())
-      .post('/api/v1/auth/login')
-      .send({ email: agentNocUser.email, password: 'Agent@1234' });
-    agentNocToken = agentLogin.body.data.accessToken;
+    // Jetons Keycloak RS256 signés avec la clé de test (rôles du seed)
+    supervisorNocToken = tokenFor('supervisorNoc');
+    agentNocToken = tokenFor('nocAgent');
 
     // Trouver ou créer un ticket Billing pour les tests d'assignation
     const billingTickets = await drizzle.db.select().from(tickets).where(eq(tickets.assignedTeamId, billingDeptId));
