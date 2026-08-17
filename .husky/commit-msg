@@ -1,4 +1,4 @@
-commit_regex='^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\(.+\))?: .{1,000}$'
+commit_regex='^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\(.+\))?: .{1,1000}$'
 
 if ! grep -qE "$commit_regex" "$1"; then
   echo "❌ Message de commit invalide."
