@@ -9,6 +9,8 @@ import { TicketAssignmentTargetService } from './ticket-assignment-target.servic
 import { TicketHistoryService } from './ticket-history.service';
 import { TicketNumberService } from './ticket-number.service';
 import { TicketsService } from './tickets.service';
+import { TicketLifecycleService } from './ticket-lifecycle.service';
+import { TicketAssignmentService } from './ticket-assignment.service';
 
 function query(result: readonly unknown[]) {
   const builder = {
@@ -72,6 +74,8 @@ describe('TicketsService.createFromCommand', () => {
           },
         },
         { provide: TicketAssignmentTargetService, useValue: {} },
+        { provide: TicketLifecycleService, useValue: {} },
+        { provide: TicketAssignmentService, useValue: {} },
       ],
     }).compile();
     service = moduleRef.get(TicketsService);

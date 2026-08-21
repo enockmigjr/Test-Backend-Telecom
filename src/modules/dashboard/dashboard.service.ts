@@ -1,270 +1,69 @@
-/**
- * ============================================================================
- * FICHIER : src/modules/dashboard/dashboard.service.ts
- * RÔLE : Service de calcul des métriques décisionnelles et des tableaux de bord analytiques.
- * EXPLICATION :
- * Ce service exécute des agrégations complexes et optimisées sur PostgreSQL via Drizzle ORM :
- * 1. `enforceSupervisorScope` : Applique l'isolation des données pour le rôle `SUPERVISOR` (interdit la consultation des métriques d'autres départements).
- * 2. `overview` : Calcule en parallèle (`Promise.all`) les volumes de tickets, les ouvertures/fermetures du jour, les incidents à risque SLA (dans les 30 min) et les taux de conformité.
- * 3. `ticketsByStatus` & `ticketsByPriority` : Calcule l'âge moyen des tickets en minutes (`AVG(EXTRACT(EPOCH...))`) et les violations de contrats de service.
- * 4. `workload` : Agrège la charge de travail par agent (tickets ouverts, critiques, à risque) et compte les tickets non assignés.
- * 5. `resolutionTime` : Utilise les fonctions d'interpolation statistiques PostgreSQL (`PERCENTILE_CONT(0.5)` pour la médiane et `PERCENTILE_CONT(0.9)` pour le P90) avec découpage temporel (`DATE_TRUNC`).
- * ============================================================================
- */
-
-import { Injectable, ForbiddenException } from '@nestjs/common';
-import { and, gte, gt, lt, lte, eq, sql, isNull, count, inArray, SQL } from 'drizzle-orm';
+import { ForbiddenException, Injectable, Optional } from '@nestjs/common';
+import { and, count, eq, gte, isNull, lte, sql } from 'drizzle-orm';
 import { DrizzleProvider } from '../../database/drizzle.provider';
-import { departments, ticketHistory, tickets, users } from '../../database/schemas';
+import { departments, tickets } from '../../database/schemas';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { DashboardSlaService } from './dashboard-sla.service';
+import { DashboardOverviewService } from './dashboard-overview.service';
+import { DashboardResolutionService } from './dashboard-resolution.service';
+import { DashboardWorkloadService } from './dashboard-workload.service';
 
-type ResolutionGroupBy = 'day' | 'week' | 'month';
-
-/**
- * Construit l'expression SQL `DATE_TRUNC` pour le regroupement temporel du temps de résolution.
- */
-function resolutionPeriod(groupBy: string | undefined): SQL<Date | string> {
-  const safeGroupBy: ResolutionGroupBy = groupBy === 'week' || groupBy === 'month' ? groupBy : 'day';
-  const expressions: Record<ResolutionGroupBy, SQL<Date | string>> = {
-    day: sql<Date | string>`DATE_TRUNC('day', ${tickets.resolvedAt})`,
-    week: sql<Date | string>`DATE_TRUNC('week', ${tickets.resolvedAt})`,
-    month: sql<Date | string>`DATE_TRUNC('month', ${tickets.resolvedAt})`,
-  };
-  return expressions[safeGroupBy];
-}
-
-/**
- * Service calculant les indicateurs statistiques et rapports décisionnels.
- */
 @Injectable()
 export class DashboardService {
+  private readonly overviewService: DashboardOverviewService;
+  private readonly workloadService: DashboardWorkloadService;
+  private readonly resolutionService: DashboardResolutionService;
+
   constructor(
     private readonly drizzle: DrizzleProvider,
     private readonly dashboardSla: DashboardSlaService,
-  ) {}
+    @Optional() overviewService?: DashboardOverviewService,
+    @Optional() workloadService?: DashboardWorkloadService,
+    @Optional() resolutionService?: DashboardResolutionService,
+  ) {
+    this.overviewService = overviewService ?? new DashboardOverviewService(this.drizzle);
+    this.workloadService = workloadService ?? new DashboardWorkloadService(this.drizzle);
+    this.resolutionService = resolutionService ?? new DashboardResolutionService(this.drizzle);
+  }
 
-  /**
-   * Applique le contrôle du périmètre d'accès pour les superviseurs.
-   *
-   * @param departmentId Identifiant de département demandé dans la requête.
-   * @param currentUser Utilisateur authentifié.
-   * @returns Le département forcé de l'utilisateur s'il est superviseur, ou le département demandé sinon.
-   * @throws ForbiddenException Si un superviseur tente de consulter un autre département.
-   */
   private enforceSupervisorScope(departmentId: string | undefined, currentUser?: JwtPayload): string | undefined {
     if (currentUser?.role === 'SUPERVISOR') {
-      if (departmentId && departmentId !== currentUser.departmentId) {
-        throw new ForbiddenException("Un superviseur ne peut pas accéder aux statistiques d'un autre département.");
-      }
+      if (departmentId && departmentId !== currentUser.departmentId) throw new ForbiddenException("Un superviseur ne peut pas accéder aux statistiques d'un autre département.");
       return currentUser.departmentId;
     }
     return departmentId;
   }
 
-  /**
-   * Génère les KPIs globaux de performance de la plateforme télécom.
-   *
-   * @param from Date de début de la plage d'analyse.
-   * @param to Date de fin de la plage d'analyse.
-   * @param currentUser Utilisateur authentifié pour le cloisonnement.
-   */
   async overview(from?: string, to?: string, currentUser?: JwtPayload) {
-    const fromDate = from ? new Date(from) : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-    const toDate = to ? new Date(to) : new Date();
-
-    const conditions = [gte(tickets.createdAt, fromDate), lte(tickets.createdAt, toDate), isNull(tickets.deletedAt)];
-    if (currentUser?.role === 'SUPERVISOR') {
-      conditions.push(eq(tickets.assignedTeamId, currentUser.departmentId));
-    }
-
-    const rangeWhere = and(...conditions);
-    const slaScope = [isNull(tickets.deletedAt), sql`${tickets.status} NOT IN ('RESOLVED','CLOSED','CANCELLED')`];
-    if (currentUser?.role === 'SUPERVISOR') slaScope.push(eq(tickets.assignedTeamId, currentUser.departmentId));
-    // Les indicateurs SLA portent sur tous les tickets ouverts, quelle que soit la période de création.
-    const openWhere = and(...slaScope);
-    const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const tomorrowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-    const todayScope = [isNull(tickets.deletedAt)];
-    if (currentUser?.role === 'SUPERVISOR') {
-      todayScope.push(eq(tickets.assignedTeamId, currentUser.departmentId));
-    }
-
-    // Exécution parallèle des 7 requêtes d'agrégation d'indicateurs
-    const [
-      [totals],
-      [openTickets],
-      [],
-      [resolvedToday],
-      [createdToday],
-      [breachedCount],
-      [atRiskCount],
-      [overdueCount],
-      [compliantCount],
-    ] = await Promise.all([
-      this.drizzle.db.select({ total: count() }).from(tickets).where(rangeWhere),
-      this.drizzle.db.select({ count: count() }).from(tickets).where(openWhere),
-      this.drizzle.db
-        .select({ count: count() })
-        .from(tickets)
-        .where(and(openWhere, eq(tickets.priority, 'CRITICAL' as const))),
-      this.drizzle.db
-        .select({ count: count() })
-        .from(tickets)
-        .where(and(...todayScope, gte(tickets.resolvedAt, todayStart), lt(tickets.resolvedAt, tomorrowStart))),
-      this.drizzle.db
-        .select({ count: count() })
-        .from(tickets)
-        .where(and(...todayScope, gte(tickets.createdAt, todayStart), lt(tickets.createdAt, tomorrowStart))),
-      this.drizzle.db
-        .select({ count: count() })
-        .from(tickets)
-        .where(and(openWhere, eq(tickets.slaBreached, true))),
-      this.drizzle.db
-        .select({ count: count() })
-        .from(tickets)
-        .where(
-          and(
-            openWhere,
-            gt(tickets.resolutionDueAt, new Date()),
-            lte(tickets.resolutionDueAt, new Date(Date.now() + 30 * 60 * 1000)),
-          ),
-        ),
-      this.drizzle.db
-        .select({ count: count() })
-        .from(tickets)
-        .where(and(openWhere, lt(tickets.resolutionDueAt, new Date()))),
-      this.drizzle.db
-        .select({ count: count() })
-        .from(tickets)
-        .where(and(openWhere, eq(tickets.slaBreached, false))),
-    ]);
-
-    const byStatus = await this.drizzle.db
-      .select({ status: tickets.status, count: count() })
-      .from(tickets)
-      .where(rangeWhere)
-      .groupBy(tickets.status);
-    const byPriority = await this.drizzle.db
-      .select({ priority: tickets.priority, count: count() })
-      .from(tickets)
-      .where(rangeWhere)
-      .groupBy(tickets.priority);
-    const bySeverity = await this.drizzle.db
-      .select({ severity: tickets.severity, count: count() })
-      .from(tickets)
-      .where(rangeWhere)
-      .groupBy(tickets.severity);
-
-    const total = Number(totals?.total || 0);
-    const openTotal = Number(openTickets?.count || 0);
-    const compliant = Number(compliantCount?.count || 0);
-    const atRiskExclusive = Math.max(0, Number(atRiskCount?.count || 0) - Number(overdueCount?.count || 0));
-
-    return {
-      period: { from: fromDate.toISOString(), to: toDate.toISOString() },
-      ticketVolume: {
-        total,
-        openTickets: openTotal,
-        resolvedToday: Number(resolvedToday?.count || 0),
-        createdToday: Number(createdToday?.count || 0),
-      },
-      byStatus: Object.fromEntries(byStatus.map((s) => [s.status, Number(s.count)])),
-      byPriority: Object.fromEntries(byPriority.map((p) => [p.priority, Number(p.count)])),
-      bySeverity: Object.fromEntries(bySeverity.map((s) => [s.severity, Number(s.count)])),
-      sla: {
-        totalTracked: openTotal,
-        breached: Number(breachedCount?.count || 0),
-        atRisk: atRiskExclusive > 0 ? atRiskExclusive : Number(atRiskCount?.count || 0),
-        overdue: Number(overdueCount?.count || 0),
-        compliant,
-        complianceRate: openTotal > 0 ? Number(((compliant / openTotal) * 100).toFixed(2)) : 100,
-      },
-    };
+    return this.overviewService.overview(from, to, currentUser);
   }
 
-  /**
-   * Calcule la répartition des tickets par statut et l'âge moyen d'ouverture.
-   */
   async ticketsByStatus(from?: string, to?: string, departmentId?: string, currentUser?: JwtPayload) {
     const fromDate = from ? new Date(from) : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
     const toDate = to ? new Date(to) : new Date();
-
     const targetDeptId = this.enforceSupervisorScope(departmentId, currentUser);
-
     const conditions = [gte(tickets.createdAt, fromDate), lte(tickets.createdAt, toDate), isNull(tickets.deletedAt)];
     if (targetDeptId) conditions.push(eq(tickets.assignedTeamId, targetDeptId));
     const where = and(...conditions);
-
-    const data = await this.drizzle.db
-      .select({
-        status: tickets.status,
-        count: count(),
-        avgAgeMinutes: sql<number>`COALESCE(AVG(EXTRACT(EPOCH FROM (NOW() - ${tickets.createdAt})) / 60), 0)`,
-      })
-      .from(tickets)
-      .where(where)
-      .groupBy(tickets.status);
-
+    const data = await this.drizzle.db.select({ status: tickets.status, count: count(), avgAgeMinutes: sql<number>`COALESCE(AVG(EXTRACT(EPOCH FROM (NOW() - ${tickets.createdAt})) / 60), 0)` }).from(tickets).where(where).groupBy(tickets.status);
     const total = data.reduce((sum, d) => sum + Number(d.count), 0);
-    return {
-      period: { from: fromDate.toISOString(), to: toDate.toISOString() },
-      data: data.map((d) => ({
-        ...d,
-        count: Number(d.count),
-        avgAgeMinutes: Math.round(Number(d.avgAgeMinutes)),
-        percentage: total > 0 ? Number(((Number(d.count) / total) * 100).toFixed(2)) : 0,
-      })),
-    };
+    return { period: { from: fromDate.toISOString(), to: toDate.toISOString() }, data: data.map((d) => ({ ...d, count: Number(d.count), avgAgeMinutes: Math.round(Number(d.avgAgeMinutes)), percentage: total > 0 ? Number(((Number(d.count) / total) * 100).toFixed(2)) : 0 })) };
   }
 
-  /**
-   * Répartition des tickets par priorité et comptage des pénalités SLA.
-   */
-  async ticketsByPriority(
-    from?: string,
-    to?: string,
-    statusFilter?: string,
-    currentUser?: JwtPayload,
-    departmentId?: string,
-  ) {
+  async ticketsByPriority(from?: string, to?: string, statusFilter?: string, currentUser?: JwtPayload, departmentId?: string) {
     const fromDate = from ? new Date(from) : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
     const toDate = to ? new Date(to) : new Date();
-
     const targetDeptId = this.enforceSupervisorScope(departmentId, currentUser);
-
     const conditions = [gte(tickets.createdAt, fromDate), lte(tickets.createdAt, toDate), isNull(tickets.deletedAt)];
     if (statusFilter === 'OPEN') conditions.push(sql`${tickets.status} NOT IN ('RESOLVED','CLOSED','CANCELLED')`);
     if (statusFilter === 'RESOLVED') conditions.push(sql`${tickets.status} IN ('RESOLVED','CLOSED')`);
     if (targetDeptId) conditions.push(eq(tickets.assignedTeamId, targetDeptId));
     const where = and(...conditions);
-
-    const data = await this.drizzle.db
-      .select({
-        priority: tickets.priority,
-        count: count(),
-        slaBreaches: sql<number>`COUNT(*) FILTER (WHERE ${tickets.slaBreached} = true)`,
-      })
-      .from(tickets)
-      .where(where)
-      .groupBy(tickets.priority);
-
+    const data = await this.drizzle.db.select({ priority: tickets.priority, count: count(), slaBreaches: sql<number>`COUNT(*) FILTER (WHERE ${tickets.slaBreached} = true)` }).from(tickets).where(where).groupBy(tickets.priority);
     const total = data.reduce((sum, d) => sum + Number(d.count), 0);
-    return {
-      period: { from: fromDate.toISOString(), to: toDate.toISOString() },
-      data: data.map((d) => ({
-        ...d,
-        count: Number(d.count),
-        slaBreaches: Number(d.slaBreaches),
-        percentage: total > 0 ? Number(((Number(d.count) / total) * 100).toFixed(2)) : 0,
-      })),
-    };
+    return { period: { from: fromDate.toISOString(), to: toDate.toISOString() }, data: data.map((d) => ({ ...d, count: Number(d.count), slaBreaches: Number(d.slaBreaches), percentage: total > 0 ? Number(((Number(d.count) / total) * 100).toFixed(2)) : 0 })) };
   }
 
-  /**
-   * Construit le rapport de performance et de respect SLA par département.
-   */
   async departmentsReport(from?: string, to?: string, currentUser?: JwtPayload) {
     const fromDate = from ? new Date(from) : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
     const toDate = to ? new Date(to) : new Date();
@@ -272,467 +71,37 @@ export class DashboardService {
     const targetDeptId = this.enforceSupervisorScope(undefined, currentUser);
     if (targetDeptId) conditions.push(eq(tickets.assignedTeamId, targetDeptId));
     const where = and(...conditions);
-
     return {
       period: { from: fromDate.toISOString(), to: toDate.toISOString() },
-      data: await this.drizzle.db
-        .select({
-          departmentId: tickets.departmentId,
-          departmentName: departments.name,
-          total: count(),
+      data: await this.drizzle.db.select({
+          departmentId: tickets.departmentId, departmentName: departments.name, total: count(),
           open: sql<number>`COUNT(*) FILTER (WHERE ${tickets.status} NOT IN ('RESOLVED','CLOSED','CANCELLED'))`,
           resolved: sql<number>`COUNT(*) FILTER (WHERE ${tickets.status} = 'RESOLVED')`,
           closed: sql<number>`COUNT(*) FILTER (WHERE ${tickets.status} = 'CLOSED')`,
           slaCompliant: sql<number>`COUNT(*) FILTER (WHERE ${tickets.slaBreached} = false)`,
           slaBreached: sql<number>`COUNT(*) FILTER (WHERE ${tickets.slaBreached} = true)`,
           avgResolutionMinutes: sql<number>`COALESCE(AVG(EXTRACT(EPOCH FROM (${tickets.resolvedAt} - ${tickets.createdAt})) / 60) FILTER (WHERE ${tickets.resolvedAt} IS NOT NULL), 0)`,
-        })
-        .from(tickets)
-        .leftJoin(departments, eq(tickets.departmentId, departments.id))
-        .where(where)
-        .groupBy(tickets.departmentId, departments.name),
+        }).from(tickets).leftJoin(departments, eq(tickets.departmentId, departments.id)).where(where).groupBy(tickets.departmentId, departments.name),
     };
   }
 
-  /**
-   * Délégué au service SLA dédié pour l'analyse de conformité.
-   */
-  async slaCompliance(
-    from?: string,
-    to?: string,
-    departmentId?: string,
-    priority?: string,
-    categoryId?: string,
-    currentUser?: JwtPayload,
-  ) {
+  async slaCompliance(from?: string, to?: string, departmentId?: string, priority?: string, categoryId?: string, currentUser?: JwtPayload) {
     return this.dashboardSla.compliance(from, to, departmentId, priority, categoryId, currentUser);
   }
 
-  /**
-   * Analyse la charge de travail individuelle des agents et mesure le volume de tickets non assignés.
-   */
   async workload(departmentId?: string, currentUser?: JwtPayload) {
-    const targetDeptId = this.enforceSupervisorScope(departmentId, currentUser);
-
-    const conditions = [
-      isNull(tickets.deletedAt),
-      sql`${tickets.status} NOT IN ('RESOLVED','CLOSED','CANCELLED')`,
-      sql`${tickets.assignedTo} IS NOT NULL`,
-    ];
-    if (targetDeptId) conditions.push(eq(tickets.assignedTeamId, targetDeptId));
-    const where = and(...conditions);
-
-    const data = await this.drizzle.db
-      .select({
-        agentId: tickets.assignedTo,
-        firstName: users.firstName,
-        lastName: users.lastName,
-        email: users.email,
-        isAvailable: users.isAvailable,
-        absenceEndsAt: users.absenceEndsAt,
-        openTicketsCount: count(),
-        criticalTicketsCount: sql<number>`COUNT(*) FILTER (WHERE ${tickets.priority} = 'CRITICAL')`,
-        highTicketsCount: sql<number>`COUNT(*) FILTER (WHERE ${tickets.priority} = 'HIGH')`,
-        slaAtRiskCount: sql<number>`COUNT(*) FILTER (WHERE ${tickets.resolutionDueAt} <= NOW() + INTERVAL '30 minutes')`,
-        overdueTicketsCount: sql<number>`COUNT(*) FILTER (WHERE ${tickets.resolutionDueAt} < NOW())`,
-        lastActivityAt: sql<Date>`MAX(${tickets.updatedAt})`,
-      })
-      .from(tickets)
-      .leftJoin(users, eq(tickets.assignedTo, users.id))
-      .where(where)
-      .groupBy(
-        tickets.assignedTo,
-        users.firstName,
-        users.lastName,
-        users.email,
-        users.isAvailable,
-        users.absenceEndsAt,
-      );
-
-    const unassignedConditions = [
-      isNull(tickets.deletedAt),
-      sql`${tickets.status} NOT IN ('RESOLVED','CLOSED','CANCELLED')`,
-      sql`${tickets.assignedTo} IS NULL`,
-    ];
-    if (targetDeptId) unassignedConditions.push(eq(tickets.assignedTeamId, targetDeptId));
-
-    const unassigned = await this.drizzle.db
-      .select({ count: count() })
-      .from(tickets)
-      .where(and(...unassignedConditions));
-
-    const now = new Date();
-    const absentAgentsCount = data.filter((agent) => {
-      if (agent.isAvailable === false) return true;
-      return agent.absenceEndsAt ? new Date(agent.absenceEndsAt) > now : false;
-    }).length;
-
-    return {
-      generatedAt: new Date().toISOString(),
-      data: data.map((a) => ({
-        ...a,
-        openTicketsCount: Number(a.openTicketsCount || 0),
-        criticalTicketsCount: Number(a.criticalTicketsCount || 0),
-        highTicketsCount: Number(a.highTicketsCount || 0),
-        slaAtRiskCount: Number(a.slaAtRiskCount || 0),
-        overdueTicketsCount: Number(a.overdueTicketsCount || 0),
-        lastActivityAt: a.lastActivityAt ? new Date(a.lastActivityAt).toISOString() : null,
-      })),
-      summary: {
-        totalAgents: data.length,
-        totalOpenTickets: data.reduce((sum, a) => sum + Number(a.openTicketsCount), 0),
-        absentAgentsCount,
-        avgTicketsPerAgent:
-          data.length > 0
-            ? Number((data.reduce((sum, a) => sum + Number(a.openTicketsCount), 0) / data.length).toFixed(1))
-            : 0,
-        unassignedTickets: Number(unassigned[0]?.count || 0),
-      },
-    };
+    return this.workloadService.workload(departmentId, currentUser);
   }
 
-  /**
-   * Performance individuelle des agents sur une période : volume résolu, violations SLA,
-   * délai moyen de résolution, tickets ouverts en retard/à risque et dernière activité.
-   */
   async agentPerformance(from?: string, to?: string, currentUser?: JwtPayload) {
-    const fromDate = from ? new Date(from) : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-    const toDate = to ? new Date(to) : new Date();
-    const now = new Date();
-    const targetDeptId = this.enforceSupervisorScope(undefined, currentUser);
-
-    const conditions = [isNull(tickets.deletedAt), sql`${tickets.assignedTo} IS NOT NULL`];
-    if (targetDeptId) conditions.push(eq(tickets.assignedTeamId, targetDeptId));
-    const where = and(...conditions);
-    const openStatus = sql`${tickets.status} NOT IN ('RESOLVED','CLOSED','CANCELLED')`;
-    const durationMinutes = sql<number>`EXTRACT(EPOCH FROM (${tickets.resolvedAt} - ${tickets.createdAt})) / 60`;
-
-    const rows = await this.drizzle.db
-      .select({
-        agentId: tickets.assignedTo,
-        firstName: users.firstName,
-        lastName: users.lastName,
-        email: users.email,
-        role: users.role,
-        isAvailable: users.isAvailable,
-        absenceEndsAt: users.absenceEndsAt,
-        departmentName: departments.name,
-        openTicketsCount: sql<number>`COUNT(*) FILTER (WHERE ${openStatus})`,
-        criticalTicketsCount: sql<number>`COUNT(*) FILTER (WHERE ${openStatus} AND ${tickets.priority} = 'CRITICAL')`,
-        overdueTicketsCount: sql<number>`COUNT(*) FILTER (WHERE ${openStatus} AND ${tickets.resolutionDueAt} < ${now.toISOString()})`,
-        atRiskTicketsCount: sql<number>`COUNT(*) FILTER (WHERE ${openStatus} AND ${tickets.resolutionDueAt} <= ${new Date(now.getTime() + 30 * 60 * 1000).toISOString()})`,
-        resolvedInPeriod: sql<number>`COUNT(*) FILTER (WHERE ${tickets.resolvedAt} >= ${fromDate.toISOString()} AND ${tickets.resolvedAt} <= ${toDate.toISOString()})`,
-        closedInPeriod: sql<number>`COUNT(*) FILTER (WHERE ${tickets.closedAt} >= ${fromDate.toISOString()} AND ${tickets.closedAt} <= ${toDate.toISOString()})`,
-        slaBreachedCount: sql<number>`COUNT(*) FILTER (WHERE ${tickets.slaBreached} = true)`,
-        firstResponseCompliant: sql<number>`COUNT(*) FILTER (WHERE ${tickets.firstResponseAt} IS NOT NULL AND ${tickets.firstResponseAt} <= ${tickets.firstResponseDueAt})`,
-        firstResponseCount: sql<number>`COUNT(*) FILTER (WHERE ${tickets.firstResponseAt} IS NOT NULL)`,
-        avgResolutionMinutes: sql<number>`COALESCE(AVG(${durationMinutes}) FILTER (WHERE ${tickets.resolvedAt} >= ${fromDate.toISOString()} AND ${tickets.resolvedAt} <= ${toDate.toISOString()}), 0)`,
-        medianResolutionMinutes: sql<number>`COALESCE(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY ${durationMinutes}) FILTER (WHERE ${tickets.resolvedAt} >= ${fromDate.toISOString()} AND ${tickets.resolvedAt} <= ${toDate.toISOString()}), 0)`,
-        lastActivityAt: sql<Date>`MAX(${tickets.updatedAt})`,
-      })
-      .from(tickets)
-      .leftJoin(users, eq(tickets.assignedTo, users.id))
-      .leftJoin(departments, eq(tickets.assignedTeamId, departments.id))
-      .where(where)
-      .groupBy(
-        tickets.assignedTo,
-        users.firstName,
-        users.lastName,
-        users.email,
-        users.role,
-        users.isAvailable,
-        users.absenceEndsAt,
-        departments.name,
-      )
-      .orderBy(users.firstName, users.lastName);
-
-    const agentIds = rows.map((row) => row.agentId).filter((id): id is string => Boolean(id));
-    const reopenedRows =
-      agentIds.length > 0
-        ? await this.drizzle.db
-            .select({
-              agentId: tickets.assignedTo,
-              reopenedCount: count(),
-            })
-            .from(ticketHistory)
-            .innerJoin(tickets, eq(ticketHistory.ticketId, tickets.id))
-            .where(
-              and(
-                eq(ticketHistory.action, 'STATUS_CHANGED'),
-                sql`${ticketHistory.newValue}->>'status' = 'REOPENED'`,
-                inArray(tickets.assignedTo, agentIds),
-              ),
-            )
-            .groupBy(tickets.assignedTo)
-        : [];
-    const reopenedByAgent = new Map(reopenedRows.map((row) => [row.agentId, Number(row.reopenedCount)]));
-    // Un agent peut apparaître sur plusieurs lignes si ses tickets sont répartis
-    // sur plusieurs équipes (groupBy departments.name) : on fusionne par agent.
-    const mergedRows: typeof rows = [];
-    const byAgent = new Map<string, (typeof rows)[number]>();
-    const countFields = [
-      'openTicketsCount',
-      'criticalTicketsCount',
-      'overdueTicketsCount',
-      'atRiskTicketsCount',
-      'resolvedInPeriod',
-      'closedInPeriod',
-      'slaBreachedCount',
-      'firstResponseCompliant',
-      'firstResponseCount',
-    ] as const;
-    for (const row of rows) {
-      const key = row.agentId ?? '';
-      const existing = key ? byAgent.get(key) : undefined;
-      if (!existing) {
-        byAgent.set(key, { ...row });
-        mergedRows.push(row);
-        continue;
-      }
-      for (const field of countFields) {
-        existing[field] = Number(existing[field] || 0) + Number(row[field] || 0);
-      }
-      if (row.lastActivityAt && (!existing.lastActivityAt || row.lastActivityAt > existing.lastActivityAt)) {
-        existing.lastActivityAt = row.lastActivityAt;
-      }
-    }
-
-    return {
-      generatedAt: now.toISOString(),
-      period: { from: fromDate.toISOString(), to: toDate.toISOString() },
-      data: mergedRows.map((row) => {
-        const agentId = row.agentId;
-        const resolved = Number(row.resolvedInPeriod || 0);
-        const firstResponseCount = Number(row.firstResponseCount || 0);
-        const firstResponseComplianceRate =
-          firstResponseCount > 0
-            ? Math.round((Number(row.firstResponseCompliant || 0) / firstResponseCount) * 100)
-            : 100;
-        const reopenedCount = agentId ? (reopenedByAgent.get(agentId) ?? 0) : 0;
-        const avgResolutionMinutes = Math.round(Number(row.avgResolutionMinutes || 0));
-        const score = this.performanceScore(
-          Number(row.slaBreachedCount || 0),
-          resolved,
-          avgResolutionMinutes,
-          reopenedCount,
-        );
-        return {
-          agentId,
-          firstName: row.firstName,
-          lastName: row.lastName,
-          email: row.email,
-          role: row.role,
-          isAvailable: row.isAvailable,
-          absenceEndsAt: row.absenceEndsAt ? new Date(row.absenceEndsAt).toISOString() : null,
-          departmentName: row.departmentName,
-          openTicketsCount: Number(row.openTicketsCount || 0),
-          criticalTicketsCount: Number(row.criticalTicketsCount || 0),
-          overdueTicketsCount: Number(row.overdueTicketsCount || 0),
-          atRiskTicketsCount: Number(row.atRiskTicketsCount || 0),
-          resolvedInPeriod: resolved,
-          closedInPeriod: Number(row.closedInPeriod || 0),
-          slaBreachedCount: Number(row.slaBreachedCount || 0),
-          firstResponseComplianceRate,
-          avgResolutionMinutes,
-          medianResolutionMinutes: Math.round(Number(row.medianResolutionMinutes || 0)),
-          reopenedCount,
-          score,
-          lastActivityAt: row.lastActivityAt ? new Date(row.lastActivityAt).toISOString() : null,
-        };
-      }),
-    };
+    return this.workloadService.agentPerformance(from, to, currentUser);
   }
 
-  /**
-   * Activité de l'utilisateur courant : ses tickets, son SLA, son état de disponibilité.
-   */
   async myActivity(currentUser: JwtPayload) {
-    const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const openStatus = sql`${tickets.status} NOT IN ('RESOLVED','CLOSED','CANCELLED')`;
-    const where = and(isNull(tickets.deletedAt), eq(tickets.assignedTo, currentUser.sub));
-    const durationMinutes = sql<number>`EXTRACT(EPOCH FROM (${tickets.resolvedAt} - ${tickets.createdAt})) / 60`;
-
-    const sevenDaysAgo = new Date(now.getTime() - 6 * 24 * 3_600_000);
-    const [[stats], [profile], reopenedRows, trendRows] = await Promise.all([
-      this.drizzle.db
-        .select({
-          totalAssigned: sql<number>`COUNT(*)`,
-          openTicketsCount: sql<number>`COUNT(*) FILTER (WHERE ${openStatus})`,
-          criticalTicketsCount: sql<number>`COUNT(*) FILTER (WHERE ${openStatus} AND ${tickets.priority} = 'CRITICAL')`,
-          overdueTicketsCount: sql<number>`COUNT(*) FILTER (WHERE ${openStatus} AND ${tickets.resolutionDueAt} < ${now.toISOString()})`,
-          atRiskTicketsCount: sql<number>`COUNT(*) FILTER (WHERE ${openStatus} AND ${tickets.resolutionDueAt} <= ${new Date(now.getTime() + 30 * 60 * 1000).toISOString()})`,
-          resolvedThisMonth: sql<number>`COUNT(*) FILTER (WHERE ${tickets.resolvedAt} >= ${monthStart.toISOString()})`,
-          closedThisMonth: sql<number>`COUNT(*) FILTER (WHERE ${tickets.closedAt} >= ${monthStart.toISOString()})`,
-          slaBreachedCount: sql<number>`COUNT(*) FILTER (WHERE ${tickets.slaBreached} = true)`,
-          firstResponseCount: sql<number>`COUNT(*) FILTER (WHERE ${tickets.firstResponseAt} IS NOT NULL)`,
-          firstResponseCompliant: sql<number>`COUNT(*) FILTER (WHERE ${tickets.firstResponseAt} IS NOT NULL AND ${tickets.firstResponseAt} <= ${tickets.firstResponseDueAt})`,
-          avgResolutionMinutes: sql<number>`COALESCE(AVG(${durationMinutes}) FILTER (WHERE ${tickets.resolvedAt} >= ${monthStart.toISOString()}), 0)`,
-          medianResolutionMinutes: sql<number>`COALESCE(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY ${durationMinutes}) FILTER (WHERE ${tickets.resolvedAt} >= ${monthStart.toISOString()}), 0)`,
-          lastActivityAt: sql<Date>`MAX(${tickets.updatedAt})`,
-        })
-        .from(tickets)
-        .where(where),
-      this.drizzle.db
-        .select({
-          firstName: users.firstName,
-          lastName: users.lastName,
-          email: users.email,
-          role: users.role,
-          departmentName: departments.name,
-          isAvailable: users.isAvailable,
-          absenceEndsAt: users.absenceEndsAt,
-        })
-        .from(users)
-        .leftJoin(departments, eq(users.departmentId, departments.id))
-        .where(eq(users.id, currentUser.sub))
-        .limit(1),
-      this.drizzle.db
-        .select({ reopenedCount: count() })
-        .from(ticketHistory)
-        .innerJoin(tickets, eq(ticketHistory.ticketId, tickets.id))
-        .where(
-          and(
-            eq(ticketHistory.action, 'STATUS_CHANGED'),
-            sql`${ticketHistory.newValue}->>'status' = 'REOPENED'`,
-            eq(tickets.assignedTo, currentUser.sub),
-          ),
-        )
-        .groupBy(tickets.assignedTo),
-      this.drizzle.db
-        .select({
-          day: sql<string>`TO_CHAR(${tickets.resolvedAt}, 'YYYY-MM-DD')`,
-          count: count(),
-        })
-        .from(tickets)
-        .where(
-          and(
-            isNull(tickets.deletedAt),
-            eq(tickets.assignedTo, currentUser.sub),
-            sql`${tickets.resolvedAt} >= ${sevenDaysAgo.toISOString()}`,
-          ),
-        )
-        .groupBy(sql`TO_CHAR(${tickets.resolvedAt}, 'YYYY-MM-DD')`)
-        .orderBy(sql`TO_CHAR(${tickets.resolvedAt}, 'YYYY-MM-DD')`),
-    ]);
-    const reopenedCount = reopenedRows.length > 0 ? Number(reopenedRows[0].reopenedCount || 0) : 0;
-    const firstResponseCount = Number(stats?.firstResponseCount || 0);
-    const firstResponseComplianceRate =
-      firstResponseCount > 0
-        ? Math.round((Number(stats?.firstResponseCompliant || 0) / firstResponseCount) * 100)
-        : 100;
-
-    return {
-      generatedAt: now.toISOString(),
-      profile: profile
-        ? {
-            firstName: profile.firstName,
-            lastName: profile.lastName,
-            email: profile.email,
-            role: profile.role,
-            departmentName: profile.departmentName,
-            isAvailable: profile.isAvailable,
-            absenceEndsAt: profile.absenceEndsAt ? new Date(profile.absenceEndsAt).toISOString() : null,
-          }
-        : null,
-      summary: {
-        totalAssigned: Number(stats?.totalAssigned || 0),
-        openTicketsCount: Number(stats?.openTicketsCount || 0),
-        criticalTicketsCount: Number(stats?.criticalTicketsCount || 0),
-        overdueTicketsCount: Number(stats?.overdueTicketsCount || 0),
-        atRiskTicketsCount: Number(stats?.atRiskTicketsCount || 0),
-        resolvedThisMonth: Number(stats?.resolvedThisMonth || 0),
-        closedThisMonth: Number(stats?.closedThisMonth || 0),
-        slaBreachedCount: Number(stats?.slaBreachedCount || 0),
-        firstResponseCount,
-        firstResponseComplianceRate,
-        avgResolutionMinutes: Math.round(Number(stats?.avgResolutionMinutes || 0)),
-        medianResolutionMinutes: Math.round(Number(stats?.medianResolutionMinutes || 0)),
-        reopenedCount,
-        resolvedLast7Days: trendRows.map((row) => ({ day: row.day, count: Number(row.count || 0) })),
-        lastActivityAt: stats?.lastActivityAt ? new Date(stats.lastActivityAt).toISOString() : null,
-      },
-    };
+    return this.workloadService.myActivity(currentUser);
   }
 
-  /**
-   * Score d'évaluation pondéré d'un agent (0-100).
-   * Pondérations validées : 40 % respect SLA, 30 % volume résolu, 20 % vitesse, 10 % réouvertures.
-   */
-  private performanceScore(
-    slaBreachedCount: number,
-    resolvedInPeriod: number,
-    avgResolutionMinutes: number,
-    reopenedCount: number,
-  ): number {
-    const slaScore = Math.max(0, 100 - slaBreachedCount * 10);
-    const volumeScore = Math.min(100, resolvedInPeriod * 5);
-    const speedScore = Math.max(0, 100 - Math.round(avgResolutionMinutes / 6));
-    const reopenScore = Math.max(0, 100 - reopenedCount * 20);
-    return Math.round(0.4 * slaScore + 0.3 * volumeScore + 0.2 * speedScore + 0.1 * reopenScore);
-  }
-
-  /**
-   * Calcule les métriques statistiques de temps de résolution (moyenne, médiane P50, 90ème centile P90) et l'évolution temporelle.
-   */
-  async resolutionTime(
-    from?: string,
-    to?: string,
-    groupBy?: string,
-    departmentId?: string,
-    priority?: string,
-    currentUser?: JwtPayload,
-  ) {
-    const fromDate = from ? new Date(from) : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-    const toDate = to ? new Date(to) : new Date();
-
-    const targetDeptId = this.enforceSupervisorScope(departmentId, currentUser);
-
-    const conditions = [
-      gte(tickets.resolvedAt, fromDate),
-      lte(tickets.resolvedAt, toDate),
-      isNull(tickets.deletedAt),
-      sql`${tickets.resolvedAt} IS NOT NULL`,
-    ];
-    if (targetDeptId) conditions.push(eq(tickets.assignedTeamId, targetDeptId));
-    if (priority) conditions.push(eq(tickets.priority, priority as typeof tickets.$inferSelect.priority));
-    const where = and(...conditions);
-    const periodExpression = resolutionPeriod(groupBy);
-    const durationMinutes = sql<number>`EXTRACT(EPOCH FROM (${tickets.resolvedAt} - ${tickets.createdAt})) / 60`;
-
-    // Calcul des agrégations statistiques PostgreSQL
-    const [stats] = await this.drizzle.db
-      .select({
-        avgMinutes: sql<number>`COALESCE(AVG(${durationMinutes}), 0)`,
-        medianMinutes: sql<number>`COALESCE(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY ${durationMinutes}), 0)`,
-        p90Minutes: sql<number>`COALESCE(PERCENTILE_CONT(0.9) WITHIN GROUP (ORDER BY ${durationMinutes}), 0)`,
-        resolvedCount: count(),
-      })
-      .from(tickets)
-      .where(where);
-
-    const trend = await this.drizzle.db
-      .select({
-        period: periodExpression,
-        avgResolutionTimeMinutes: sql<number>`COALESCE(AVG(${durationMinutes}), 0)`,
-      })
-      .from(tickets)
-      .where(where)
-      .groupBy(periodExpression)
-      .orderBy(periodExpression);
-
-    return {
-      period: { from: fromDate.toISOString(), to: toDate.toISOString() },
-      overall: {
-        avgResolutionTimeMinutes: Math.round(Number(stats?.avgMinutes || 0)),
-        medianResolutionTimeMinutes: Math.round(Number(stats?.medianMinutes || 0)),
-        p90ResolutionTimeMinutes: Math.round(Number(stats?.p90Minutes || 0)),
-        resolvedCount: Number(stats?.resolvedCount || 0),
-      },
-      trend: trend.map((point) => ({
-        period: new Date(point.period).toISOString(),
-        avgResolutionTimeMinutes: Number(point.avgResolutionTimeMinutes),
-      })),
-    };
+  async resolutionTime(from?: string, to?: string, groupBy?: string, departmentId?: string, priority?: string, currentUser?: JwtPayload) {
+    return this.resolutionService.resolutionTime(from, to, groupBy, departmentId, priority, currentUser);
   }
 }

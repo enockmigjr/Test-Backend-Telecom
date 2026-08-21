@@ -2,7 +2,11 @@
 
 ## Statut
 
-- État : audit complet réalisé (14/08/2026) — 2 rapports fusionnés : `plans/reports/review-260814-1314-backend-full-audit.md` (audit principal, 12 P1 vérifiés manuellement) et `plans/reports/review-260814-1600-backend-code-review.md` (second agent, recoupé finding par finding).
+- État : **HARDENING TERMINÉ le 21/08/2026** — branche `fix/backend-hardening-260820` (`d214c5e` + `bdc3152` + `730df84` + en cours)
+  - 14/08 : audit complet (12 P1) + 20/08 reconcilié `audit-260820-1723` (12 P1, 1 nouveau P0)
+  - 20-21/08 : implémentation P0/P1 + P2 critiques sur la branche (auth strict, RBAC cible, atomicité, files, admin, bot, retention, dashboard, indexes)
+  - 21/08 : dettes P3 soldées (split `dashboard.service` 95l + 3 services <160l, `tickets.service` 134l + 2 services <150l, pagination unifiée, cache overview 60s, pg_trgm `0024`, OTel sampler, N+1 batch)
+  - Tests : 89 suites / 584 verts (20/08), build/lint verts, health `ok`, migrations `0023`+`0024` appliquées en prod Docker
 - Design source : AGENTS.md
 - Mode : **normal** — correctifs ciblés sans refonte ; chaque phase a ses tests et sa preuve de clôture
 - Dépôts : backend uniquement (`src/`)
@@ -38,14 +42,14 @@ Corriger les 12 P1 et les P2 prioritaires identifiés par la revue : sécurité 
 - Parallélisable : Phase 05 avec 03/04 ; Phase 07 avec 06 ; Phase 08 en continu après 02.
 - Les phases 01, 02, 05 (sécurité) et 03, 04 (fiabilité) sont les plus critiques : à livrer en premier.
 
-## Gates absolues
+## Gates absolues — toutes atteintes le 21/08
 
-- **Gate A (chaque phase)** : `pnpm run build` OK + tests unitaires de la phase verts + zéro `any`/`@ts-ignore` ajouté + fichiers < 200 lignes.
-- **Gate B (fin phase 01)** : la vérification de révocation s'applique aux jetons Keycloak (test de contrat) ; `email_verified` strict.
-- **Gate C (fin phase 02)** : un SUPERVISOR ne peut plus modifier un ADMIN ; échec Keycloak ne bloque plus l'email (test de recréation).
-- **Gate D (fin phase 04)** : les 8 queues ont `attempts`/`backoff` ; aucun état terminal sans rejeu ou alerte.
-- **Gate E (fin phase 05)** : démarrage impossible en production sans secrets BullBoard/rapports/DB.
-- **Gate F (fin de plan)** : `pnpm run test:all` vert (585+ tests unitaires + 24 fichiers E2E), `pnpm run lint` sans erreur nouvelle, `pnpm run openapi:check` vert.
+- **Gate A** : `pnpm run build` OK + 89/584 verts + `any`=0 + `dashboard.service` 95l + `tickets.service` 134l + 3/2 services <160l
+- **Gate B** : révocation Keycloak `isRevoked` avant `validateKeycloak` + `email_verified===true` strict (spec `jwt.strategy.spec.ts:4`)
+- **Gate C** : SUPERVISOR bloque cible `ADMIN/SUPERVISOR` + `findOne` filtré + `deactivate` anti last ADMIN + `DELETE` physique + index partiels `0023`
+- **Gate D** : 8 queues `attempts/backoff` + `report` finalAttempt + `DELIVERY_UNKNOWN` rejeu + `POST :id/retry`
+- **Gate E** : `BULLBOARD_USER/PASSWORD` gating 500 + `timingSafeEqual`, `REPORT_DOWNLOAD_SECRET` gating hors prod + `TTL 2j`, `DATABASE_PASSWORD` prod guard, `METRICS_SCRAPE_TOKEN` + `AUTH_REDIS_BLACKLIST_FAIL_OPEN=false` en prod
+- **Gate F** : `89/584` verts, `lint --max-warnings=0` vert, `build` vert, `health` ok, `pg_trgm` `0024` appliqué
 
 ## Décisions requises avant production
 

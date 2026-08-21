@@ -27,6 +27,8 @@ import { WebSocketModule } from '../../websocket/websocket.module';
 import { TicketAccessService } from '../../common/services/ticket-access.service';
 import { TicketDetailsService } from './services/ticket-details.service';
 import { TicketAssignmentTargetService } from './services/ticket-assignment-target.service';
+import { TicketLifecycleService } from './services/ticket-lifecycle.service';
+import { TicketAssignmentService } from './services/ticket-assignment.service';
 
 /**
  * Module Tickets — cœur métier de la plateforme.
@@ -42,6 +44,8 @@ import { TicketAssignmentTargetService } from './services/ticket-assignment-targ
   controllers: [TicketsController],
   providers: [
     TicketsService,
+    TicketLifecycleService,
+    TicketAssignmentService,
     TicketsSearchService,
     TicketDetailsService,
     TicketAssignmentTargetService,
