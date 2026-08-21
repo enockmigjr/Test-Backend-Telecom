@@ -22,6 +22,42 @@ Tous les changements notables sont documentés ici. Format basé sur [Keep a Cha
 
 - `scripts/check-refresh-tokens-drop.mjs` (pré-vol DROP), `docs/runbooks/keycloak-release-rollback.md`.
 
+## [2026-08-20] — Hardening audit P0/P1 complet (branche `fix/backend-hardening-260820`)
+
+### Security
+
+- `.env.example` purgé : `sk-…` réelle → `REPLACE_ME`, rotation conseillée
+- `jwt.strategy.ts` : `email_verified === true` strict (fail-open → fail-strict), `isRevoked` avant `validateKeycloak` + `fail-closed` en prod (`AUTH_REDIS_BLACKLIST_FAIL_OPEN=false`)
+- `users.service.ts` : SUPERVISOR ne peut toucher `ADMINISTRATOR/SUPERVISOR` cible, `findOne/:id` filtré par département, anti self-disable + garde dernier ADMIN, échec Keycloak `DELETE` physique + index partiel `WHERE deleted_at IS NULL`
+- `ticket-permissions.ts` : `assign/escalate` refusent `CLOSED/CANCELLED` (+ `NEW` pour escalate)
+- `bull-board.module.ts` : `timingSafeEqual` + gating prod (500 si secrets absents)
+- `metrics.controller.ts` : `METRICS_SCRAPE_TOKEN` Bearer optionnel
+- `report-download-link.service.ts` : gating même hors prod + `TTL 7j → 2j`
+- `GlobalExceptionFilter` : `details` borné (pas de stack), `X-Correlation-Id` `^[A-Za-z0-9._-]{1,64}$`
+- `request-logger` : redact `signature/token/code/otp/t/expires/id`, `attachments` : `Cache-Control: private, no-store`
+- `users` : `idx_users_email` partiel + `idx_users_keycloak_subject` unique partiel (`0023_hardening_indexes_partial.sql`)
+
+### Fixed
+
+- `tickets.service.ts` : `assign/escalate/update` transactionnels + verrou optimiste `WHERE status=old`, `update` recalcule SLA sur `priority/category`, `buildSlaUpdateFields` cumule pause même vers `RESOLVED`, réouverture `calendarType` + `TICKET_REOPEN_SLA_MINUTES`
+- `sla-alert-processor.service.ts` : `FIRST_RESPONSE` pause-aware
+- `queues.module.ts` : `defaultJobOptions attempts/backoff` sur `email/notification/sla/audit/assignment`
+- `report.worker.ts` : `finalAttempt` (BullMQ retente les transitoires, `failed` seulement au dernier essai)
+- `external-delivery` : `DELIVERY_UNKNOWN` rejoué après 30 min + `POST /external-deliveries/:id/retry` + `jobId` dédup
+- `support-bot` : boucle outils multi-tours + `ToolPolicyService` `authorize(status réel)` + budget `consumeBudget`
+- `support-satisfaction` : consommation atomique `AND consumedAt IS NULL`
+- `retention-cleanup` : `PENDING` expirés (`expiresAt < cutoff`) purgés
+- `dashboard.service.ts` : `compliance/totalTracked` sur `openTotal`, `atRisk` exclusif, `gt` import manquant corrigé
+- `idempotency.interceptor.ts` : `DELETE` hot path supprimé (purge via `retention-cleanup`)
+- `departments.service.ts` : `update` 409 si nom dupliqué
+- `websocket/redis-io.adapter.ts` : `retryStrategy` + handler `error`
+- `docs/*` : `README`, `security.md`, `environment-variables.md`, `routes.md` alignés (139 opérations dont `POST /external-deliveries/:id/retry`, `METRICS_SCRAPE_TOKEN`, `TTL 2j`)
+
+### Docs
+
+- `docs/hardening-260820.md` : rapport complet des 12 P1 + 45 P2/P3 + décisions D1-D4
+- Tests : `89 suites / 584 verts` (`external-delivery`, `idempotency`, `users`, `departments`, `dashboard`, `global-exception` adaptés)
+
 ## [2026-08-17] — DA « noir sur blanc », déconnexion unifiée, nettoyage thème et portail élargi
 
 ### Changed

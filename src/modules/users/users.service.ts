@@ -365,8 +365,12 @@ export class UsersService {
         const res: unknown = await (this.drizzle.db
           .select({ count: sql<number>`count(*)` })
           .from(users)
-          .where(and(eq(users.role, 'ADMINISTRATOR' as const), eq(users.isActive, true), isNull(users.deletedAt))) as unknown as Promise<unknown>);
-        const cnt = Array.isArray(res) ? (res as Array<{ count: number }>)[0]?.count : (res as { count: number })?.count;
+          .where(
+            and(eq(users.role, 'ADMINISTRATOR' as const), eq(users.isActive, true), isNull(users.deletedAt)),
+          ) as unknown as Promise<unknown>);
+        const cnt = Array.isArray(res)
+          ? (res as Array<{ count: number }>)[0]?.count
+          : (res as { count: number })?.count;
         if (Number(cnt ?? 2) <= 1) {
           throw new BadRequestException('Impossible de désactiver le dernier administrateur actif.');
         }

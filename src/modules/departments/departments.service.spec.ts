@@ -273,7 +273,10 @@ describe('DepartmentsService', () => {
         description: 'Mis a jour',
       };
       const updatedBuilder = createMockQueryBuilder([updatedDept]);
-      mockDb.select.mockReturnValueOnce(findBuilder).mockReturnValueOnce(dupBuilder).mockReturnValueOnce(updatedBuilder);
+      mockDb.select
+        .mockReturnValueOnce(findBuilder)
+        .mockReturnValueOnce(dupBuilder)
+        .mockReturnValueOnce(updatedBuilder);
 
       const result = await service.update(mockDepartment.id, {
         name: 'Support Niveau 1',
@@ -318,7 +321,10 @@ describe('DepartmentsService', () => {
       const dupBuilder = createMockQueryBuilder([]);
       const updatedDept = { ...mockDepartment, name: 'New Name' };
       const updatedBuilder = createMockQueryBuilder([updatedDept]);
-      mockDb.select.mockReturnValueOnce(findBuilder).mockReturnValueOnce(dupBuilder).mockReturnValueOnce(updatedBuilder);
+      mockDb.select
+        .mockReturnValueOnce(findBuilder)
+        .mockReturnValueOnce(dupBuilder)
+        .mockReturnValueOnce(updatedBuilder);
 
       await service.update(mockDepartment.id, { name: 'New Name' });
 
@@ -331,7 +337,10 @@ describe('DepartmentsService', () => {
       const findBuilder = createMockQueryBuilder([mockDepartment]);
       const dupBuilder = createMockQueryBuilder([]);
       const updatedBuilder = createMockQueryBuilder([mockDepartment]);
-      mockDb.select.mockReturnValueOnce(findBuilder).mockReturnValueOnce(dupBuilder).mockReturnValueOnce(updatedBuilder);
+      mockDb.select
+        .mockReturnValueOnce(findBuilder)
+        .mockReturnValueOnce(dupBuilder)
+        .mockReturnValueOnce(updatedBuilder);
 
       await service.update(mockDepartment.id, { name: 'Updated' });
 

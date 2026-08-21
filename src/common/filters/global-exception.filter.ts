@@ -56,11 +56,13 @@ export class GlobalExceptionFilter implements ExceptionFilter {
             details = raw;
           } else if (raw && typeof raw === 'object') {
             // Autoriser les structures de validation connues, filtrer stacks
-            const hasStack = 'stack' in (raw as Record<string, unknown>) || 'stackTrace' in (raw as Record<string, unknown>);
+            const hasStack =
+              'stack' in (raw as Record<string, unknown>) || 'stackTrace' in (raw as Record<string, unknown>);
             if (hasStack) {
               const allowed = ['messages', 'field', 'fields', 'errors'] as const;
               const filtered: Record<string, unknown> = {};
-              for (const k of allowed) if (k in (raw as Record<string, unknown>)) filtered[k] = (raw as Record<string, unknown>)[k];
+              for (const k of allowed)
+                if (k in (raw as Record<string, unknown>)) filtered[k] = (raw as Record<string, unknown>)[k];
               details = Object.keys(filtered).length ? filtered : undefined;
             } else {
               details = raw;

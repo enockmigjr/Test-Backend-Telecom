@@ -116,8 +116,9 @@
 
 | Méthode | Route                       | Description                           | Auth       |
 | ------- | --------------------------- | ------------------------------------- | ---------- |
-| `GET`   | `/external-deliveries`      | Liste paginée des livraisons externes | Bearer JWT |
-| `GET`   | `/external-deliveries/{id}` | Consulter une livraison externe       | Bearer JWT |
+| `GET`   | `/external-deliveries`           | Liste paginée des livraisons externes | Bearer JWT |
+| `GET`   | `/external-deliveries/{id}`      | Consulter une livraison externe       | Bearer JWT |
+| `POST`  | `/external-deliveries/{id}/retry`| Rejouer une livraison `FAILED/DELIVERY_UNKNOWN` | Bearer JWT |
 
 ## external-requesters
 
@@ -149,7 +150,7 @@
 
 | Méthode | Route      | Description                               | Auth   |
 | ------- | ---------- | ----------------------------------------- | ------ |
-| `GET`   | `/metrics` | Métriques Prometheus (format OpenMetrics) | Public |
+| `GET`   | `/metrics` | Métriques Prometheus (format OpenMetrics) — Bearer `METRICS_SCRAPE_TOKEN` si défini, sinon `Public` | `METRICS_SCRAPE_TOKEN` ou Public |
 
 ## notifications
 

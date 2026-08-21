@@ -50,7 +50,15 @@ describe('ExternalDeliveryService (rejeu après panne)', () => {
       expect.objectContaining({ status: 'PENDING', lastError: 'REQUEUED_AFTER_RECOVERY' }),
     );
     expect(queueAdd).toHaveBeenCalledTimes(2);
-    expect(queueAdd).toHaveBeenCalledWith('dispatch-outbox-event', { outboxEventId: 'outbox-1' }, expect.objectContaining({ jobId: expect.stringContaining('retry-') }));
-    expect(queueAdd).toHaveBeenCalledWith('dispatch-outbox-event', { outboxEventId: 'outbox-2' }, expect.objectContaining({ jobId: expect.stringContaining('retry-') }));
+    expect(queueAdd).toHaveBeenCalledWith(
+      'dispatch-outbox-event',
+      { outboxEventId: 'outbox-1' },
+      expect.objectContaining({ jobId: expect.stringContaining('retry-') }),
+    );
+    expect(queueAdd).toHaveBeenCalledWith(
+      'dispatch-outbox-event',
+      { outboxEventId: 'outbox-2' },
+      expect.objectContaining({ jobId: expect.stringContaining('retry-') }),
+    );
   });
 });

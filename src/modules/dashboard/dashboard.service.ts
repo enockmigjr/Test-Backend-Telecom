@@ -124,7 +124,13 @@ export class DashboardService {
       this.drizzle.db
         .select({ count: count() })
         .from(tickets)
-        .where(and(openWhere, gt(tickets.resolutionDueAt, new Date()), lte(tickets.resolutionDueAt, new Date(Date.now() + 30 * 60 * 1000)))),
+        .where(
+          and(
+            openWhere,
+            gt(tickets.resolutionDueAt, new Date()),
+            lte(tickets.resolutionDueAt, new Date(Date.now() + 30 * 60 * 1000)),
+          ),
+        ),
       this.drizzle.db
         .select({ count: count() })
         .from(tickets)

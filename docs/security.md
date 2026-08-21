@@ -25,7 +25,8 @@ Les anciennes routes locales (`/auth/login`, `/auth/refresh`, `/auth/logout`,
 - **Logout** : endpoint OIDC `end-session` → retour sur `/login`, plus de session
   SSO résiduelle (l'`id_token` est conservé pendant toute la session).
 - **Logout de toutes les sessions** : révoque les sessions de l'utilisateur via
-  l'API admin Keycloak (`POST /admin/realms/{realm}/users/{id}/logout`).
+  l'API admin Keycloak (`POST /admin/realms/{realm}/users/{id}/logout`) + `jwt_user_bl:{sub}` Redis (fail-closed en prod via `AUTH_REDIS_BLACKLIST_FAIL_OPEN=false`).
+- **Binding SSO** : `email_verified === true` strict (plus de `!== false` fail-open) + index partiel unique `WHERE keycloak_subject_id IS NOT NULL` + `WHERE deleted_at IS NULL` pour l'email.
 - **Mot de passe** : géré dans la console de compte Keycloak
   (`http://localhost:8081/realms/telecom/account/`), pas dans l'application.
 - Le profil métier (rôle, département, disponibilité) est lié au sujet Keycloak
@@ -61,18 +62,20 @@ FIELD_TECHNICIAN       → Tickets terrain (pas de notes internes)
 ### Guards NestJS
 
 ```
-Request → JwtAuthGuard → RolesGuard → DepartmentGuard → Controller
+Request → RequestAuthGuard(AuthMode) → JwtAuthGuard/Keycloak JWKS → RolesGuard → DepartmentAbacGuard → Controller
 ```
 
-1. **JwtAuthGuard** : valide le JWT, extrait `sub`, `email`, `role`, `departmentId`
-2. **RolesGuard** : vérifie `@Roles(Role.ADMINISTRATOR, Role.SUPERVISOR)`
-3. **DepartmentGuard** (implicite) : cloisonnement ABAC dans les services
+1. **RequestAuthGuard** : aiguille `INTERNAL/PUBLIC_SESSION/INTEGRATION_ASSERTION/ANONYMOUS`
+2. **JwtAuthGuard (Keycloak RS256)** : `secretOrKeyProvider` → `KeycloakTokenVerifierService` (JWKS), `isRevoked` sur `jwt_bl:{jti}` + `jwt_user_bl:{sub}` avec timeout 1s
+3. **RolesGuard** : vérifie `@Roles(...)` + garde cible `SUPERVISOR` ne peut modifier `ADMINISTRATOR/SUPERVISOR` (`users.service.ts:299-312`) + `findOne` filtré par département
+4. **DepartmentAbacGuard** : `TicketAccessService.assertTicketVisible` (distingue 404/403)
 
 ### Cloisonnement départemental (ABAC)
 
-- Les agents et superviseurs ne voient que les tickets de leur département
+- Les agents et superviseurs ne voient que les tickets de leur département (service, pas guard, pour flexibilité)
+- `users.findOne/:id` filtré par `SUPERVISOR.departmentId` (404 hors périmètre)
 - Les administrateurs ont une vue globale
-- Vérifié dans les services (pas dans les guards) pour plus de flexibilité
+- `users.deactivate` bloque self-disable + dernier `ADMINISTRATOR`
 
 ---
 
@@ -112,15 +115,16 @@ curl -X POST /api/v1/tickets \
 
 ---
 
-## Headers de sécurité (Helmet)
+## Headers de sécurité (Helmet) — durci le 20/08
 
 Helmet applique automatiquement les headers :
 
-- `X-Content-Type-Options: nosniff`
+- `X-Content-Type-Options: nosniff` (+ `Cache-Control: private, no-store` sur `GET /attachments/:id/{download,preview}` et `GET /reports/:id/download`)
 - `X-Frame-Options: DENY`
 - `Strict-Transport-Security` (en production)
 - `Content-Security-Policy`
 - `X-XSS-Protection`
+- `X-Correlation-Id` borné `^[A-Za-z0-9._-]{1,64}$` (fallback `uuidv7`) + `request-logger` redact `signature/token/code/otp/t/expires/id`
 
 ---
 
@@ -191,12 +195,16 @@ Les valeurs par défaut dans `.env.example` sont suffisantes. **Ne jamais commit
 
 Obligatoirement changer :
 
-| Variable                  | Exigence                                            |
-| ------------------------- | --------------------------------------------------- |
-| `KEYCLOAK_ADMIN_PASSWORD` | Mot de passe admin Keycloak fort                    |
-| `KEYCLOAK_HOSTNAME`       | Domaine public de Keycloak (ex. `auth.example.com`) |
-| `AUTH_CSRF_SECRET`        | ≥ 32 caractères aléatoires                          |
-| `DATABASE_PASSWORD`       | Mot de passe fort                                   |
-| `REDIS_PASSWORD`          | Mot de passe fort                                   |
-| `SMTP_USER/PASSWORD`      | Credentials SMTP réels                              |
-| `REPORT_DOWNLOAD_SECRET`  | ≥ 32 caractères aléatoires                          |
+| Variable                  | Exigence                                                                |
+| ------------------------- | ----------------------------------------------------------------------- |
+| `KEYCLOAK_ADMIN_PASSWORD` | Mot de passe admin Keycloak fort                                        |
+| `KEYCLOAK_HOSTNAME`       | Domaine public de Keycloak (ex. `auth.example.com`)                     |
+| `AUTH_CSRF_SECRET`        | ≥ 32 caractères aléatoires                                              |
+| `DATABASE_PASSWORD`       | Mot de passe fort                                                       |
+| `REDIS_PASSWORD`          | Mot de passe fort                                                       |
+| `SMTP_USER/PASSWORD`      | Credentials SMTP réels                                                  |
+| `REPORT_DOWNLOAD_SECRET`  | ≥ 32 caractères aléatoires (gating même hors prod, `TTL` 2j par défaut) |
+| `BULLBOARD_USER/PASSWORD` | Obligatoires en prod (`timingSafeEqual`, 500 si absents)                |
+| `METRICS_SCRAPE_TOKEN`    | Bearer pour `GET /metrics` si exposé publiquement                       |
+| `PUBLIC_SUPPORT_BOT_API_KEY` | `REPLACE_ME` par défaut, jamais `sk-…` committée                     |
+| `AUTH_REDIS_BLACKLIST_FAIL_OPEN` | `false` en prod (fail-closed)                                    |

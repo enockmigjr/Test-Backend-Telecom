@@ -89,7 +89,7 @@ pnpm run start:dev
 ### Tests
 
 ```bash
-# Tests unitaires (89 fichiers spec / 582 tests réussis)
+# Tests unitaires (89 fichiers spec / 584 tests réussis)
 pnpm run test:unit
 
 # Tests end-to-end et intégration (20 fichiers)
@@ -131,7 +131,7 @@ curl http://localhost:3000/api/v1/users \
 | ------------------------------------ | -------------- | ----------------------------------- |
 | `http://localhost:3000/api/v1`       | API REST       | Bearer token Keycloak (RS256)       |
 | `http://localhost:3000/api/docs`     | Swagger UI     | Aucun                               |
-| `http://localhost:3000/admin/queues` | BullBoard      | `admin`/`bullboard`                 |
+| `http://localhost:3000/api/v1/admin/queues` | BullBoard      | `admin`/`bullboard` (prod : `BULLBOARD_USER/PASSWORD` + `timingSafeEqual`) |
 | `http://localhost:8025`              | Mailpit (SMTP) | Aucun                               |
 | `http://localhost:3001`              | Grafana        | `admin`/`admin`                     |
 | `http://localhost:8081/admin`        | Keycloak Admin | `admin`/`Admin@1234`                |
@@ -187,7 +187,7 @@ flowchart LR
 | `dashboard`            | 10 endpoints : overview, statuts, priorités, départements, SLA, workload, temps de résolution, performance agents, mon activité, support public |
 | `audit-logs`           | Immutable write-only, recherche multi-filtres                                                                                                   |
 | `email`                | Nodemailer dev/prod, 15 templates Handlebars + `base.hbs` layout                                                                                |
-| `reports`              | Génération PDF (PDFKit), asynchrone, lien signé HMAC expirable (7j)                                                                             |
+| `reports`              | Génération PDF (PDFKit), asynchrone, lien signé HMAC expirable (2j), retry finalAttempt BullMQ                                                  |
 | `settings`             | Paramètres système globaux dynamiques (heures/jours ouvrables, limite de tickets)                                                               |
 | `support-satisfaction` | Note 1-5, lien signé unique (TTL 14 j), email automatique à la clôture                                                                          |
 | `public-support`       | Portail public : catalogue, conversations (brouillon → confirmation), timeline, préférences                                                     |
@@ -197,7 +197,7 @@ flowchart LR
 | `support-knowledge`    | Base documentaire publique versionnée, cloisonnée par intégration                                                                               |
 | `support-bot`          | Assistant conversationnel optionnel (budget, circuit breaker, outils fermés, repli formulaire)                                                  |
 | `outbox`               | Boîte d'envoi fiable : événements transactionnels dépilés chaque seconde                                                                        |
-| `external-delivery`    | Livraisons sortantes : adaptateur email, statuts, rejeu 7 jours                                                                                 |
+| `external-delivery`    | Livraisons sortantes : adaptateur email, statuts `DELIVERY_UNKNOWN` rejoué après 30min, rejeu 7j + `POST :id/retry` manuel                     |
 | `app`                  | Module racine, health checks, métriques Prometheus                                                                                              |
 
 ---
@@ -225,12 +225,13 @@ SlaEngineService (@Cron */5 min)
 
 ## 🛡️ Sécurité
 
-- **Auth** : Keycloak SSO unique (OIDC PKCE, RS256/JWKS), cookies HttpOnly côté BFF
-- **RBAC** : 7 rôles, `JwtAuthGuard` + `RolesGuard` + `@Roles()`
-- **ABAC** : Cloisonnement départemental (agents/superviseurs voient uniquement leur département)
-- **Rate Limiting** : Redis distribué (1000 req/15min, 20 tentatives/heure sur OTP et assertions)
-- **Idempotence** : `@Idempotent()` + header `Idempotency-Key` (table PostgreSQL `idempotency_records`, TTL 24h)
-- **Soft Delete** : `users`, `tickets`, `departments` — aucune suppression physique
+- **Auth** : Keycloak SSO unique (OIDC PKCE, RS256/JWKS), `email_verified===true` strict, révocation Redis `jwt_bl/jwt_user_bl` fail-closed en prod
+- **RBAC** : 7 rôles, `JwtAuthGuard` + `RolesGuard` + `@Roles()`, SUPERVISOR ne peut modifier ADMIN/SUPERVISOR cible, anti self-disable/last ADMIN
+- **ABAC** : Cloisonnement départemental (agents/superviseurs voient uniquement leur département) + `users.findOne` filtré
+- **Rate Limiting** : Redis distribué (1000 req/15min, 20 tentatives/heure sur OTP et assertions), repli mémoire sans fail-open silencieux
+- **Idempotence** : `@Idempotent()` + header `Idempotency-Key` (table `idempotency_records` TTL 24h, purge cron `retention-cleanup`, plus de `DELETE` hot path)
+- **Soft Delete** : `users` partiel `WHERE deleted_at IS NULL` + `DELETE` physique sur échec Keycloak (email recréable), `tickets/departments` soft delete
+- **Headers** : `X-Correlation-Id` borné `^[A-Za-z0-9._-]{1,64}$`, `Cache-Control: private, no-store` sur downloads, `X-Content-Type-Options: nosniff`
 
 ---
 
