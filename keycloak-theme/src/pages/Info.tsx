@@ -5,11 +5,7 @@ export function Info({ kcContext }: { kcContext: Extract<KcContext, { pageId: 'i
   return (
     <AuthLayout
       title={kcContext.message?.summary ?? 'Information'}
-      footer={
-        kcContext.skipLink ? undefined : (
-          <a href={kcContext.url.loginAction}>Retour à la connexion</a>
-        )
-      }
+      footer={kcContext.skipLink ? undefined : <a href={kcContext.url.loginAction}>Retour à la connexion</a>}
     />
   );
 }

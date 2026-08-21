@@ -16,10 +16,7 @@ export class DashboardOverviewService {
     return `overview:${from ?? ''}:${to ?? ''}:${user?.role ?? ''}:${user?.departmentId ?? ''}`;
   }
 
-  private enforceSupervisorScope(
-    departmentId: string | undefined,
-    currentUser?: JwtPayload,
-  ): string | undefined {
+  private enforceSupervisorScope(departmentId: string | undefined, currentUser?: JwtPayload): string | undefined {
     if (currentUser?.role === 'SUPERVISOR') {
       if (departmentId && departmentId !== currentUser.departmentId) {
         throw new ForbiddenException("Un superviseur ne peut pas accéder aux statistiques d'un autre département.");
@@ -66,24 +63,68 @@ export class DashboardOverviewService {
     ] = await Promise.all([
       this.drizzle.db.select({ total: count() }).from(tickets).where(rangeWhere),
       this.drizzle.db.select({ count: count() }).from(tickets).where(openWhere),
-      this.drizzle.db.select({ count: count() }).from(tickets).where(and(openWhere, eq(tickets.priority, 'CRITICAL' as const))),
-      this.drizzle.db.select({ count: count() }).from(tickets).where(and(...todayScope, gte(tickets.resolvedAt, todayStart), lt(tickets.resolvedAt, tomorrowStart))),
-      this.drizzle.db.select({ count: count() }).from(tickets).where(and(...todayScope, gte(tickets.createdAt, todayStart), lt(tickets.createdAt, tomorrowStart))),
-      this.drizzle.db.select({ count: count() }).from(tickets).where(and(openWhere, eq(tickets.slaBreached, true))),
-      this.drizzle.db.select({ count: count() }).from(tickets).where(and(openWhere, gt(tickets.resolutionDueAt, new Date()), lte(tickets.resolutionDueAt, new Date(Date.now() + 30 * 60 * 1000)))),
-      this.drizzle.db.select({ count: count() }).from(tickets).where(and(openWhere, lt(tickets.resolutionDueAt, new Date()))),
-      this.drizzle.db.select({ count: count() }).from(tickets).where(and(openWhere, eq(tickets.slaBreached, false))),
+      this.drizzle.db
+        .select({ count: count() })
+        .from(tickets)
+        .where(and(openWhere, eq(tickets.priority, 'CRITICAL' as const))),
+      this.drizzle.db
+        .select({ count: count() })
+        .from(tickets)
+        .where(and(...todayScope, gte(tickets.resolvedAt, todayStart), lt(tickets.resolvedAt, tomorrowStart))),
+      this.drizzle.db
+        .select({ count: count() })
+        .from(tickets)
+        .where(and(...todayScope, gte(tickets.createdAt, todayStart), lt(tickets.createdAt, tomorrowStart))),
+      this.drizzle.db
+        .select({ count: count() })
+        .from(tickets)
+        .where(and(openWhere, eq(tickets.slaBreached, true))),
+      this.drizzle.db
+        .select({ count: count() })
+        .from(tickets)
+        .where(
+          and(
+            openWhere,
+            gt(tickets.resolutionDueAt, new Date()),
+            lte(tickets.resolutionDueAt, new Date(Date.now() + 30 * 60 * 1000)),
+          ),
+        ),
+      this.drizzle.db
+        .select({ count: count() })
+        .from(tickets)
+        .where(and(openWhere, lt(tickets.resolutionDueAt, new Date()))),
+      this.drizzle.db
+        .select({ count: count() })
+        .from(tickets)
+        .where(and(openWhere, eq(tickets.slaBreached, false))),
     ]);
-    const byStatus = await this.drizzle.db.select({ status: tickets.status, count: count() }).from(tickets).where(rangeWhere).groupBy(tickets.status);
-    const byPriority = await this.drizzle.db.select({ priority: tickets.priority, count: count() }).from(tickets).where(rangeWhere).groupBy(tickets.priority);
-    const bySeverity = await this.drizzle.db.select({ severity: tickets.severity, count: count() }).from(tickets).where(rangeWhere).groupBy(tickets.severity);
+    const byStatus = await this.drizzle.db
+      .select({ status: tickets.status, count: count() })
+      .from(tickets)
+      .where(rangeWhere)
+      .groupBy(tickets.status);
+    const byPriority = await this.drizzle.db
+      .select({ priority: tickets.priority, count: count() })
+      .from(tickets)
+      .where(rangeWhere)
+      .groupBy(tickets.priority);
+    const bySeverity = await this.drizzle.db
+      .select({ severity: tickets.severity, count: count() })
+      .from(tickets)
+      .where(rangeWhere)
+      .groupBy(tickets.severity);
     const total = Number(totals?.total || 0);
     const openTotal = Number(openTickets?.count || 0);
     const compliant = Number(compliantCount?.count || 0);
     const atRiskExclusive = Math.max(0, Number(atRiskCount?.count || 0) - Number(overdueCount?.count || 0));
     const result = {
       period: { from: fromDate.toISOString(), to: toDate.toISOString() },
-      ticketVolume: { total, openTickets: openTotal, resolvedToday: Number(resolvedToday?.count || 0), createdToday: Number(createdToday?.count || 0) },
+      ticketVolume: {
+        total,
+        openTickets: openTotal,
+        resolvedToday: Number(resolvedToday?.count || 0),
+        createdToday: Number(createdToday?.count || 0),
+      },
       byStatus: Object.fromEntries(byStatus.map((s) => [s.status, Number(s.count)])),
       byPriority: Object.fromEntries(byPriority.map((p) => [p.priority, Number(p.count)])),
       bySeverity: Object.fromEntries(bySeverity.map((s) => [s.severity, Number(s.count)])),

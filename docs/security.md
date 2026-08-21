@@ -195,16 +195,16 @@ Les valeurs par défaut dans `.env.example` sont suffisantes. **Ne jamais commit
 
 Obligatoirement changer :
 
-| Variable                  | Exigence                                                                |
-| ------------------------- | ----------------------------------------------------------------------- |
-| `KEYCLOAK_ADMIN_PASSWORD` | Mot de passe admin Keycloak fort                                        |
-| `KEYCLOAK_HOSTNAME`       | Domaine public de Keycloak (ex. `auth.example.com`)                     |
-| `AUTH_CSRF_SECRET`        | ≥ 32 caractères aléatoires                                              |
-| `DATABASE_PASSWORD`       | Mot de passe fort                                                       |
-| `REDIS_PASSWORD`          | Mot de passe fort                                                       |
-| `SMTP_USER/PASSWORD`      | Credentials SMTP réels                                                  |
-| `REPORT_DOWNLOAD_SECRET`  | ≥ 32 caractères aléatoires (gating même hors prod, `TTL` 2j par défaut) |
-| `BULLBOARD_USER/PASSWORD` | Obligatoires en prod (`timingSafeEqual`, 500 si absents)                |
-| `METRICS_SCRAPE_TOKEN`    | Bearer pour `GET /metrics` si exposé publiquement                       |
-| `PUBLIC_SUPPORT_BOT_API_KEY` | `REPLACE_ME` par défaut, jamais `sk-…` committée                     |
-| `AUTH_REDIS_BLACKLIST_FAIL_OPEN` | `false` en prod (fail-closed)                                    |
+| Variable                         | Exigence                                                                |
+| -------------------------------- | ----------------------------------------------------------------------- |
+| `KEYCLOAK_ADMIN_PASSWORD`        | Mot de passe admin Keycloak fort                                        |
+| `KEYCLOAK_HOSTNAME`              | Domaine public de Keycloak (ex. `auth.example.com`)                     |
+| `AUTH_CSRF_SECRET`               | ≥ 32 caractères aléatoires                                              |
+| `DATABASE_PASSWORD`              | Mot de passe fort                                                       |
+| `REDIS_PASSWORD`                 | Mot de passe fort                                                       |
+| `SMTP_USER/PASSWORD`             | Credentials SMTP réels                                                  |
+| `REPORT_DOWNLOAD_SECRET`         | ≥ 32 caractères aléatoires (gating même hors prod, `TTL` 2j par défaut) |
+| `BULLBOARD_USER/PASSWORD`        | Obligatoires en prod (`timingSafeEqual`, 500 si absents)                |
+| `METRICS_SCRAPE_TOKEN`           | Bearer pour `GET /metrics` si exposé publiquement                       |
+| `PUBLIC_SUPPORT_BOT_API_KEY`     | `REPLACE_ME` par défaut, jamais `sk-…` committée                        |
+| `AUTH_REDIS_BLACKLIST_FAIL_OPEN` | `false` en prod (fail-closed)                                           |

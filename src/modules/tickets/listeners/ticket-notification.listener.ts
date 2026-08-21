@@ -102,7 +102,11 @@ export class TicketNotificationListener {
         .select({ id: users.id, email: users.email, firstName: users.firstName, lastName: users.lastName })
         .from(users)
         .where(and(eq(users.isActive, true), isNull(users.deletedAt)))
-        .then((all: unknown) => (all as Array<{ id: string; email: string; firstName: string; lastName: string }>).filter((r) => userIds.includes(r.id)));
+        .then((all: unknown) =>
+          (all as Array<{ id: string; email: string; firstName: string; lastName: string }>).filter((r) =>
+            userIds.includes(r.id),
+          ),
+        );
       // Fallback N+1 safe : si le where IN n'est pas poussé par le mock, on filtre en mémoire
       const m = new Map<string, { email: string; fullName: string }>();
       for (const r of rows) m.set(r.id, { email: r.email, fullName: `${r.firstName} ${r.lastName}`.trim() });
@@ -197,7 +201,8 @@ export class TicketNotificationListener {
     const ticketNumber = event.ticket['ticketNumber'] as string;
     const title = event.ticket['title'] as string;
     const priority = event.ticket['priority'] as string;
-    const category = (event.ticket['category'] as string) ?? (event.ticket['categoryName'] as string) ?? 'Non renseigné';
+    const category =
+      (event.ticket['category'] as string) ?? (event.ticket['categoryName'] as string) ?? 'Non renseigné';
     const departmentId = event.ticket['departmentId'] as string;
     const assignedTeamId = event.ticket['assignedTeamId'] as string;
     const creatorId = event.userId;

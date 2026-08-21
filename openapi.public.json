@@ -13,9 +13,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "message"
-        ],
+        "required": ["message"],
         "type": "object"
       },
       "ApiErrorResponse": {
@@ -51,25 +49,15 @@
                 "type": "string"
               }
             },
-            "required": [
-              "code",
-              "message",
-              "correlationId",
-              "timestamp"
-            ],
+            "required": ["code", "message", "correlationId", "timestamp"],
             "type": "object"
           },
           "success": {
-            "enum": [
-              false
-            ],
+            "enum": [false],
             "type": "boolean"
           }
         },
-        "required": [
-          "success",
-          "error"
-        ],
+        "required": ["success", "error"],
         "type": "object"
       },
       "BootstrapGrantDataDto": {
@@ -82,10 +70,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "code",
-          "expiresAt"
-        ],
+        "required": ["code", "expiresAt"],
         "type": "object"
       },
       "BootstrapGrantResponseDto": {
@@ -99,17 +84,11 @@
             "type": "number"
           },
           "success": {
-            "enum": [
-              true
-            ],
+            "enum": [true],
             "type": "boolean"
           }
         },
-        "required": [
-          "success",
-          "statusCode",
-          "data"
-        ],
+        "required": ["success", "statusCode", "data"],
         "type": "object"
       },
       "BotMessageDto": {
@@ -119,19 +98,13 @@
             "type": "string"
           }
         },
-        "required": [
-          "message"
-        ],
+        "required": ["message"],
         "type": "object"
       },
       "BotReplyDto": {
         "properties": {
           "mode": {
-            "enum": [
-              "disabled",
-              "unavailable",
-              "reply"
-            ],
+            "enum": ["disabled", "unavailable", "reply"],
             "type": "string"
           },
           "reply": {
@@ -145,10 +118,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "mode",
-          "suggestedActions"
-        ],
+        "required": ["mode", "suggestedActions"],
         "type": "object"
       },
       "ConfirmPublicTicketDto": {
@@ -158,9 +128,7 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "confirmed"
-        ],
+        "required": ["confirmed"],
         "type": "object"
       },
       "ConsumeBootstrapDto": {
@@ -172,9 +140,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "code"
-        ],
+        "required": ["code"],
         "type": "object"
       },
       "ConsumeEmailVerificationDto": {
@@ -190,10 +156,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "challengeId",
-          "code"
-        ],
+        "required": ["challengeId", "code"],
         "type": "object"
       },
       "CreatePublicCommentDto": {
@@ -204,9 +167,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "content"
-        ],
+        "required": ["content"],
         "type": "object"
       },
       "CreatePublicConversationDto": {
@@ -222,15 +183,11 @@
       "DeviceRevokedDataDto": {
         "properties": {
           "revoked": {
-            "enum": [
-              true
-            ],
+            "enum": [true],
             "type": "boolean"
           }
         },
-        "required": [
-          "revoked"
-        ],
+        "required": ["revoked"],
         "type": "object"
       },
       "DeviceRevokedResponseDto": {
@@ -244,17 +201,11 @@
             "type": "number"
           },
           "success": {
-            "enum": [
-              true
-            ],
+            "enum": [true],
             "type": "boolean"
           }
         },
-        "required": [
-          "success",
-          "statusCode",
-          "data"
-        ],
+        "required": ["success", "statusCode", "data"],
         "type": "object"
       },
       "KnowledgeSearchResultDto": {
@@ -283,14 +234,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "slug",
-          "title",
-          "content",
-          "language",
-          "updatedAt"
-        ],
+        "required": ["id", "slug", "title", "content", "language", "updatedAt"],
         "type": "object"
       },
       "PublicAppearanceDto": {
@@ -344,24 +288,11 @@
             "type": "string"
           },
           "scanStatus": {
-            "enum": [
-              "NOT_REQUIRED",
-              "QUARANTINED",
-              "PENDING",
-              "SCANNING",
-              "CLEAN",
-              "INFECTED",
-              "ERROR"
-            ],
+            "enum": ["NOT_REQUIRED", "QUARANTINED", "PENDING", "SCANNING", "CLEAN", "INFECTED", "ERROR"],
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "filename",
-          "fileSize",
-          "scanStatus"
-        ],
+        "required": ["id", "filename", "fileSize", "scanStatus"],
         "type": "object"
       },
       "PublicAttachmentListResponseDto": {
@@ -378,17 +309,11 @@
             "type": "number"
           },
           "success": {
-            "enum": [
-              true
-            ],
+            "enum": [true],
             "type": "boolean"
           }
         },
-        "required": [
-          "success",
-          "statusCode",
-          "data"
-        ],
+        "required": ["success", "statusCode", "data"],
         "type": "object"
       },
       "PublicAttachmentResponseDto": {
@@ -402,17 +327,11 @@
             "type": "number"
           },
           "success": {
-            "enum": [
-              true
-            ],
+            "enum": [true],
             "type": "boolean"
           }
         },
-        "required": [
-          "success",
-          "statusCode",
-          "data"
-        ],
+        "required": ["success", "statusCode", "data"],
         "type": "object"
       },
       "PublicCatalogDataDto": {
@@ -430,10 +349,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "categories",
-          "services"
-        ],
+        "required": ["categories", "services"],
         "type": "object"
       },
       "PublicCatalogResponseDto": {
@@ -447,17 +363,11 @@
             "type": "number"
           },
           "success": {
-            "enum": [
-              true
-            ],
+            "enum": [true],
             "type": "boolean"
           }
         },
-        "required": [
-          "success",
-          "statusCode",
-          "data"
-        ],
+        "required": ["success", "statusCode", "data"],
         "type": "object"
       },
       "PublicCategoryDto": {
@@ -474,10 +384,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "name"
-        ],
+        "required": ["id", "name"],
         "type": "object"
       },
       "PublicCommentDataDto": {
@@ -490,10 +397,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "content"
-        ],
+        "required": ["id", "content"],
         "type": "object"
       },
       "PublicCommentResponseDto": {
@@ -507,17 +411,11 @@
             "type": "number"
           },
           "success": {
-            "enum": [
-              true
-            ],
+            "enum": [true],
             "type": "boolean"
           }
         },
-        "required": [
-          "success",
-          "statusCode",
-          "data"
-        ],
+        "required": ["success", "statusCode", "data"],
         "type": "object"
       },
       "PublicConversationDetailDataDto": {
@@ -555,12 +453,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "state",
-          "status",
-          "createdAt"
-        ],
+        "required": ["id", "state", "status", "createdAt"],
         "type": "object"
       },
       "PublicConversationDetailResponseDto": {
@@ -574,17 +467,11 @@
             "type": "number"
           },
           "success": {
-            "enum": [
-              true
-            ],
+            "enum": [true],
             "type": "boolean"
           }
         },
-        "required": [
-          "success",
-          "statusCode",
-          "data"
-        ],
+        "required": ["success", "statusCode", "data"],
         "type": "object"
       },
       "PublicConversationStateDataDto": {
@@ -594,17 +481,11 @@
             "type": "string"
           },
           "state": {
-            "enum": [
-              "QUALIFY",
-              "DRAFT"
-            ],
+            "enum": ["QUALIFY", "DRAFT"],
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "state"
-        ],
+        "required": ["id", "state"],
         "type": "object"
       },
       "PublicConversationStateResponseDto": {
@@ -618,17 +499,11 @@
             "type": "number"
           },
           "success": {
-            "enum": [
-              true
-            ],
+            "enum": [true],
             "type": "boolean"
           }
         },
-        "required": [
-          "success",
-          "statusCode",
-          "data"
-        ],
+        "required": ["success", "statusCode", "data"],
         "type": "object"
       },
       "PublicDraftSavedDataDto": {
@@ -641,18 +516,11 @@
             "type": "string"
           },
           "state": {
-            "enum": [
-              "QUALIFY",
-              "DRAFT"
-            ],
+            "enum": ["QUALIFY", "DRAFT"],
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "state",
-          "draft"
-        ],
+        "required": ["id", "state", "draft"],
         "type": "object"
       },
       "PublicDraftSavedResponseDto": {
@@ -666,17 +534,11 @@
             "type": "number"
           },
           "success": {
-            "enum": [
-              true
-            ],
+            "enum": [true],
             "type": "boolean"
           }
         },
-        "required": [
-          "success",
-          "statusCode",
-          "data"
-        ],
+        "required": ["success", "statusCode", "data"],
         "type": "object"
       },
       "PublicHandoffDataDto": {
@@ -686,16 +548,11 @@
             "type": "string"
           },
           "state": {
-            "enum": [
-              "FOLLOW_UP_OR_HANDOFF"
-            ],
+            "enum": ["FOLLOW_UP_OR_HANDOFF"],
             "type": "string"
           }
         },
-        "required": [
-          "conversationId",
-          "state"
-        ],
+        "required": ["conversationId", "state"],
         "type": "object"
       },
       "PublicHandoffDto": {
@@ -718,17 +575,11 @@
             "type": "number"
           },
           "success": {
-            "enum": [
-              true
-            ],
+            "enum": [true],
             "type": "boolean"
           }
         },
-        "required": [
-          "success",
-          "statusCode",
-          "data"
-        ],
+        "required": ["success", "statusCode", "data"],
         "type": "object"
       },
       "PublicIntegrationConfigDataDto": {
@@ -746,12 +597,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "name",
-          "frameAllowed",
-          "appearance",
-          "features"
-        ],
+        "required": ["name", "frameAllowed", "appearance", "features"],
         "type": "object"
       },
       "PublicIntegrationConfigResponseDto": {
@@ -765,17 +611,11 @@
             "type": "number"
           },
           "success": {
-            "enum": [
-              true
-            ],
+            "enum": [true],
             "type": "boolean"
           }
         },
-        "required": [
-          "success",
-          "statusCode",
-          "data"
-        ],
+        "required": ["success", "statusCode", "data"],
         "type": "object"
       },
       "PublicIntegrationFeaturesDto": {
@@ -790,11 +630,7 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "publicAttachments",
-          "publicRealtime",
-          "publicBot"
-        ],
+        "required": ["publicAttachments", "publicRealtime", "publicBot"],
         "type": "object"
       },
       "PublicPaginationMetaDto": {
@@ -817,12 +653,7 @@
             "type": "number"
           }
         },
-        "required": [
-          "page",
-          "limit",
-          "total",
-          "totalPages"
-        ],
+        "required": ["page", "limit", "total", "totalPages"],
         "type": "object"
       },
       "PublicPreferencesDataDto": {
@@ -840,9 +671,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "locale"
-        ],
+        "required": ["locale"],
         "type": "object"
       },
       "PublicPreferencesResponseDto": {
@@ -861,17 +690,11 @@
             "type": "number"
           },
           "success": {
-            "enum": [
-              true
-            ],
+            "enum": [true],
             "type": "boolean"
           }
         },
-        "required": [
-          "success",
-          "statusCode",
-          "data"
-        ],
+        "required": ["success", "statusCode", "data"],
         "type": "object"
       },
       "PublicServiceDto": {
@@ -883,10 +706,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "key",
-          "label"
-        ],
+        "required": ["key", "label"],
         "type": "object"
       },
       "PublicSessionDataDto": {
@@ -909,12 +729,7 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "accessToken",
-          "expiresIn",
-          "trustedDeviceToken",
-          "trustedDeviceExpiresAt"
-        ],
+        "required": ["accessToken", "expiresIn", "trustedDeviceToken", "trustedDeviceExpiresAt"],
         "type": "object"
       },
       "PublicSessionResponseDto": {
@@ -928,17 +743,11 @@
             "type": "number"
           },
           "success": {
-            "enum": [
-              true
-            ],
+            "enum": [true],
             "type": "boolean"
           }
         },
-        "required": [
-          "success",
-          "statusCode",
-          "data"
-        ],
+        "required": ["success", "statusCode", "data"],
         "type": "object"
       },
       "PublicTicketConfirmedDataDto": {
@@ -955,11 +764,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "conversationId",
-          "ticketId",
-          "ticketNumber"
-        ],
+        "required": ["conversationId", "ticketId", "ticketNumber"],
         "type": "object"
       },
       "PublicTicketConfirmedResponseDto": {
@@ -973,17 +778,11 @@
             "type": "number"
           },
           "success": {
-            "enum": [
-              true
-            ],
+            "enum": [true],
             "type": "boolean"
           }
         },
-        "required": [
-          "success",
-          "statusCode",
-          "data"
-        ],
+        "required": ["success", "statusCode", "data"],
         "type": "object"
       },
       "PublicTicketDetailDto": {
@@ -1020,13 +819,7 @@
             "type": "string"
           },
           "status": {
-            "enum": [
-              "RECEIVED",
-              "IN_PROGRESS",
-              "WAITING_FOR_CUSTOMER",
-              "RESOLVED",
-              "CLOSED"
-            ],
+            "enum": ["RECEIVED", "IN_PROGRESS", "WAITING_FOR_CUSTOMER", "RESOLVED", "CLOSED"],
             "type": "string"
           },
           "ticketNumber": {
@@ -1040,15 +833,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "ticketNumber",
-          "title",
-          "status",
-          "createdAt",
-          "updatedAt",
-          "description"
-        ],
+        "required": ["id", "ticketNumber", "title", "status", "createdAt", "updatedAt", "description"],
         "type": "object"
       },
       "PublicTicketDetailResponseDto": {
@@ -1062,17 +847,11 @@
             "type": "number"
           },
           "success": {
-            "enum": [
-              true
-            ],
+            "enum": [true],
             "type": "boolean"
           }
         },
-        "required": [
-          "success",
-          "statusCode",
-          "data"
-        ],
+        "required": ["success", "statusCode", "data"],
         "type": "object"
       },
       "PublicTicketDraftDataDto": {
@@ -1088,11 +867,7 @@
             "type": "string"
           },
           "impact": {
-            "enum": [
-              "LOW",
-              "MEDIUM",
-              "HIGH"
-            ],
+            "enum": ["LOW", "MEDIUM", "HIGH"],
             "type": "string"
           },
           "serviceKey": {
@@ -1102,21 +877,11 @@
             "type": "string"
           },
           "urgency": {
-            "enum": [
-              "LOW",
-              "MEDIUM",
-              "HIGH"
-            ],
+            "enum": ["LOW", "MEDIUM", "HIGH"],
             "type": "string"
           }
         },
-        "required": [
-          "categoryId",
-          "title",
-          "description",
-          "impact",
-          "urgency"
-        ],
+        "required": ["categoryId", "title", "description", "impact", "urgency"],
         "type": "object"
       },
       "PublicTicketListResponseDto": {
@@ -1136,18 +901,11 @@
             "type": "number"
           },
           "success": {
-            "enum": [
-              true
-            ],
+            "enum": [true],
             "type": "boolean"
           }
         },
-        "required": [
-          "success",
-          "statusCode",
-          "data",
-          "meta"
-        ],
+        "required": ["success", "statusCode", "data", "meta"],
         "type": "object"
       },
       "PublicTicketSummaryDto": {
@@ -1161,13 +919,7 @@
             "type": "string"
           },
           "status": {
-            "enum": [
-              "RECEIVED",
-              "IN_PROGRESS",
-              "WAITING_FOR_CUSTOMER",
-              "RESOLVED",
-              "CLOSED"
-            ],
+            "enum": ["RECEIVED", "IN_PROGRESS", "WAITING_FOR_CUSTOMER", "RESOLVED", "CLOSED"],
             "type": "string"
           },
           "ticketNumber": {
@@ -1181,14 +933,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "ticketNumber",
-          "title",
-          "status",
-          "createdAt",
-          "updatedAt"
-        ],
+        "required": ["id", "ticketNumber", "title", "status", "createdAt", "updatedAt"],
         "type": "object"
       },
       "PublicTimelineEntryDto": {
@@ -1213,28 +958,15 @@
             "type": "string"
           },
           "status": {
-            "enum": [
-              "RECEIVED",
-              "IN_PROGRESS",
-              "WAITING_FOR_CUSTOMER",
-              "RESOLVED",
-              "CLOSED"
-            ],
+            "enum": ["RECEIVED", "IN_PROGRESS", "WAITING_FOR_CUSTOMER", "RESOLVED", "CLOSED"],
             "type": "string"
           },
           "type": {
-            "enum": [
-              "COMMENT",
-              "STATUS"
-            ],
+            "enum": ["COMMENT", "STATUS"],
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "type",
-          "createdAt"
-        ],
+        "required": ["id", "type", "createdAt"],
         "type": "object"
       },
       "PublicTimelineResponseDto": {
@@ -1251,17 +983,11 @@
             "type": "number"
           },
           "success": {
-            "enum": [
-              true
-            ],
+            "enum": [true],
             "type": "boolean"
           }
         },
-        "required": [
-          "success",
-          "statusCode",
-          "data"
-        ],
+        "required": ["success", "statusCode", "data"],
         "type": "object"
       },
       "RequestEmailVerificationDto": {
@@ -1279,10 +1005,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "integrationKey",
-          "email"
-        ],
+        "required": ["integrationKey", "email"],
         "type": "object"
       },
       "SavePublicTicketDraftDto": {
@@ -1301,11 +1024,7 @@
             "type": "string"
           },
           "impact": {
-            "enum": [
-              "LOW",
-              "MEDIUM",
-              "HIGH"
-            ],
+            "enum": ["LOW", "MEDIUM", "HIGH"],
             "type": "string"
           },
           "serviceKey": {
@@ -1318,21 +1037,11 @@
             "type": "string"
           },
           "urgency": {
-            "enum": [
-              "LOW",
-              "MEDIUM",
-              "HIGH"
-            ],
+            "enum": ["LOW", "MEDIUM", "HIGH"],
             "type": "string"
           }
         },
-        "required": [
-          "categoryId",
-          "title",
-          "description",
-          "impact",
-          "urgency"
-        ],
+        "required": ["categoryId", "title", "description", "impact", "urgency"],
         "type": "object"
       },
       "TrustedDeviceDataDto": {
@@ -1363,12 +1072,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "current",
-          "createdAt",
-          "expiresAt"
-        ],
+        "required": ["id", "current", "createdAt", "expiresAt"],
         "type": "object"
       },
       "TrustedDeviceListResponseDto": {
@@ -1385,17 +1089,11 @@
             "type": "number"
           },
           "success": {
-            "enum": [
-              true
-            ],
+            "enum": [true],
             "type": "boolean"
           }
         },
-        "required": [
-          "success",
-          "statusCode",
-          "data"
-        ],
+        "required": ["success", "statusCode", "data"],
         "type": "object"
       },
       "UpdatePublicPreferencesDto": {
@@ -1415,15 +1113,11 @@
       "VerificationRejectedDataDto": {
         "properties": {
           "verified": {
-            "enum": [
-              false
-            ],
+            "enum": [false],
             "type": "boolean"
           }
         },
-        "required": [
-          "verified"
-        ],
+        "required": ["verified"],
         "type": "object"
       },
       "VerificationRejectedResponseDto": {
@@ -1437,17 +1131,11 @@
             "type": "number"
           },
           "success": {
-            "enum": [
-              true
-            ],
+            "enum": [true],
             "type": "boolean"
           }
         },
-        "required": [
-          "success",
-          "statusCode",
-          "data"
-        ],
+        "required": ["success", "statusCode", "data"],
         "type": "object"
       },
       "VerificationRequestDataDto": {
@@ -1457,9 +1145,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "challengeId"
-        ],
+        "required": ["challengeId"],
         "type": "object"
       },
       "VerificationRequestResponseDto": {
@@ -1476,18 +1162,11 @@
             "type": "number"
           },
           "success": {
-            "enum": [
-              true
-            ],
+            "enum": [true],
             "type": "boolean"
           }
         },
-        "required": [
-          "success",
-          "statusCode",
-          "data",
-          "message"
-        ],
+        "required": ["success", "statusCode", "data", "message"],
         "type": "object"
       }
     },
@@ -1556,9 +1235,7 @@
           }
         ],
         "summary": "Catalogue public autorisé pour cette intégration",
-        "tags": [
-          "Support public - demandes"
-        ],
+        "tags": ["Support public - demandes"],
         "x-api-audience": "public-support"
       }
     },
@@ -1611,9 +1288,7 @@
         },
         "security": [],
         "summary": "Charger la configuration publique bornée d'une intégration",
-        "tags": [
-          "Support public - configuration"
-        ],
+        "tags": ["Support public - configuration"],
         "x-api-audience": "public-support"
       }
     },
@@ -1669,9 +1344,7 @@
           }
         ],
         "summary": "Démarrer une conversation de support",
-        "tags": [
-          "Support public - demandes"
-        ],
+        "tags": ["Support public - demandes"],
         "x-api-audience": "public-support"
       }
     },
@@ -1716,9 +1389,7 @@
           }
         ],
         "summary": "Lister les fichiers de la conversation",
-        "tags": [
-          "Support public - pièces jointes pré-ticket"
-        ],
+        "tags": ["Support public - pièces jointes pré-ticket"],
         "x-api-audience": "public-support"
       },
       "post": {
@@ -1760,9 +1431,7 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "file"
-                ],
+                "required": ["file"],
                 "type": "object"
               }
             }
@@ -1797,9 +1466,7 @@
           }
         ],
         "summary": "Déposer un fichier avant création du ticket",
-        "tags": [
-          "Support public - pièces jointes pré-ticket"
-        ],
+        "tags": ["Support public - pièces jointes pré-ticket"],
         "x-api-audience": "public-support"
       }
     },
@@ -1853,9 +1520,7 @@
           }
         ],
         "summary": "Télécharger un fichier pré-ticket sain",
-        "tags": [
-          "Support public - pièces jointes pré-ticket"
-        ],
+        "tags": ["Support public - pièces jointes pré-ticket"],
         "x-api-audience": "public-support"
       }
     },
@@ -1908,9 +1573,7 @@
           }
         ],
         "summary": "Consulter l'état du scan",
-        "tags": [
-          "Support public - pièces jointes pré-ticket"
-        ],
+        "tags": ["Support public - pièces jointes pré-ticket"],
         "x-api-audience": "public-support"
       }
     },
@@ -1955,9 +1618,7 @@
           }
         ],
         "summary": "Reprendre une conversation ou son brouillon",
-        "tags": [
-          "Support public - demandes"
-        ],
+        "tags": ["Support public - demandes"],
         "x-api-audience": "public-support"
       }
     },
@@ -2012,17 +1673,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -2066,9 +1721,7 @@
           }
         ],
         "summary": "Envoyer un message au bot de la conversation",
-        "tags": [
-          "Support public - bot"
-        ],
+        "tags": ["Support public - bot"],
         "x-api-audience": "public-support"
       }
     },
@@ -2132,9 +1785,7 @@
           }
         ],
         "summary": "Confirmer et créer atomiquement le ticket",
-        "tags": [
-          "Support public - demandes"
-        ],
+        "tags": ["Support public - demandes"],
         "x-api-audience": "public-support"
       }
     },
@@ -2197,9 +1848,7 @@
           }
         ],
         "summary": "Enregistrer le brouillon qualifié",
-        "tags": [
-          "Support public - demandes"
-        ],
+        "tags": ["Support public - demandes"],
         "x-api-audience": "public-support"
       }
     },
@@ -2263,9 +1912,7 @@
           }
         ],
         "summary": "Demander explicitement un transfert humain",
-        "tags": [
-          "Support public - demandes"
-        ],
+        "tags": ["Support public - demandes"],
         "x-api-audience": "public-support"
       }
     },
@@ -2301,9 +1948,7 @@
           }
         ],
         "summary": "Échanger une assertion signée contre une session publique",
-        "tags": [
-          "Support public - identité"
-        ],
+        "tags": ["Support public - identité"],
         "x-api-audience": "public-support"
       }
     },
@@ -2352,9 +1997,7 @@
         },
         "security": [],
         "summary": "Vérifier le code et ouvrir une session publique",
-        "tags": [
-          "Support public - identité"
-        ],
+        "tags": ["Support public - identité"],
         "x-api-audience": "public-support"
       }
     },
@@ -2396,9 +2039,7 @@
         },
         "security": [],
         "summary": "Demander un code de vérification email",
-        "tags": [
-          "Support public - identité"
-        ],
+        "tags": ["Support public - identité"],
         "x-api-audience": "public-support"
       }
     },
@@ -2433,17 +2074,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -2477,9 +2112,7 @@
           }
         ],
         "summary": "Consulter un article public par slug",
-        "tags": [
-          "Support public - connaissance"
-        ],
+        "tags": ["Support public - connaissance"],
         "x-api-audience": "public-support"
       }
     },
@@ -2529,17 +2162,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -2563,9 +2190,7 @@
           }
         ],
         "summary": "Rechercher des articles publics de cette intégration",
-        "tags": [
-          "Support public - connaissance"
-        ],
+        "tags": ["Support public - connaissance"],
         "x-api-audience": "public-support"
       }
     },
@@ -2601,9 +2226,7 @@
           }
         ],
         "summary": "Consulter le profil public conservé",
-        "tags": [
-          "Support public - demandes"
-        ],
+        "tags": ["Support public - demandes"],
         "x-api-audience": "public-support"
       },
       "patch": {
@@ -2657,9 +2280,7 @@
           }
         ],
         "summary": "Mettre à jour le nom et la langue du profil public",
-        "tags": [
-          "Support public - demandes"
-        ],
+        "tags": ["Support public - demandes"],
         "x-api-audience": "public-support"
       }
     },
@@ -2701,9 +2322,7 @@
         },
         "security": [],
         "summary": "Consommer une fois un code de transfert",
-        "tags": [
-          "Support public - identité"
-        ],
+        "tags": ["Support public - identité"],
         "x-api-audience": "public-support"
       }
     },
@@ -2739,9 +2358,7 @@
           }
         ],
         "summary": "Créer un code de transfert iframe vers pleine page",
-        "tags": [
-          "Support public - identité"
-        ],
+        "tags": ["Support public - identité"],
         "x-api-audience": "public-support"
       }
     },
@@ -2777,9 +2394,7 @@
           }
         ],
         "summary": "Lister les appareils de confiance du demandeur",
-        "tags": [
-          "Support public - appareils"
-        ],
+        "tags": ["Support public - appareils"],
         "x-api-audience": "public-support"
       }
     },
@@ -2824,9 +2439,7 @@
           }
         ],
         "summary": "Révoquer un appareil de confiance précis",
-        "tags": [
-          "Support public - appareils"
-        ],
+        "tags": ["Support public - appareils"],
         "x-api-audience": "public-support"
       }
     },
@@ -2880,9 +2493,7 @@
           }
         ],
         "summary": "Restaurer et faire tourner la confiance de l’appareil",
-        "tags": [
-          "Support public - identité"
-        ],
+        "tags": ["Support public - identité"],
         "x-api-audience": "public-support"
       }
     },
@@ -2918,9 +2529,7 @@
           }
         ],
         "summary": "Révoquer l’appareil courant",
-        "tags": [
-          "Support public - identité"
-        ],
+        "tags": ["Support public - identité"],
         "x-api-audience": "public-support"
       }
     },
@@ -2978,9 +2587,7 @@
           }
         ],
         "summary": "Lister uniquement les demandes du contact courant",
-        "tags": [
-          "Support public - demandes"
-        ],
+        "tags": ["Support public - demandes"],
         "x-api-audience": "public-support"
       }
     },
@@ -3025,9 +2632,7 @@
           }
         ],
         "summary": "Consulter une demande publique",
-        "tags": [
-          "Support public - demandes"
-        ],
+        "tags": ["Support public - demandes"],
         "x-api-audience": "public-support"
       }
     },
@@ -3091,9 +2696,7 @@
           }
         ],
         "summary": "Ajouter un commentaire demandeur",
-        "tags": [
-          "Support public - demandes"
-        ],
+        "tags": ["Support public - demandes"],
         "x-api-audience": "public-support"
       }
     },
@@ -3138,9 +2741,7 @@
           }
         ],
         "summary": "Consulter la timeline publique filtrée",
-        "tags": [
-          "Support public - demandes"
-        ],
+        "tags": ["Support public - demandes"],
         "x-api-audience": "public-support"
       }
     },
@@ -3185,9 +2786,7 @@
           }
         ],
         "summary": "Lister les pièces jointes et leur état de scan",
-        "tags": [
-          "Support public - pièces jointes"
-        ],
+        "tags": ["Support public - pièces jointes"],
         "x-api-audience": "public-support"
       },
       "post": {
@@ -3229,9 +2828,7 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "file"
-                ],
+                "required": ["file"],
                 "type": "object"
               }
             }
@@ -3266,9 +2863,7 @@
           }
         ],
         "summary": "Déposer une pièce jointe en quarantaine",
-        "tags": [
-          "Support public - pièces jointes"
-        ],
+        "tags": ["Support public - pièces jointes"],
         "x-api-audience": "public-support"
       }
     },
@@ -3322,9 +2917,7 @@
           }
         ],
         "summary": "Télécharger uniquement une pièce jointe déclarée saine",
-        "tags": [
-          "Support public - pièces jointes"
-        ],
+        "tags": ["Support public - pièces jointes"],
         "x-api-audience": "public-support"
       }
     },
@@ -3377,9 +2970,7 @@
           }
         ],
         "summary": "Consulter l'état d'analyse d'une pièce jointe",
-        "tags": [
-          "Support public - pièces jointes"
-        ],
+        "tags": ["Support public - pièces jointes"],
         "x-api-audience": "public-support"
       }
     }

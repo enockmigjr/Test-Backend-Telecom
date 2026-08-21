@@ -30,7 +30,9 @@ export function initOpenTelemetry(): NodeSDK {
   const traceExporter = new OTLPTraceExporter({
     url: process.env['OTEL_EXPORTER_OTLP_ENDPOINT'] || 'http://localhost:4318/v1/traces',
   });
-  const samplerRatio = Number(process.env['OTEL_TRACES_SAMPLER_RATIO'] ?? (process.env['NODE_ENV'] === 'production' ? '0.1' : '1'));
+  const samplerRatio = Number(
+    process.env['OTEL_TRACES_SAMPLER_RATIO'] ?? (process.env['NODE_ENV'] === 'production' ? '0.1' : '1'),
+  );
   const ratio = Number.isFinite(samplerRatio) && samplerRatio >= 0 && samplerRatio <= 1 ? samplerRatio : 1;
 
   const sdk = new NodeSDK({

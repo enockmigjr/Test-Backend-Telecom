@@ -10,8 +10,8 @@
 
 ## P0 — Secrets
 
-| Fichier | Avant | Après | Impact |
-|---|---|---|---|
+| Fichier            | Avant                                        | Après                      | Impact                                    |
+| ------------------ | -------------------------------------------- | -------------------------- | ----------------------------------------- |
 | `.env.example:236` | `PUBLIC_SUPPORT_BOT_API_KEY=sk-215d…` réelle | `REPLACE_ME` + commentaire | Purge clé facturable, rotation conseillée |
 
 ## P1 — Sécurité

@@ -127,16 +127,16 @@ curl http://localhost:3000/api/v1/users \
 
 ### Outils de monitoring
 
-| URL                                  | Service        | Identifiants                        |
-| ------------------------------------ | -------------- | ----------------------------------- |
-| `http://localhost:3000/api/v1`       | API REST       | Bearer token Keycloak (RS256)       |
-| `http://localhost:3000/api/docs`     | Swagger UI     | Aucun                               |
+| URL                                         | Service        | Identifiants                                                               |
+| ------------------------------------------- | -------------- | -------------------------------------------------------------------------- |
+| `http://localhost:3000/api/v1`              | API REST       | Bearer token Keycloak (RS256)                                              |
+| `http://localhost:3000/api/docs`            | Swagger UI     | Aucun                                                                      |
 | `http://localhost:3000/api/v1/admin/queues` | BullBoard      | `admin`/`bullboard` (prod : `BULLBOARD_USER/PASSWORD` + `timingSafeEqual`) |
-| `http://localhost:8025`              | Mailpit (SMTP) | Aucun                               |
-| `http://localhost:3001`              | Grafana        | `admin`/`admin`                     |
-| `http://localhost:8081/admin`        | Keycloak Admin | `admin`/`Admin@1234`                |
-| `http://localhost:9090`              | Prometheus     | Aucun                               |
-| `http://localhost:3002`              | Uptime Kuma    | Premier démarrage (création compte) |
+| `http://localhost:8025`                     | Mailpit (SMTP) | Aucun                                                                      |
+| `http://localhost:3001`                     | Grafana        | `admin`/`admin`                                                            |
+| `http://localhost:8081/admin`               | Keycloak Admin | `admin`/`Admin@1234`                                                       |
+| `http://localhost:9090`                     | Prometheus     | Aucun                                                                      |
+| `http://localhost:3002`                     | Uptime Kuma    | Premier démarrage (création compte)                                        |
 
 ---
 
@@ -197,7 +197,7 @@ flowchart LR
 | `support-knowledge`    | Base documentaire publique versionnée, cloisonnée par intégration                                                                               |
 | `support-bot`          | Assistant conversationnel optionnel (budget, circuit breaker, outils fermés, repli formulaire)                                                  |
 | `outbox`               | Boîte d'envoi fiable : événements transactionnels dépilés chaque seconde                                                                        |
-| `external-delivery`    | Livraisons sortantes : adaptateur email, statuts `DELIVERY_UNKNOWN` rejoué après 30min, rejeu 7j + `POST :id/retry` manuel                     |
+| `external-delivery`    | Livraisons sortantes : adaptateur email, statuts `DELIVERY_UNKNOWN` rejoué après 30min, rejeu 7j + `POST :id/retry` manuel                      |
 | `app`                  | Module racine, health checks, métriques Prometheus                                                                                              |
 
 ---

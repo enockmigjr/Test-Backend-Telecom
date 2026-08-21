@@ -123,10 +123,10 @@ Voir `.env.example` pour les valeurs par défaut.
 
 ## BullBoard
 
-| Variable             | Défaut           | Description                                                      |
-| -------------------- | ---------------- | ---------------------------------------------------------------- |
-| `BULLBOARD_USER`     | `admin` (dev)    | Utilisateur BullBoard — **requis en prod** (`timingSafeEqual`)   |
-| `BULLBOARD_PASSWORD` | `bullboard` (dev)| Mot de passe BullBoard — **requis en prod** (500 si absent)      |
+| Variable             | Défaut            | Description                                                    |
+| -------------------- | ----------------- | -------------------------------------------------------------- |
+| `BULLBOARD_USER`     | `admin` (dev)     | Utilisateur BullBoard — **requis en prod** (`timingSafeEqual`) |
+| `BULLBOARD_PASSWORD` | `bullboard` (dev) | Mot de passe BullBoard — **requis en prod** (500 si absent)    |
 
 Accessible sur `http://localhost:3000/api/v1/admin/queues` (`basePath = ${API_PREFIX}/admin/queues`). En prod via Nginx IP allowlist recommandée.
 
@@ -134,10 +134,10 @@ Accessible sur `http://localhost:3000/api/v1/admin/queues` (`basePath = ${API_PR
 
 ## Reports
 
-| Variable                      | Défaut           | Description                                                      |
-| ----------------------------- | ---------------- | ---------------------------------------------------------------- |
-| `REPORT_DOWNLOAD_SECRET`      | _(à changer)_    | Secret HMAC 32+ — **gating même hors prod** (throw si manquant)  |
-| `REPORT_DOWNLOAD_TTL_SECONDS` | `172800` (2j)    | Durée de validité du lien (défaut durci de 604800 → 172800)      |
+| Variable                      | Défaut        | Description                                                     |
+| ----------------------------- | ------------- | --------------------------------------------------------------- |
+| `REPORT_DOWNLOAD_SECRET`      | _(à changer)_ | Secret HMAC 32+ — **gating même hors prod** (throw si manquant) |
+| `REPORT_DOWNLOAD_TTL_SECONDS` | `172800` (2j) | Durée de validité du lien (défaut durci de 604800 → 172800)     |
 
 ---
 
@@ -149,7 +149,7 @@ Accessible sur `http://localhost:3000/api/v1/admin/queues` (`basePath = ${API_PR
 | `PUBLIC_SUPPORT_MASTER_KEY_VERSION`                 | `1`                                             | Version de clé maîtresse courante                                       |
 | `METRICS_SCRAPE_TOKEN`                              | _(vide, ouvert)_                                | Bearer requis pour `GET /metrics` si défini (`timingSafeEqual`)         |
 | `TICKET_REOPEN_SLA_MINUTES`                         | `240`                                           | Rallonge SLA à la réouverture (24_7 pour CRITICAL/HIGH)                 |
-| `AUTH_REDIS_BLACKLIST_FAIL_OPEN`                    | `true` (dev) / `false` (prod)                   | `false` en prod = fail-closed si Redis down                            |
+| `AUTH_REDIS_BLACKLIST_FAIL_OPEN`                    | `true` (dev) / `false` (prod)                   | `false` en prod = fail-closed si Redis down                             |
 | `PUBLIC_SUPPORT_CONTACT_HASH_SECRET`                | obligatoire (≥ 32 car.)                         | HMAC des contacts et quotas publics                                     |
 | `PUBLIC_SESSION_SECRET`                             | obligatoire (≥ 32 car.)                         | Signature des sessions publiques (distinct du JWT interne)              |
 | `PUBLIC_SESSION_TTL_SECONDS`                        | `900`                                           | Durée d'une session publique (300-3600)                                 |
@@ -170,18 +170,18 @@ Accessible sur `http://localhost:3000/api/v1/admin/queues` (`basePath = ${API_PR
 
 ## Bot (support public)
 
-| Variable                                | Défaut                          | Description                                    |
-| --------------------------------------- | ------------------------------- | ---------------------------------------------- |
-| `PUBLIC_SUPPORT_BOT_PROVIDER`           | `none`                          | `openai-compatible` ou `deepseek` pour activer |
+| Variable                                | Défaut                          | Description                                                                          |
+| --------------------------------------- | ------------------------------- | ------------------------------------------------------------------------------------ |
+| `PUBLIC_SUPPORT_BOT_PROVIDER`           | `none`                          | `openai-compatible` ou `deepseek` pour activer                                       |
 | `PUBLIC_SUPPORT_BOT_API_KEY`            | `REPLACE_ME`                    | Clé API du fournisseur — **jamais committée** (`sk-…` interdite dans `.env.example`) |
-| `PUBLIC_SUPPORT_BOT_BASE_URL`           | selon fournisseur               | Base URL du fournisseur compatible OpenAI      |
-| `PUBLIC_SUPPORT_BOT_MODEL`              | `gpt-4o-mini` / `deepseek-chat` | Modèle utilisé                                 |
-| `PUBLIC_SUPPORT_BOT_MAX_TOKENS`         | `800`                           | Max tokens par réponse                         |
-| `PUBLIC_SUPPORT_BOT_TIMEOUT_MS`         | `20000`                         | Timeout du fournisseur                         |
-| `PUBLIC_SUPPORT_BOT_DAILY_BUDGET`       | `200`                           | Appels bot par jour par intégration            |
-| `PUBLIC_SUPPORT_BOT_CIRCUIT_OPEN_AFTER` | `5`                             | Échecs avant ouverture du circuit breaker      |
-| `PUBLIC_SUPPORT_BOT_CIRCUIT_OPEN_MS`    | `600000`                        | Durée d'ouverture du circuit breaker           |
-| `PUBLIC_SUPPORT_BOT_PROMPT_VERSION`     | `2026-08-v1`                    | Version du prompt système                      |
+| `PUBLIC_SUPPORT_BOT_BASE_URL`           | selon fournisseur               | Base URL du fournisseur compatible OpenAI                                            |
+| `PUBLIC_SUPPORT_BOT_MODEL`              | `gpt-4o-mini` / `deepseek-chat` | Modèle utilisé                                                                       |
+| `PUBLIC_SUPPORT_BOT_MAX_TOKENS`         | `800`                           | Max tokens par réponse                                                               |
+| `PUBLIC_SUPPORT_BOT_TIMEOUT_MS`         | `20000`                         | Timeout du fournisseur                                                               |
+| `PUBLIC_SUPPORT_BOT_DAILY_BUDGET`       | `200`                           | Appels bot par jour par intégration                                                  |
+| `PUBLIC_SUPPORT_BOT_CIRCUIT_OPEN_AFTER` | `5`                             | Échecs avant ouverture du circuit breaker                                            |
+| `PUBLIC_SUPPORT_BOT_CIRCUIT_OPEN_MS`    | `600000`                        | Durée d'ouverture du circuit breaker                                                 |
+| `PUBLIC_SUPPORT_BOT_PROMPT_VERSION`     | `2026-08-v1`                    | Version du prompt système                                                            |
 
 ## ClamAV et quarantaine
 

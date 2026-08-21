@@ -16,17 +16,11 @@
             "type": "integer"
           },
           "success": {
-            "enum": [
-              true
-            ],
+            "enum": [true],
             "type": "boolean"
           }
         },
-        "required": [
-          "success",
-          "statusCode",
-          "data"
-        ],
+        "required": ["success", "statusCode", "data"],
         "type": "object"
       },
       "ApiErrorDetail": {
@@ -41,9 +35,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "message"
-        ],
+        "required": ["message"],
         "type": "object"
       },
       "ApiErrorResponse": {
@@ -79,25 +71,15 @@
                 "type": "string"
               }
             },
-            "required": [
-              "code",
-              "message",
-              "correlationId",
-              "timestamp"
-            ],
+            "required": ["code", "message", "correlationId", "timestamp"],
             "type": "object"
           },
           "success": {
-            "enum": [
-              false
-            ],
+            "enum": [false],
             "type": "boolean"
           }
         },
-        "required": [
-          "success",
-          "error"
-        ],
+        "required": ["success", "error"],
         "type": "object"
       },
       "ApiPaginatedResponse": {
@@ -118,18 +100,11 @@
             "type": "integer"
           },
           "success": {
-            "enum": [
-              true
-            ],
+            "enum": [true],
             "type": "boolean"
           }
         },
-        "required": [
-          "success",
-          "statusCode",
-          "data",
-          "meta"
-        ],
+        "required": ["success", "statusCode", "data", "meta"],
         "type": "object"
       },
       "ApiSuccessResponse": {
@@ -146,26 +121,17 @@
             "type": "integer"
           },
           "success": {
-            "enum": [
-              true
-            ],
+            "enum": [true],
             "type": "boolean"
           }
         },
-        "required": [
-          "success",
-          "statusCode",
-          "data"
-        ],
+        "required": ["success", "statusCode", "data"],
         "type": "object"
       },
       "Assignment": {
         "properties": {
           "actorType": {
-            "enum": [
-              "INTERNAL",
-              "SYSTEM"
-            ],
+            "enum": ["INTERNAL", "SYSTEM"],
             "type": "string"
           },
           "assignedBy": {
@@ -199,14 +165,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "ticketId",
-          "toUserId",
-          "assignedBy",
-          "actorType",
-          "createdAt"
-        ],
+        "required": ["id", "ticketId", "toUserId", "assignedBy", "actorType", "createdAt"],
         "type": "object"
       },
       "AssignmentPage": {
@@ -221,10 +180,7 @@
             "$ref": "#/components/schemas/PaginationMeta"
           }
         },
-        "required": [
-          "data",
-          "meta"
-        ],
+        "required": ["data", "meta"],
         "type": "object"
       },
       "AssignTicketDto": {
@@ -240,19 +196,13 @@
             "type": "string"
           }
         },
-        "required": [
-          "userId"
-        ],
+        "required": ["userId"],
         "type": "object"
       },
       "Attachment": {
         "properties": {
           "actorType": {
-            "enum": [
-              "INTERNAL",
-              "EXTERNAL_REQUESTER",
-              "SYSTEM"
-            ],
+            "enum": ["INTERNAL", "EXTERNAL_REQUESTER", "SYSTEM"],
             "type": "string"
           },
           "bucketName": {
@@ -334,11 +284,7 @@
             "type": "string"
           },
           "actorType": {
-            "enum": [
-              "INTERNAL",
-              "EXTERNAL_REQUESTER",
-              "SYSTEM"
-            ],
+            "enum": ["INTERNAL", "EXTERNAL_REQUESTER", "SYSTEM"],
             "type": "string"
           },
           "createdAt": {
@@ -422,15 +368,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "userId",
-          "actorType",
-          "action",
-          "entityType",
-          "entityId",
-          "createdAt"
-        ],
+        "required": ["id", "userId", "actorType", "action", "entityType", "entityId", "createdAt"],
         "type": "object"
       },
       "BootstrapGrantDataDto": {
@@ -443,10 +381,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "code",
-          "expiresAt"
-        ],
+        "required": ["code", "expiresAt"],
         "type": "object"
       },
       "BootstrapGrantResponseDto": {
@@ -460,17 +395,11 @@
             "type": "number"
           },
           "success": {
-            "enum": [
-              true
-            ],
+            "enum": [true],
             "type": "boolean"
           }
         },
-        "required": [
-          "success",
-          "statusCode",
-          "data"
-        ],
+        "required": ["success", "statusCode", "data"],
         "type": "object"
       },
       "BotMessageDto": {
@@ -480,19 +409,13 @@
             "type": "string"
           }
         },
-        "required": [
-          "message"
-        ],
+        "required": ["message"],
         "type": "object"
       },
       "BotReplyDto": {
         "properties": {
           "mode": {
-            "enum": [
-              "disabled",
-              "unavailable",
-              "reply"
-            ],
+            "enum": ["disabled", "unavailable", "reply"],
             "type": "string"
           },
           "reply": {
@@ -506,10 +429,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "mode",
-          "suggestedActions"
-        ],
+        "required": ["mode", "suggestedActions"],
         "type": "object"
       },
       "Category": {
@@ -538,12 +458,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "name",
-          "createdAt",
-          "updatedAt"
-        ],
+        "required": ["id", "name", "createdAt", "updatedAt"],
         "type": "object"
       },
       "ConfirmPublicTicketDto": {
@@ -553,9 +468,7 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "confirmed"
-        ],
+        "required": ["confirmed"],
         "type": "object"
       },
       "ConsumeBootstrapDto": {
@@ -567,9 +480,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "code"
-        ],
+        "required": ["code"],
         "type": "object"
       },
       "ConsumeEmailVerificationDto": {
@@ -585,10 +496,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "challengeId",
-          "code"
-        ],
+        "required": ["challengeId", "code"],
         "type": "object"
       },
       "CreateCategoryDto": {
@@ -609,19 +517,14 @@
           },
           "targetRoles": {
             "description": "Rôles d'agents ciblés par cette catégorie pour l'auto-assignation",
-            "example": [
-              "NOC_ENGINEER",
-              "TECHNICAL_SUPPORT_ENGINEER"
-            ],
+            "example": ["NOC_ENGINEER", "TECHNICAL_SUPPORT_ENGINEER"],
             "items": {
               "type": "string"
             },
             "type": "array"
           }
         },
-        "required": [
-          "name"
-        ],
+        "required": ["name"],
         "type": "object"
       },
       "CreateCommentDto": {
@@ -639,9 +542,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "content"
-        ],
+        "required": ["content"],
         "type": "object"
       },
       "CreateDepartmentDto": {
@@ -649,10 +550,7 @@
           "assignmentStrategy": {
             "default": "LEAST_LOADED",
             "description": "Algorithme d'assignation (LEAST_LOADED par défaut, ROUND_ROBIN alternatif)",
-            "enum": [
-              "ROUND_ROBIN",
-              "LEAST_LOADED"
-            ],
+            "enum": ["ROUND_ROBIN", "LEAST_LOADED"],
             "type": "string"
           },
           "autoAssignmentEnabled": {
@@ -686,9 +584,7 @@
             "description": "Pondération de la charge (priorité / sévérité)"
           }
         },
-        "required": [
-          "name"
-        ],
+        "required": ["name"],
         "type": "object"
       },
       "CreatedUser": {
@@ -702,9 +598,7 @@
                 "type": "string"
               }
             },
-            "required": [
-              "tempPassword"
-            ],
+            "required": ["tempPassword"],
             "type": "object"
           }
         ]
@@ -718,9 +612,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "content"
-        ],
+        "required": ["content"],
         "type": "object"
       },
       "CreateKnowledgeArticleDto": {
@@ -738,10 +630,7 @@
           },
           "language": {
             "default": "fr",
-            "enum": [
-              "fr",
-              "en"
-            ],
+            "enum": ["fr", "en"],
             "type": "string"
           },
           "slug": {
@@ -756,11 +645,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "slug",
-          "title",
-          "content"
-        ],
+        "required": ["slug", "title", "content"],
         "type": "object"
       },
       "CreatePublicCommentDto": {
@@ -771,9 +656,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "content"
-        ],
+        "required": ["content"],
         "type": "object"
       },
       "CreatePublicConversationDto": {
@@ -801,12 +684,7 @@
           },
           "priority": {
             "description": "Priorité couverte par cette politique",
-            "enum": [
-              "LOW",
-              "MEDIUM",
-              "HIGH",
-              "CRITICAL"
-            ],
+            "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"],
             "example": "HIGH",
             "type": "string"
           },
@@ -817,20 +695,13 @@
             "type": "number"
           }
         },
-        "required": [
-          "categoryId",
-          "priority",
-          "firstResponseMinutes",
-          "resolutionMinutes"
-        ],
+        "required": ["categoryId", "priority", "firstResponseMinutes", "resolutionMinutes"],
         "type": "object"
       },
       "CreateSupportIntegrationDto": {
         "properties": {
           "allowedOrigins": {
-            "example": [
-              "https://photos.example.com"
-            ],
+            "example": ["https://photos.example.com"],
             "items": {
               "type": "string"
             },
@@ -856,10 +727,7 @@
             "$ref": "#/components/schemas/IntegrationTrustPolicyDto"
           }
         },
-        "required": [
-          "name",
-          "allowedOrigins"
-        ],
+        "required": ["name", "allowedOrigins"],
         "type": "object"
       },
       "CreateTicketDto": {
@@ -901,23 +769,13 @@
           },
           "priority": {
             "description": "Priorité du ticket",
-            "enum": [
-              "LOW",
-              "MEDIUM",
-              "HIGH",
-              "CRITICAL"
-            ],
+            "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"],
             "example": "HIGH",
             "type": "string"
           },
           "severity": {
             "description": "Sévérité du ticket",
-            "enum": [
-              "S1",
-              "S2",
-              "S3",
-              "S4"
-            ],
+            "enum": ["S1", "S2", "S3", "S4"],
             "example": "S2",
             "type": "string"
           },
@@ -932,15 +790,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "title",
-          "description",
-          "priority",
-          "severity",
-          "categoryId",
-          "departmentId",
-          "assignedTeamId"
-        ],
+        "required": ["title", "description", "priority", "severity", "categoryId", "departmentId", "assignedTeamId"],
         "type": "object"
       },
       "CreateUserDto": {
@@ -981,13 +831,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "email",
-          "firstName",
-          "lastName",
-          "role",
-          "departmentId"
-        ],
+        "required": ["email", "firstName", "lastName", "role", "departmentId"],
         "type": "object"
       },
       "CurrentUser": {
@@ -1028,14 +872,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "sub",
-          "email",
-          "role",
-          "departmentId",
-          "mustChangePassword",
-          "jti"
-        ],
+        "required": ["sub", "email", "role", "departmentId", "mustChangePassword", "jti"],
         "type": "object"
       },
       "DashboardDepartments": {
@@ -1073,15 +910,7 @@
                   "type": "integer"
                 }
               },
-              "required": [
-                "departmentId",
-                "total",
-                "open",
-                "resolved",
-                "closed",
-                "slaCompliant",
-                "slaBreached"
-              ],
+              "required": ["departmentId", "total", "open", "resolved", "closed", "slaCompliant", "slaBreached"],
               "type": "object"
             },
             "type": "array"
@@ -1090,10 +919,7 @@
             "$ref": "#/components/schemas/DatePeriod"
           }
         },
-        "required": [
-          "period",
-          "data"
-        ],
+        "required": ["period", "data"],
         "type": "object"
       },
       "DashboardOverview": {
@@ -1187,13 +1013,7 @@
                 "type": "integer"
               }
             },
-            "required": [
-              "totalTracked",
-              "breached",
-              "atRisk",
-              "compliant",
-              "complianceRate"
-            ],
+            "required": ["totalTracked", "breached", "atRisk", "compliant", "complianceRate"],
             "type": "object"
           },
           "ticketVolume": {
@@ -1211,23 +1031,11 @@
                 "type": "integer"
               }
             },
-            "required": [
-              "total",
-              "openTickets",
-              "resolvedToday",
-              "createdToday"
-            ],
+            "required": ["total", "openTickets", "resolvedToday", "createdToday"],
             "type": "object"
           }
         },
-        "required": [
-          "period",
-          "ticketVolume",
-          "byStatus",
-          "byPriority",
-          "bySeverity",
-          "sla"
-        ],
+        "required": ["period", "ticketVolume", "byStatus", "byPriority", "bySeverity", "sla"],
         "type": "object"
       },
       "DashboardPrioritySeries": {
@@ -1244,24 +1052,14 @@
                   "type": "number"
                 },
                 "priority": {
-                  "enum": [
-                    "LOW",
-                    "MEDIUM",
-                    "HIGH",
-                    "CRITICAL"
-                  ],
+                  "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"],
                   "type": "string"
                 },
                 "slaBreaches": {
                   "type": "integer"
                 }
               },
-              "required": [
-                "priority",
-                "count",
-                "slaBreaches",
-                "percentage"
-              ],
+              "required": ["priority", "count", "slaBreaches", "percentage"],
               "type": "object"
             },
             "type": "array"
@@ -1270,10 +1068,7 @@
             "$ref": "#/components/schemas/DatePeriod"
           }
         },
-        "required": [
-          "period",
-          "data"
-        ],
+        "required": ["period", "data"],
         "type": "object"
       },
       "DashboardResolutionTime": {
@@ -1290,11 +1085,7 @@
                 "type": "integer"
               }
             },
-            "required": [
-              "avgResolutionTimeMinutes",
-              "medianResolutionTimeMinutes",
-              "p90ResolutionTimeMinutes"
-            ],
+            "required": ["avgResolutionTimeMinutes", "medianResolutionTimeMinutes", "p90ResolutionTimeMinutes"],
             "type": "object"
           },
           "period": {
@@ -1312,20 +1103,13 @@
                   "type": "string"
                 }
               },
-              "required": [
-                "period",
-                "avgResolutionTimeMinutes"
-              ],
+              "required": ["period", "avgResolutionTimeMinutes"],
               "type": "object"
             },
             "type": "array"
           }
         },
-        "required": [
-          "period",
-          "overall",
-          "trend"
-        ],
+        "required": ["period", "overall", "trend"],
         "type": "object"
       },
       "DashboardSlaCompliance": {
@@ -1351,9 +1135,7 @@
                   "type": "integer"
                 }
               },
-              "required": [
-                "category"
-              ],
+              "required": ["category"],
               "type": "object"
             },
             "type": "array"
@@ -1373,21 +1155,14 @@
                   "type": "integer"
                 },
                 "priority": {
-                  "enum": [
-                    "LOW",
-                    "MEDIUM",
-                    "HIGH",
-                    "CRITICAL"
-                  ],
+                  "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"],
                   "type": "string"
                 },
                 "totalTracked": {
                   "type": "integer"
                 }
               },
-              "required": [
-                "priority"
-              ],
+              "required": ["priority"],
               "type": "object"
             },
             "type": "array"
@@ -1431,12 +1206,7 @@
             "type": "object"
           }
         },
-        "required": [
-          "period",
-          "summary",
-          "byPriority",
-          "byCategory"
-        ],
+        "required": ["period", "summary", "byPriority", "byCategory"],
         "type": "object"
       },
       "DashboardStatusSeries": {
@@ -1470,12 +1240,7 @@
                   "type": "string"
                 }
               },
-              "required": [
-                "status",
-                "count",
-                "avgAgeMinutes",
-                "percentage"
-              ],
+              "required": ["status", "count", "avgAgeMinutes", "percentage"],
               "type": "object"
             },
             "type": "array"
@@ -1484,10 +1249,7 @@
             "$ref": "#/components/schemas/DatePeriod"
           }
         },
-        "required": [
-          "period",
-          "data"
-        ],
+        "required": ["period", "data"],
         "type": "object"
       },
       "DashboardWorkload": {
@@ -1524,13 +1286,7 @@
                   "type": "integer"
                 }
               },
-              "required": [
-                "agentId",
-                "openTicketsCount",
-                "criticalTicketsCount",
-                "highTicketsCount",
-                "slaAtRiskCount"
-              ],
+              "required": ["agentId", "openTicketsCount", "criticalTicketsCount", "highTicketsCount", "slaAtRiskCount"],
               "type": "object"
             },
             "type": "array"
@@ -1554,20 +1310,11 @@
                 "type": "integer"
               }
             },
-            "required": [
-              "totalAgents",
-              "totalOpenTickets",
-              "avgTicketsPerAgent",
-              "unassignedTickets"
-            ],
+            "required": ["totalAgents", "totalOpenTickets", "avgTicketsPerAgent", "unassignedTickets"],
             "type": "object"
           }
         },
-        "required": [
-          "generatedAt",
-          "data",
-          "summary"
-        ],
+        "required": ["generatedAt", "data", "summary"],
         "type": "object"
       },
       "DatePeriod": {
@@ -1581,10 +1328,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "from",
-          "to"
-        ],
+        "required": ["from", "to"],
         "type": "object"
       },
       "Department": {
@@ -1641,15 +1385,11 @@
       "DeviceRevokedDataDto": {
         "properties": {
           "revoked": {
-            "enum": [
-              true
-            ],
+            "enum": [true],
             "type": "boolean"
           }
         },
-        "required": [
-          "revoked"
-        ],
+        "required": ["revoked"],
         "type": "object"
       },
       "DeviceRevokedResponseDto": {
@@ -1663,17 +1403,11 @@
             "type": "number"
           },
           "success": {
-            "enum": [
-              true
-            ],
+            "enum": [true],
             "type": "boolean"
           }
         },
-        "required": [
-          "success",
-          "statusCode",
-          "data"
-        ],
+        "required": ["success", "statusCode", "data"],
         "type": "object"
       },
       "EscalateTicketDto": {
@@ -1694,10 +1428,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "userId",
-          "departmentId"
-        ],
+        "required": ["userId", "departmentId"],
         "type": "object"
       },
       "ExternalDeliveryListItemDto": {
@@ -1706,15 +1437,7 @@
             "type": "number"
           },
           "channel": {
-            "enum": [
-              "INTERNAL",
-              "WEB_PORTAL",
-              "WIDGET",
-              "WORDPRESS",
-              "EMAIL",
-              "WHATSAPP",
-              "API"
-            ],
+            "enum": ["INTERNAL", "WEB_PORTAL", "WIDGET", "WORDPRESS", "EMAIL", "WHATSAPP", "API"],
             "type": "string"
           },
           "createdAt": {
@@ -1746,13 +1469,7 @@
             "type": "object"
           },
           "status": {
-            "enum": [
-              "PENDING",
-              "PROCESSING",
-              "DELIVERED",
-              "FAILED",
-              "DELIVERY_UNKNOWN"
-            ],
+            "enum": ["PENDING", "PROCESSING", "DELIVERED", "FAILED", "DELIVERY_UNKNOWN"],
             "type": "string"
           },
           "supportIntegrationId": {
@@ -1814,24 +1531,13 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "supportIntegrationId",
-          "locale",
-          "createdAt",
-          "updatedAt",
-          "summary"
-        ],
+        "required": ["id", "supportIntegrationId", "locale", "createdAt", "updatedAt", "summary"],
         "type": "object"
       },
       "ExternalRequesterIdentityDto": {
         "properties": {
           "identityType": {
-            "enum": [
-              "EMAIL",
-              "PHONE",
-              "WORDPRESS"
-            ],
+            "enum": ["EMAIL", "PHONE", "WORDPRESS"],
             "type": "string"
           },
           "revokedAt": {
@@ -1843,10 +1549,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "identityType",
-          "verifiedAt"
-        ],
+        "required": ["identityType", "verifiedAt"],
         "type": "object"
       },
       "ExternalRequesterListItemDto": {
@@ -1882,13 +1585,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "supportIntegrationId",
-          "locale",
-          "createdAt",
-          "updatedAt"
-        ],
+        "required": ["id", "supportIntegrationId", "locale", "createdAt", "updatedAt"],
         "type": "object"
       },
       "IntegrationQuotaPolicyDto": {
@@ -1981,11 +1678,7 @@
       "InternalNote": {
         "properties": {
           "actorType": {
-            "enum": [
-              "INTERNAL",
-              "EXTERNAL_REQUESTER",
-              "SYSTEM"
-            ],
+            "enum": ["INTERNAL", "EXTERNAL_REQUESTER", "SYSTEM"],
             "type": "string"
           },
           "authorFirstName": {
@@ -2039,14 +1732,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "ticketId",
-          "authorId",
-          "content",
-          "createdAt",
-          "updatedAt"
-        ],
+        "required": ["id", "ticketId", "authorId", "content", "createdAt", "updatedAt"],
         "type": "object"
       },
       "KnowledgeArticleDetailDto": {
@@ -2081,11 +1767,7 @@
             "type": "string"
           },
           "status": {
-            "enum": [
-              "DRAFT",
-              "PUBLISHED",
-              "ARCHIVED"
-            ],
+            "enum": ["DRAFT", "PUBLISHED", "ARCHIVED"],
             "type": "string"
           },
           "summary": {
@@ -2144,11 +1826,7 @@
             "type": "string"
           },
           "status": {
-            "enum": [
-              "DRAFT",
-              "PUBLISHED",
-              "ARCHIVED"
-            ],
+            "enum": ["DRAFT", "PUBLISHED", "ARCHIVED"],
             "type": "string"
           },
           "summary": {
@@ -2163,16 +1841,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "slug",
-          "title",
-          "status",
-          "language",
-          "integrationCount",
-          "createdAt",
-          "updatedAt"
-        ],
+        "required": ["id", "slug", "title", "status", "language", "integrationCount", "createdAt", "updatedAt"],
         "type": "object"
       },
       "KnowledgeArticleVersionDto": {
@@ -2206,13 +1875,7 @@
             "type": "number"
           }
         },
-        "required": [
-          "version",
-          "title",
-          "content",
-          "language",
-          "createdAt"
-        ],
+        "required": ["version", "title", "content", "language", "createdAt"],
         "type": "object"
       },
       "KnowledgeIntegrationRefDto": {
@@ -2224,10 +1887,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "name"
-        ],
+        "required": ["id", "name"],
         "type": "object"
       },
       "KnowledgeSearchResultDto": {
@@ -2256,14 +1916,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "slug",
-          "title",
-          "content",
-          "language",
-          "updatedAt"
-        ],
+        "required": ["id", "slug", "title", "content", "language", "updatedAt"],
         "type": "object"
       },
       "MergeRequesterDto": {
@@ -2273,9 +1926,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "targetRequesterId"
-        ],
+        "required": ["targetRequesterId"],
         "type": "object"
       },
       "MergeRequesterPreviewDto": {
@@ -2299,12 +1950,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "requesterId",
-          "moved",
-          "identities",
-          "kept"
-        ],
+        "required": ["requesterId", "moved", "identities", "kept"],
         "type": "object"
       },
       "MergeRequesterResultDto": {
@@ -2326,13 +1972,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "merged",
-          "targetRequesterId",
-          "moved",
-          "identityCollisionsRemoved",
-          "displayNameAdopted"
-        ],
+        "required": ["merged", "targetRequesterId", "moved", "identityCollisionsRemoved", "displayNameAdopted"],
         "type": "object"
       },
       "Notification": {
@@ -2376,15 +2016,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "userId",
-          "type",
-          "title",
-          "message",
-          "isRead",
-          "createdAt"
-        ],
+        "required": ["id", "userId", "type", "title", "message", "isRead", "createdAt"],
         "type": "object"
       },
       "PaginationMeta": {
@@ -2407,12 +2039,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "page",
-          "limit",
-          "total",
-          "totalPages"
-        ],
+        "required": ["page", "limit", "total", "totalPages"],
         "type": "object"
       },
       "PendingTicketDto": {
@@ -2476,24 +2103,11 @@
             "type": "string"
           },
           "scanStatus": {
-            "enum": [
-              "NOT_REQUIRED",
-              "QUARANTINED",
-              "PENDING",
-              "SCANNING",
-              "CLEAN",
-              "INFECTED",
-              "ERROR"
-            ],
+            "enum": ["NOT_REQUIRED", "QUARANTINED", "PENDING", "SCANNING", "CLEAN", "INFECTED", "ERROR"],
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "filename",
-          "fileSize",
-          "scanStatus"
-        ],
+        "required": ["id", "filename", "fileSize", "scanStatus"],
         "type": "object"
       },
       "PublicAttachmentListResponseDto": {
@@ -2510,17 +2124,11 @@
             "type": "number"
           },
           "success": {
-            "enum": [
-              true
-            ],
+            "enum": [true],
             "type": "boolean"
           }
         },
-        "required": [
-          "success",
-          "statusCode",
-          "data"
-        ],
+        "required": ["success", "statusCode", "data"],
         "type": "object"
       },
       "PublicAttachmentResponseDto": {
@@ -2534,17 +2142,11 @@
             "type": "number"
           },
           "success": {
-            "enum": [
-              true
-            ],
+            "enum": [true],
             "type": "boolean"
           }
         },
-        "required": [
-          "success",
-          "statusCode",
-          "data"
-        ],
+        "required": ["success", "statusCode", "data"],
         "type": "object"
       },
       "PublicCatalogDataDto": {
@@ -2562,10 +2164,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "categories",
-          "services"
-        ],
+        "required": ["categories", "services"],
         "type": "object"
       },
       "PublicCatalogResponseDto": {
@@ -2579,17 +2178,11 @@
             "type": "number"
           },
           "success": {
-            "enum": [
-              true
-            ],
+            "enum": [true],
             "type": "boolean"
           }
         },
-        "required": [
-          "success",
-          "statusCode",
-          "data"
-        ],
+        "required": ["success", "statusCode", "data"],
         "type": "object"
       },
       "PublicCategoryDto": {
@@ -2606,10 +2199,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "name"
-        ],
+        "required": ["id", "name"],
         "type": "object"
       },
       "PublicCommentDataDto": {
@@ -2622,10 +2212,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "content"
-        ],
+        "required": ["id", "content"],
         "type": "object"
       },
       "PublicCommentResponseDto": {
@@ -2639,17 +2226,11 @@
             "type": "number"
           },
           "success": {
-            "enum": [
-              true
-            ],
+            "enum": [true],
             "type": "boolean"
           }
         },
-        "required": [
-          "success",
-          "statusCode",
-          "data"
-        ],
+        "required": ["success", "statusCode", "data"],
         "type": "object"
       },
       "PublicConversationDetailDataDto": {
@@ -2687,12 +2268,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "state",
-          "status",
-          "createdAt"
-        ],
+        "required": ["id", "state", "status", "createdAt"],
         "type": "object"
       },
       "PublicConversationDetailResponseDto": {
@@ -2706,17 +2282,11 @@
             "type": "number"
           },
           "success": {
-            "enum": [
-              true
-            ],
+            "enum": [true],
             "type": "boolean"
           }
         },
-        "required": [
-          "success",
-          "statusCode",
-          "data"
-        ],
+        "required": ["success", "statusCode", "data"],
         "type": "object"
       },
       "PublicConversationStateDataDto": {
@@ -2726,17 +2296,11 @@
             "type": "string"
           },
           "state": {
-            "enum": [
-              "QUALIFY",
-              "DRAFT"
-            ],
+            "enum": ["QUALIFY", "DRAFT"],
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "state"
-        ],
+        "required": ["id", "state"],
         "type": "object"
       },
       "PublicConversationStateResponseDto": {
@@ -2750,17 +2314,11 @@
             "type": "number"
           },
           "success": {
-            "enum": [
-              true
-            ],
+            "enum": [true],
             "type": "boolean"
           }
         },
-        "required": [
-          "success",
-          "statusCode",
-          "data"
-        ],
+        "required": ["success", "statusCode", "data"],
         "type": "object"
       },
       "PublicDraftSavedDataDto": {
@@ -2773,18 +2331,11 @@
             "type": "string"
           },
           "state": {
-            "enum": [
-              "QUALIFY",
-              "DRAFT"
-            ],
+            "enum": ["QUALIFY", "DRAFT"],
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "state",
-          "draft"
-        ],
+        "required": ["id", "state", "draft"],
         "type": "object"
       },
       "PublicDraftSavedResponseDto": {
@@ -2798,17 +2349,11 @@
             "type": "number"
           },
           "success": {
-            "enum": [
-              true
-            ],
+            "enum": [true],
             "type": "boolean"
           }
         },
-        "required": [
-          "success",
-          "statusCode",
-          "data"
-        ],
+        "required": ["success", "statusCode", "data"],
         "type": "object"
       },
       "PublicHandoffDataDto": {
@@ -2818,16 +2363,11 @@
             "type": "string"
           },
           "state": {
-            "enum": [
-              "FOLLOW_UP_OR_HANDOFF"
-            ],
+            "enum": ["FOLLOW_UP_OR_HANDOFF"],
             "type": "string"
           }
         },
-        "required": [
-          "conversationId",
-          "state"
-        ],
+        "required": ["conversationId", "state"],
         "type": "object"
       },
       "PublicHandoffDto": {
@@ -2850,17 +2390,11 @@
             "type": "number"
           },
           "success": {
-            "enum": [
-              true
-            ],
+            "enum": [true],
             "type": "boolean"
           }
         },
-        "required": [
-          "success",
-          "statusCode",
-          "data"
-        ],
+        "required": ["success", "statusCode", "data"],
         "type": "object"
       },
       "PublicIntegrationConfigDataDto": {
@@ -2878,12 +2412,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "name",
-          "frameAllowed",
-          "appearance",
-          "features"
-        ],
+        "required": ["name", "frameAllowed", "appearance", "features"],
         "type": "object"
       },
       "PublicIntegrationConfigResponseDto": {
@@ -2897,17 +2426,11 @@
             "type": "number"
           },
           "success": {
-            "enum": [
-              true
-            ],
+            "enum": [true],
             "type": "boolean"
           }
         },
-        "required": [
-          "success",
-          "statusCode",
-          "data"
-        ],
+        "required": ["success", "statusCode", "data"],
         "type": "object"
       },
       "PublicIntegrationFeaturesDto": {
@@ -2922,11 +2445,7 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "publicAttachments",
-          "publicRealtime",
-          "publicBot"
-        ],
+        "required": ["publicAttachments", "publicRealtime", "publicBot"],
         "type": "object"
       },
       "PublicPaginationMetaDto": {
@@ -2949,12 +2468,7 @@
             "type": "number"
           }
         },
-        "required": [
-          "page",
-          "limit",
-          "total",
-          "totalPages"
-        ],
+        "required": ["page", "limit", "total", "totalPages"],
         "type": "object"
       },
       "PublicPreferencesDataDto": {
@@ -2972,9 +2486,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "locale"
-        ],
+        "required": ["locale"],
         "type": "object"
       },
       "PublicPreferencesResponseDto": {
@@ -2993,17 +2505,11 @@
             "type": "number"
           },
           "success": {
-            "enum": [
-              true
-            ],
+            "enum": [true],
             "type": "boolean"
           }
         },
-        "required": [
-          "success",
-          "statusCode",
-          "data"
-        ],
+        "required": ["success", "statusCode", "data"],
         "type": "object"
       },
       "PublicServiceDto": {
@@ -3015,10 +2521,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "key",
-          "label"
-        ],
+        "required": ["key", "label"],
         "type": "object"
       },
       "PublicSessionDataDto": {
@@ -3041,12 +2544,7 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "accessToken",
-          "expiresIn",
-          "trustedDeviceToken",
-          "trustedDeviceExpiresAt"
-        ],
+        "required": ["accessToken", "expiresIn", "trustedDeviceToken", "trustedDeviceExpiresAt"],
         "type": "object"
       },
       "PublicSessionResponseDto": {
@@ -3060,17 +2558,11 @@
             "type": "number"
           },
           "success": {
-            "enum": [
-              true
-            ],
+            "enum": [true],
             "type": "boolean"
           }
         },
-        "required": [
-          "success",
-          "statusCode",
-          "data"
-        ],
+        "required": ["success", "statusCode", "data"],
         "type": "object"
       },
       "PublicTicketConfirmedDataDto": {
@@ -3087,11 +2579,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "conversationId",
-          "ticketId",
-          "ticketNumber"
-        ],
+        "required": ["conversationId", "ticketId", "ticketNumber"],
         "type": "object"
       },
       "PublicTicketConfirmedResponseDto": {
@@ -3105,17 +2593,11 @@
             "type": "number"
           },
           "success": {
-            "enum": [
-              true
-            ],
+            "enum": [true],
             "type": "boolean"
           }
         },
-        "required": [
-          "success",
-          "statusCode",
-          "data"
-        ],
+        "required": ["success", "statusCode", "data"],
         "type": "object"
       },
       "PublicTicketDetailDto": {
@@ -3152,13 +2634,7 @@
             "type": "string"
           },
           "status": {
-            "enum": [
-              "RECEIVED",
-              "IN_PROGRESS",
-              "WAITING_FOR_CUSTOMER",
-              "RESOLVED",
-              "CLOSED"
-            ],
+            "enum": ["RECEIVED", "IN_PROGRESS", "WAITING_FOR_CUSTOMER", "RESOLVED", "CLOSED"],
             "type": "string"
           },
           "ticketNumber": {
@@ -3172,15 +2648,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "ticketNumber",
-          "title",
-          "status",
-          "createdAt",
-          "updatedAt",
-          "description"
-        ],
+        "required": ["id", "ticketNumber", "title", "status", "createdAt", "updatedAt", "description"],
         "type": "object"
       },
       "PublicTicketDetailResponseDto": {
@@ -3194,17 +2662,11 @@
             "type": "number"
           },
           "success": {
-            "enum": [
-              true
-            ],
+            "enum": [true],
             "type": "boolean"
           }
         },
-        "required": [
-          "success",
-          "statusCode",
-          "data"
-        ],
+        "required": ["success", "statusCode", "data"],
         "type": "object"
       },
       "PublicTicketDraftDataDto": {
@@ -3220,11 +2682,7 @@
             "type": "string"
           },
           "impact": {
-            "enum": [
-              "LOW",
-              "MEDIUM",
-              "HIGH"
-            ],
+            "enum": ["LOW", "MEDIUM", "HIGH"],
             "type": "string"
           },
           "serviceKey": {
@@ -3234,21 +2692,11 @@
             "type": "string"
           },
           "urgency": {
-            "enum": [
-              "LOW",
-              "MEDIUM",
-              "HIGH"
-            ],
+            "enum": ["LOW", "MEDIUM", "HIGH"],
             "type": "string"
           }
         },
-        "required": [
-          "categoryId",
-          "title",
-          "description",
-          "impact",
-          "urgency"
-        ],
+        "required": ["categoryId", "title", "description", "impact", "urgency"],
         "type": "object"
       },
       "PublicTicketListResponseDto": {
@@ -3268,18 +2716,11 @@
             "type": "number"
           },
           "success": {
-            "enum": [
-              true
-            ],
+            "enum": [true],
             "type": "boolean"
           }
         },
-        "required": [
-          "success",
-          "statusCode",
-          "data",
-          "meta"
-        ],
+        "required": ["success", "statusCode", "data", "meta"],
         "type": "object"
       },
       "PublicTicketSummaryDto": {
@@ -3293,13 +2734,7 @@
             "type": "string"
           },
           "status": {
-            "enum": [
-              "RECEIVED",
-              "IN_PROGRESS",
-              "WAITING_FOR_CUSTOMER",
-              "RESOLVED",
-              "CLOSED"
-            ],
+            "enum": ["RECEIVED", "IN_PROGRESS", "WAITING_FOR_CUSTOMER", "RESOLVED", "CLOSED"],
             "type": "string"
           },
           "ticketNumber": {
@@ -3313,14 +2748,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "ticketNumber",
-          "title",
-          "status",
-          "createdAt",
-          "updatedAt"
-        ],
+        "required": ["id", "ticketNumber", "title", "status", "createdAt", "updatedAt"],
         "type": "object"
       },
       "PublicTimelineEntryDto": {
@@ -3345,28 +2773,15 @@
             "type": "string"
           },
           "status": {
-            "enum": [
-              "RECEIVED",
-              "IN_PROGRESS",
-              "WAITING_FOR_CUSTOMER",
-              "RESOLVED",
-              "CLOSED"
-            ],
+            "enum": ["RECEIVED", "IN_PROGRESS", "WAITING_FOR_CUSTOMER", "RESOLVED", "CLOSED"],
             "type": "string"
           },
           "type": {
-            "enum": [
-              "COMMENT",
-              "STATUS"
-            ],
+            "enum": ["COMMENT", "STATUS"],
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "type",
-          "createdAt"
-        ],
+        "required": ["id", "type", "createdAt"],
         "type": "object"
       },
       "PublicTimelineResponseDto": {
@@ -3383,17 +2798,11 @@
             "type": "number"
           },
           "success": {
-            "enum": [
-              true
-            ],
+            "enum": [true],
             "type": "boolean"
           }
         },
-        "required": [
-          "success",
-          "statusCode",
-          "data"
-        ],
+        "required": ["success", "statusCode", "data"],
         "type": "object"
       },
       "RecentTicket": {
@@ -3403,12 +2812,7 @@
             "type": "string"
           },
           "priority": {
-            "enum": [
-              "LOW",
-              "MEDIUM",
-              "HIGH",
-              "CRITICAL"
-            ],
+            "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"],
             "type": "string"
           },
           "status": {
@@ -3447,9 +2851,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "reason"
-        ],
+        "required": ["reason"],
         "type": "object"
       },
       "Report": {
@@ -3501,29 +2903,15 @@
             "type": "string"
           },
           "status": {
-            "enum": [
-              "pending",
-              "completed",
-              "failed"
-            ],
+            "enum": ["pending", "completed", "failed"],
             "type": "string"
           },
           "type": {
-            "enum": [
-              "ticket-report",
-              "sla-report",
-              "weekly-report"
-            ],
+            "enum": ["ticket-report", "sla-report", "weekly-report"],
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "type",
-          "status",
-          "requestedBy",
-          "createdAt"
-        ],
+        "required": ["id", "type", "status", "requestedBy", "createdAt"],
         "type": "object"
       },
       "ReportJob": {
@@ -3536,10 +2924,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "message",
-          "reportId"
-        ],
+        "required": ["message", "reportId"],
         "type": "object"
       },
       "RequestEmailVerificationDto": {
@@ -3557,10 +2942,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "integrationKey",
-          "email"
-        ],
+        "required": ["integrationKey", "email"],
         "type": "object"
       },
       "RequesterAnonymizedDto": {
@@ -3576,11 +2958,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "anonymized",
-          "requesterId",
-          "alreadyAnonymized"
-        ],
+        "required": ["anonymized", "requesterId", "alreadyAnonymized"],
         "type": "object"
       },
       "ResolveTicketDto": {
@@ -3600,9 +2978,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "secret"
-        ],
+        "required": ["secret"],
         "type": "object"
       },
       "SavePublicTicketDraftDto": {
@@ -3621,11 +2997,7 @@
             "type": "string"
           },
           "impact": {
-            "enum": [
-              "LOW",
-              "MEDIUM",
-              "HIGH"
-            ],
+            "enum": ["LOW", "MEDIUM", "HIGH"],
             "type": "string"
           },
           "serviceKey": {
@@ -3638,21 +3010,11 @@
             "type": "string"
           },
           "urgency": {
-            "enum": [
-              "LOW",
-              "MEDIUM",
-              "HIGH"
-            ],
+            "enum": ["LOW", "MEDIUM", "HIGH"],
             "type": "string"
           }
         },
-        "required": [
-          "categoryId",
-          "title",
-          "description",
-          "impact",
-          "urgency"
-        ],
+        "required": ["categoryId", "title", "description", "impact", "urgency"],
         "type": "object"
       },
       "SetAbsenceDto": {
@@ -3673,9 +3035,7 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "available"
-        ],
+        "required": ["available"],
         "type": "object"
       },
       "Setting": {
@@ -3703,13 +3063,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "key",
-          "value",
-          "createdAt",
-          "updatedAt"
-        ],
+        "required": ["id", "key", "value", "createdAt", "updatedAt"],
         "type": "object"
       },
       "SlaPolicy": {
@@ -3734,12 +3088,7 @@
             "type": "string"
           },
           "priority": {
-            "enum": [
-              "LOW",
-              "MEDIUM",
-              "HIGH",
-              "CRITICAL"
-            ],
+            "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"],
             "type": "string"
           },
           "resolutionMinutes": {
@@ -3751,13 +3100,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "categoryId",
-          "priority",
-          "firstResponseMinutes",
-          "resolutionMinutes"
-        ],
+        "required": ["id", "categoryId", "priority", "firstResponseMinutes", "resolutionMinutes"],
         "type": "object"
       },
       "SlaReport": {
@@ -3772,20 +3115,11 @@
                   "type": "integer"
                 },
                 "priority": {
-                  "enum": [
-                    "LOW",
-                    "MEDIUM",
-                    "HIGH",
-                    "CRITICAL"
-                  ],
+                  "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"],
                   "type": "string"
                 }
               },
-              "required": [
-                "priority",
-                "count",
-                "breached"
-              ],
+              "required": ["priority", "count", "breached"],
               "type": "object"
             },
             "type": "array"
@@ -3809,27 +3143,15 @@
                 "type": "integer"
               }
             },
-            "required": [
-              "total",
-              "breached",
-              "avgResolutionMinutes"
-            ],
+            "required": ["total", "breached", "avgResolutionMinutes"],
             "type": "object"
           },
           "type": {
-            "enum": [
-              "sla-report"
-            ],
+            "enum": ["sla-report"],
             "type": "string"
           }
         },
-        "required": [
-          "generatedAt",
-          "type",
-          "period",
-          "summary",
-          "byPriority"
-        ],
+        "required": ["generatedAt", "type", "period", "summary", "byPriority"],
         "type": "object"
       },
       "SubmitSatisfactionDto": {
@@ -3851,10 +3173,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "token",
-          "note"
-        ],
+        "required": ["token", "note"],
         "type": "object"
       },
       "Ticket": {
@@ -3993,12 +3312,7 @@
             "type": "string"
           },
           "priority": {
-            "enum": [
-              "LOW",
-              "MEDIUM",
-              "HIGH",
-              "CRITICAL"
-            ],
+            "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"],
             "type": "string"
           },
           "requesterId": {
@@ -4034,12 +3348,7 @@
             "type": "string"
           },
           "severity": {
-            "enum": [
-              "S1",
-              "S2",
-              "S3",
-              "S4"
-            ],
+            "enum": ["S1", "S2", "S3", "S4"],
             "type": "string"
           },
           "slaBreached": {
@@ -4055,15 +3364,7 @@
             "type": "string"
           },
           "sourceChannel": {
-            "enum": [
-              "INTERNAL",
-              "WEB_PORTAL",
-              "WIDGET",
-              "WORDPRESS",
-              "EMAIL",
-              "WHATSAPP",
-              "API"
-            ],
+            "enum": ["INTERNAL", "WEB_PORTAL", "WIDGET", "WORDPRESS", "EMAIL", "WHATSAPP", "API"],
             "type": "string"
           },
           "status": {
@@ -4122,11 +3423,7 @@
       "TicketComment": {
         "properties": {
           "actorType": {
-            "enum": [
-              "INTERNAL",
-              "EXTERNAL_REQUESTER",
-              "SYSTEM"
-            ],
+            "enum": ["INTERNAL", "EXTERNAL_REQUESTER", "SYSTEM"],
             "type": "string"
           },
           "authorFirstName": {
@@ -4180,15 +3477,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "ticketId",
-          "authorId",
-          "actorType",
-          "content",
-          "createdAt",
-          "updatedAt"
-        ],
+        "required": ["id", "ticketId", "authorId", "actorType", "content", "createdAt", "updatedAt"],
         "type": "object"
       },
       "TicketHistory": {
@@ -4197,11 +3486,7 @@
             "type": "string"
           },
           "actorType": {
-            "enum": [
-              "INTERNAL",
-              "EXTERNAL_REQUESTER",
-              "SYSTEM"
-            ],
+            "enum": ["INTERNAL", "EXTERNAL_REQUESTER", "SYSTEM"],
             "type": "string"
           },
           "createdAt": {
@@ -4295,14 +3580,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "ticketId",
-          "userId",
-          "actorType",
-          "action",
-          "createdAt"
-        ],
+        "required": ["id", "ticketId", "userId", "actorType", "action", "createdAt"],
         "type": "object"
       },
       "TicketListItem": {
@@ -4333,21 +3611,11 @@
             "type": "string"
           },
           "priority": {
-            "enum": [
-              "LOW",
-              "MEDIUM",
-              "HIGH",
-              "CRITICAL"
-            ],
+            "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"],
             "type": "string"
           },
           "severity": {
-            "enum": [
-              "S1",
-              "S2",
-              "S3",
-              "S4"
-            ],
+            "enum": ["S1", "S2", "S3", "S4"],
             "type": "string"
           },
           "status": {
@@ -4397,10 +3665,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "commentCount",
-          "assignmentCount"
-        ],
+        "required": ["commentCount", "assignmentCount"],
         "type": "object"
       },
       "TicketReport": {
@@ -4440,12 +3705,7 @@
                 "type": "string"
               },
               "priority": {
-                "enum": [
-                  "LOW",
-                  "MEDIUM",
-                  "HIGH",
-                  "CRITICAL"
-                ],
+                "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"],
                 "type": "string"
               },
               "resolutionSummary": {
@@ -4458,12 +3718,7 @@
                 "type": "string"
               },
               "severity": {
-                "enum": [
-                  "S1",
-                  "S2",
-                  "S3",
-                  "S4"
-                ],
+                "enum": ["S1", "S2", "S3", "S4"],
                 "type": "string"
               },
               "status": {
@@ -4487,30 +3742,15 @@
                 "type": "string"
               }
             },
-            "required": [
-              "id",
-              "ticketNumber",
-              "title",
-              "description",
-              "status",
-              "priority",
-              "severity",
-              "createdAt"
-            ],
+            "required": ["id", "ticketNumber", "title", "description", "status", "priority", "severity", "createdAt"],
             "type": "object"
           },
           "type": {
-            "enum": [
-              "ticket-report"
-            ],
+            "enum": ["ticket-report"],
             "type": "string"
           }
         },
-        "required": [
-          "generatedAt",
-          "type",
-          "ticket"
-        ],
+        "required": ["generatedAt", "type", "ticket"],
         "type": "object"
       },
       "TrustedDeviceDataDto": {
@@ -4541,12 +3781,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "current",
-          "createdAt",
-          "expiresAt"
-        ],
+        "required": ["id", "current", "createdAt", "expiresAt"],
         "type": "object"
       },
       "TrustedDeviceListResponseDto": {
@@ -4563,17 +3798,11 @@
             "type": "number"
           },
           "success": {
-            "enum": [
-              true
-            ],
+            "enum": [true],
             "type": "boolean"
           }
         },
-        "required": [
-          "success",
-          "statusCode",
-          "data"
-        ],
+        "required": ["success", "statusCode", "data"],
         "type": "object"
       },
       "UpdateCategoryDto": {
@@ -4594,10 +3823,7 @@
           },
           "targetRoles": {
             "description": "Rôles d'agents ciblés par cette catégorie pour l'auto-assignation",
-            "example": [
-              "NOC_ENGINEER",
-              "TECHNICAL_SUPPORT_ENGINEER"
-            ],
+            "example": ["NOC_ENGINEER", "TECHNICAL_SUPPORT_ENGINEER"],
             "items": {
               "type": "string"
             },
@@ -4616,19 +3842,14 @@
             "type": "string"
           }
         },
-        "required": [
-          "content"
-        ],
+        "required": ["content"],
         "type": "object"
       },
       "UpdateDepartmentDto": {
         "properties": {
           "assignmentStrategy": {
             "description": "Algorithme d'assignation (LEAST_LOADED par défaut, ROUND_ROBIN alternatif)",
-            "enum": [
-              "ROUND_ROBIN",
-              "LEAST_LOADED"
-            ],
+            "enum": ["ROUND_ROBIN", "LEAST_LOADED"],
             "type": "string"
           },
           "autoAssignmentEnabled": {
@@ -4670,9 +3891,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "content"
-        ],
+        "required": ["content"],
         "type": "object"
       },
       "UpdateKnowledgeArticleDto": {
@@ -4687,10 +3906,7 @@
             "type": "array"
           },
           "language": {
-            "enum": [
-              "fr",
-              "en"
-            ],
+            "enum": ["fr", "en"],
             "type": "string"
           },
           "note": {
@@ -4698,11 +3914,7 @@
             "type": "string"
           },
           "status": {
-            "enum": [
-              "DRAFT",
-              "PUBLISHED",
-              "ARCHIVED"
-            ],
+            "enum": ["DRAFT", "PUBLISHED", "ARCHIVED"],
             "type": "string"
           },
           "summary": {
@@ -4741,9 +3953,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "value"
-        ],
+        "required": ["value"],
         "type": "object"
       },
       "UpdateSlaPolicyDto": {
@@ -4766,9 +3976,7 @@
       "UpdateSupportIntegrationDto": {
         "properties": {
           "allowedOrigins": {
-            "example": [
-              "https://photos.example.com"
-            ],
+            "example": ["https://photos.example.com"],
             "items": {
               "type": "string"
             },
@@ -4791,11 +3999,7 @@
             "type": "object"
           },
           "status": {
-            "enum": [
-              "DRAFT",
-              "ACTIVE",
-              "SUSPENDED"
-            ],
+            "enum": ["DRAFT", "ACTIVE", "SUSPENDED"],
             "type": "string"
           },
           "trustPolicy": {
@@ -4816,21 +4020,11 @@
             "type": "string"
           },
           "priority": {
-            "enum": [
-              "LOW",
-              "MEDIUM",
-              "HIGH",
-              "CRITICAL"
-            ],
+            "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"],
             "type": "string"
           },
           "severity": {
-            "enum": [
-              "S1",
-              "S2",
-              "S3",
-              "S4"
-            ],
+            "enum": ["S1", "S2", "S3", "S4"],
             "type": "string"
           },
           "tags": {
@@ -4975,15 +4169,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "id",
-          "email",
-          "firstName",
-          "lastName",
-          "role",
-          "departmentId",
-          "isActive"
-        ],
+        "required": ["id", "email", "firstName", "lastName", "role", "departmentId", "isActive"],
         "type": "object"
       },
       "UserTicketStats": {
@@ -5004,27 +4190,17 @@
             "type": "integer"
           }
         },
-        "required": [
-          "totalCreated",
-          "totalAssigned",
-          "openTickets",
-          "resolvedTickets",
-          "slaBreachedCount"
-        ],
+        "required": ["totalCreated", "totalAssigned", "openTickets", "resolvedTickets", "slaBreachedCount"],
         "type": "object"
       },
       "VerificationRejectedDataDto": {
         "properties": {
           "verified": {
-            "enum": [
-              false
-            ],
+            "enum": [false],
             "type": "boolean"
           }
         },
-        "required": [
-          "verified"
-        ],
+        "required": ["verified"],
         "type": "object"
       },
       "VerificationRejectedResponseDto": {
@@ -5038,17 +4214,11 @@
             "type": "number"
           },
           "success": {
-            "enum": [
-              true
-            ],
+            "enum": [true],
             "type": "boolean"
           }
         },
-        "required": [
-          "success",
-          "statusCode",
-          "data"
-        ],
+        "required": ["success", "statusCode", "data"],
         "type": "object"
       },
       "VerificationRequestDataDto": {
@@ -5058,9 +4228,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "challengeId"
-        ],
+        "required": ["challengeId"],
         "type": "object"
       },
       "VerificationRequestResponseDto": {
@@ -5077,18 +4245,11 @@
             "type": "number"
           },
           "success": {
-            "enum": [
-              true
-            ],
+            "enum": [true],
             "type": "boolean"
           }
         },
-        "required": [
-          "success",
-          "statusCode",
-          "data",
-          "message"
-        ],
+        "required": ["success", "statusCode", "data", "message"],
         "type": "object"
       },
       "WorkloadWeightsDto": {
@@ -5182,9 +4343,7 @@
           }
         },
         "summary": "Informations sur l'API",
-        "tags": [
-          "root"
-        ]
+        "tags": ["root"]
       }
     },
     "/api/v1/attachments": {
@@ -5213,9 +4372,7 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "file"
-                ],
+                "required": ["file"],
                 "type": "object"
               }
             }
@@ -5240,17 +4397,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -5284,9 +4435,7 @@
           }
         ],
         "summary": "Uploader une piece jointe",
-        "tags": [
-          "attachments"
-        ]
+        "tags": ["attachments"]
       }
     },
     "/api/v1/attachments/{id}": {
@@ -5323,9 +4472,7 @@
           }
         ],
         "summary": "Supprimer une piece jointe visible",
-        "tags": [
-          "attachments"
-        ]
+        "tags": ["attachments"]
       }
     },
     "/api/v1/attachments/{id}/download": {
@@ -5371,9 +4518,7 @@
           }
         ],
         "summary": "Telecharger une piece jointe visible",
-        "tags": [
-          "attachments"
-        ]
+        "tags": ["attachments"]
       }
     },
     "/api/v1/attachments/{id}/preview": {
@@ -5418,9 +4563,7 @@
           }
         ],
         "summary": "Prévisualiser une pièce jointe visible",
-        "tags": [
-          "attachments"
-        ]
+        "tags": ["attachments"]
       }
     },
     "/api/v1/audit-logs": {
@@ -5470,12 +4613,7 @@
             "name": "entityType",
             "required": false,
             "schema": {
-              "enum": [
-                "ticket",
-                "user",
-                "department",
-                "sla_policy"
-              ],
+              "enum": ["ticket", "user", "department", "sla_policy"],
               "type": "string"
             }
           },
@@ -5529,18 +4667,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "meta",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "meta", "data"],
                   "type": "object"
                 }
               }
@@ -5564,9 +4695,7 @@
           }
         ],
         "summary": "Consulter les journaux d'audit",
-        "tags": [
-          "audit-logs"
-        ]
+        "tags": ["audit-logs"]
       }
     },
     "/api/v1/audit-logs/{id}": {
@@ -5601,17 +4730,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -5645,9 +4768,7 @@
           }
         ],
         "summary": "Détail d'un événement d'audit",
-        "tags": [
-          "audit-logs"
-        ]
+        "tags": ["audit-logs"]
       }
     },
     "/api/v1/auth/me": {
@@ -5672,17 +4793,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -5706,9 +4821,7 @@
           }
         ],
         "summary": "Profil de l'utilisateur connecté",
-        "tags": [
-          "auth"
-        ]
+        "tags": ["auth"]
       }
     },
     "/api/v1/categories": {
@@ -5737,17 +4850,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -5781,9 +4888,7 @@
           }
         ],
         "summary": "Liste de toutes les catégories",
-        "tags": [
-          "categories"
-        ]
+        "tags": ["categories"]
       },
       "post": {
         "description": "Crée une nouvelle catégorie de ticket. Le nom doit être unique.\n\n**Rôles autorisés :** ADMINISTRATOR uniquement.",
@@ -5817,17 +4922,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -5891,9 +4990,7 @@
           }
         ],
         "summary": "Créer une catégorie (Admin uniquement)",
-        "tags": [
-          "categories"
-        ]
+        "tags": ["categories"]
       }
     },
     "/api/v1/categories/{id}": {
@@ -5926,17 +5023,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "message"
-                  ],
+                  "required": ["success", "statusCode", "message"],
                   "type": "object"
                 }
               }
@@ -6000,9 +5091,7 @@
           }
         ],
         "summary": "Supprimer une catégorie (Admin uniquement)",
-        "tags": [
-          "categories"
-        ]
+        "tags": ["categories"]
       },
       "get": {
         "description": "Retourne les informations d'une catégorie par son UUID.\n\n**Rôles autorisés :** Tous les utilisateurs authentifiés.",
@@ -6037,17 +5126,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -6091,9 +5174,7 @@
           }
         ],
         "summary": "Détails d'une catégorie",
-        "tags": [
-          "categories"
-        ]
+        "tags": ["categories"]
       },
       "patch": {
         "description": "Met à jour les informations d'une catégorie.\n\n**Rôles autorisés :** ADMINISTRATOR uniquement.",
@@ -6137,17 +5218,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -6221,9 +5296,7 @@
           }
         ],
         "summary": "Modifier une catégorie (Admin uniquement)",
-        "tags": [
-          "categories"
-        ]
+        "tags": ["categories"]
       }
     },
     "/api/v1/comments/{id}": {
@@ -6292,9 +5365,7 @@
           }
         ],
         "summary": "Supprimer un commentaire",
-        "tags": [
-          "comments"
-        ]
+        "tags": ["comments"]
       },
       "patch": {
         "description": "Modifie le contenu d'un commentaire existant. Seul l'auteur du commentaire ou un ADMINISTRATOR/SUPERVISOR peut le modifier.\n\n**Rôles autorisés :** auteur du commentaire, ADMINISTRATOR, SUPERVISOR",
@@ -6338,17 +5409,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -6412,9 +5477,7 @@
           }
         ],
         "summary": "Modifier un commentaire",
-        "tags": [
-          "comments"
-        ]
+        "tags": ["comments"]
       }
     },
     "/api/v1/dashboard/agent-performance": {
@@ -6471,9 +5534,7 @@
           }
         ],
         "summary": "Performance des agents",
-        "tags": [
-          "dashboard"
-        ]
+        "tags": ["dashboard"]
       }
     },
     "/api/v1/dashboard/departments": {
@@ -6520,17 +5581,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -6574,9 +5629,7 @@
           }
         ],
         "summary": "Performance par département",
-        "tags": [
-          "dashboard"
-        ]
+        "tags": ["dashboard"]
       }
     },
     "/api/v1/dashboard/my-activity": {
@@ -6612,9 +5665,7 @@
           }
         ],
         "summary": "Mon activité",
-        "tags": [
-          "dashboard"
-        ]
+        "tags": ["dashboard"]
       }
     },
     "/api/v1/dashboard/overview": {
@@ -6661,17 +5712,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -6715,9 +5760,7 @@
           }
         ],
         "summary": "KPIs globaux de la plateforme",
-        "tags": [
-          "dashboard"
-        ]
+        "tags": ["dashboard"]
       }
     },
     "/api/v1/dashboard/public-support": {
@@ -6753,9 +5796,7 @@
           }
         ],
         "summary": "Statistiques du support public",
-        "tags": [
-          "dashboard"
-        ]
+        "tags": ["dashboard"]
       }
     },
     "/api/v1/dashboard/resolution-time": {
@@ -6789,11 +5830,7 @@
             "name": "groupBy",
             "required": false,
             "schema": {
-              "enum": [
-                "day",
-                "week",
-                "month"
-              ],
+              "enum": ["day", "week", "month"],
               "type": "string"
             }
           },
@@ -6812,12 +5849,7 @@
             "name": "priority",
             "required": false,
             "schema": {
-              "enum": [
-                "CRITICAL",
-                "HIGH",
-                "MEDIUM",
-                "LOW"
-              ],
+              "enum": ["CRITICAL", "HIGH", "MEDIUM", "LOW"],
               "type": "string"
             }
           }
@@ -6840,17 +5872,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -6894,9 +5920,7 @@
           }
         ],
         "summary": "Temps moyen de résolution",
-        "tags": [
-          "dashboard"
-        ]
+        "tags": ["dashboard"]
       }
     },
     "/api/v1/dashboard/sla-compliance": {
@@ -6939,12 +5963,7 @@
             "name": "priority",
             "required": false,
             "schema": {
-              "enum": [
-                "CRITICAL",
-                "HIGH",
-                "MEDIUM",
-                "LOW"
-              ],
+              "enum": ["CRITICAL", "HIGH", "MEDIUM", "LOW"],
               "type": "string"
             }
           },
@@ -6976,17 +5995,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -7030,9 +6043,7 @@
           }
         ],
         "summary": "Conformité SLA détaillée",
-        "tags": [
-          "dashboard"
-        ]
+        "tags": ["dashboard"]
       }
     },
     "/api/v1/dashboard/tickets-by-priority": {
@@ -7066,11 +6077,7 @@
             "name": "status",
             "required": false,
             "schema": {
-              "enum": [
-                "OPEN",
-                "RESOLVED",
-                "ALL"
-              ],
+              "enum": ["OPEN", "RESOLVED", "ALL"],
               "type": "string"
             }
           }
@@ -7093,17 +6100,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -7147,9 +6148,7 @@
           }
         ],
         "summary": "Tickets par priorité avec breaches SLA",
-        "tags": [
-          "dashboard"
-        ]
+        "tags": ["dashboard"]
       }
     },
     "/api/v1/dashboard/tickets-by-status": {
@@ -7206,17 +6205,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -7260,9 +6253,7 @@
           }
         ],
         "summary": "Tickets par statut avec âge moyen",
-        "tags": [
-          "dashboard"
-        ]
+        "tags": ["dashboard"]
       }
     },
     "/api/v1/dashboard/workload": {
@@ -7298,17 +6289,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -7352,9 +6337,7 @@
           }
         ],
         "summary": "Charge des agents + tickets non assignés",
-        "tags": [
-          "dashboard"
-        ]
+        "tags": ["dashboard"]
       }
     },
     "/api/v1/departments": {
@@ -7383,17 +6366,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -7437,9 +6414,7 @@
           }
         ],
         "summary": "Liste des départements (outil interne)",
-        "tags": [
-          "departments"
-        ]
+        "tags": ["departments"]
       },
       "post": {
         "description": "Crée un nouveau département.\n\nLe nom doit être unique.\n\n**Rôles autorisés :** ADMINISTRATOR uniquement",
@@ -7473,17 +6448,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -7557,9 +6526,7 @@
           }
         ],
         "summary": "Créer un département (Admin uniquement)",
-        "tags": [
-          "departments"
-        ]
+        "tags": ["departments"]
       }
     },
     "/api/v1/departments/{id}": {
@@ -7648,9 +6615,7 @@
           }
         ],
         "summary": "Supprimer un département (Admin uniquement, soft delete)",
-        "tags": [
-          "departments"
-        ]
+        "tags": ["departments"]
       },
       "get": {
         "description": "Retourne un département par son UUID.\n\n**Rôles autorisés :** Tous les rôles authentifiés",
@@ -7685,17 +6650,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -7749,9 +6708,7 @@
           }
         ],
         "summary": "Détails d'un département",
-        "tags": [
-          "departments"
-        ]
+        "tags": ["departments"]
       },
       "patch": {
         "description": "Met à jour le nom et/ou la description d'un département.\n\n**Rôles autorisés :** ADMINISTRATOR uniquement",
@@ -7795,17 +6752,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -7889,9 +6840,7 @@
           }
         ],
         "summary": "Modifier un département (Admin uniquement)",
-        "tags": [
-          "departments"
-        ]
+        "tags": ["departments"]
       }
     },
     "/api/v1/external-deliveries": {
@@ -7914,15 +6863,7 @@
             "name": "channel",
             "required": false,
             "schema": {
-              "enum": [
-                "INTERNAL",
-                "WEB_PORTAL",
-                "WIDGET",
-                "WORDPRESS",
-                "EMAIL",
-                "WHATSAPP",
-                "API"
-              ],
+              "enum": ["INTERNAL", "WEB_PORTAL", "WIDGET", "WORDPRESS", "EMAIL", "WHATSAPP", "API"],
               "type": "string"
             }
           },
@@ -7932,13 +6873,7 @@
             "name": "status",
             "required": false,
             "schema": {
-              "enum": [
-                "PENDING",
-                "PROCESSING",
-                "DELIVERED",
-                "FAILED",
-                "DELIVERY_UNKNOWN"
-              ],
+              "enum": ["PENDING", "PROCESSING", "DELIVERED", "FAILED", "DELIVERY_UNKNOWN"],
               "type": "string"
             }
           },
@@ -7990,18 +6925,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "meta",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "meta", "data"],
                   "type": "object"
                 }
               }
@@ -8045,9 +6973,7 @@
           }
         ],
         "summary": "Liste paginée des livraisons externes",
-        "tags": [
-          "external-deliveries"
-        ]
+        "tags": ["external-deliveries"]
       }
     },
     "/api/v1/external-deliveries/{id}": {
@@ -8082,17 +7008,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -8146,9 +7066,7 @@
           }
         ],
         "summary": "Consulter une livraison externe",
-        "tags": [
-          "external-deliveries"
-        ]
+        "tags": ["external-deliveries"]
       }
     },
     "/api/v1/external-requesters": {
@@ -8180,10 +7098,7 @@
             "name": "anonymized",
             "required": false,
             "schema": {
-              "enum": [
-                "true",
-                "false"
-              ],
+              "enum": ["true", "false"],
               "type": "string"
             }
           },
@@ -8235,18 +7150,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "meta",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "meta", "data"],
                   "type": "object"
                 }
               }
@@ -8290,9 +7198,7 @@
           }
         ],
         "summary": "Liste paginée des demandeurs publics",
-        "tags": [
-          "external-requesters"
-        ]
+        "tags": ["external-requesters"]
       }
     },
     "/api/v1/external-requesters/{id}": {
@@ -8327,17 +7233,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -8391,9 +7291,7 @@
           }
         ],
         "summary": "Consulter un demandeur public",
-        "tags": [
-          "external-requesters"
-        ]
+        "tags": ["external-requesters"]
       }
     },
     "/api/v1/external-requesters/{id}/anonymize": {
@@ -8437,17 +7335,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -8501,9 +7393,7 @@
           }
         ],
         "summary": "Anonymiser un demandeur public",
-        "tags": [
-          "external-requesters"
-        ]
+        "tags": ["external-requesters"]
       }
     },
     "/api/v1/external-requesters/{id}/merge": {
@@ -8557,17 +7447,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -8631,9 +7515,7 @@
           }
         ],
         "summary": "Fusionner un demandeur public vers un profil cible",
-        "tags": [
-          "external-requesters"
-        ]
+        "tags": ["external-requesters"]
       }
     },
     "/api/v1/external-requesters/{id}/merge/preview": {
@@ -8668,17 +7550,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -8732,9 +7608,7 @@
           }
         ],
         "summary": "Aperçu d’une fusion de profils demandeur",
-        "tags": [
-          "external-requesters"
-        ]
+        "tags": ["external-requesters"]
       }
     },
     "/api/v1/health": {
@@ -8764,9 +7638,7 @@
           }
         },
         "summary": "Liveness check — le processus est-il vivant ?",
-        "tags": [
-          "health"
-        ]
+        "tags": ["health"]
       }
     },
     "/api/v1/health/ready": {
@@ -8796,9 +7668,7 @@
           }
         },
         "summary": "Readiness check — les dépendances sont-elles connectées ?",
-        "tags": [
-          "health"
-        ]
+        "tags": ["health"]
       }
     },
     "/api/v1/internal-notes/{id}": {
@@ -8867,9 +7737,7 @@
           }
         ],
         "summary": "Supprimer une note interne",
-        "tags": [
-          "internal-notes"
-        ]
+        "tags": ["internal-notes"]
       },
       "patch": {
         "description": "Modifie le contenu d'une note interne. Seul l'auteur ou un ADMINISTRATOR/SUPERVISOR peut la modifier. Les FIELD_TECHNICIAN ne sont pas autorisés.\n\n**Rôles autorisés :** auteur de la note, ADMINISTRATOR, SUPERVISOR",
@@ -8910,17 +7778,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "message"
-                  ],
+                  "required": ["success", "statusCode", "message"],
                   "type": "object"
                 }
               }
@@ -8984,9 +7846,7 @@
           }
         ],
         "summary": "Modifier une note interne",
-        "tags": [
-          "internal-notes"
-        ]
+        "tags": ["internal-notes"]
       }
     },
     "/api/v1/metrics": {
@@ -9016,9 +7876,7 @@
           }
         },
         "summary": "Métriques Prometheus (format OpenMetrics)",
-        "tags": [
-          "metrics"
-        ]
+        "tags": ["metrics"]
       }
     },
     "/api/v1/notifications": {
@@ -9068,10 +7926,7 @@
             "required": false,
             "schema": {
               "default": "desc",
-              "enum": [
-                "asc",
-                "desc"
-              ],
+              "enum": ["asc", "desc"],
               "type": "string"
             }
           }
@@ -9100,18 +7955,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "meta",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "meta", "data"],
                   "type": "object"
                 }
               }
@@ -9145,9 +7993,7 @@
           }
         ],
         "summary": "Notifications de l'utilisateur connecté",
-        "tags": [
-          "notifications"
-        ]
+        "tags": ["notifications"]
       }
     },
     "/api/v1/notifications/{id}/read": {
@@ -9180,17 +8026,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "message"
-                  ],
+                  "required": ["success", "statusCode", "message"],
                   "type": "object"
                 }
               }
@@ -9234,9 +8074,7 @@
           }
         ],
         "summary": "Marquer une notification comme lue",
-        "tags": [
-          "notifications"
-        ]
+        "tags": ["notifications"]
       }
     },
     "/api/v1/notifications/read-all": {
@@ -9259,17 +8097,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "message"
-                  ],
+                  "required": ["success", "statusCode", "message"],
                   "type": "object"
                 }
               }
@@ -9303,9 +8135,7 @@
           }
         ],
         "summary": "Marquer toutes les notifications comme lues",
-        "tags": [
-          "notifications"
-        ]
+        "tags": ["notifications"]
       }
     },
     "/api/v1/notifications/unread": {
@@ -9334,17 +8164,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -9378,9 +8202,7 @@
           }
         ],
         "summary": "Notifications non lues",
-        "tags": [
-          "notifications"
-        ]
+        "tags": ["notifications"]
       }
     },
     "/api/v1/public-support/catalog": {
@@ -9415,9 +8237,7 @@
           }
         ],
         "summary": "Catalogue public autorisé pour cette intégration",
-        "tags": [
-          "Support public - demandes"
-        ],
+        "tags": ["Support public - demandes"],
         "x-api-audience": "public-support"
       }
     },
@@ -9470,9 +8290,7 @@
         },
         "security": [],
         "summary": "Charger la configuration publique bornée d'une intégration",
-        "tags": [
-          "Support public - configuration"
-        ],
+        "tags": ["Support public - configuration"],
         "x-api-audience": "public-support"
       }
     },
@@ -9528,9 +8346,7 @@
           }
         ],
         "summary": "Démarrer une conversation de support",
-        "tags": [
-          "Support public - demandes"
-        ],
+        "tags": ["Support public - demandes"],
         "x-api-audience": "public-support"
       }
     },
@@ -9575,9 +8391,7 @@
           }
         ],
         "summary": "Lister les fichiers de la conversation",
-        "tags": [
-          "Support public - pièces jointes pré-ticket"
-        ],
+        "tags": ["Support public - pièces jointes pré-ticket"],
         "x-api-audience": "public-support"
       },
       "post": {
@@ -9619,9 +8433,7 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "file"
-                ],
+                "required": ["file"],
                 "type": "object"
               }
             }
@@ -9656,9 +8468,7 @@
           }
         ],
         "summary": "Déposer un fichier avant création du ticket",
-        "tags": [
-          "Support public - pièces jointes pré-ticket"
-        ],
+        "tags": ["Support public - pièces jointes pré-ticket"],
         "x-api-audience": "public-support"
       }
     },
@@ -9712,9 +8522,7 @@
           }
         ],
         "summary": "Télécharger un fichier pré-ticket sain",
-        "tags": [
-          "Support public - pièces jointes pré-ticket"
-        ],
+        "tags": ["Support public - pièces jointes pré-ticket"],
         "x-api-audience": "public-support"
       }
     },
@@ -9767,9 +8575,7 @@
           }
         ],
         "summary": "Consulter l'état du scan",
-        "tags": [
-          "Support public - pièces jointes pré-ticket"
-        ],
+        "tags": ["Support public - pièces jointes pré-ticket"],
         "x-api-audience": "public-support"
       }
     },
@@ -9814,9 +8620,7 @@
           }
         ],
         "summary": "Reprendre une conversation ou son brouillon",
-        "tags": [
-          "Support public - demandes"
-        ],
+        "tags": ["Support public - demandes"],
         "x-api-audience": "public-support"
       }
     },
@@ -9871,17 +8675,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -9925,9 +8723,7 @@
           }
         ],
         "summary": "Envoyer un message au bot de la conversation",
-        "tags": [
-          "Support public - bot"
-        ],
+        "tags": ["Support public - bot"],
         "x-api-audience": "public-support"
       }
     },
@@ -9991,9 +8787,7 @@
           }
         ],
         "summary": "Confirmer et créer atomiquement le ticket",
-        "tags": [
-          "Support public - demandes"
-        ],
+        "tags": ["Support public - demandes"],
         "x-api-audience": "public-support"
       }
     },
@@ -10056,9 +8850,7 @@
           }
         ],
         "summary": "Enregistrer le brouillon qualifié",
-        "tags": [
-          "Support public - demandes"
-        ],
+        "tags": ["Support public - demandes"],
         "x-api-audience": "public-support"
       }
     },
@@ -10122,9 +8914,7 @@
           }
         ],
         "summary": "Demander explicitement un transfert humain",
-        "tags": [
-          "Support public - demandes"
-        ],
+        "tags": ["Support public - demandes"],
         "x-api-audience": "public-support"
       }
     },
@@ -10160,9 +8950,7 @@
           }
         ],
         "summary": "Échanger une assertion signée contre une session publique",
-        "tags": [
-          "Support public - identité"
-        ],
+        "tags": ["Support public - identité"],
         "x-api-audience": "public-support"
       }
     },
@@ -10211,9 +8999,7 @@
         },
         "security": [],
         "summary": "Vérifier le code et ouvrir une session publique",
-        "tags": [
-          "Support public - identité"
-        ],
+        "tags": ["Support public - identité"],
         "x-api-audience": "public-support"
       }
     },
@@ -10255,9 +9041,7 @@
         },
         "security": [],
         "summary": "Demander un code de vérification email",
-        "tags": [
-          "Support public - identité"
-        ],
+        "tags": ["Support public - identité"],
         "x-api-audience": "public-support"
       }
     },
@@ -10292,17 +9076,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -10336,9 +9114,7 @@
           }
         ],
         "summary": "Consulter un article public par slug",
-        "tags": [
-          "Support public - connaissance"
-        ],
+        "tags": ["Support public - connaissance"],
         "x-api-audience": "public-support"
       }
     },
@@ -10388,17 +9164,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -10422,9 +9192,7 @@
           }
         ],
         "summary": "Rechercher des articles publics de cette intégration",
-        "tags": [
-          "Support public - connaissance"
-        ],
+        "tags": ["Support public - connaissance"],
         "x-api-audience": "public-support"
       }
     },
@@ -10460,9 +9228,7 @@
           }
         ],
         "summary": "Consulter le profil public conservé",
-        "tags": [
-          "Support public - demandes"
-        ],
+        "tags": ["Support public - demandes"],
         "x-api-audience": "public-support"
       },
       "patch": {
@@ -10516,9 +9282,7 @@
           }
         ],
         "summary": "Mettre à jour le nom et la langue du profil public",
-        "tags": [
-          "Support public - demandes"
-        ],
+        "tags": ["Support public - demandes"],
         "x-api-audience": "public-support"
       }
     },
@@ -10560,9 +9324,7 @@
         },
         "security": [],
         "summary": "Consommer une fois un code de transfert",
-        "tags": [
-          "Support public - identité"
-        ],
+        "tags": ["Support public - identité"],
         "x-api-audience": "public-support"
       }
     },
@@ -10598,9 +9360,7 @@
           }
         ],
         "summary": "Créer un code de transfert iframe vers pleine page",
-        "tags": [
-          "Support public - identité"
-        ],
+        "tags": ["Support public - identité"],
         "x-api-audience": "public-support"
       }
     },
@@ -10636,9 +9396,7 @@
           }
         ],
         "summary": "Lister les appareils de confiance du demandeur",
-        "tags": [
-          "Support public - appareils"
-        ],
+        "tags": ["Support public - appareils"],
         "x-api-audience": "public-support"
       }
     },
@@ -10683,9 +9441,7 @@
           }
         ],
         "summary": "Révoquer un appareil de confiance précis",
-        "tags": [
-          "Support public - appareils"
-        ],
+        "tags": ["Support public - appareils"],
         "x-api-audience": "public-support"
       }
     },
@@ -10739,9 +9495,7 @@
           }
         ],
         "summary": "Restaurer et faire tourner la confiance de l’appareil",
-        "tags": [
-          "Support public - identité"
-        ],
+        "tags": ["Support public - identité"],
         "x-api-audience": "public-support"
       }
     },
@@ -10777,9 +9531,7 @@
           }
         ],
         "summary": "Révoquer l’appareil courant",
-        "tags": [
-          "Support public - identité"
-        ],
+        "tags": ["Support public - identité"],
         "x-api-audience": "public-support"
       }
     },
@@ -10837,9 +9589,7 @@
           }
         ],
         "summary": "Lister uniquement les demandes du contact courant",
-        "tags": [
-          "Support public - demandes"
-        ],
+        "tags": ["Support public - demandes"],
         "x-api-audience": "public-support"
       }
     },
@@ -10884,9 +9634,7 @@
           }
         ],
         "summary": "Consulter une demande publique",
-        "tags": [
-          "Support public - demandes"
-        ],
+        "tags": ["Support public - demandes"],
         "x-api-audience": "public-support"
       }
     },
@@ -10950,9 +9698,7 @@
           }
         ],
         "summary": "Ajouter un commentaire demandeur",
-        "tags": [
-          "Support public - demandes"
-        ],
+        "tags": ["Support public - demandes"],
         "x-api-audience": "public-support"
       }
     },
@@ -10997,9 +9743,7 @@
           }
         ],
         "summary": "Consulter la timeline publique filtrée",
-        "tags": [
-          "Support public - demandes"
-        ],
+        "tags": ["Support public - demandes"],
         "x-api-audience": "public-support"
       }
     },
@@ -11044,9 +9788,7 @@
           }
         ],
         "summary": "Lister les pièces jointes et leur état de scan",
-        "tags": [
-          "Support public - pièces jointes"
-        ],
+        "tags": ["Support public - pièces jointes"],
         "x-api-audience": "public-support"
       },
       "post": {
@@ -11088,9 +9830,7 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "file"
-                ],
+                "required": ["file"],
                 "type": "object"
               }
             }
@@ -11125,9 +9865,7 @@
           }
         ],
         "summary": "Déposer une pièce jointe en quarantaine",
-        "tags": [
-          "Support public - pièces jointes"
-        ],
+        "tags": ["Support public - pièces jointes"],
         "x-api-audience": "public-support"
       }
     },
@@ -11181,9 +9919,7 @@
           }
         ],
         "summary": "Télécharger uniquement une pièce jointe déclarée saine",
-        "tags": [
-          "Support public - pièces jointes"
-        ],
+        "tags": ["Support public - pièces jointes"],
         "x-api-audience": "public-support"
       }
     },
@@ -11236,9 +9972,7 @@
           }
         ],
         "summary": "Consulter l'état d'analyse d'une pièce jointe",
-        "tags": [
-          "Support public - pièces jointes"
-        ],
+        "tags": ["Support public - pièces jointes"],
         "x-api-audience": "public-support"
       }
     },
@@ -11298,9 +10032,7 @@
           }
         },
         "summary": "Soumettre une note de satisfaction",
-        "tags": [
-          "Support public - satisfaction"
-        ]
+        "tags": ["Support public - satisfaction"]
       }
     },
     "/api/v1/reports": {
@@ -11348,10 +10080,7 @@
             "required": false,
             "schema": {
               "default": "desc",
-              "enum": [
-                "asc",
-                "desc"
-              ],
+              "enum": ["asc", "desc"],
               "type": "string"
             }
           }
@@ -11380,18 +10109,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "meta",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "meta", "data"],
                   "type": "object"
                 }
               }
@@ -11425,9 +10147,7 @@
           }
         ],
         "summary": "Lister les rapports générés",
-        "tags": [
-          "reports"
-        ]
+        "tags": ["reports"]
       }
     },
     "/api/v1/reports/{id}": {
@@ -11462,17 +10182,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -11506,9 +10220,7 @@
           }
         ],
         "summary": "Consulter l'état d'un rapport généré",
-        "tags": [
-          "reports"
-        ]
+        "tags": ["reports"]
       }
     },
     "/api/v1/reports/{id}/download": {
@@ -11588,9 +10300,7 @@
           }
         ],
         "summary": "Télécharger le PDF d un rapport généré",
-        "tags": [
-          "reports"
-        ]
+        "tags": ["reports"]
       }
     },
     "/api/v1/reports/public/{id}/download": {
@@ -11653,9 +10363,7 @@
           }
         },
         "summary": "Télécharger un rapport depuis un lien signé et temporaire",
-        "tags": [
-          "reports"
-        ]
+        "tags": ["reports"]
       }
     },
     "/api/v1/reports/sla": {
@@ -11702,17 +10410,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -11736,9 +10438,7 @@
           }
         ],
         "summary": "Rapport SLA sur une période (synchrone — données JSON)",
-        "tags": [
-          "reports"
-        ]
+        "tags": ["reports"]
       }
     },
     "/api/v1/reports/sla/generate": {
@@ -11785,17 +10485,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -11819,9 +10513,7 @@
           }
         ],
         "summary": "Générer un rapport SLA PDF (asynchrone)",
-        "tags": [
-          "reports"
-        ]
+        "tags": ["reports"]
       }
     },
     "/api/v1/reports/ticket/{id}": {
@@ -11857,17 +10549,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -11901,9 +10587,7 @@
           }
         ],
         "summary": "Obtenir les données du rapport d un ticket (synchrone — données JSON)",
-        "tags": [
-          "reports"
-        ]
+        "tags": ["reports"]
       }
     },
     "/api/v1/reports/ticket/{id}/generate": {
@@ -11939,17 +10623,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -11973,9 +10651,7 @@
           }
         ],
         "summary": "Générer un rapport PDF détaillé pour un ticket (asynchrone)",
-        "tags": [
-          "reports"
-        ]
+        "tags": ["reports"]
       }
     },
     "/api/v1/reports/weekly/generate": {
@@ -12001,17 +10677,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -12035,9 +10705,7 @@
           }
         ],
         "summary": "Générer un rapport hebdomadaire PDF (asynchrone)",
-        "tags": [
-          "reports"
-        ]
+        "tags": ["reports"]
       }
     },
     "/api/v1/settings": {
@@ -12060,16 +10728,11 @@
                       "type": "string"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "data"
-                  ],
+                  "required": ["success", "data"],
                   "type": "object"
                 }
               }
@@ -12093,9 +10756,7 @@
           }
         ],
         "summary": "Lister tous les paramètres système globaux",
-        "tags": [
-          "Settings"
-        ]
+        "tags": ["Settings"]
       }
     },
     "/api/v1/settings/{key}": {
@@ -12131,16 +10792,11 @@
                       "type": "string"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "message"
-                  ],
+                  "required": ["success", "message"],
                   "type": "object"
                 }
               }
@@ -12164,9 +10820,7 @@
           }
         ],
         "summary": "Mettre à jour un paramètre système par sa clé",
-        "tags": [
-          "Settings"
-        ]
+        "tags": ["Settings"]
       }
     },
     "/api/v1/sla-policies": {
@@ -12195,17 +10849,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -12249,9 +10897,7 @@
           }
         ],
         "summary": "Liste des politiques SLA",
-        "tags": [
-          "sla"
-        ]
+        "tags": ["sla"]
       },
       "post": {
         "description": "Crée une politique SLA pour une combinaison catégorie+priorité unique.\n\nLes délais sont en **minutes** :\n- firstResponseMinutes : délai avant première réponse\n- resolutionMinutes : délai avant résolution\n\n**Contrainte UNIQUE** : une seule politique par catégorie/priorité.\n\n**Rôles autorisés :** ADMINISTRATOR uniquement",
@@ -12285,17 +10931,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -12369,9 +11009,7 @@
           }
         ],
         "summary": "Créer une politique SLA (Admin)",
-        "tags": [
-          "sla"
-        ]
+        "tags": ["sla"]
       }
     },
     "/api/v1/sla-policies/{id}": {
@@ -12408,17 +11046,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -12472,9 +11104,7 @@
           }
         ],
         "summary": "Détails d'une politique SLA",
-        "tags": [
-          "sla"
-        ]
+        "tags": ["sla"]
       },
       "patch": {
         "description": "Met à jour firstResponseMinutes et/ou resolutionMinutes. La catégorie et priorité ne peuvent pas être modifiées.\n\n**Rôles autorisés :** ADMINISTRATOR uniquement",
@@ -12518,17 +11148,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -12602,9 +11226,7 @@
           }
         ],
         "summary": "Modifier les délais SLA (Admin)",
-        "tags": [
-          "sla"
-        ]
+        "tags": ["sla"]
       }
     },
     "/api/v1/support-integrations": {
@@ -12639,9 +11261,7 @@
           }
         ],
         "summary": "Lister les intégrations sans exposer leurs secrets",
-        "tags": [
-          "support-integrations"
-        ]
+        "tags": ["support-integrations"]
       },
       "post": {
         "operationId": "SupportIntegrationsController_create",
@@ -12684,9 +11304,7 @@
           }
         ],
         "summary": "Créer une intégration de support en brouillon",
-        "tags": [
-          "support-integrations"
-        ]
+        "tags": ["support-integrations"]
       }
     },
     "/api/v1/support-integrations/{id}": {
@@ -12730,9 +11348,7 @@
           }
         ],
         "summary": "Consulter une intégration",
-        "tags": [
-          "support-integrations"
-        ]
+        "tags": ["support-integrations"]
       },
       "patch": {
         "operationId": "SupportIntegrationsController_update",
@@ -12784,9 +11400,7 @@
           }
         ],
         "summary": "Modifier politiques, origines ou statut",
-        "tags": [
-          "support-integrations"
-        ]
+        "tags": ["support-integrations"]
       }
     },
     "/api/v1/support-integrations/{id}/credentials": {
@@ -12830,9 +11444,7 @@
           }
         ],
         "summary": "Lister les versions de secret sans exposer leur valeur chiffrée",
-        "tags": [
-          "support-integrations"
-        ]
+        "tags": ["support-integrations"]
       }
     },
     "/api/v1/support-integrations/{id}/credentials/{credentialId}/revoke": {
@@ -12877,9 +11489,7 @@
           }
         ],
         "summary": "Révoquer une version de secret",
-        "tags": [
-          "support-integrations"
-        ]
+        "tags": ["support-integrations"]
       }
     },
     "/api/v1/support-integrations/{id}/credentials/rotate": {
@@ -12933,9 +11543,7 @@
           }
         ],
         "summary": "Chiffrer une nouvelle version de secret sans la retourner",
-        "tags": [
-          "support-integrations"
-        ]
+        "tags": ["support-integrations"]
       }
     },
     "/api/v1/support-integrations/{id}/devices": {
@@ -13000,9 +11608,7 @@
           }
         ],
         "summary": "Lister les appareils de confiance sans exposer leurs jetons",
-        "tags": [
-          "support-integrations"
-        ]
+        "tags": ["support-integrations"]
       }
     },
     "/api/v1/support-integrations/{id}/devices/{deviceId}/revoke": {
@@ -13047,9 +11653,7 @@
           }
         ],
         "summary": "Révoquer un appareil de confiance",
-        "tags": [
-          "support-integrations"
-        ]
+        "tags": ["support-integrations"]
       }
     },
     "/api/v1/support-knowledge": {
@@ -13062,11 +11666,7 @@
             "name": "status",
             "required": false,
             "schema": {
-              "enum": [
-                "DRAFT",
-                "PUBLISHED",
-                "ARCHIVED"
-              ],
+              "enum": ["DRAFT", "PUBLISHED", "ARCHIVED"],
               "type": "string"
             }
           },
@@ -13132,18 +11732,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "meta",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "meta", "data"],
                   "type": "object"
                 }
               }
@@ -13187,9 +11780,7 @@
           }
         ],
         "summary": "Liste paginée des articles de connaissance",
-        "tags": [
-          "support-knowledge"
-        ]
+        "tags": ["support-knowledge"]
       },
       "post": {
         "description": "Crée l’article en brouillon avec sa première version et ses intégrations autorisées. Écriture ADMINISTRATOR.",
@@ -13223,17 +11814,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -13277,9 +11862,7 @@
           }
         ],
         "summary": "Créer un article de connaissance",
-        "tags": [
-          "support-knowledge"
-        ]
+        "tags": ["support-knowledge"]
       }
     },
     "/api/v1/support-knowledge/{id}": {
@@ -13314,17 +11897,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -13378,9 +11955,7 @@
           }
         ],
         "summary": "Consulter un article avec son historique",
-        "tags": [
-          "support-knowledge"
-        ]
+        "tags": ["support-knowledge"]
       },
       "patch": {
         "description": "Chaque changement de contenu crée une nouvelle version ; la publication et l’archivage sont tracés. Écriture ADMINISTRATOR.",
@@ -13423,17 +11998,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -13487,9 +12056,7 @@
           }
         ],
         "summary": "Modifier, publier ou archiver un article",
-        "tags": [
-          "support-knowledge"
-        ]
+        "tags": ["support-knowledge"]
       }
     },
     "/api/v1/tickets": {
@@ -13527,14 +12094,7 @@
             "required": false,
             "schema": {
               "default": "createdAt",
-              "enum": [
-                "createdAt",
-                "updatedAt",
-                "priority",
-                "severity",
-                "status",
-                "ticketNumber"
-              ],
+              "enum": ["createdAt", "updatedAt", "priority", "severity", "status", "ticketNumber"],
               "type": "string"
             }
           },
@@ -13545,10 +12105,7 @@
             "required": false,
             "schema": {
               "default": "desc",
-              "enum": [
-                "asc",
-                "desc"
-              ],
+              "enum": ["asc", "desc"],
               "type": "string"
             }
           },
@@ -13578,12 +12135,7 @@
             "name": "priority",
             "required": false,
             "schema": {
-              "enum": [
-                "LOW",
-                "MEDIUM",
-                "HIGH",
-                "CRITICAL"
-              ],
+              "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"],
               "type": "string"
             }
           },
@@ -13593,12 +12145,7 @@
             "name": "severity",
             "required": false,
             "schema": {
-              "enum": [
-                "S1",
-                "S2",
-                "S3",
-                "S4"
-              ],
+              "enum": ["S1", "S2", "S3", "S4"],
               "type": "string"
             }
           },
@@ -13697,18 +12244,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "meta",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "meta", "data"],
                   "type": "object"
                 }
               }
@@ -13732,9 +12272,7 @@
           }
         ],
         "summary": "Rechercher des tickets",
-        "tags": [
-          "tickets"
-        ]
+        "tags": ["tickets"]
       },
       "post": {
         "description": "Crée un nouveau ticket. Le SLA est calculé automatiquement selon la catégorie et la priorité.\n\n**Rôles autorisés :** Tous les rôles authentifiés",
@@ -13778,17 +12316,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -13812,9 +12344,7 @@
           }
         ],
         "summary": "Créer un ticket d'incident",
-        "tags": [
-          "tickets"
-        ]
+        "tags": ["tickets"]
       }
     },
     "/api/v1/tickets/{id}": {
@@ -13863,9 +12393,7 @@
           }
         ],
         "summary": "Supprimer un ticket (soft delete, Admin uniquement)",
-        "tags": [
-          "tickets"
-        ]
+        "tags": ["tickets"]
       },
       "get": {
         "description": "Retourne un ticket par son UUID. Avec ?detail=full, ajoute l'historique pagine des assignations et les compteurs de relations.",
@@ -13924,17 +12452,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -13968,9 +12490,7 @@
           }
         ],
         "summary": "Détails d'un ticket",
-        "tags": [
-          "tickets"
-        ]
+        "tags": ["tickets"]
       },
       "patch": {
         "description": "Met à jour les champs modifiables d'un ticket. Les permissions d'édition sont validées dynamiquement selon l'ownership du champ.",
@@ -14014,17 +12534,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -14078,9 +12592,7 @@
           }
         ],
         "summary": "Mettre à jour un ticket",
-        "tags": [
-          "tickets"
-        ]
+        "tags": ["tickets"]
       }
     },
     "/api/v1/tickets/{id}/assign": {
@@ -14135,17 +12647,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -14189,9 +12695,7 @@
           }
         ],
         "summary": "Assigner un ticket à un agent",
-        "tags": [
-          "tickets"
-        ]
+        "tags": ["tickets"]
       }
     },
     "/api/v1/tickets/{id}/close": {
@@ -14227,17 +12731,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -14281,9 +12779,7 @@
           }
         ],
         "summary": "Clôturer un ticket résolu",
-        "tags": [
-          "tickets"
-        ]
+        "tags": ["tickets"]
       }
     },
     "/api/v1/tickets/{id}/escalate": {
@@ -14338,17 +12834,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -14392,9 +12882,7 @@
           }
         ],
         "summary": "Escalader un ticket",
-        "tags": [
-          "tickets"
-        ]
+        "tags": ["tickets"]
       }
     },
     "/api/v1/tickets/{id}/history": {
@@ -14433,17 +12921,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -14477,9 +12959,7 @@
           }
         ],
         "summary": "Historique complet d'un ticket",
-        "tags": [
-          "tickets"
-        ]
+        "tags": ["tickets"]
       }
     },
     "/api/v1/tickets/{id}/pending-customer": {
@@ -14525,17 +13005,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -14579,9 +13053,7 @@
           }
         ],
         "summary": "Mettre en attente du client (IN_PROGRESS -> PENDING_CUSTOMER)",
-        "tags": [
-          "tickets"
-        ]
+        "tags": ["tickets"]
       }
     },
     "/api/v1/tickets/{id}/pending-third-party": {
@@ -14627,17 +13099,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -14681,9 +13147,7 @@
           }
         ],
         "summary": "Mettre en attente tiers (IN_PROGRESS -> PENDING_THIRD_PARTY)",
-        "tags": [
-          "tickets"
-        ]
+        "tags": ["tickets"]
       }
     },
     "/api/v1/tickets/{id}/reassign": {
@@ -14738,17 +13202,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -14792,9 +13250,7 @@
           }
         ],
         "summary": "Réassigner un ticket à un autre agent",
-        "tags": [
-          "tickets"
-        ]
+        "tags": ["tickets"]
       }
     },
     "/api/v1/tickets/{id}/reopen": {
@@ -14840,17 +13296,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -14894,9 +13344,7 @@
           }
         ],
         "summary": "Réouvrir un ticket clôturé",
-        "tags": [
-          "tickets"
-        ]
+        "tags": ["tickets"]
       }
     },
     "/api/v1/tickets/{id}/resolve": {
@@ -14942,17 +13390,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -14996,9 +13438,7 @@
           }
         ],
         "summary": "Marquer un ticket comme résolu",
-        "tags": [
-          "tickets"
-        ]
+        "tags": ["tickets"]
       }
     },
     "/api/v1/tickets/{id}/start": {
@@ -15034,17 +13474,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -15088,9 +13522,7 @@
           }
         ],
         "summary": "Démarrer le traitement d'un ticket",
-        "tags": [
-          "tickets"
-        ]
+        "tags": ["tickets"]
       }
     },
     "/api/v1/tickets/{ticketId}/attachments": {
@@ -15146,10 +13578,7 @@
             "required": false,
             "schema": {
               "default": "desc",
-              "enum": [
-                "asc",
-                "desc"
-              ],
+              "enum": ["asc", "desc"],
               "type": "string"
             }
           }
@@ -15178,18 +13607,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "meta",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "meta", "data"],
                   "type": "object"
                 }
               }
@@ -15213,9 +13635,7 @@
           }
         ],
         "summary": "Lister les pieces jointes visibles d'un ticket",
-        "tags": [
-          "attachments"
-        ]
+        "tags": ["attachments"]
       }
     },
     "/api/v1/tickets/{ticketId}/comments": {
@@ -15274,10 +13694,7 @@
             "name": "order",
             "required": false,
             "schema": {
-              "enum": [
-                "asc",
-                "desc"
-              ],
+              "enum": ["asc", "desc"],
               "type": "string"
             }
           }
@@ -15306,18 +13723,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "meta",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "meta", "data"],
                   "type": "object"
                 }
               }
@@ -15361,9 +13771,7 @@
           }
         ],
         "summary": "Commentaires publics d'un ticket",
-        "tags": [
-          "comments"
-        ]
+        "tags": ["comments"]
       },
       "post": {
         "description": "Ajoute un commentaire public sur un ticket. Le commentaire est visible par tous les utilisateurs.\n\n**Rôles autorisés :** tous les utilisateurs authentifiés.",
@@ -15414,17 +13822,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -15478,9 +13880,7 @@
           }
         ],
         "summary": "Ajouter un commentaire public",
-        "tags": [
-          "comments"
-        ]
+        "tags": ["comments"]
       }
     },
     "/api/v1/tickets/{ticketId}/internal-notes": {
@@ -15539,10 +13939,7 @@
             "name": "order",
             "required": false,
             "schema": {
-              "enum": [
-                "asc",
-                "desc"
-              ],
+              "enum": ["asc", "desc"],
               "type": "string"
             }
           }
@@ -15571,18 +13968,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "meta",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "meta", "data"],
                   "type": "object"
                 }
               }
@@ -15636,9 +14026,7 @@
           }
         ],
         "summary": "Notes internes d'un ticket",
-        "tags": [
-          "internal-notes"
-        ]
+        "tags": ["internal-notes"]
       },
       "post": {
         "description": "Crée une note interne sur un ticket. Les FIELD_TECHNICIAN ne peuvent pas créer de notes internes.\n\n**Rôles autorisés :** tous sauf FIELD_TECHNICIAN",
@@ -15689,17 +14077,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -15763,9 +14145,7 @@
           }
         ],
         "summary": "Ajouter une note interne",
-        "tags": [
-          "internal-notes"
-        ]
+        "tags": ["internal-notes"]
       }
     },
     "/api/v1/tickets/{ticketId}/public-reply": {
@@ -15841,9 +14221,7 @@
           }
         ],
         "summary": "Répondre au demandeur externe",
-        "tags": [
-          "comments"
-        ]
+        "tags": ["comments"]
       }
     },
     "/api/v1/tickets/{ticketId}/satisfaction-token": {
@@ -15887,9 +14265,7 @@
           }
         ],
         "summary": "Générer un lien de satisfaction",
-        "tags": [
-          "Tickets - satisfaction"
-        ]
+        "tags": ["Tickets - satisfaction"]
       }
     },
     "/api/v1/users": {
@@ -15938,10 +14314,7 @@
             "name": "order",
             "required": false,
             "schema": {
-              "enum": [
-                "asc",
-                "desc"
-              ],
+              "enum": ["asc", "desc"],
               "type": "string"
             }
           }
@@ -15970,18 +14343,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "meta",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "meta", "data"],
                   "type": "object"
                 }
               }
@@ -16025,9 +14391,7 @@
           }
         ],
         "summary": "Liste paginée des utilisateurs",
-        "tags": [
-          "users"
-        ]
+        "tags": ["users"]
       },
       "post": {
         "description": "Crée un nouveau compte utilisateur avec un mot de passe temporaire généré automatiquement.\n\nLe champ `tempPassword` est retourné **une seule fois** dans la réponse — à envoyer à l'utilisateur par email.\n\n**Rôles autorisés :** ADMINISTRATOR uniquement",
@@ -16061,17 +14425,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -16135,9 +14493,7 @@
           }
         ],
         "summary": "Créer un utilisateur",
-        "tags": [
-          "users"
-        ]
+        "tags": ["users"]
       }
     },
     "/api/v1/users/{id}": {
@@ -16161,10 +14517,7 @@
             "name": "detail",
             "required": false,
             "schema": {
-              "enum": [
-                "full",
-                "summary"
-              ],
+              "enum": ["full", "summary"],
               "type": "string"
             }
           }
@@ -16187,17 +14540,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -16251,9 +14598,7 @@
           }
         ],
         "summary": "Détails d'un utilisateur",
-        "tags": [
-          "users"
-        ]
+        "tags": ["users"]
       },
       "patch": {
         "description": "Met à jour les informations d'un utilisateur (nom, rôle, département).\n\n**Rôles autorisés :** ADMINISTRATOR, SUPERVISOR",
@@ -16297,17 +14642,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -16371,9 +14710,7 @@
           }
         ],
         "summary": "Modifier un utilisateur",
-        "tags": [
-          "users"
-        ]
+        "tags": ["users"]
       }
     },
     "/api/v1/users/{id}/activate": {
@@ -16406,17 +14743,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "message"
-                  ],
+                  "required": ["success", "statusCode", "message"],
                   "type": "object"
                 }
               }
@@ -16480,9 +14811,7 @@
           }
         ],
         "summary": "Réactiver un compte",
-        "tags": [
-          "users"
-        ]
+        "tags": ["users"]
       }
     },
     "/api/v1/users/{id}/deactivate": {
@@ -16515,17 +14844,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "message"
-                  ],
+                  "required": ["success", "statusCode", "message"],
                   "type": "object"
                 }
               }
@@ -16589,9 +14912,7 @@
           }
         ],
         "summary": "Désactiver un compte",
-        "tags": [
-          "users"
-        ]
+        "tags": ["users"]
       }
     },
     "/api/v1/users/me": {
@@ -16617,17 +14938,11 @@
                       "type": "integer"
                     },
                     "success": {
-                      "enum": [
-                        true
-                      ],
+                      "enum": [true],
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "success",
-                    "statusCode",
-                    "data"
-                  ],
+                  "required": ["success", "statusCode", "data"],
                   "type": "object"
                 }
               }
@@ -16661,9 +14976,7 @@
           }
         ],
         "summary": "Profil de l'utilisateur connecté",
-        "tags": [
-          "users"
-        ]
+        "tags": ["users"]
       }
     },
     "/api/v1/users/me/absence": {
@@ -16719,9 +15032,7 @@
           }
         ],
         "summary": "Déclarer / annuler son absence",
-        "tags": [
-          "users"
-        ]
+        "tags": ["users"]
       }
     },
     "/api/v1/users/me/availability": {
@@ -16767,9 +15078,7 @@
           }
         ],
         "summary": "Mettre en pause / reprendre (self-service)",
-        "tags": [
-          "users"
-        ]
+        "tags": ["users"]
       }
     }
   },
