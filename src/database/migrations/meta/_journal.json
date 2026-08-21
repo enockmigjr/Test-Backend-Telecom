@@ -169,6 +169,13 @@
       "when": 1787000000000,
       "tag": "0023_hardening_indexes_partial",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1787000001000,
+      "tag": "0024_pg_trgm_search_indexes",
+      "breakpoints": true
     }
   ]
 }

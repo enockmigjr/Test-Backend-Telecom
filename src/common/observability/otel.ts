@@ -18,6 +18,7 @@ import { PgInstrumentation } from '@opentelemetry/instrumentation-pg';
 import { IORedisInstrumentation } from '@opentelemetry/instrumentation-ioredis';
 import { resourceFromAttributes } from '@opentelemetry/resources';
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
+import { ParentBasedSampler, TraceIdRatioBasedSampler } from '@opentelemetry/sdk-trace-base';
 
 /**
  * Initialise le SDK OpenTelemetry pour le tracing distribué.
@@ -29,8 +30,11 @@ export function initOpenTelemetry(): NodeSDK {
   const traceExporter = new OTLPTraceExporter({
     url: process.env['OTEL_EXPORTER_OTLP_ENDPOINT'] || 'http://localhost:4318/v1/traces',
   });
+  const samplerRatio = Number(process.env['OTEL_TRACES_SAMPLER_RATIO'] ?? (process.env['NODE_ENV'] === 'production' ? '0.1' : '1'));
+  const ratio = Number.isFinite(samplerRatio) && samplerRatio >= 0 && samplerRatio <= 1 ? samplerRatio : 1;
 
   const sdk = new NodeSDK({
+    sampler: new ParentBasedSampler({ root: new TraceIdRatioBasedSampler(ratio) }),
     resource: resourceFromAttributes({
       [SemanticResourceAttributes.SERVICE_NAME]: process.env['OTEL_SERVICE_NAME'] || 'telecom-api',
       [SemanticResourceAttributes.SERVICE_VERSION]: process.env['OTEL_SERVICE_VERSION'] || '1.0.0',

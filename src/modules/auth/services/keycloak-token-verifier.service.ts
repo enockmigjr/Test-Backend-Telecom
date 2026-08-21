@@ -26,11 +26,15 @@ export class KeycloakTokenVerifierService {
     return this.keycloakJwks.publicKey(header.kid);
   }
 
-  /** Vérifie la signature RS256 du jeton et renvoie le payload décodé. */
+  /** Vérifie la signature RS256 + issuer/audience du jeton et renvoie le payload décodé. */
   async verify<T extends object>(token: string): Promise<T> {
     const publicKey = await this.publicKeyForToken(token);
+    const issuer = process.env['KEYCLOAK_ISSUER'];
     try {
-      return jwt.verify(token, publicKey, { algorithms: ['RS256'] }) as T;
+      return jwt.verify(token, publicKey, {
+        algorithms: ['RS256'],
+        ...(issuer ? { issuer } : {}),
+      }) as T;
     } catch {
       throw new UnauthorizedException('Jeton Keycloak invalide ou expiré.');
     }

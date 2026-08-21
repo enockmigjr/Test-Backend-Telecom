@@ -44,8 +44,9 @@ export class LocalStorageService implements IStorageService {
     const absoluteBase = path.resolve(this.basePath);
     const resolvedPath = path.resolve(path.join(absoluteBase, safeKey));
 
-    // S'assurer que le chemin résolu commence par le chemin de base absolu
-    if (!resolvedPath.startsWith(absoluteBase)) {
+    // S'assurer que le chemin résolu est dans le répertoire de base (avec séparateur)
+    const prefix = absoluteBase.endsWith(path.sep) ? absoluteBase : absoluteBase + path.sep;
+    if (resolvedPath !== absoluteBase && !resolvedPath.startsWith(prefix)) {
       throw new Error('Access Denied: Path Traversal Detected');
     }
     return resolvedPath;

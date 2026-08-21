@@ -60,6 +60,7 @@ export class SettingsService {
    * @param description Description fonctionnelle du paramètre.
    */
   async updateSetting(key: string, value: string, description?: string): Promise<void> {
+    this.validateSetting(key, value);
     try {
       const [existing] = await this.drizzle.db.select().from(settings).where(eq(settings.key, key)).limit(1);
 
@@ -99,11 +100,11 @@ export class SettingsService {
   async getBusinessHours(): Promise<{ start: number; end: number }> {
     const startStr = await this.getSetting('BUSINESS_HOURS_START', '8');
     const endStr = await this.getSetting('BUSINESS_HOURS_END', '18');
-
-    return {
-      start: parseInt(startStr, 10) || 8,
-      end: parseInt(endStr, 10) || 18,
-    };
+    const s = Number.parseInt(startStr, 10);
+    const e = Number.parseInt(endStr, 10);
+    const start = Number.isFinite(s) && s >= 0 && s <= 23 ? s : 8;
+    const end = Number.isFinite(e) && e > start && e <= 24 ? e : 18;
+    return { start, end };
   }
 
   /**
@@ -112,6 +113,21 @@ export class SettingsService {
   async getMaxConcurrentTickets(): Promise<number> {
     const val = await this.getSetting('MAX_CONCURRENT_TICKETS', '5');
     return parseInt(val, 10) || 5;
+  }
+
+  private validateSetting(key: string, value: string): void {
+    if (key === 'BUSINESS_HOURS_START' || key === 'BUSINESS_HOURS_END') {
+      const n = Number.parseInt(value, 10);
+      if (!Number.isFinite(n) || n < 0 || n > 24) throw new Error(`${key} doit être entre 0 et 24`);
+    }
+    if (key === 'BUSINESS_DAYS') {
+      const days = value.split(',').map((d) => Number.parseInt(d.trim(), 10));
+      if (days.some((d) => !Number.isFinite(d) || d < 0 || d > 6)) throw new Error('BUSINESS_DAYS doit contenir 0-6');
+    }
+    if (key === 'MAX_CONCURRENT_TICKETS') {
+      const n = Number.parseInt(value, 10);
+      if (!Number.isFinite(n) || n < 1 || n > 100) throw new Error('MAX_CONCURRENT_TICKETS doit être entre 1 et 100');
+    }
   }
 
   /**

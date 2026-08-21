@@ -46,7 +46,11 @@ export class DatabaseConfigService {
    */
   /** Getter `password` : Récupère la valeur de configuration correspondante. */
   get password(): string {
-    return process.env['DATABASE_PASSWORD'] || 'telecom_secret';
+    const pwd = process.env['DATABASE_PASSWORD'];
+    if (process.env['NODE_ENV'] === 'production' && (!pwd || pwd === 'telecom_secret')) {
+      throw new Error('DATABASE_PASSWORD doit être défini en production (pas de fallback telecom_secret).');
+    }
+    return pwd || 'telecom_secret';
   }
 
   /**

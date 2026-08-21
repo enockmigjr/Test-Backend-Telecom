@@ -60,12 +60,14 @@ export class NotificationsService {
    *
    * @param userId UUID de l'utilisateur.
    */
-  async getUnread(userId: string) {
+  async getUnread(userId: string, limit = 50) {
+    const capped = Math.min(Math.max(Number(limit) || 50, 1), 100);
     return this.drizzle.db
       .select()
       .from(notifications)
       .where(and(eq(notifications.userId, userId), eq(notifications.isRead, false)))
-      .orderBy(sql`${notifications.createdAt} desc`);
+      .orderBy(sql`${notifications.createdAt} desc`)
+      .limit(capped);
   }
 
   /**
@@ -108,13 +110,12 @@ export class NotificationsService {
    * @throws NotFoundException si la notification n'existe pas ou n'appartient pas à l'utilisateur.
    */
   async markAsRead(id: string, userId: string) {
-    const [notif] = await this.drizzle.db.select().from(notifications).where(eq(notifications.id, id)).limit(1);
-    if (!notif) throw new NotFoundException('Notification non trouvée.');
-    if (notif.userId !== userId) throw new NotFoundException('Notification non trouvée.');
-    await this.drizzle.db
+    const [updated] = await this.drizzle.db
       .update(notifications)
       .set({ isRead: true, readAt: new Date() })
-      .where(eq(notifications.id, id));
+      .where(and(eq(notifications.id, id), eq(notifications.userId, userId), eq(notifications.isRead, false)))
+      .returning({ id: notifications.id });
+    if (!updated) throw new NotFoundException('Notification non trouvée ou déjà lue.');
     return { message: 'Notification marquée comme lue.' };
   }
 

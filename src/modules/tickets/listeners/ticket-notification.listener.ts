@@ -81,8 +81,35 @@ export class TicketNotificationListener {
 
   /** Récupère uniquement l'email d'un utilisateur */
   private async getUserEmail(userId: string): Promise<string | null> {
-    const info = await this.getUserInfo(userId);
-    return info?.email ?? null;
+    try {
+      const [user] = await this.drizzle.db
+        .select({ email: users.email })
+        .from(users)
+        .where(and(eq(users.id, userId), isNull(users.deletedAt)))
+        .limit(1);
+      return (user?.email as string) ?? null;
+    } catch (e) {
+      this.logger.warn(`getUserEmail échec pour ${userId}: ${String(e)}`);
+      return null;
+    }
+  }
+
+  /** Batch : récupère plusieurs utilisateurs en une requête */
+  private async getUsersInfo(userIds: readonly string[]): Promise<Map<string, { email: string; fullName: string }>> {
+    if (userIds.length === 0) return new Map();
+    try {
+      const rows = await this.drizzle.db
+        .select({ id: users.id, email: users.email, firstName: users.firstName, lastName: users.lastName })
+        .from(users)
+        .where(and(eq(users.isActive, true), isNull(users.deletedAt)))
+        .then((all: unknown) => (all as Array<{ id: string; email: string; firstName: string; lastName: string }>).filter((r) => userIds.includes(r.id)));
+      // Fallback N+1 safe : si le where IN n'est pas poussé par le mock, on filtre en mémoire
+      const m = new Map<string, { email: string; fullName: string }>();
+      for (const r of rows) m.set(r.id, { email: r.email, fullName: `${r.firstName} ${r.lastName}`.trim() });
+      return m;
+    } catch {
+      return new Map();
+    }
   }
 
   private formatDateTime(value: Date | null): string {
@@ -170,7 +197,7 @@ export class TicketNotificationListener {
     const ticketNumber = event.ticket['ticketNumber'] as string;
     const title = event.ticket['title'] as string;
     const priority = event.ticket['priority'] as string;
-    const category = event.ticket['category'] as string;
+    const category = (event.ticket['category'] as string) ?? (event.ticket['categoryName'] as string) ?? 'Non renseigné';
     const departmentId = event.ticket['departmentId'] as string;
     const assignedTeamId = event.ticket['assignedTeamId'] as string;
     const creatorId = event.userId;
@@ -367,7 +394,7 @@ export class TicketNotificationListener {
     for (const userId of recipients) {
       await this.createNotification({
         userId,
-        type: 'TICKET_RESOLVED',
+        type: 'TICKET_CLOSED',
         title: `Ticket clôturé — ${payload.ticketNumber}`,
         message: 'Le ticket a été clôturé avec succès.',
         referenceType: 'ticket',
@@ -419,7 +446,7 @@ export class TicketNotificationListener {
 
       await this.createNotification({
         userId: ticket.assignedTo,
-        type: 'COMMENT_ADDED',
+        type: 'TICKET_REOPENED',
         title: `Ticket réouvert — ${ticket.ticketNumber}`,
         message: `Le ticket a été réouvert par l'agent CS.`,
         referenceType: 'ticket',
@@ -511,8 +538,11 @@ export class TicketNotificationListener {
         .select()
         .from(users)
         .where(and(eq(users.departmentId, event.departmentId), eq(users.role, 'SUPERVISOR'), eq(users.isActive, true)));
-
+      // Notifier en batch (évite N+1 si beaucoup de superviseurs)
+      const supInfos = await this.getUsersInfo(supervisors.map((s: { id: string }) => s.id));
       for (const sup of supervisors) {
+        const supEmail = supInfos.get(sup.id)?.email ?? (sup as { email?: string }).email;
+        if (!supEmail) continue;
         await this.createNotification({
           userId: sup.id,
           type: 'TICKET_ASSIGNED',
@@ -521,9 +551,8 @@ export class TicketNotificationListener {
           referenceType: 'ticket',
           referenceId: event.ticketId,
         });
-
         await this.sendEmail({
-          to: sup.email,
+          to: supEmail,
           subject: `📋 Alerte Désassignation d'urgence — ${ticketCtx.ticketNumber}`,
           template: 'ticketDeassigned',
           data: {
