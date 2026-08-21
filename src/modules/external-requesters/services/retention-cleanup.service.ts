@@ -82,8 +82,8 @@ export class RetentionCleanupService {
       .delete(externalVerificationChallenges)
       .where(
         and(
-          inArray(externalVerificationChallenges.status, ['EXPIRED', 'LOCKED']),
-          lt(externalVerificationChallenges.createdAt, challengeCutoff),
+          inArray(externalVerificationChallenges.status, ['EXPIRED', 'LOCKED', 'PENDING']),
+          lt(externalVerificationChallenges.expiresAt, challengeCutoff),
         ),
       )
       .returning({ id: externalVerificationChallenges.id });

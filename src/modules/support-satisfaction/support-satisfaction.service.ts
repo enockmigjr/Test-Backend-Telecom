@@ -64,10 +64,12 @@ export class SupportSatisfactionService {
     if (row.consumedAt) throw new ConflictException('La satisfaction a déjà été soumise.');
     if (row.expiresAt.getTime() < Date.now()) throw new BadRequestException('Le lien de satisfaction a expiré.');
 
-    await this.drizzle.db
+    const [updated] = await this.drizzle.db
       .update(ticketSatisfaction)
       .set({ note, comment: comment ?? null, consumedAt: new Date() })
-      .where(eq(ticketSatisfaction.id, row.id));
+      .where(and(eq(ticketSatisfaction.id, row.id), isNull(ticketSatisfaction.consumedAt)))
+      .returning({ id: ticketSatisfaction.id });
+    if (!updated) throw new ConflictException('La satisfaction a déjà été soumise.');
     return { message: 'Merci, votre retour a bien été enregistré.' };
   }
 

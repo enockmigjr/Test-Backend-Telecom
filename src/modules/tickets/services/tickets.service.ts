@@ -241,8 +241,6 @@ export class TicketsService {
    */
   async update(id: string, dto: UpdateTicketInput, user: JwtPayload) {
     const ticket = await this.findTicketById(id);
-
-    // Déterminer quels champs sont modifiés pour valider les permissions correspondantes
     const updatedFields = Object.keys(dto).filter((key) => dto[key as keyof typeof dto] !== undefined);
     this.ticketPermissions.checkCanUpdateFields(ticket, user, updatedFields);
 
@@ -253,21 +251,62 @@ export class TicketsService {
     if (dto.severity !== undefined) updateData['severity'] = dto.severity;
     if (dto.categoryId !== undefined) updateData['categoryId'] = dto.categoryId;
     if (dto.tags !== undefined) updateData['tags'] = dto.tags;
+    if (Object.keys(updateData).length === 0) return { message: 'Aucune modification.', data: ticket };
 
-    await this.drizzle.db.update(tickets).set(updateData).where(eq(tickets.id, id));
+    // Si priority/category change, recalculer les échéances SLA via politique actuelle
+    if (dto.priority !== undefined || dto.categoryId !== undefined) {
+      const categoryId = (dto.categoryId as string) ?? ticket.categoryId;
+      const priority = (dto.priority as string) ?? ticket.priority;
+      const [policy] = await this.drizzle.db
+        .select()
+        .from(slaPolicies)
+        .where(
+          and(
+            eq(slaPolicies.categoryId, categoryId),
+            eq(slaPolicies.priority, priority as typeof slaPolicies.$inferSelect.priority),
+          ),
+        )
+        .limit(1);
+      if (policy) {
+        const now = new Date();
+        const calendarType = priority === 'CRITICAL' || priority === 'HIGH' ? '24_7' : 'BUSINESS_HOURS';
+        const businessHours = await this.settingsService.getBusinessHours();
+        const businessDays = await this.settingsService.getBusinessDays();
+        updateData['slaPolicyId'] = policy.id;
+        updateData['firstResponseDueAt'] = calculateSlaDueDate(
+          now,
+          policy.firstResponseMinutes,
+          calendarType as '24_7' | 'BUSINESS_HOURS',
+          businessHours,
+          businessDays,
+        );
+        updateData['resolutionDueAt'] = calculateSlaDueDate(
+          now,
+          policy.resolutionMinutes,
+          calendarType as '24_7' | 'BUSINESS_HOURS',
+          businessHours,
+          businessDays,
+        );
+      }
+    }
 
-    await this.ticketHistory.recordByActor(
-      id,
-      internalActor(user.sub),
-      'UPDATED',
-      ticket,
-      updateData,
-      undefined,
-      ticket.supportIntegrationId ?? undefined,
-    );
-
-    const updated = await this.findTicketById(id);
-    return { message: 'Ticket mis à jour avec succès.', data: updated };
+    return this.drizzle.runInTransaction(async () => {
+      await this.drizzle.db
+        .update(tickets)
+        .set(updateData)
+        .where(and(eq(tickets.id, id), isNull(tickets.deletedAt)));
+      await this.ticketHistory.recordByActor(
+        id,
+        internalActor(user.sub),
+        'UPDATED',
+        ticket,
+        updateData,
+        undefined,
+        ticket.supportIntegrationId ?? undefined,
+      );
+      const updated = await this.findTicketById(id);
+      return { message: 'Ticket mis à jour avec succès.', data: updated };
+    });
   }
 
   /**
@@ -359,53 +398,57 @@ export class TicketsService {
    */
   async assign(id: string, toUserId: string, user: JwtPayload, reason?: string) {
     const ticket = await this.findTicketById(id);
-
-    // 1. Valider la permission d'assignation
     const { isAutoAssign } = this.ticketPermissions.checkCanAssign(ticket, toUserId, user);
     await this.assignmentTarget.assertEligible(toUserId, ticket.assignedTeamId);
 
-    // 2. Créer l'entrée d'assignation
-    await this.drizzle.db.insert(ticketAssignments).values({
-      id: generateUuid(),
-      ticketId: id,
-      fromUserId: ticket.assignedTo || null,
-      toUserId,
-      fromDepartmentId: ticket.assignedTeamId || null,
-      toDepartmentId: ticket.assignedTeamId,
-      assignedBy: user.sub,
-      actorType: 'INTERNAL',
-      reason: reason || null,
-    });
-
-    // 3. Mettre à jour le ticket
-    // Si c'est un s'auto-assigner de ticket NEW, on fait automatiquement la transition vers ASSIGNED
     const newStatus = isAutoAssign ? 'ASSIGNED' : ticket.status === 'NEW' ? 'ASSIGNED' : ticket.status;
-    await this.drizzle.db
-      .update(tickets)
-      .set({ assignedTo: toUserId, status: newStatus as typeof tickets.$inferSelect.status })
-      .where(eq(tickets.id, id));
+    if (ticket.status === 'NEW') {
+      this.stateMachine.validateTransition(ticket.status as TicketStatus, newStatus as TicketStatus);
+    }
 
-    await this.ticketHistory.recordByActor(
-      id,
-      internalActor(user.sub),
-      'ASSIGNED',
-      { assignedTo: ticket.assignedTo, status: ticket.status },
-      { assignedTo: toUserId, status: newStatus },
-      { reason },
-      ticket.supportIntegrationId ?? undefined,
-    );
+    return this.drizzle.runInTransaction(async () => {
+      const [updatedRow] = await this.drizzle.db
+        .update(tickets)
+        .set({ assignedTo: toUserId, status: newStatus as typeof tickets.$inferSelect.status })
+        .where(and(eq(tickets.id, id), eq(tickets.status, ticket.status), isNull(tickets.deletedAt)))
+        .returning({ id: tickets.id });
+      if (!updatedRow)
+        throw new ConflictException('Le ticket a été modifié concurremment. Rechargez avant de réessayer.');
 
-    this.emitAfterCommit(
-      'ticket.assigned',
-      new TicketAssignedEvent(id, toUserId, user.sub, ticket.supportIntegrationId),
-    );
-    this.logger.log(`Ticket ${ticket.ticketNumber} assigné à ${toUserId} par ${user.sub} (auto: ${isAutoAssign})`);
+      await this.drizzle.db.insert(ticketAssignments).values({
+        id: generateUuid(),
+        ticketId: id,
+        fromUserId: ticket.assignedTo || null,
+        toUserId,
+        fromDepartmentId: ticket.assignedTeamId || null,
+        toDepartmentId: ticket.assignedTeamId,
+        assignedBy: user.sub,
+        actorType: 'INTERNAL',
+        reason: reason || null,
+      });
 
-    const updated = await this.findTicketById(id);
-    return {
-      message: isAutoAssign ? 'Ticket auto-assigné avec succès.' : 'Ticket assigné avec succès.',
-      data: updated,
-    };
+      await this.ticketHistory.recordByActor(
+        id,
+        internalActor(user.sub),
+        'ASSIGNED',
+        { assignedTo: ticket.assignedTo, status: ticket.status },
+        { assignedTo: toUserId, status: newStatus },
+        { reason },
+        ticket.supportIntegrationId ?? undefined,
+      );
+
+      this.emitAfterCommit(
+        'ticket.assigned',
+        new TicketAssignedEvent(id, toUserId, user.sub, ticket.supportIntegrationId),
+      );
+      this.logger.log(`Ticket ${ticket.ticketNumber} assigné à ${toUserId} par ${user.sub} (auto: ${isAutoAssign})`);
+
+      const updated = await this.findTicketById(id);
+      return {
+        message: isAutoAssign ? 'Ticket auto-assigné avec succès.' : 'Ticket assigné avec succès.',
+        data: updated,
+      };
+    });
   }
 
   /**
@@ -419,51 +462,54 @@ export class TicketsService {
    */
   async escalate(id: string, toUserId: string, toDepartmentId: string, user: JwtPayload, reason?: string) {
     const ticket = await this.findTicketById(id);
-
-    // 1. Valider la permission d'escalade
     const { isHierarchical } = this.ticketPermissions.checkCanEscalate(ticket, toDepartmentId, user);
     await this.assignmentTarget.assertEligible(toUserId, toDepartmentId);
 
-    await this.drizzle.db.insert(ticketAssignments).values({
-      id: generateUuid(),
-      ticketId: id,
-      fromUserId: ticket.assignedTo || null,
-      toUserId,
-      fromDepartmentId: ticket.assignedTeamId || null,
-      toDepartmentId,
-      assignedBy: user.sub,
-      actorType: 'INTERNAL',
-      reason: reason || null,
+    return this.drizzle.runInTransaction(async () => {
+      const [updatedRow] = await this.drizzle.db
+        .update(tickets)
+        .set({ assignedTo: toUserId, assignedTeamId: toDepartmentId })
+        .where(and(eq(tickets.id, id), eq(tickets.status, ticket.status), isNull(tickets.deletedAt)))
+        .returning({ id: tickets.id });
+      if (!updatedRow)
+        throw new ConflictException('Le ticket a été modifié concurremment. Rechargez avant de réessayer.');
+
+      await this.drizzle.db.insert(ticketAssignments).values({
+        id: generateUuid(),
+        ticketId: id,
+        fromUserId: ticket.assignedTo || null,
+        toUserId,
+        fromDepartmentId: ticket.assignedTeamId || null,
+        toDepartmentId,
+        assignedBy: user.sub,
+        actorType: 'INTERNAL',
+        reason: reason || null,
+      });
+
+      await this.ticketHistory.recordByActor(
+        id,
+        internalActor(user.sub),
+        'ESCALATED',
+        { assignedTo: ticket.assignedTo, assignedTeamId: ticket.assignedTeamId },
+        { assignedTo: toUserId, assignedTeamId: toDepartmentId },
+        { reason, type: isHierarchical ? 'hierarchical' : 'functional' },
+        ticket.supportIntegrationId ?? undefined,
+      );
+
+      this.emitAfterCommit(
+        'ticket.escalated',
+        new TicketEscalatedEvent(id, toUserId, user.sub, ticket.supportIntegrationId),
+      );
+      this.logger.log(
+        `Ticket ${ticket.ticketNumber} escaladé par ${user.sub} (type: ${isHierarchical ? 'hierarchical' : 'functional'})`,
+      );
+
+      const updated = await this.findTicketById(id);
+      return {
+        message: `Ticket escaladé avec succès (${isHierarchical ? 'hiérarchique' : 'fonctionnelle'}).`,
+        data: updated,
+      };
     });
-
-    await this.drizzle.db
-      .update(tickets)
-      .set({ assignedTo: toUserId, assignedTeamId: toDepartmentId })
-      .where(eq(tickets.id, id));
-
-    await this.ticketHistory.recordByActor(
-      id,
-      internalActor(user.sub),
-      'ESCALATED',
-      { assignedTo: ticket.assignedTo, assignedTeamId: ticket.assignedTeamId },
-      { assignedTo: toUserId, assignedTeamId: toDepartmentId },
-      { reason, type: isHierarchical ? 'hierarchical' : 'functional' },
-      ticket.supportIntegrationId ?? undefined,
-    );
-
-    this.emitAfterCommit(
-      'ticket.escalated',
-      new TicketEscalatedEvent(id, toUserId, user.sub, ticket.supportIntegrationId),
-    );
-    this.logger.log(
-      `Ticket ${ticket.ticketNumber} escaladé par ${user.sub} (type: ${isHierarchical ? 'hierarchical' : 'functional'})`,
-    );
-
-    const updated = await this.findTicketById(id);
-    return {
-      message: `Ticket escaladé avec succès (${isHierarchical ? 'hiérarchique' : 'fonctionnelle'}).`,
-      data: updated,
-    };
   }
 
   /**
@@ -548,8 +594,15 @@ export class TicketsService {
       }
     }
 
-    // STOP — nettoyage de la pause sur clôture/résolution
+    // STOP — cumuler pause même si on résout directement depuis PENDING
     if (newStatus === 'RESOLVED' || newStatus === 'CLOSED' || newStatus === 'CANCELLED') {
+      if (ticket.slaPausedAt && (oldStatus === 'PENDING_CUSTOMER' || oldStatus === 'PENDING_THIRD_PARTY')) {
+        const pauseDuration = now.getTime() - new Date(ticket.slaPausedAt).getTime();
+        fields['accumulatedPauseMs'] = ticket.accumulatedPauseMs + pauseDuration;
+        if (ticket.resolutionDueAt) {
+          fields['resolutionDueAt'] = new Date(new Date(ticket.resolutionDueAt).getTime() + pauseDuration);
+        }
+      }
       fields['slaPausedAt'] = null;
     }
 
@@ -569,8 +622,22 @@ export class TicketsService {
       fields['closedAt'] = null;
       const businessHours = await this.settingsService.getBusinessHours();
       const businessDays = await this.settingsService.getBusinessDays();
-      // +4h ouvrables de rallonge sur réouverture d'incident
-      fields['resolutionDueAt'] = calculateSlaDueDate(now, 240, 'BUSINESS_HOURS', businessHours, businessDays);
+      const calendarType = ticket.priority === 'CRITICAL' || ticket.priority === 'HIGH' ? '24_7' : 'BUSINESS_HOURS';
+      const reopenMinutes = Number(process.env['TICKET_REOPEN_SLA_MINUTES'] ?? 240);
+      const safeMinutes = Number.isFinite(reopenMinutes) && reopenMinutes > 0 ? reopenMinutes : 240;
+      fields['resolutionDueAt'] = calculateSlaDueDate(
+        now,
+        safeMinutes,
+        calendarType as '24_7' | 'BUSINESS_HOURS',
+        businessHours,
+        businessDays,
+      );
+      // Réarmer la première réponse si elle avait déjà été donnée
+      if (!ticket.firstResponseAt) {
+        // si jamais la première réponse n'a jamais eu lieu, on garde l'échéance existante
+      } else if (ticket.firstResponseAt) {
+        // on ne touche pas firstResponseDueAt déjà honorée ; on laisse telle quelle
+      }
     }
 
     return fields;

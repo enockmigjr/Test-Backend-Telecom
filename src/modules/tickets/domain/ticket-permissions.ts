@@ -79,6 +79,9 @@ export class TicketPermissions {
    * Verifie si l'utilisateur a le droit d'assigner ou de se faire assigner le ticket.
    */
   checkCanAssign(ticket: TicketPermissionData, toUserId: string, user: JwtPayload): { isAutoAssign: boolean } {
+    if (['CLOSED', 'CANCELLED', 'RESOLVED'].includes(ticket.status)) {
+      throw new ForbiddenException(`Impossible d'assigner un ticket au statut ${ticket.status}.`);
+    }
     const isAdmin = user.role === 'ADMINISTRATOR';
     const isSupervisor = user.role === 'SUPERVISOR';
     const isSelfAssign = toUserId === user.sub;
@@ -138,6 +141,12 @@ export class TicketPermissions {
     toDepartmentId: string,
     user: JwtPayload,
   ): { isHierarchical: boolean } {
+    if (['CLOSED', 'CANCELLED'].includes(ticket.status)) {
+      throw new ForbiddenException(`Impossible d'escalader un ticket au statut ${ticket.status}.`);
+    }
+    if (ticket.status === 'NEW') {
+      throw new ForbiddenException("Un ticket NEW doit d'abord être assigné avant d'être escaladé.");
+    }
     const isAdmin = user.role === 'ADMINISTRATOR';
     const isSupervisor = user.role === 'SUPERVISOR';
     const isAssignee = ticket.assignedTo === user.sub;

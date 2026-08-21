@@ -256,7 +256,7 @@ export class UsersService {
         `Échec du provisionnement Keycloak pour ${dto.email}`,
         error instanceof Error ? error.stack : String(error),
       );
-      await this.drizzle.db.update(users).set({ deletedAt: new Date() }).where(eq(users.id, id));
+      await this.drizzle.db.delete(users).where(eq(users.id, id));
       throw new ConflictException(
         'Création du compte SSO impossible (Keycloak indisponible ou config manquante). Réessayez plus tard.',
       );
@@ -301,6 +301,9 @@ export class UsersService {
         throw new ForbiddenException(
           "Vous n'avez pas le droit de modifier un utilisateur en dehors de votre département.",
         );
+      }
+      if (['ADMINISTRATOR', 'SUPERVISOR'].includes(userToUpdate.role as string)) {
+        throw new ForbiddenException('Un superviseur ne peut pas modifier un administrateur ou un superviseur.');
       }
       if (dto.departmentId && dto.departmentId !== currentUser.departmentId) {
         throw new ForbiddenException('Un superviseur ne peut pas déplacer un utilisateur vers un département tiers.');
@@ -348,11 +351,28 @@ export class UsersService {
    * @param id Identifiant de l'utilisateur.
    * @throws BadRequestException Si l'utilisateur est déjà désactivé.
    */
-  async deactivate(id: string) {
+  async deactivate(id: string, currentUser?: JwtPayload) {
     const user = await this.findOne(id);
 
     if (!user.isActive) {
       throw new BadRequestException('Cet utilisateur est déjà désactivé.');
+    }
+    if (currentUser && (currentUser as unknown as { sub: string }).sub === id) {
+      throw new BadRequestException('Vous ne pouvez pas désactiver votre propre compte.');
+    }
+    if (user.role === 'ADMINISTRATOR') {
+      try {
+        const res: unknown = await (this.drizzle.db
+          .select({ count: sql<number>`count(*)` })
+          .from(users)
+          .where(and(eq(users.role, 'ADMINISTRATOR' as const), eq(users.isActive, true), isNull(users.deletedAt))) as unknown as Promise<unknown>);
+        const cnt = Array.isArray(res) ? (res as Array<{ count: number }>)[0]?.count : (res as { count: number })?.count;
+        if (Number(cnt ?? 2) <= 1) {
+          throw new BadRequestException('Impossible de désactiver le dernier administrateur actif.');
+        }
+      } catch (e) {
+        if (e instanceof BadRequestException) throw e;
+      }
     }
 
     await this.drizzle.db.update(users).set({ isActive: false }).where(eq(users.id, id));

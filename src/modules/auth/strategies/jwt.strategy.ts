@@ -98,7 +98,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   private async bindProfileByEmail(payload: JwtPayload, subject: string) {
     const record = payload as unknown as Record<string, unknown>;
     const email = typeof record['email'] === 'string' ? record['email'].toLowerCase().trim() : '';
-    const emailVerified = record['email_verified'] !== false;
+    const emailVerified = record['email_verified'] === true;
     if (!email || !emailVerified) return undefined;
     const [user] = await this.drizzle.db
       .select({
@@ -161,6 +161,9 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   }
 
   private failOpenBlacklist(): boolean {
+    if (process.env['NODE_ENV'] === 'production') {
+      return process.env['AUTH_REDIS_BLACKLIST_FAIL_OPEN'] === 'true';
+    }
     return process.env['AUTH_REDIS_BLACKLIST_FAIL_OPEN'] !== 'false';
   }
 

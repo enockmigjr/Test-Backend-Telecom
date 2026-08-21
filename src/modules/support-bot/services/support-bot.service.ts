@@ -48,7 +48,7 @@ export class SupportBotService {
       return { data: { mode: 'disabled' as const, reply: null, suggestedActions: ['open_form'] as const } };
     }
 
-    if ((await this.countTodayBotCalls(conversation.supportIntegrationId)) >= this.integrationBudget(integration)) {
+    if (!(await this.consumeBudget(conversation.supportIntegrationId, this.integrationBudget(integration)))) {
       await this.persistMessage(
         conversation,
         null,
@@ -103,15 +103,44 @@ export class SupportBotService {
     }
 
     const toolTrace: unknown[] = [];
-    const reply = result.content ?? '';
-    if (result.toolCalls.length > 0) {
-      for (const call of result.toolCalls.slice(0, MAX_TOOL_ROUNDS)) {
+    let reply = result.content ?? '';
+    let toolCalls = result.toolCalls.slice(0, MAX_TOOL_ROUNDS);
+    let rounds = 0;
+    const messages: BotMessage[] = [...history, { role: 'user' as const, content: userText }];
+    // Boucle outils : réinjecte les résultats (role tool) pour une synthèse finale
+    while (toolCalls.length > 0 && rounds < MAX_TOOL_ROUNDS) {
+      for (const call of toolCalls) {
         try {
           const executed = await this.tools.execute(call, principal, conversation);
           toolTrace.push(executed);
+          messages.push({
+            role: 'assistant' as const,
+            content: JSON.stringify({
+              tool: call.name,
+              result: (executed as Record<string, unknown>)['result'] ?? executed,
+            }),
+          });
         } catch (error: unknown) {
-          toolTrace.push({ tool: call.name, error: error instanceof Error ? error.message : 'INVALID_TOOL_CALL' });
+          const errMsg = error instanceof Error ? error.message : 'INVALID_TOOL_CALL';
+          toolTrace.push({ tool: call.name, error: errMsg });
+          messages.push({ role: 'assistant' as const, content: JSON.stringify({ tool: call.name, error: errMsg }) });
         }
+      }
+      rounds += 1;
+      if (rounds >= MAX_TOOL_ROUNDS) break;
+      try {
+        const followUp = await this.provider.complete({
+          systemPrompt: this.systemPrompt(conversation.supportIntegrationId),
+          messages,
+          tools: this.tools.definitions(),
+          maxTokens: this.config.botMaxTokens,
+          timeoutMs: this.config.botTimeoutMs,
+        });
+        reply = followUp.content ?? reply;
+        toolCalls = followUp.toolCalls.slice(0, MAX_TOOL_ROUNDS);
+        if (toolCalls.length === 0) break;
+      } catch {
+        break;
       }
     }
 
@@ -183,6 +212,14 @@ export class SupportBotService {
         ),
       );
     return Number(row?.total ?? 0);
+  }
+
+  private async consumeBudget(integrationId: string, budget: number): Promise<boolean> {
+    // Goulot anti-concurrence : on compte avant d'appeler le provider.
+    // Version DB seule : double appel concurrent peut passer. Le verrou Redis sera ajouté en Phase 6 si Redis dispo,
+    // sinon on reste sur check-then-act avec fenêtre courte.
+    const current = await this.countTodayBotCalls(integrationId);
+    return current < budget;
   }
 
   private circuitOpen(integrationId: string): boolean {

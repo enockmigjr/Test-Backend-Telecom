@@ -13,7 +13,7 @@
  */
 
 import { Injectable, ForbiddenException } from '@nestjs/common';
-import { and, gte, lt, lte, eq, sql, isNull, count, inArray, SQL } from 'drizzle-orm';
+import { and, gte, gt, lt, lte, eq, sql, isNull, count, inArray, SQL } from 'drizzle-orm';
 import { DrizzleProvider } from '../../database/drizzle.provider';
 import { departments, ticketHistory, tickets, users } from '../../database/schemas';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
@@ -124,7 +124,7 @@ export class DashboardService {
       this.drizzle.db
         .select({ count: count() })
         .from(tickets)
-        .where(and(openWhere, lte(tickets.resolutionDueAt, new Date(Date.now() + 30 * 60 * 1000)))),
+        .where(and(openWhere, gt(tickets.resolutionDueAt, new Date()), lte(tickets.resolutionDueAt, new Date(Date.now() + 30 * 60 * 1000)))),
       this.drizzle.db
         .select({ count: count() })
         .from(tickets)
@@ -152,13 +152,15 @@ export class DashboardService {
       .groupBy(tickets.severity);
 
     const total = Number(totals?.total || 0);
+    const openTotal = Number(openTickets?.count || 0);
     const compliant = Number(compliantCount?.count || 0);
+    const atRiskExclusive = Math.max(0, Number(atRiskCount?.count || 0) - Number(overdueCount?.count || 0));
 
     return {
       period: { from: fromDate.toISOString(), to: toDate.toISOString() },
       ticketVolume: {
         total,
-        openTickets: Number(openTickets?.count || 0),
+        openTickets: openTotal,
         resolvedToday: Number(resolvedToday?.count || 0),
         createdToday: Number(createdToday?.count || 0),
       },
@@ -166,12 +168,12 @@ export class DashboardService {
       byPriority: Object.fromEntries(byPriority.map((p) => [p.priority, Number(p.count)])),
       bySeverity: Object.fromEntries(bySeverity.map((s) => [s.severity, Number(s.count)])),
       sla: {
-        totalTracked: total,
+        totalTracked: openTotal,
         breached: Number(breachedCount?.count || 0),
-        atRisk: Number(atRiskCount?.count || 0),
+        atRisk: atRiskExclusive > 0 ? atRiskExclusive : Number(atRiskCount?.count || 0),
         overdue: Number(overdueCount?.count || 0),
         compliant,
-        complianceRate: total > 0 ? Number(((compliant / total) * 100).toFixed(2)) : 100,
+        complianceRate: openTotal > 0 ? Number(((compliant / openTotal) * 100).toFixed(2)) : 100,
       },
     };
   }

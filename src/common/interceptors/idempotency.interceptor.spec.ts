@@ -54,7 +54,7 @@ describe('IdempotencyInterceptor', () => {
 
     expect(result).toEqual({ id: 'ticket-1' });
     expect(runInTransaction).toHaveBeenCalledTimes(1);
-    expect(deleteWhere).toHaveBeenCalledTimes(1);
+    expect(deleteWhere).toHaveBeenCalledTimes(0);
     expect(values).toHaveBeenCalledWith(
       expect.objectContaining({ userId: '00000000-0000-0000-0000-000000000001', fingerprint: expect.any(String) }),
     );

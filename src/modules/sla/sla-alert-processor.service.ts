@@ -106,7 +106,7 @@ export class SlaAlertProcessorService {
     ];
 
     if (target === 'FIRST_RESPONSE') {
-      conditions.push(isNull(tickets.firstResponseAt));
+      conditions.push(isNull(tickets.firstResponseAt), isNull(tickets.slaPausedAt));
     } else {
       conditions.push(isNull(tickets.slaPausedAt));
     }
@@ -168,7 +168,9 @@ export class SlaAlertProcessorService {
       eq(tickets.id, id),
       isNull(tickets.deletedAt),
       notInArray(tickets.status, SlaAlertProcessorService.CLOSED_STATUSES),
-      target === 'FIRST_RESPONSE' ? isNull(tickets.firstResponseAt) : isNull(tickets.slaPausedAt),
+      target === 'FIRST_RESPONSE'
+        ? and(isNull(tickets.firstResponseAt), isNull(tickets.slaPausedAt))
+        : isNull(tickets.slaPausedAt),
       kind === 'BREACH' ? lt(dueAt, now) : and(gte(dueAt, now), lt(dueAt, threshold)),
     ];
 
@@ -194,6 +196,7 @@ export class SlaAlertProcessorService {
             isNull(tickets.deletedAt),
             notInArray(tickets.status, SlaAlertProcessorService.CLOSED_STATUSES),
             isNull(tickets.firstResponseAt),
+            isNull(tickets.slaPausedAt),
             lt(dueAt, now),
             sql`${tickets.firstResponseBreachedAt} IS NOT NULL`,
             lt(

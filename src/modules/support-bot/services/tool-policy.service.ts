@@ -55,8 +55,13 @@ export class ToolPolicyService {
     );
   }
 
-  async execute(call: BotToolCall, principal: PublicPrincipal, conversation: { readonly id: string }) {
-    if (!this.authorize(call.name, 'OPEN'))
+  async execute(
+    call: BotToolCall,
+    principal: PublicPrincipal,
+    conversation: { readonly id: string; readonly status?: string },
+  ) {
+    const status = (conversation as { status?: string }).status ?? 'OPEN';
+    if (!this.authorize(call.name, status))
       throw new BadRequestException('Outil non autorisé pour cette conversation.');
     if (call.name === 'knowledge_search') {
       const query = typeof call.arguments['query'] === 'string' ? call.arguments['query'] : '';

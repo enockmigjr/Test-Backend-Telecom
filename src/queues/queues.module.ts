@@ -53,11 +53,51 @@ import { ExternalDeliveryModule } from '../modules/external-delivery/external-de
           password: redisConfig.password || undefined,
         };
         return {
-          email: new Queue(EMAIL_QUEUE, { connection }),
-          notification: new Queue(NOTIFICATION_QUEUE, { connection }),
-          sla: new Queue(SLA_QUEUE, { connection }),
-          audit: new Queue(AUDIT_QUEUE, { connection }),
-          assignment: new Queue(ASSIGNMENT_QUEUE, { connection }),
+          email: new Queue(EMAIL_QUEUE, {
+            connection,
+            defaultJobOptions: {
+              attempts: 3,
+              backoff: { type: 'exponential', delay: 5000 },
+              removeOnComplete: { age: 3600 },
+              removeOnFail: { age: 7 * 24 * 3600 },
+            },
+          }),
+          notification: new Queue(NOTIFICATION_QUEUE, {
+            connection,
+            defaultJobOptions: {
+              attempts: 3,
+              backoff: { type: 'exponential', delay: 5000 },
+              removeOnComplete: { age: 3600 },
+              removeOnFail: { age: 7 * 24 * 3600 },
+            },
+          }),
+          sla: new Queue(SLA_QUEUE, {
+            connection,
+            defaultJobOptions: {
+              attempts: 3,
+              backoff: { type: 'exponential', delay: 5000 },
+              removeOnComplete: { age: 3600 },
+              removeOnFail: { age: 7 * 24 * 3600 },
+            },
+          }),
+          audit: new Queue(AUDIT_QUEUE, {
+            connection,
+            defaultJobOptions: {
+              attempts: 5,
+              backoff: { type: 'exponential', delay: 5000 },
+              removeOnComplete: { age: 3600 },
+              removeOnFail: { age: 30 * 24 * 3600 },
+            },
+          }),
+          assignment: new Queue(ASSIGNMENT_QUEUE, {
+            connection,
+            defaultJobOptions: {
+              attempts: 3,
+              backoff: { type: 'exponential', delay: 5000 },
+              removeOnComplete: { age: 3600 },
+              removeOnFail: { age: 7 * 24 * 3600 },
+            },
+          }),
           report: new Queue(REPORT_QUEUE, {
             connection,
             defaultJobOptions: {

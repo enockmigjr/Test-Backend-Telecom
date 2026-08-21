@@ -37,6 +37,8 @@ export class RequestLoggerMiddleware implements NestMiddleware {
 
 function redactSignature(rawUrl: string): string {
   const url = new URL(rawUrl, 'http://request.local');
-  if (url.searchParams.has('signature')) url.searchParams.set('signature', '[REDACTED]');
+  for (const key of ['signature', 'token', 'code', 'otp', 't', 'expires', 'id']) {
+    if (url.searchParams.has(key)) url.searchParams.set(key, '[REDACTED]');
+  }
   return `${url.pathname}${url.search}`;
 }

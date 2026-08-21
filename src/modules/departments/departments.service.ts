@@ -112,7 +112,15 @@ export class DepartmentsService {
       workloadWeights?: { priority?: Record<string, number>; severity?: Record<string, number> } | null;
     },
   ) {
-    await this.findOne(id); // Vérifie l'existence du département
+    await this.findOne(id);
+    if (dto.name) {
+      const [dup] = await this.drizzle.db
+        .select({ id: departments.id })
+        .from(departments)
+        .where(and(eq(departments.name, dto.name), isNull(departments.deletedAt)))
+        .limit(1);
+      if (dup && dup.id !== id) throw new ConflictException('Un département avec ce nom existe déjà.');
+    }
 
     const updateData: Record<string, unknown> = {};
     if (dto.name) updateData['name'] = dto.name;

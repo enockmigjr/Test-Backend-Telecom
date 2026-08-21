@@ -13,7 +13,7 @@
 import { ForbiddenException, GoneException, Injectable } from '@nestjs/common';
 import { createHmac, timingSafeEqual } from 'crypto';
 
-const DEFAULT_TTL_SECONDS = 7 * 24 * 60 * 60;
+const DEFAULT_TTL_SECONDS = 2 * 24 * 60 * 60;
 const DEVELOPMENT_SECRET = 'development-report-download-secret-change-me';
 
 /**
@@ -77,9 +77,15 @@ export class ReportDownloadLinkService {
    */
   private get secret(): string {
     const value = process.env['REPORT_DOWNLOAD_SECRET'];
-    if (process.env['NODE_ENV'] === 'production' && (!value || value.length < 32)) {
-      throw new Error('REPORT_DOWNLOAD_SECRET doit contenir au moins 32 caractères en production.');
+    if (!value || value.length < 32) {
+      if (process.env['NODE_ENV'] === 'production') {
+        throw new Error('REPORT_DOWNLOAD_SECRET doit contenir au moins 32 caractères en production.');
+      }
+      if (!value) {
+        // Hors prod sans secret configuré : on refuse de signer plutôt que d'utiliser un fallback forgeable
+        throw new Error('REPORT_DOWNLOAD_SECRET manquant (32+ caractères requis).');
+      }
     }
-    return value || DEVELOPMENT_SECRET;
+    return value ?? DEVELOPMENT_SECRET;
   }
 }

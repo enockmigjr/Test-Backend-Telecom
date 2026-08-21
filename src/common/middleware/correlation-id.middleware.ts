@@ -30,7 +30,9 @@ export const asyncLocalStorage = new AsyncLocalStorage<{ correlationId: string }
 @Injectable()
 export class CorrelationIdMiddleware implements NestMiddleware {
   use(req: Request, res: Response, next: NextFunction): void {
-    const correlationId = (req.headers['x-correlation-id'] as string) || generateUuid();
+    const raw = (req.headers['x-correlation-id'] as string) || '';
+    const sanitized = /^[A-Za-z0-9._-]{1,64}$/.test(raw) ? raw : undefined;
+    const correlationId = sanitized || generateUuid();
 
     // Attacher à la requête
     req['correlationId'] = correlationId;

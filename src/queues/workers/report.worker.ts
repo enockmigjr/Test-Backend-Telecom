@@ -59,20 +59,29 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
 
         const reportId = data.reportId;
         if (!reportId) {
-          // Les contrôleurs et le scheduler créent toujours la ligne `reports` avec un id :
-          // aucun faux UUID technique ne doit être injecté (modèle d'acteur SYSTEM).
           throw new Error('REPORT_ID_REQUIRED');
         }
 
+        const attemptsMade = job.attemptsMade ?? 0;
+        const maxAttempts = job.opts?.attempts ?? 3;
+        const isFinalAttempt = attemptsMade + 1 >= maxAttempts;
+
         switch (type) {
           case 'ticket-report':
-            await this.generateTicketReport(reportId, data.ticketId, data.requestedBy);
+            await this.generateTicketReport(reportId, data.ticketId, data.requestedBy, isFinalAttempt);
             break;
           case 'sla-report':
-            await this.generateSlaReport(reportId, data.from, data.to, data.requestedBy, data.departmentId);
+            await this.generateSlaReport(
+              reportId,
+              data.from,
+              data.to,
+              data.requestedBy,
+              data.departmentId,
+              isFinalAttempt,
+            );
             break;
           case 'weekly-report':
-            await this.generateWeeklyReport(reportId, data.requestedBy);
+            await this.generateWeeklyReport(reportId, data.requestedBy, isFinalAttempt);
             break;
           default:
             this.logger.warn(`Type de rapport inconnu: ${type}`);
@@ -149,20 +158,19 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
 
   // ─── Génération des rapports ──────────────────────────────────────────────
 
-  private async generateTicketReport(reportId: string, ticketId: string, requestedBy: string): Promise<void> {
+  private async generateTicketReport(
+    reportId: string,
+    ticketId: string,
+    requestedBy: string,
+    isFinalAttempt = true,
+  ): Promise<void> {
     try {
-      // Les données du rapport sont extraites par ReportQueryService (source unique).
       const { ticket } = await this.reportQuery.ticketReport(ticketId);
       const ticketNumber = ticket.ticketNumber as string;
-
-      // Générer le PDF
       const pdfBuffer = await this.reportsService.generateTicketPdf(ticket);
-
-      // Stocker le PDF
       const year = new Date().getFullYear();
       const month = String(new Date().getMonth() + 1).padStart(2, '0');
       const objectKey = `reports/${year}/${month}/${reportId}.pdf`;
-
       const pseudoFile = {
         buffer: pdfBuffer,
         originalname: `Rapport-Ticket-${ticketNumber}.pdf`,
@@ -171,16 +179,10 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
         fieldname: 'file',
         encoding: '7bit',
       } as Express.Multer.File;
-
       await this.storage.upload(pseudoFile, objectKey);
-
-      // Mettre à jour la DB
       await this.reportsService.updateReportStatus(reportId, 'completed', objectKey);
-
       const appUrl = process.env['APP_URL'] || 'http://localhost:3000';
       const downloadUrl = this.downloadLinks.createUrl(reportId);
-
-      // Notifier le demandeur
       await this.notifyUser(
         requestedBy,
         'REPORT_READY',
@@ -188,28 +190,23 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
         `Le rapport pour le ticket ${ticketNumber} (« ${ticket.title} ») a ete genere.`,
         reportId,
       );
-
-      // Envoyer l'email
       const email = await this.getUserEmail(requestedBy);
-      if (email) {
+      if (email)
         await this.sendEmail(email, `📄 Rapport ticket — ${ticketNumber}`, 'ticketReport', {
           ticketNumber,
           title: ticket.title,
           downloadUrl,
           ticketUrl: `${appUrl}/tickets/${ticket.id}`,
         });
-      }
-
       this.logger.log(`Rapport ticket genere, stocke et notifie: ${ticketNumber} (ID: ${reportId}) → ${requestedBy}`);
     } catch (err) {
       const errorMessage = (err as Error).message || String(err);
-      this.logger.error(`Echec de generation du rapport de ticket ${ticketId}: ${errorMessage}`);
-
+      this.logger.error(
+        `Echec de generation du rapport de ticket ${ticketId}: ${errorMessage}${isFinalAttempt ? ' (final)' : ' (retry)'}`,
+      );
+      if (!isFinalAttempt) throw err;
       try {
-        // Enregistrer l'échec
         await this.reportsService.updateReportStatus(reportId, 'failed', undefined, errorMessage);
-
-        // Notifier l'échec
         await this.notifyUser(
           requestedBy,
           'REPORT_FAILED',
@@ -217,18 +214,16 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
           `La generation du rapport pour le ticket ID ${ticketId} a echoue : ${errorMessage}`,
           reportId,
         );
-
-        // Envoyer l'e-mail d'erreur obligatoire
         const email = await this.getUserEmail(requestedBy);
-        if (email) {
+        if (email)
           await this.sendEmail(email, `❌ Echec de generation du rapport — Ticket ${ticketId}`, 'reportFailed', {
             reportId,
             errorMessage,
           });
-        }
       } catch (dbErr) {
         this.logger.error(`Impossible d'enregistrer l'echec du rapport en DB: ${String(dbErr)}`);
       }
+      throw err;
     }
   }
 
@@ -238,12 +233,11 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
     to: string | undefined,
     requestedBy: string,
     departmentId?: string,
+    isFinalAttempt = true,
   ): Promise<void> {
     let fromStr = '';
     let toStr = '';
-
     try {
-      // Les agrégats SLA sont calculés par ReportQueryService (source unique, identique à l'endpoint /reports/sla).
       const report = await this.reportQuery.slaReport(from, to, departmentId);
       const { total, breached, avgResolutionMinutes: avgMin } = report.summary;
       const byPriority = report.byPriority;
@@ -251,19 +245,14 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
       const toDate = new Date(report.period.to);
       fromStr = fromDate.toLocaleDateString('fr-FR');
       toStr = toDate.toLocaleDateString('fr-FR');
-
-      // Générer le PDF
       const pdfBuffer = await this.reportsService.generateSlaPdf(
         { total, breached, avgResolutionMinutes: avgMin },
         byPriority,
         { from: fromDate, to: toDate },
       );
-
-      // Stocker le PDF
       const year = new Date().getFullYear();
       const month = String(new Date().getMonth() + 1).padStart(2, '0');
       const objectKey = `reports/${year}/${month}/${reportId}.pdf`;
-
       const pseudoFile = {
         buffer: pdfBuffer,
         originalname: `Rapport-SLA-${from || 'debut'}-${to || 'fin'}.pdf`,
@@ -272,15 +261,9 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
         fieldname: 'file',
         encoding: '7bit',
       } as Express.Multer.File;
-
       await this.storage.upload(pseudoFile, objectKey);
-
-      // Mettre à jour la DB
       await this.reportsService.updateReportStatus(reportId, 'completed', objectKey);
-
       const downloadUrl = this.downloadLinks.createUrl(reportId);
-
-      // Notifier le demandeur
       await this.notifyUser(
         requestedBy,
         'REPORT_READY',
@@ -288,8 +271,6 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
         `Rapport SLA genere: ${total} tickets, ${breached} violations, ${avgMin} min moy.`,
         reportId,
       );
-
-      // Envoyer l'email
       const email = await this.getUserEmail(requestedBy);
       if (email) {
         const dashboardUrl = process.env['DASHBOARD_URL'] || 'http://localhost:3007';
@@ -302,17 +283,15 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
           dashboardUrl,
         });
       }
-
       this.logger.log(`Rapport SLA genere, stocke et notifie: ${total} tickets (ID: ${reportId}) → ${requestedBy}`);
     } catch (err) {
       const errorMessage = (err as Error).message || String(err);
-      this.logger.error(`Echec de generation du rapport SLA (${fromStr} à ${toStr}): ${errorMessage}`);
-
+      this.logger.error(
+        `Echec de generation du rapport SLA (${fromStr} à ${toStr}): ${errorMessage}${isFinalAttempt ? ' (final)' : ' (retry)'}`,
+      );
+      if (!isFinalAttempt) throw err;
       try {
-        // Enregistrer l'échec
         await this.reportsService.updateReportStatus(reportId, 'failed', undefined, errorMessage);
-
-        // Notifier l'échec
         await this.notifyUser(
           requestedBy,
           'REPORT_FAILED',
@@ -320,27 +299,22 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
           `La generation du rapport SLA (${fromStr} à ${toStr}) a echoue : ${errorMessage}`,
           reportId,
         );
-
-        // Envoyer l'e-mail d'erreur obligatoire
         const email = await this.getUserEmail(requestedBy);
-        if (email) {
+        if (email)
           await this.sendEmail(
             email,
             `❌ Echec de generation du rapport SLA — Periode ${fromStr} - ${toStr}`,
             'reportFailed',
-            {
-              reportId,
-              errorMessage,
-            },
+            { reportId, errorMessage },
           );
-        }
       } catch (dbErr) {
         this.logger.error(`Impossible d'enregistrer l'echec du rapport SLA en DB: ${String(dbErr)}`);
       }
+      throw err;
     }
   }
 
-  private async generateWeeklyReport(reportId: string, requestedBy: string): Promise<void> {
+  private async generateWeeklyReport(reportId: string, requestedBy: string, isFinalAttempt = true): Promise<void> {
     try {
       const now = new Date();
       const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -422,10 +396,11 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
       );
     } catch (err) {
       const errorMessage = (err as Error).message || String(err);
-      this.logger.error(`Echec de generation du rapport hebdomadaire: ${errorMessage}`);
-
+      this.logger.error(
+        `Echec de generation du rapport hebdomadaire: ${errorMessage}${isFinalAttempt ? ' (final)' : ' (retry)'}`,
+      );
+      if (!isFinalAttempt) throw err;
       try {
-        // Enregistrer l'échec
         await this.reportsService.updateReportStatus(reportId, 'failed', undefined, errorMessage);
 
         // Notifier l'échec
@@ -448,6 +423,7 @@ export class ReportWorker implements OnModuleInit, OnModuleDestroy {
       } catch (dbErr) {
         this.logger.error(`Impossible d'enregistrer l'echec du rapport hebdomadaire en DB: ${String(dbErr)}`);
       }
+      throw err;
     }
   }
 }

@@ -266,13 +266,14 @@ describe('DepartmentsService', () => {
     /** Test : doit mettre a jour un departement existant */
     it('doit mettre a jour un departement existant', async () => {
       const findBuilder = createMockQueryBuilder([mockDepartment]);
+      const dupBuilder = createMockQueryBuilder([]);
       const updatedDept = {
         ...mockDepartment,
         name: 'Support Niveau 1',
         description: 'Mis a jour',
       };
       const updatedBuilder = createMockQueryBuilder([updatedDept]);
-      mockDb.select.mockReturnValueOnce(findBuilder).mockReturnValueOnce(updatedBuilder);
+      mockDb.select.mockReturnValueOnce(findBuilder).mockReturnValueOnce(dupBuilder).mockReturnValueOnce(updatedBuilder);
 
       const result = await service.update(mockDepartment.id, {
         name: 'Support Niveau 1',
@@ -314,9 +315,10 @@ describe('DepartmentsService', () => {
 
     it('doit mettre a jour uniquement le nom si seuleument name fourni', async () => {
       const findBuilder = createMockQueryBuilder([mockDepartment]);
+      const dupBuilder = createMockQueryBuilder([]);
       const updatedDept = { ...mockDepartment, name: 'New Name' };
       const updatedBuilder = createMockQueryBuilder([updatedDept]);
-      mockDb.select.mockReturnValueOnce(findBuilder).mockReturnValueOnce(updatedBuilder);
+      mockDb.select.mockReturnValueOnce(findBuilder).mockReturnValueOnce(dupBuilder).mockReturnValueOnce(updatedBuilder);
 
       await service.update(mockDepartment.id, { name: 'New Name' });
 
@@ -327,8 +329,9 @@ describe('DepartmentsService', () => {
 
     it('doit verifier l existence du departement avant mise a jour', async () => {
       const findBuilder = createMockQueryBuilder([mockDepartment]);
+      const dupBuilder = createMockQueryBuilder([]);
       const updatedBuilder = createMockQueryBuilder([mockDepartment]);
-      mockDb.select.mockReturnValueOnce(findBuilder).mockReturnValueOnce(updatedBuilder);
+      mockDb.select.mockReturnValueOnce(findBuilder).mockReturnValueOnce(dupBuilder).mockReturnValueOnce(updatedBuilder);
 
       await service.update(mockDepartment.id, { name: 'Updated' });
 

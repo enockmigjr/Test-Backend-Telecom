@@ -1,4 +1,4 @@
-import { Controller, Get, Param, ParseUUIDPipe, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, ParseUUIDPipe, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiExtraModels, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -40,5 +40,17 @@ export class ExternalDeliveriesAdminController {
   @ApiResponse({ status: 403, description: 'Rôle insuffisant — ADMINISTRATOR ou SUPERVISOR requis.' })
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.deliveries.adminFindOne(id);
+  }
+
+  @Post(':id/retry')
+  @Roles('ADMINISTRATOR', 'SUPERVISOR')
+  @ApiOperation({
+    summary: 'Rejouer une livraison FAILED/UNKNOWN',
+    description: 'Remet en file une livraison échouée ou ambiguë.',
+  })
+  @ApiResponse({ status: 200, description: 'Livraison remise en file.' })
+  @ApiResponse({ status: 404, description: 'Livraison introuvable ou non rejouable.' })
+  retry(@Param('id', ParseUUIDPipe) id: string) {
+    return this.deliveries.retryDelivery(id);
   }
 }

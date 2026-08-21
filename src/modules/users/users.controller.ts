@@ -106,7 +106,7 @@ export class UsersController {
   @ApiOperation({
     summary: "Détails d'un utilisateur",
     description:
-      "Retourne le profil d'un utilisateur.\n\nAvec `?detail=full`, enrichit la réponse avec les statistiques des tickets (total créés/assignés, tickets ouverts, résolutions, violations SLA) et les 5 derniers tickets assignés.\n\n**Rôles autorisés :** ADMINISTRATOR, SUPERVISOR",
+      "Retourne le profil d'un utilisateur.\n\nAvec `?detail=full`, enrichit la réponse avec les statistiques des tickets (total créés/assignés, tickets ouverts, résolutions, violations SLA) et les 5 derniers tickets assignés.\n\n**Rôles autorisés :** ADMINISTRATOR, SUPERVISOR — le SUPERVISOR ne voit que son département.",
   })
   @ApiParam({ name: 'id', description: "UUID de l'utilisateur", example: '01922b3c-...' })
   @ApiQuery({
@@ -121,9 +121,20 @@ export class UsersController {
     description: 'Profil utilisateur avec département et optionnellement les statistiques tickets.',
   })
   @ApiResponse({ status: 401, description: 'Non authentifié.' })
-  @ApiResponse({ status: 403, description: 'Rôle insuffisant.' })
+  @ApiResponse({ status: 403, description: 'Rôle insuffisant ou hors département.' })
   @ApiResponse({ status: 404, description: 'Utilisateur non trouvé.' })
-  async findOne(@Param('id') id: string, @Query('detail') detail?: string) {
+  async findOne(
+    @Param('id') id: string,
+    @Query('detail') detail: string | undefined,
+    @CurrentUser() currentUser: JwtPayload,
+  ) {
+    if (currentUser?.role === 'SUPERVISOR') {
+      const target = await this.usersService.findOne(id);
+      if (target.departmentId !== currentUser.departmentId) {
+        // 404 pour ne pas révéler l'existence hors périmètre
+        throw new (await import('@nestjs/common')).NotFoundException('Utilisateur non trouvé.');
+      }
+    }
     if (detail === 'full') {
       return this.usersService.findOneDetailed(id);
     }
@@ -201,8 +212,8 @@ export class UsersController {
   @ApiResponse({ status: 401, description: 'Non authentifié.' })
   @ApiResponse({ status: 403, description: 'Rôle insuffisant — ADMINISTRATOR requis.' })
   @ApiResponse({ status: 404, description: 'Utilisateur non trouvé.' })
-  async deactivate(@Param('id') id: string) {
-    return this.usersService.deactivate(id);
+  async deactivate(@Param('id') id: string, @CurrentUser() currentUser: JwtPayload) {
+    return this.usersService.deactivate(id, currentUser);
   }
 
   /** Route de réactivation d'un compte utilisateur */

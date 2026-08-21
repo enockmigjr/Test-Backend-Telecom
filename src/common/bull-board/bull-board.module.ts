@@ -14,6 +14,7 @@ import { createBullBoard } from '@bull-board/api';
 import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
 import { ExpressAdapter } from '@bull-board/express';
 import { Request, Response, NextFunction } from 'express';
+import { timingSafeEqual } from 'crypto';
 
 /**
  * Protection basique par Basic Auth pour BullBoard en production.
@@ -25,19 +26,29 @@ function basicAuthMiddleware(req: Request, res: Response, next: NextFunction): v
     next();
     return;
   }
-
-  const user = process.env['BULLBOARD_USER'] || 'admin';
-  const pass = process.env['BULLBOARD_PASSWORD'] || 'bullboard';
+  const user = process.env['BULLBOARD_USER'];
+  const pass = process.env['BULLBOARD_PASSWORD'];
+  if (!user || !pass) {
+    res.status(500).send('BullBoard non configuré (BULLBOARD_USER/PASSWORD requis en production)');
+    return;
+  }
   const auth = req.headers.authorization;
-
   if (!auth || !auth.startsWith('Basic ')) {
     res.setHeader('WWW-Authenticate', 'Basic realm="BullBoard"');
     res.status(401).send('Authentification requise');
     return;
   }
-
-  const credentials = Buffer.from(auth.slice(6), 'base64').toString().split(':');
-  if (credentials[0] === user && credentials[1] === pass) {
+  const decoded = Buffer.from(auth.slice(6), 'base64').toString();
+  const sep = decoded.indexOf(':');
+  const reqUser = sep >= 0 ? decoded.slice(0, sep) : decoded;
+  const reqPass = sep >= 0 ? decoded.slice(sep + 1) : '';
+  const userBuf = Buffer.from(reqUser);
+  const passBuf = Buffer.from(reqPass);
+  const expUserBuf = Buffer.from(user);
+  const expPassBuf = Buffer.from(pass);
+  const userOk = userBuf.length === expUserBuf.length && timingSafeEqual(userBuf, expUserBuf);
+  const passOk = passBuf.length === expPassBuf.length && timingSafeEqual(passBuf, expPassBuf);
+  if (userOk && passOk) {
     next();
   } else {
     res.setHeader('WWW-Authenticate', 'Basic realm="BullBoard"');

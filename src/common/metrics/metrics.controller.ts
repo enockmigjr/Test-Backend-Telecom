@@ -10,10 +10,11 @@
  * ============================================================================
  */
 
-import { Controller, Get, Res } from '@nestjs/common';
+import { Controller, Get, Res, Req, UnauthorizedException } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { SkipThrottle } from '@nestjs/throttler';
-import { Response } from 'express';
+import { Request, Response } from 'express';
+import { timingSafeEqual } from 'crypto';
 import { Auth, AuthMode } from '../decorators/auth-mode.decorator';
 import { MetricsService } from './metrics.service';
 
@@ -34,8 +35,15 @@ export class MetricsController {
   @Auth(AuthMode.ANONYMOUS)
   @SkipThrottle({ default: true, auth: true })
   @Get()
-  @ApiOperation({ summary: 'Métriques Prometheus (format OpenMetrics)' })
-  async metrics(@Res() res: Response): Promise<void> {
+  @ApiOperation({ summary: 'Métriques Prometheus (format OpenMetrics) — protégé par METRICS_SCRAPE_TOKEN si défini' })
+  async metrics(@Req() req: Request, @Res() res: Response): Promise<void> {
+    const expected = process.env['METRICS_SCRAPE_TOKEN'];
+    if (expected) {
+      const auth = req.headers.authorization ?? '';
+      const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
+      const ok = token.length === expected.length && timingSafeEqual(Buffer.from(token), Buffer.from(expected));
+      if (!ok) throw new UnauthorizedException('Token de scraping invalide.');
+    }
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
     const metrics = await this.metricsService.getMetrics();
     res.send(metrics);

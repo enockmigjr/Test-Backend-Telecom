@@ -19,7 +19,7 @@ import {
   NestInterceptor,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { and, eq, gt, lte } from 'drizzle-orm';
+import { and, eq, gt } from 'drizzle-orm';
 import type { Request, Response } from 'express';
 import { lastValueFrom, Observable, of } from 'rxjs';
 import { DrizzleProvider } from '../../database/drizzle.provider';
@@ -86,7 +86,6 @@ export class IdempotencyInterceptor implements NestInterceptor {
     const path = `${request.baseUrl}${request.path}`;
     const subjectKey = `${subject.type}:${subject.userId ?? subject.externalRequesterId ?? subject.supportIntegrationId}`;
     const keyHash = this.hash(`${subjectKey}:${request.method}:${path}:${rawKey}`);
-    await this.drizzle.db.delete(idempotencyRecords).where(lte(idempotencyRecords.expiresAt, new Date()));
     const existing = await this.findStored(keyHash);
     if (existing) return this.replay(existing, fingerprint, response);
 

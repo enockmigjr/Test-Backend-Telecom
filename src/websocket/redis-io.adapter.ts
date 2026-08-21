@@ -39,10 +39,18 @@ export class RedisIoAdapter extends IoAdapter {
       port: redisConfig.port,
       password: redisConfig.password || undefined,
       lazyConnect: true,
+      maxRetriesPerRequest: null as unknown as number,
+      enableReadyCheck: true,
+      retryStrategy(times: number) {
+        return Math.min(times * 200, 5000);
+      },
     };
 
     const pubClient = new Redis(connection);
     const subClient = pubClient.duplicate();
+    for (const c of [pubClient, subClient] as Redis[]) {
+      c.on('error', () => {});
+    }
 
     await Promise.all([pubClient.connect(), subClient.connect()]);
 

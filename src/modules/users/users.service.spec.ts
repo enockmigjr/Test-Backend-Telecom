@@ -100,7 +100,7 @@ describe('UsersService', () => {
       email: 'test@test.com',
       firstName: 'Test',
       lastName: 'User',
-      role: 'ADMINISTRATOR',
+      role: 'CUSTOMER_SERVICE_AGENT',
       isActive: true,
       departmentId: 'd1',
     };

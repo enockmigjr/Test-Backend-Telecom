@@ -149,6 +149,7 @@ export class AttachmentsController {
     res.setHeader('Content-Type', attachment.mimeType);
     res.setHeader('Content-Disposition', `${disposition}; filename="${attachment.originalFilename}"`);
     res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Cache-Control', 'private, no-store');
 
     // Ouverture et redirection du flux binaire du fichier vers la réponse HTTP Express
     // eslint-disable-next-line security/detect-non-literal-fs-filename -- objectKey is generated server-side

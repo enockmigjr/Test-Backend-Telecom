@@ -40,10 +40,11 @@ export class ExternalDeliveryService {
     @Inject('BullMQ_Queues') private readonly queues: BullMqQueues,
   ) {}
 
-  /** Rejeu périodique des livraisons échouées après une panne prolongée du fournisseur. */
+  /** Rejeu périodique des livraisons échouées + DELIVERY_UNKNOWN après délai. */
   @Interval(60_000)
   async requeueFailedDeliveries(): Promise<void> {
     const windowStart = new Date(Date.now() - RETRY_WINDOW_DAYS * 86_400_000);
+    const unknownCutoff = new Date(Date.now() - 30 * 60_000);
     const failed = await this.drizzle.db
       .select({ id: externalDeliveries.id, outboxEventId: externalDeliveries.outboxEventId })
       .from(externalDeliveries)
@@ -51,6 +52,7 @@ export class ExternalDeliveryService {
         and(
           or(
             eq(externalDeliveries.status, 'FAILED'),
+            and(eq(externalDeliveries.status, 'DELIVERY_UNKNOWN'), lt(externalDeliveries.updatedAt, unknownCutoff)),
             and(
               eq(externalDeliveries.status, 'PENDING'),
               eq(externalDeliveries.lastError, 'REQUEUED_AFTER_RECOVERY'),
@@ -67,11 +69,36 @@ export class ExternalDeliveryService {
         .update(externalDeliveries)
         .set({ status: 'PENDING', lastError: 'REQUEUED_AFTER_RECOVERY', lockedAt: null, lockedBy: null })
         .where(eq(externalDeliveries.id, delivery.id));
-      await this.queues.externalDelivery.add('dispatch-outbox-event', { outboxEventId: delivery.outboxEventId });
+      await this.queues.externalDelivery.add(
+        'dispatch-outbox-event',
+        { outboxEventId: delivery.outboxEventId },
+        { jobId: `retry-${delivery.id}` },
+      );
     }
     if (failed.length > 0) {
-      this.logger.log(`Livraisons échouées relancées: ${failed.length}`);
+      this.logger.log(`Livraisons échouées/UNKNOWN relancées: ${failed.length}`);
     }
+  }
+
+  async retryDelivery(id: string): Promise<{ message: string }> {
+    const [delivery] = await this.drizzle.db
+      .select()
+      .from(externalDeliveries)
+      .where(eq(externalDeliveries.id, id))
+      .limit(1);
+    if (!delivery) throw new NotFoundException('Livraison introuvable.');
+    if (!['FAILED', 'DELIVERY_UNKNOWN'].includes(delivery.status))
+      throw new NotFoundException('Livraison non rejouable (statut incompatible).');
+    await this.drizzle.db
+      .update(externalDeliveries)
+      .set({ status: 'PENDING', lastError: 'MANUAL_RETRY', lockedAt: null, lockedBy: null })
+      .where(eq(externalDeliveries.id, id));
+    await this.queues.externalDelivery.add(
+      'dispatch-outbox-event',
+      { outboxEventId: delivery.outboxEventId },
+      { jobId: `manual-retry-${id}-${Date.now()}` },
+    );
+    return { message: 'Livraison remise en file.' };
   }
 
   async dispatch(outboxEventId: string, workerId: string): Promise<void> {

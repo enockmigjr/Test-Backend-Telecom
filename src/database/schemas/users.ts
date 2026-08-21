@@ -11,7 +11,7 @@
  */
 
 import { pgTable, uuid, varchar, text, boolean, timestamp, index, uniqueIndex, integer } from 'drizzle-orm/pg-core';
-import { relations } from 'drizzle-orm';
+import { relations, sql } from 'drizzle-orm';
 import { departments } from './departments';
 import { roleEnum } from './enums';
 
@@ -29,7 +29,7 @@ export const users = pgTable(
       .notNull()
       .references(() => departments.id),
     // Adresse email professionnelle unique sert d'identifiant de connexion
-    email: varchar('email', { length: 255 }).notNull().unique(),
+    email: varchar('email', { length: 255 }).notNull(),
     // Sujet Keycloak (SSO) : source de vérité de l'identité, null tant que le compte est local.
     keycloakSubjectId: varchar('keycloak_subject_id', { length: 128 }),
     // Mot de passe sécurisé et haché (Argon2id)
@@ -66,9 +66,14 @@ export const users = pgTable(
   },
   (table) => ({
     // Index pour accélérer les recherches par email, département et rôle
-    idxUsersEmail: uniqueIndex('idx_users_email').on(table.email),
+    idxUsersEmail: uniqueIndex('idx_users_email')
+      .on(table.email)
+      .where(sql`deleted_at IS NULL`),
     idxUsersDepartment: index('idx_users_department').on(table.departmentId),
     idxUsersRole: index('idx_users_role').on(table.role),
+    idxUsersKeycloakSubject: uniqueIndex('idx_users_keycloak_subject')
+      .on(table.keycloakSubjectId)
+      .where(sql`keycloak_subject_id IS NOT NULL`),
   }),
 );
 
